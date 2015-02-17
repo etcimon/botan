@@ -85,7 +85,7 @@ protected:
         return Vector!X509Certificate();
     }
 
-    /*
+    /**
     * Send a new client hello to renegotiate
     */
     override void initiateHandshake(HandshakeState state,
@@ -148,7 +148,7 @@ protected:
         secureRenegotiationCheck(state.clientHello());
     }
 
-    /*
+    /**
     * Process a handshake message
     */
     override void processHandshakeMsg(in HandshakeState active_state,

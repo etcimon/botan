@@ -14,7 +14,8 @@ import botan.constants;
 static if (BOTAN_TEST):
 
 public import std.stdio : File, writeln;
-public import std.algorithm : sort, canFind, walkLength;
+public import std.algorithm : sort, canFind;
+public import std.range : walkLength;
 public import std.string : indexOf, lastIndexOf;
 public import botan.utils.types;
 public import botan.libstate.libstate;
