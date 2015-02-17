@@ -12,7 +12,9 @@ Current Version: v1.11.10 <==> Botan/C++ git commit: 455bd2557cbb1343e59eefd97cb
 Usage
 -----
 
-Please consult the [wiki](https://github.com/etcimon/botan/wiki) for information on how to use this library.
+You can read the API documentation in the [GitHub Pages](http://etcimon.github.io/botan)
+
+You should however start with the [GitHub Wiki](https://github.com/etcimon/botan/wiki) for information on how to use this library.
 
 Supported Algorithms
 --------------------
