@@ -1,0 +1,13 @@
+.dub
+dub.selections.json
+*.[oa]
+*.so
+*.lib
+*.dll
+.*.sw*
+*.userprefs
+build/
+test_data/ecc/dompar_private.pkcs8.pem
+test_data/ecc/rsa_private.pkcs8.pem
+test_data/ecc/wo_dompar_private.pkcs8.pem
+
