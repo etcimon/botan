@@ -36,7 +36,7 @@ public:
     /**
     * Compare for equality with other
     * Params:
-    *  other = compare for equality with this object
+    *  rhs = compare for equality with this object
     */
     bool opEquals(in EAC11Req rhs) const
     {

@@ -107,6 +107,7 @@ public:
     * Return a new operator object for this key, if possible
     * Params:
     *  key = the key we want an operator for
+    *  rng = a random number generator
     * Returns: newly allocated operator object, or NULL
     */
     KeyAgreement getKeyAgreementOp(in PrivateKey key, RandomNumberGenerator rng) const;
@@ -115,6 +116,7 @@ public:
     * Return a new operator object for this key, if possible
     * Params:
     *  key = the key we want an operator for
+    *  rng = a random number generator
     * Returns: newly allocated operator object, or NULL
     */
     Signature getSignatureOp(in PrivateKey key, RandomNumberGenerator rng) const;
@@ -123,6 +125,7 @@ public:
     * Return a new operator object for this key, if possible
     * Params:
     *  key = the key we want an operator for
+    *  rng = a random number generator
     * Returns: newly allocated operator object, or NULL
     */
     Verification getVerifyOp(in PublicKey key, RandomNumberGenerator rng) const;
@@ -131,6 +134,7 @@ public:
     * Return a new operator object for this key, if possible
     * Params:
     *  key = the key we want an operator for
+    *  rng = a random number generator
     * Returns: newly allocated operator object, or NULL
     */
     Encryption getEncryptionOp(in PublicKey key, RandomNumberGenerator rng) const;
@@ -139,6 +143,7 @@ public:
     * Return a new operator object for this key, if possible
     * Params:
     *  key = the key we want an operator for
+    *  rng = a random number generator
     * Returns: newly allocated operator object, or NULL
     */
     Decryption getDecryptionOp(in PrivateKey key, RandomNumberGenerator rng) const;

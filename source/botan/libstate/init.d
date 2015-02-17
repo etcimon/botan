@@ -24,8 +24,6 @@ struct LibraryInitializer
 public:
     /**
     * Initialize the library
-    * Params:
-    *  options = a string listing initialization options
     */
     static void initialize()
     {

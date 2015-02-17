@@ -272,8 +272,7 @@ size_t base64Decode(ubyte* output, in string input, bool ignore_ws = true)
 /**
 * Perform base64 decoding
 * Params:
-*  input = some base64 input
-*  input_length = the length of input in bytes
+*  input = some base64 input string
 *  ignore_ws = ignore whitespace on input; if false, throw new an
                          exception if whitespace is encountered
 * Returns: decoded base64 output

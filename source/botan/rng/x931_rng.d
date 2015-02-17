@@ -87,8 +87,7 @@ public:
     /**
     * Params:
     *  cipher = the block cipher to use in this PRNG
-    *  rng = the underlying PRNG for generating inputs
-    * (eg, an HMAC_RNG)
+    *  prng = the underlying PRNG for generating inputs (eg, an HMAC_RNG)
     */
     this(BlockCipher cipher,
          RandomNumberGenerator prng)

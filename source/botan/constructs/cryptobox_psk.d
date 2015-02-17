@@ -31,7 +31,7 @@ struct CryptoBox {
     * Params:
     *  input = the input data
     *  input_len = the length of input in bytes
-    *  key = the key used to encrypt the message
+    *  master_key = the key used to encrypt the message
     *  rng = a ref to a random number generator, such as AutoSeededRNG
     */
     static Vector!ubyte encrypt(const(ubyte)* input, size_t input_len,
@@ -75,8 +75,7 @@ struct CryptoBox {
     * Params:
     *  input = the input data
     *  input_len = the length of input in bytes
-    *  key = the key used to encrypt the message
-    *  rng = a ref to a random number generator, such as AutoSeededRNG
+    *  master_key = the key used to encrypt the message
     */
     static SecureVector!ubyte decrypt(const(ubyte)* input, size_t input_len, in SymmetricKey master_key)
     {

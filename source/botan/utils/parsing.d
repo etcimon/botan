@@ -99,6 +99,7 @@ Vector!string splitter(in string str, char delim)
 * Split a string on a character predicate
 * Params:
 *  str = the input string
+*  pred = the predicate that returns true to split
 */
 Vector!string splitOnPred(in string str,
                          bool delegate(char) pred)
@@ -165,9 +166,9 @@ string replaceChar(in string str, in char from_char, in char to_char)
 * Replace a character in a string
 * Params:
 *  str = the input string
-*  from_chars = the characters to replace
+*  chars = the characters to replace
 *  to_char = the character to replace it with
-* Returns: str with all instances of from_chars replaced by to_char
+* Returns: str with all instances of chars replaced by to_char
 */
 
 string replaceChars(in string str,
@@ -280,7 +281,7 @@ bool x500NameCmp(in string name1, in string name2)
 /**
 * Convert a string representation of an IPv4 address to a number
 * Params:
-*  ip_str = the string representation
+*  str = the string representation
 * Returns: integer IPv4 address
 */
 uint stringToIpv4(in string str)
@@ -308,7 +309,7 @@ uint stringToIpv4(in string str)
 /**
 * Convert an IPv4 address to a string
 * Params:
-*  ip_addr = the IPv4 address to convert
+*  ip = the IPv4 address to convert
 * Returns: string representation of the IPv4 address
 */
 string ipv4ToString(uint ip)

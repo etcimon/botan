@@ -91,7 +91,7 @@ public:
 
     /**
     * Params:
-    *  cipher = the underlying block cipher to use
+    *  ciph = the underlying block cipher to use
     */
     this(BlockCipher ciph)
     {

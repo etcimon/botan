@@ -140,9 +140,7 @@ public:
     * Construct a CRL from a data source.
     *
     * Params:
-    *  source = the data source providing the DER or PEM encoded CRL.
-    *
-    * Params:
+    *  input = the data source providing the DER or PEM encoded CRL.
     *  throw_on_unknown_critical_ = should we throw new an exception
     * if an unknown CRL extension marked as critical is encountered.
     */

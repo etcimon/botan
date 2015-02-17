@@ -49,6 +49,7 @@ public:
     *  base_point = a base point
     *  order = the order of the base point
     *  cofactor = the cofactor
+    *  oid = the provided oid
     */
     this()(auto const ref CurveGFp curve, auto const ref PointGFp base_point, 
            auto const ref BigInt order, auto const ref BigInt cofactor, in string oid = "") 
@@ -79,7 +80,7 @@ public:
     /**
     * Create an EC domain by OID (or throw new if unknown)
     * Params:
-    *  oid = the OID of the EC domain to create
+    *  domain_oid = the OID of the EC domain to create
     */
     this(in OID domain_oid)
     {

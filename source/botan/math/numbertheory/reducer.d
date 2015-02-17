@@ -77,8 +77,8 @@ public:
     /**
     * Multiply mod p
     * Params:
-    *  x
-    *  y
+    *  x = integer
+    *  y = integer
     * Returns: (x * y) % p
     */
     BigInt multiply()(auto const ref BigInt x, auto const ref BigInt y) const
@@ -89,7 +89,7 @@ public:
     /**
     * Square mod p
     * Params:
-    *  x
+    *  x = integer
     * Returns: (x * x) % p
     */
     BigInt square()(auto const ref BigInt x) const
@@ -100,7 +100,7 @@ public:
     /**
     * Cube mod p
     * Params:
-    *  x
+    *  x = integer
     * Returns: (x * x * x) % p
     */
     BigInt cube()(auto const ref BigInt x) const

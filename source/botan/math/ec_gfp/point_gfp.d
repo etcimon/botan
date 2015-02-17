@@ -154,7 +154,6 @@ public:
     * Multiplication Operator
     * Params:
     *  scalar = the scalar value
-    *  point = the point value
     * Returns: scalar*point on the curve
     */
     PointGFp opBinary(string op)(auto const ref BigInt scalar) const

@@ -113,11 +113,10 @@ public:
     * Create a new CRL by with additional entries.
     *
     * Params:
-    *  last_crl = the last CRL of this CA to add the new entries to
+    *  crl = the last CRL of this CA to add the new entries to
     *  new_revoked = contains the new CRL entries to be added to the CRL
     *  rng = the random number generator to use
-    *  next_update = the time to set in next update in seconds
-    * as the offset from the current time
+    *  next_update = the time to set in next update in $(D Duration) from now
     */
     X509CRL updateCRL()(in X509CRL crl,
                         auto const ref Vector!CRLEntry new_revoked,
@@ -193,7 +192,7 @@ public:
     /**
     * Create a new CA object. Load the certificate and private key
     * Params:
-    *  ca_certificate = the certificate of the CA
+    *  c = the certificate of the CA
     *  key = the private key of the CA
     *  hash_fn = name of a hash function to use for signing
     */
@@ -274,7 +273,7 @@ private:
 * Params:
 *  key = will be the key to choose a padding scheme for
 *  hash_fn = is the desired hash function
-*  alg_id = will be set to the chosen scheme
+*  sig_algo = will be set to the chosen scheme
 * Returns: A PKSigner object for generating signatures
 */
 /*

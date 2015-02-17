@@ -22,7 +22,7 @@ public:
     /**
     * Initialize an EntropyAccumulator
     * Params:
-    *  goal = is how many bits we would like to collect
+    *  accum = a delegate to send the bytes and entropy value
     */
     this(bool delegate(const(ubyte)*, size_t len, double) accum)
     {

@@ -80,8 +80,7 @@ public:
     size_t updateGranularity() const;
 
     /**
-    * Returns: required minimium size to $(D finalize() - may be any
-    *            length larger than this.
+    * Returns: required minimium size to $(D finalize()) - may be any length larger than this.
     */
     size_t minimumFinalSize() const;
 

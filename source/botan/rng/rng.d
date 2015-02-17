@@ -49,8 +49,6 @@ public:
     *
     * Params:
     *  output = the ubyte array to hold the random output.
-    *
-    * Params:
     *  length = the length of the ubyte array output.
     */
     abstract void randomize(ubyte* output, size_t length);
@@ -109,7 +107,7 @@ public:
     *
     * Params:
     *  input = a ubyte array containg the entropy to be added
-    * @param length = the length of the ubyte array in
+    *  length = the length of the ubyte array in
     */
     abstract void addEntropy(const(ubyte)* input, size_t length);
 

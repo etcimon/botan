@@ -139,7 +139,7 @@ public:
     /**
     * Set this' value by a human readable string
     * Params:
-    *  str = a string in the format "yyyy mm dd",
+    *  time_str = a string in the format "yyyy mm dd",
     * e.g. "2007 08 01"
     */
     void setTo(in string time_str = "")

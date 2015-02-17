@@ -219,7 +219,7 @@ public:
     * Create a base64 decoder.
     *
     * Params:
-    *  checking = the type of checking that shall be performed by
+    *  c = the type of checking that shall be performed by
     * the decoder
     */
     this(DecoderChecking c = NONE)

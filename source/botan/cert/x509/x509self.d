@@ -163,7 +163,7 @@ public:
     /**
     * Set when the certificate should become valid
     * Params:
-    *  time = the notBefore value of the certificate
+    *  time_string = the notBefore value of the certificate
     */
     void notBefore(in string time_string)
     {
@@ -174,7 +174,7 @@ public:
     * Set the notAfter of the certificate.
     *
     * Params:
-    *  time = the notAfter value of the certificate
+    *  time_string = the notAfter value of the certificate
     */
     void notAfter(in string time_string)
     {
@@ -185,7 +185,7 @@ public:
     * Add the key constraints of the KeyUsage extension.
     *
     * Params:
-    *  constr = the constraints to set
+    *  usage = the constraints to set
     */
     void addConstraints(KeyConstraints usage)
     {
@@ -207,7 +207,7 @@ public:
     * Add constraints to the ExtendedKeyUsage extension.
     *
     * Params:
-    *  name = the name to look up the oid to add
+    *  oid_str = the name to look up the oid to add
     */
     void addExConstraint(in string oid_str)
     {
@@ -217,11 +217,9 @@ public:
     /**
     * Construct a new options object
     * Params:
-    *  opts = define the common name of this object. An example for this
+    *  initial_opts = define the common name of this object. An example for this
     * parameter would be "common_name/country/organization/organizational_unit".
-    *
-    * Params:
-    *  expire_time = the expiration time (default 1 year)
+    *  expiration_time = the expiration time (default 1 year)
     */
     this(in string initial_opts = "", Duration expiration_time = 365.days)
     {

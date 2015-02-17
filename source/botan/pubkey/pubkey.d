@@ -77,7 +77,7 @@ public:
     *
     * Params:
     *  input = the message
-    * @param rng = the random number source to use
+    *  rng = the random number source to use
     * Returns: encrypted message
     */
     final Vector!ubyte encrypt(Alloc)(const ref Vector!( ubyte, Alloc ) input, RandomNumberGenerator rng) const
@@ -158,7 +158,7 @@ public:
     *
     * Params:
     *  input = the message to sign
-    * @param rng = the rng to use
+    *  rng = the rng to use
     * Returns: signature
     */
     Vector!ubyte signMessage(ALLOC)(auto const ref Vector!(ubyte, ALLOC) input, RandomNumberGenerator rng)
@@ -376,7 +376,7 @@ public:
     * signature to be verified.
     *
     * Params:
-    *  msg_part = the new message part as a ubyte array
+    *  input = the new message part as a ubyte array
     *  length = the length of the above ubyte array
     */
     void update(const(ubyte)* input, size_t length)
@@ -464,7 +464,7 @@ public:
     * Construct a PK Verifier.
     *
     * Params:
-    *  pub_key = the public key to verify against
+    *  key = the public key to verify against
     *  emsa_name = the EMSA to use (eg "EMSA3(SHA-1)")
     *  format = the signature format to use
     */

@@ -89,7 +89,7 @@ public:
     * Create a hex encoder.
     *
     * Params:
-    *  new_lines = should newlines be used
+    *  newlines = should newlines be used
     *  line_length = if newlines are used, how long are lines
     *  the_case = the case to use in the encoded strings
     */

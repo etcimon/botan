@@ -148,8 +148,7 @@ public:
     * Create a PKCS#10 Request from a file.
     *
     * Params:
-    *  filename = the name of the file containing the DER or PEM
-    * encoded request file
+    *  input = the name of the file containing the DER or PEM encoded request file
     */
     this(in string input)
     {
@@ -161,7 +160,7 @@ public:
     * Create a PKCS#10 Request from binary data.
     *
     * Params:
-    *  vec = a std::vector containing the DER value
+    *  input = a $(D Vector) containing the DER value
     */
     this(ALLOC)(in Vector!(ubyte, ALLOC)* input)
     {

@@ -26,7 +26,7 @@ private:
 public:
     /**
     * Params:
-    *  lib_path = full pathname to DLL to load
+    *  library_path = full pathname to DLL to load
     */
     this(in string library_path) 
     {

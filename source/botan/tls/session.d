@@ -180,9 +180,9 @@ public:
     /**
     * Decrypt a session created by encrypt
     * Params:
-    *  ctext = the ciphertext returned by encrypt
-    *  ctext_size = the size of ctext in bytes
-    *  key = the same key used by the encrypting side
+    *  buf = the ciphertext returned by encrypt
+    *  buf_len = the size of ctext in bytes
+    *  master_key = the same key used by the encrypting side
     */
     static TLSSession decrypt(const(ubyte)* buf, size_t buf_len, in SymmetricKey master_key)
     {

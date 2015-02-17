@@ -66,7 +66,6 @@ public:
     * CMAC's polynomial doubling operation
     * Params:
     *  input = the input
-    *  polynomial = the ubyte value of the polynomial
     */
     static SecureVector!ubyte polyDouble(const ref SecureVector!ubyte input)
     {

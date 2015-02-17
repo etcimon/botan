@@ -64,7 +64,7 @@ public:
     * different types by the same name
     * 
     * Params:
-    *  m algo_spec = the algorithm we are querying
+    *  algo_spec = the algorithm we are querying
     * 
     * Returns: list of providers of this algorithm
     */
@@ -143,7 +143,7 @@ public:
     /**
     * Add a new block cipher
     * Params:
-    *  algo = the algorithm to add
+    *  block_cipher = the algorithm to add
     *  provider = the provider of this algorithm
     */
     void addBlockCipher(BlockCipher block_cipher, in string provider = "")

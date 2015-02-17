@@ -44,7 +44,7 @@ public:
     * Write input data
     * Params:
     *  input = data
-    *  input_len = length of input in bytes
+    *  length = length of input in bytes
     */
     override void write(const(ubyte)* input, size_t length)
     {
@@ -87,7 +87,7 @@ public:
     * Construct a stream cipher filter.
     *
     * Params:
-    *  cipher_obj = a cipher object to use
+    *  stream_cipher = a cipher object to use
     */
     this(StreamCipher stream_cipher)
     {
@@ -286,7 +286,7 @@ public:
     * Construct a MAC filter. The MAC key will be left empty.
     *
     * Params:
-    *  mac = the name of the MAC to use
+    *  mac_name = the name of the MAC to use
     *  len = the output length of this filter. Leave the default
     * value 0 if you want to use the full output of the
     * MAC. Otherwise, specify a smaller value here so that the
@@ -303,7 +303,7 @@ public:
     * Construct a MAC filter.
     *
     * Params:
-    *  mac = the name of the MAC to use
+    *  mac_name = the name of the MAC to use
     *  key = the MAC key to use
     *  len = the output length of this filter. Leave the default
     * value 0 if you want to use the full output of the

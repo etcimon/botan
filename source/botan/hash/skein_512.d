@@ -32,7 +32,7 @@ final class Skein512 : HashFunction
 public:
     /**
     * Params:
-    *  m_output_bits = the output size of Skein in bits
+    *  arg_output_bits = the output size of Skein in bits
     *  arg_personalization = is a string that will paramaterize the
     * hash output
     */

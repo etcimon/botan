@@ -145,7 +145,7 @@ public:
 
     /**
     * Params:
-    *  rounds = the number of rounds to use - must be between 1
+    *  r = the number of rounds to use - must be between 1
     * and 13
     */
     this(size_t r)

@@ -140,7 +140,7 @@ public:
     * Set the domain parameter encoding to be used when encoding this key.
     *
     * Params:
-    *  enc = the encoding to use
+    *  form = the encoding to use
     */
     final void setParameterEncoding(ECGroupEncoding form)
     {

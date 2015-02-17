@@ -21,7 +21,7 @@ import botan.constants;
 * BigInt Division
 * Params:
 *  x = an integer
-*  y = a non-zero integer
+*  y_arg = a non-zero integer
 *  q = will be set to x / y
 *  r = will be set to x % y
 */

@@ -115,7 +115,7 @@ public:
     * Write input to the pipe, i.e. to its first filter.
     *
     * Params:
-    *  input = the DataSource to read the data from
+    *  source = the DataSource to read the data from
     */
     void write(DataSource source)
     {
@@ -332,6 +332,7 @@ public:
     *  output = the ubyte array to write the peeked message part to
     *  length = the length of the ubyte array output
     *  offset = the offset from the current position in message
+    *  msg = the number identifying the message to peek from
     * Returns: number of bytes actually peeked and written into output
     */
     size_t peek(ubyte* output, size_t length, size_t offset, message_id msg = DEFAULT_MESSAGE) const
@@ -345,7 +346,6 @@ public:
     *
     * Params:
     *  output = the ubyte array to write the peeked message part to
-    *  length = the length of the ubyte array output
     *  offset = the offset from the current position in message
     *  msg = the number identifying the message to peek from
     * Returns: number of bytes actually peeked and written into output
@@ -401,7 +401,7 @@ public:
     /**
     * Discard the next N bytes of the data
     * Params:
-    *  N = the number of bytes to discard
+    *  n = the number of bytes to discard
     * Returns: number of bytes actually discarded
     */
     size_t discardNext(size_t n)
@@ -503,7 +503,7 @@ public:
     /**
     * Insert a new filter at the front of the pipe
     * Params:
-    *  filt = the new filter to insert
+    *  filter = the new filter to insert
     */
     void prepend(Filter filter)
     {
@@ -525,7 +525,7 @@ public:
     /**
     * Insert a new filter at the back of the pipe
     * Params:
-    *  filt = the new filter to insert
+    *  filter = the new filter to insert
     */
     void append(Filter filter)
     {

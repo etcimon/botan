@@ -87,7 +87,7 @@ public:
     * Get a value for a specific subject_info parameter name.
     *
     * Params:
-    *  name = the name of the paramter to look up. Possible names are
+    *  what = the name of the paramter to look up. Possible names are
     * "X509.Certificate.version", "X509.Certificate.serial",
     * "X509.Certificate.start", "X509.Certificate.end",
     * "X509.Certificate.v2.key_id", "X509.Certificate.public_key",
@@ -106,7 +106,7 @@ public:
     * Get a value for a specific subject_info parameter name.
     *
     * Params:
-    *  name = the name of the paramter to look up. Possible names are
+    *  what = the name of the paramter to look up. Possible names are
     * "X509.Certificate.v2.key_id" or "X509v3.AuthorityKeyIdentifier".
     * Returns: value(s) of the specified parameter
     */
@@ -487,7 +487,7 @@ public:
     * PEM encoded certificate.
     *
     * Params:
-    *  source = the data source
+    *  input = the data source
     */
     this(DataSource input)
     {

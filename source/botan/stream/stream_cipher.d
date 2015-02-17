@@ -59,7 +59,7 @@ public:
     *  iv = the initialization vector
     *  iv_len = the length of the IV in bytes
     */
-    abstract void setIv(const(ubyte)*, size_t iv_len);
+    abstract void setIv(const(ubyte)* iv, size_t iv_len);
     // { if (iv_len) throw new InvalidArgument("The stream cipher " ~ name ~ " does not support resyncronization"); }
 
     /**

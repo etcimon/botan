@@ -56,7 +56,10 @@ public:
     /**
     * Only call after extract
     * Params:
+    *  output = the output
     *  output_len = must be less than 256*hashlen
+    *  info = the underlying data
+    *  info_len = length of underlying data
     */
     void expand(ubyte* output, size_t output_len,
                 const(ubyte)* info, size_t info_len)

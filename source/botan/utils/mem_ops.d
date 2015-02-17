@@ -102,7 +102,7 @@ void setMem(T)(T* ptr, size_t n, ubyte val)
 *  p1 = a pointer to an array
 *  p2 = a pointer to another array
 *  n = the number of Ts in p1 and p2
-* Returns: true iff p1[i] == p2[i] forall i in [0...n)
+* Returns: true iff p1[i] == p2[i] forall i in [0...n$(RPAREN)
 */
 bool sameMem(T)(in T* p1, in T* p2, in size_t n)
 {

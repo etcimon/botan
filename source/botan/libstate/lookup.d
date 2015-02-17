@@ -151,7 +151,7 @@ KeyedFilter getCipher(in string algo_spec, CipherDir direction)
 /**
 * Check if an algorithm exists.
 * Params:
-*  algo_spec = the name of the algorithm to check for
+*  name = the name of the algorithm to check for
 * Returns: true if the algorithm exists, false otherwise
 */
 bool haveAlgorithm(in string name)

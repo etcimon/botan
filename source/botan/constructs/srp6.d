@@ -34,7 +34,7 @@ struct SRP6KeyPair {
 /**
 * SRP6a Client side
 * Params:
-*  username = the username we are attempting login for
+*  identifier = the username we are attempting login for
 *  password = the password we are attempting to use
 *  group_id = specifies the shared SRP group
 *  hash_id = specifies a secure hash function

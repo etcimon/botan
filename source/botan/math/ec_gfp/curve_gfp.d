@@ -117,7 +117,6 @@ struct CurveGFp
     /**
     * Equality operator
     * Params:
-    *  lhs = a curve
     *  rhs = a curve
     * Returns: true iff lhs is not the same as rhs
     */

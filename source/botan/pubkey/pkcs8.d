@@ -117,7 +117,7 @@ Vector!ubyte BER_encode(in PrivateKey key,
 *  key = the key to encode
 *  rng = the rng to use
 *  pass = the password to use for encryption
-*  msec = number of milliseconds to run the password derivation
+*  dur = number of milliseconds to run the password derivation
 *  pbe_algo = the name of the desired password-based encryption
             algorithm; if empty ("") a reasonable (portable/secure)
             default will be chosen.

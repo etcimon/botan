@@ -96,7 +96,7 @@ public:
     * Params:
     *  rng = random number generator to use
     *  grp = the group to be used in the key
-    *  x_args = the key's secret value (or if zero, generate a new key)
+    *  x_arg = the key's secret value (or if zero, generate a new key)
     */
     this(RandomNumberGenerator rng, DLGroup grp, BigInt x_arg = 0)
     {

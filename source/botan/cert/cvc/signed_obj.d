@@ -74,7 +74,7 @@ public:
     * Check the signature of this object.
     *
     * Params:
-    *  key = the public key associated with this signed object
+    *  pub_key = the public key associated with this signed object
     *  sig = the signature we are checking
     * Returns: true if the signature was created by the private key
     * associated with this public key

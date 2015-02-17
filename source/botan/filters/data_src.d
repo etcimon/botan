@@ -97,7 +97,7 @@ public:
     /**
     * Discard the next N bytes of the data
     * Params:
-    *  N = the number of bytes to discard
+    *  n = the number of bytes to discard
     * Returns: number of bytes actually discarded
     */
     final size_t discardNext(size_t n)
@@ -305,7 +305,7 @@ public:
     /**
     * Construct a Stream-Based DataSource from file
     * Params:
-    *  file = the name of the file
+    *  path = the name of the file
     *  use_binary = whether to treat the file as binary or not
     */
     this(in string path, bool use_binary = false)

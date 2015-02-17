@@ -94,8 +94,8 @@ BigInt subMul()(auto const ref BigInt a, auto const ref BigInt b, auto const ref
 /**
 * Compute the greatest common divisor
 * Params:
-*  x = a positive integer
-*  y = a positive integer
+*  a = positive integer x
+*  b = positive integer y
 * Returns: gcd(x,y)
 */
 BigInt gcd()(auto const ref BigInt a, auto const ref BigInt b)
@@ -125,8 +125,8 @@ BigInt gcd()(auto const ref BigInt a, auto const ref BigInt b)
 /**
 * Least common multiple
 * Params:
-*  x = a positive integer
-*  y = a positive integer
+*  a = a positive integer x
+*  b = a positive integer y
 * Returns: z, smallest integer such that z % x == 0 and z % y == 0
 */
 BigInt lcm()(auto const ref BigInt a, auto const ref BigInt b)
@@ -154,8 +154,8 @@ BigInt square()(auto const ref BigInt x)
 /**
 * Modular inversion
 * Params:
-*  x = a positive integer
-*  modulus = a positive integer
+*  n = a positive integer x
+*  mod = a positive integer modulus
 * Returns: y st (x*y) % modulus == 1
 */
 BigInt inverseMod()(auto const ref BigInt n, auto const ref BigInt mod)
@@ -262,9 +262,9 @@ int jacobi()(auto const ref BigInt a, auto const ref BigInt n)
 /**
 * Modular exponentation
 * Params:
-*  b = an integer base
-*  x = a positive exponent
-*  m = a positive modulus
+*  base = an integer base b
+*  exp = a positive exponent x
+*  mod = a positive modulus m
 * Returns: (b^x) % m
 */
 BigInt powerMod()(auto const ref BigInt base, auto const ref BigInt exp, auto const ref BigInt mod)
@@ -287,8 +287,8 @@ BigInt powerMod()(auto const ref BigInt base, auto const ref BigInt exp, auto co
 * Shanks-Tonnelli algorithm
 *
 * Params:
-*  x = the input
-*  p = the prime
+*  a = the input x
+*  p = the prime p
 * Returns: y such that (y*y)%p == x, or -1 if no such integer
 */
 
@@ -408,7 +408,7 @@ word montyInverse(word input)
 
 /**
 * Params:
-*  x = a positive integer
+*  n = a positive integer x
 * Returns: count of the zero bits in x, or, equivalently, the largest
 *            value of n such that 2^n divides x evenly. Returns zero if
 *            n is less than or equal to zero.
@@ -496,7 +496,7 @@ bool verifyPrime(const ref BigInt n, RandomNumberGenerator rng)
 *  coprime = a positive integer the result should be coprime to
 *  equiv = a non-negative number that the result should be
                     equivalent to modulo equiv_mod
-*  equiv_mod = the modulus equiv should be checked against
+*  modulo = the modulus equiv should be checked against
 * Returns: random prime with the specified criteria
 */
 BigInt randomPrime()(RandomNumberGenerator rng,

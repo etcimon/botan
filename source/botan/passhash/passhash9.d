@@ -26,7 +26,7 @@ import std.string : toStringz;
 /**
 * Create a password hash using PBKDF2
 * Params:
-*  password = the password
+*  pass = the password
 *  rng = a random number generator
 *  work_factor = how much work to do to slow down guessing attacks
 *  alg_id = specifies which PRF to use with PBKDF2

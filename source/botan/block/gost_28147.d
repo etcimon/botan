@@ -192,7 +192,7 @@ public:
 
     /**
     * Params:
-    *  params = the sbox parameters to use
+    *  param = the sbox parameters to use
     */
     this(in GOST_28147_89_Params param)
     {

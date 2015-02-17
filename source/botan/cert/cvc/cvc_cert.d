@@ -86,7 +86,7 @@ public:
     /**
     * Construct a CVC from a data source
     * Params:
-    *  source = the data source
+    *  input = the data source
     */
     this(DataSource input)
     {
@@ -98,7 +98,7 @@ public:
     /**
     * Construct a CVC from a file
     * Params:
-    *  str = the path to the certificate file
+    *  input = the path to the certificate file
     */
     this(in string input)
     {

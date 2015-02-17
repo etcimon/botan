@@ -44,10 +44,11 @@ public:
     /**
     * Params:
     *  require_rev = if true, revocation information is required
-    *  minimum_key_strength = is the minimum strength (in terms of
+    *  key_strength = is the minimum strength (in terms of
     *          operations, eg 80 means 2^80) of a signature. Signatures
     *          weaker than this are rejected. If more than 80, SHA-1
     *          signatures are also rejected.
+    *  ocsp_all = where to use all intermediates
     */
     this(bool require_rev = false, size_t key_strength = 80, bool ocsp_all = false) 
     {
@@ -69,8 +70,7 @@ public:
     *  minimum_key_strength = is the minimum strength (in terms of
     *          operations, eg 80 means 2^80) of a signature. Signatures
     *          weaker than this are rejected.
-    *
-    * Params:
+    *  ocsp_all_intermediates = where to use all intermediates
     *  trusted_hashes = a set of trusted hashes. Any signatures
     *          created using a hash other than one of these will be
     *          rejected.

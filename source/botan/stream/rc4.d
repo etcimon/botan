@@ -72,7 +72,7 @@ public:
 
     /**
     * Params:
-    *  skip = skip this many initial bytes in the keystream
+    *  s = skip this many initial bytes in the keystream
     */
     this(size_t s = 0) { m_SKIP = s; }
 

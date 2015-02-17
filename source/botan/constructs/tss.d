@@ -35,8 +35,8 @@ public:
     * Params:
     *  M = the number of shares needed to reconstruct
     *  N = the number of shares generated
-    *  secret = the secret to split
-    *  secret_len = the length of the secret
+    *  S = the secret to split
+    *  S_len = the length of the secret
     *  identifier = the 16 ubyte share identifier
     *  rng = the random number generator to use
     */

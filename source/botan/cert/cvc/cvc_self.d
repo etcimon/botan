@@ -53,10 +53,10 @@ public:
 /**
 * Create a selfsigned CVCA
 * Params:
-*  rng = the rng to use
 *  key = the ECDSA private key to be used to sign the certificate
-*  opts = used to set several parameters. Necessary are:
+*  opt = used to set several parameters. Necessary are:
 * car, holder_auth_templ, hash_alg, ced, cex and hash_alg
+*  rng = the rng to use
 * Returns: the self signed certificate
 */
 EAC11CVC createSelfSignedCert(in PrivateKey key,
@@ -92,7 +92,7 @@ EAC11CVC createSelfSignedCert(in PrivateKey key,
 /**
 * Create a CVC request. The key encoding will be according to the provided private key.
 * Params:
-*  priv_key = the private key associated with the requesting entity
+*  key = the private key associated with the requesting entity
 *  chr = the chr to appear in the certificate (to be provided without
 * sequence number)
 *  hash_alg = the string defining the hash algorithm to be used for the creation
@@ -140,7 +140,7 @@ EAC11Req createCvcReq(in PrivateKey key,
 /**
 * Create an ADO from a request object.
 * Params:
-*  priv_key = the private key used to sign the ADO
+*  key = the private key used to sign the ADO
 *  req = the request forming the body of the ADO
 *  car = the CAR forming the body of the ADO, i.e. the
 * CHR of the entity associated with the provided private key
@@ -173,7 +173,7 @@ EAC11ADO createAdoReq(in PrivateKey key,
 /**
 * Create a CVCA certificate.
 * Params:
-*  priv_key = the private key associated with the CVCA certificate
+*  key = the private key associated with the CVCA certificate
 * to be created
 *  hash = the string identifying the hash algorithm to be used
 * for signing the certificate to be created
@@ -215,8 +215,8 @@ EAC11CVC createCvca(in PrivateKey key,
 * Params:
 *  signer = the cvca certificate associated with the signing
 * entity
-*  priv_key = the private key associated with the signer
-*  to_be_signed = the certificate which whose CAR/CHR will be
+*  key = the private key associated with the signer
+*  signee = the certificate which whose CAR/CHR will be
 * the holder of the link certificate
 *  rng = a random number generator
 */
@@ -264,7 +264,7 @@ EAC11CVC linkCvca(in EAC11CVC signer,
 /**
 * Create a CVC request. The key encoding will be implicitCA.
 * Params:
-*  priv_key = the private key associated with the requesting entity
+*  prkey = the private key associated with the requesting entity
 *  chr = the chr to appear in the certificate (to be provided without
 * sequence number)
 *  hash_alg = the string defining the hash algorithm to be used for the creation
@@ -292,13 +292,12 @@ EAC11Req createCVCReqImplicitca(PrivateKey prkey, in ASN1Chr chr,
 *  key = the private key of the signing entity
 *  signee = the request to be signed
 *  seqnr = the sequence number of the certificate to be created
-*  seqnr_len = the number of digits the sequence number will be
-* encoded in
-*  domestic = indicates whether to sign a domestic or a foreign
-* certificate: set to true for domestic
+*  seqnr_len = the number of digits the sequence number will be encoded in
+*  domestic = indicates whether to sign a domestic or a foreign certificate. Set to true for domestic
 *  dvca_validity_months = validity period in months
 *  ca_is_validity_months = validity period in months
 *  rng = a random number generator
+* 
 * Returns: the new certificate
 *
 **/

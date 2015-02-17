@@ -41,7 +41,7 @@ public:
     * Construct a CVC ADO request from a DER encoded CVC ADO request file.
     *
     * Params:
-    *  str = the path to the DER encoded file
+    *  input = the path to the DER encoded file
     */
     this(in string input)
     {
@@ -53,7 +53,7 @@ public:
     /**
     * Construct a CVC ADO request from a data source
     * Params:
-    *  source = the data source
+    *  input = the data source
     */
     this(DataSource input)
     {

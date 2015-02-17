@@ -232,7 +232,6 @@ size_t hexDecode(ubyte* output, in string input, bool ignore_ws = true)
 * Perform hex decoding
 * Params:
 *  input = some hex input
-*  input_length = the length of input in bytes
 *  ignore_ws = ignore whitespace on input; if false, throw new an
                          exception if whitespace is encountered
 * Returns: decoded hex output

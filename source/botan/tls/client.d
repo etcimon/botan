@@ -33,38 +33,27 @@ public:
     *
     * Params:
     *  socket_output_fn = is called with data for the outbound socket
-    *
     *  proc_cb = is called when new application data is received
-    *
     *  alert_cb = is called when a TLS alert is received
-    *
     *  handshake_cb = is called when a handshake is completed
-    *
     *  session_manager = manages session state
-    *
     *  creds = manages application/user credentials
-    *
     *  policy = specifies other connection policy information
-    *
     *  rng = a random number generator
-    *
     *  server_info = is identifying information about the TLS server
-    *
     *  offer_version = specifies which version we will offer
     *          to the TLS server.
-    *
-    *  next_protocol = allows the client to specify what the next
-    *          protocol will be. For more information read
-    *          http://technotes.googlecode.com/git/nextprotoneg.html.
+    *  next_protocol = allows the client to specify what the next protocol will be. 
+    *  reserved_io_buffer_size = This many bytes of memory will
+    *          be preallocated for the read and write buffers. Smaller
+    *          values just mean reallocations and copies are more likely.
+    * 
+    * Notes: For more information on NPN, read http://technotes.googlecode.com/git/nextprotoneg.html.
     *
     *          If the function is not empty, NPN will be negotiated
     *          and if the server supports NPN the function will be
     *          called with the list of protocols the server advertised;
     *          the client should return the protocol it would like to use.
-    *
-    *  reserved_io_buffer_size = This many bytes of memory will
-    *          be preallocated for the read and write buffers. Smaller
-    *          values just mean reallocations and copies are more likely.
     */
     this(void delegate(in ubyte[]) socket_output_fn,
          void delegate(in ubyte[]) proc_cb,

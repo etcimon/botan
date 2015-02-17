@@ -115,7 +115,7 @@ public:
     /**
     * Check the signature on this data
     * Params:
-    *  key = the public key purportedly used to sign this data
+    *  pub_key = the public key purportedly used to sign this data
     * Returns: true if the signature is valid, otherwise false
     */
     final bool checkSignature(in PublicKey pub_key) const

@@ -138,7 +138,6 @@ public:
     * 
     * Params:
     *  input = the input to process as a ubyte array
-    *  length = the length of the ubyte array
     * 
     * Returns: The result of the call to $(D finished())
     */

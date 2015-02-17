@@ -31,9 +31,9 @@ public:
     /**
     * Load a DLL (or fail with an exception)
     * Params:
-    *  lib_name = name or path to a library
+    *  library = name or path to a library
     *
-    * If you don't use a full path, the search order will be defined
+    * Notes: If you don't use a full path, the search order will be defined
     * by whatever the system linker does by default. Always using fully
     * qualified pathnames can help prevent code injection attacks (eg
     * via manipulation of LD_LIBRARY_PATH on Linux)

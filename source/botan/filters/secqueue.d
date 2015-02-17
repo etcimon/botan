@@ -155,7 +155,7 @@ public:
     /**
     * SecureQueue copy constructor
     * Params:
-    *  other = the queue to copy
+    *  input = the queue to copy
     */
     this(SecureQueue input)
     {

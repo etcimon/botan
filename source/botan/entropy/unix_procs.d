@@ -126,10 +126,11 @@ public:
 
     /**
     * Params:
-    *  trusted_paths = is a list of directories that are assumed
+    *  trusted_path = is a list of directories that are assumed
     *          to contain only 'safe' binaries. If an attacker can write
     *          an executable to one of these directories then we will
     *          run arbitrary code.
+    *  proc_cnt = The amount of concurrent processes to use
     */
     this()(auto const ref Vector!string trusted_path, size_t proc_cnt = 0)
     {

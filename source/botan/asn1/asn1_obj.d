@@ -189,7 +189,7 @@ Vector!ubyte putInSequence(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLO
 /**
 * Heuristics tests; is this object possibly BER?
 * Params:
-*  src = a data source that will be peeked at but not modified
+*  source = a data source that will be peeked at but not modified
 */
 bool maybeBER(DataSource source)
 {

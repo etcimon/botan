@@ -68,8 +68,8 @@ public:
     /**
     * Create a cascade of two block ciphers
     * Params:
-    *  cipher1 = the first cipher
-    *  cipher2 = the second cipher
+    *  c1 = the first cipher
+    *  c2 = the second cipher
     */
     this(BlockCipher c1, BlockCipher c2) 
     {

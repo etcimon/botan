@@ -188,8 +188,6 @@ public:
     * Params:
     *  type = specifies the type of operation occuring
     *  context = specifies a context relative to type.
-    *
-    * Params:
     *  identifier = specifies what identifier we want the
     *          password for. This will be a value previously returned
     *          by srp_identifier.

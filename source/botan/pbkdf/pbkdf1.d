@@ -32,7 +32,7 @@ public:
     * Create a PKCS #5 instance using the specified hash function.
     *
     * Params:
-    *  hash_in = pointer to a hash function object to use
+    *  hash_input = pointer to a hash function object to use
     */
     this(HashFunction hash_input)
     {

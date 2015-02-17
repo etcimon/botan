@@ -129,7 +129,7 @@ public:
     *
     * Params:
     *  cert = the certificate to revoke
-    *  reason = the reason code to set in the entry
+    *  why = the reason code to set in the entry
     */
     this(in X509CertificateImpl cert, CRLCode why = UNSPECIFIED)
     {

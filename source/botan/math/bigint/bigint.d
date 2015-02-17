@@ -169,7 +169,7 @@ public:
     /**
     * Create BigInt of specified size, all zeros
     * Params:
-    *  sign = the sign
+    *  s = the sign
     *  size = of the internal register in words
     */
     this(Sign s, size_t size)
@@ -395,7 +395,7 @@ public:
     /**
     * Modulo operator
     * Params:
-    *  y = the modulus to reduce this by
+    *  mod = the modulus to reduce this by
     */
     void opOpAssign(string op)(auto const ref BigInt mod)
         if (op == "%")
@@ -406,7 +406,7 @@ public:
     /**
     * Modulo operator
     * Params:
-    *  y = the modulus (word) to reduce this by
+    *  mod = the modulus (word) to reduce this by
     */
     void opOpAssign(string op)(word mod)
         if (op == "%")
@@ -764,7 +764,7 @@ public:
     /**
     * Set sign of the integer
     * Params:
-    *  sign = new Sign to set
+    *  s = new Sign to set
     */
     void setSign(Sign s)
     {
@@ -879,7 +879,7 @@ public:
     /**
     * Store BigInt-value in a given ubyte array
     * Params:
-    *  buf = destination ubyte array for the integer value
+    *  output = destination ubyte array for the integer value
     */
     void binaryEncode(ubyte* output) const
     {
@@ -953,7 +953,7 @@ public:
     *  rng = a random number generator
     *  min = the minimum value
     *  max = the maximum value
-    * Returns: random integer in [min,max)
+    * Returns: random integer in [min,max$(RPAREN)
     */
     static BigInt randomInteger()(RandomNumberGenerator rng, auto const ref BigInt min, auto const ref BigInt max)
     {

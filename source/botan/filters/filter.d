@@ -202,7 +202,7 @@ public:
     /**
     * Attach another filter to this one
     * Params:
-    *  f = filter to attach
+    *  new_filter = filter to attach
     */
     void attach(Filter new_filter)
     {
@@ -218,7 +218,7 @@ public:
     /**
     * Params:
     *  filters = the filters to set
-    *  count = number of items in filters
+    *  size = number of items in filters
     */
     override void setNext(Filter* filters, size_t size)
     {
