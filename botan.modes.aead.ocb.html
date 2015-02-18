@@ -954,6 +954,30 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>abstract class <span class="symbol-target" id="OCBMode">&nbsp;</span><a class="symbol-link" href="#OCBMode">OCBMode</a>: <u>botan.modes.aead.aead.AEADMode</u>, <u>botan.algo_base.transform.Transformation</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>OCB Mode (base class for OCBEncryption and OCBDecryption). Note
+ that OCB is patented, but is freely licensed in some circumstances.
+</p>
+<p>@see "The OCB Authenticated-Encryption Algorithm" internet draft
+</p>
+<dt>http:</dt><dd>
+//tools.ietf.org/html/draft-irtf-cfrg-ocb-03
+ @see Free Licenses http://www.cs.ucdavis.edu/~rogaway/ocb/license.htm
+ @see OCB home page http://www.cs.ucdavis.edu/~rogaway/ocb</dd>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>protected this(BlockCipher <i>cipher</i>, size_t <i>tag_size</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BlockCipher <i>cipher</i></td>
+<td>the 128-bit block <i>cipher</i> to use</td></tr>
+<tr><td>size_t <i>tag_size</i></td>
+<td>is how big the auth tag will be</td></tr>
+</table></dd>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

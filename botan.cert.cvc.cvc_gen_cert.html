@@ -954,6 +954,77 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="EAC11genCVC">&nbsp;</span><a class="symbol-link" href="#EAC11genCVC">EAC11genCVC</a>(Derived): EAC11obj!Derived, SignedObject;
+</h3></div>
+<div class="declaration-content"><dl><p>This class represents TR03110 (EAC) v1.1 generalized CV Certificates</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>final const const(PublicKey) <span class="symbol-target" id="subjectPublicKey">&nbsp;</span><a class="symbol-link" href="#subjectPublicKey">subjectPublicKey</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Get this certificates public key.
+</p>
+<dt>Returns</dt><dd>this certificates public key</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>final const bool <span class="symbol-target" id="isSelfSigned">&nbsp;</span><a class="symbol-link" href="#isSelfSigned">isSelfSigned</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Find out whether this object is self signed.
+</p>
+<dt>Returns</dt><dd><span class="d_keyword">true</span> if this object is self signed</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>final const const(ASN1Chr) <span class="symbol-target" id="getChr">&nbsp;</span><a class="symbol-link" href="#getChr">getChr</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Get the CHR of the certificate.
+</p>
+<dt>Returns</dt><dd>the CHR of the certificate</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const void <span class="symbol-target" id="encode">&nbsp;</span><a class="symbol-link" href="#encode">encode</a>(Pipe <i>output</i>, X509Encoding <i>encoding</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Put the DER encoded version of this object into a pipe. PEM
+ is not supported.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>Pipe <i>output</i></td>
+<td>the pipe to push the DER encoded version into</td></tr>
+<tr><td>X509Encoding <i>encoding</i></td>
+<td>the <i>encoding</i> to use. Must be DER.</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const const(Vector!ubyte) <span class="symbol-target" id="tbsData">&nbsp;</span><a class="symbol-link" href="#tbsData">tbsData</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Get the to-be-signed (TBS) data of this object.
+</p>
+<dt>Returns</dt><dd>the TBS data of this object</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>Vector!ubyte <span class="symbol-target" id="buildCertBody">&nbsp;</span><a class="symbol-link" href="#buildCertBody">buildCertBody</a>(ALLOC)(auto ref const Vector!(ubyte, ALLOC) <i>tbs</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Build the DER encoded certifcate body of an object
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>Vector!(ubyte, ALLOC) tbs</td>
+<td>the data to be signed</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>the correctly encoded body of the object</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>Vector!ubyte <span class="symbol-target" id="makeSigned">&nbsp;</span><a class="symbol-link" href="#makeSigned">makeSigned</a>(ALLOC)(ref PKSigner <i>signer</i>, auto ref const Vector!(ubyte, ALLOC) <i>tbs_bits</i>, RandomNumberGenerator <i>rng</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Create a signed generalized CVC object.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>PKSigner signer</td>
+<td>the signer used to sign this object</td></tr>
+<tr><td>Vector!(ubyte, ALLOC) tbs_bits</td>
+<td>the body the generalized CVC object to be signed</td></tr>
+<tr><td>RandomNumberGenerator rng</td>
+<td>a random number generator</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>the DER encoded signed generalized CVC object</dd>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

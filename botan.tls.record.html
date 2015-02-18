@@ -954,6 +954,49 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="ConnectionCipherState">&nbsp;</span><a class="symbol-link" href="#ConnectionCipherState">ConnectionCipherState</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>TLS Cipher State</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>this()(TLSProtocolVersion <i>_version</i>, ConnectionSide <i>side</i>, bool <i>our_side</i>, in TLSCiphersuite <i>suite</i>, auto ref const TLSSessionKeys <i>keys</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Initialize a new cipher state</p>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>package void <span class="symbol-target" id="writeRecord">&nbsp;</span><a class="symbol-link" href="#writeRecord">writeRecord</a>(ref SecureVector!ubyte <i>output</i>, ubyte <i>msg_type</i>, const(ubyte)* <i>msg</i>, size_t <i>msg_length</i>, TLSProtocolVersion <i>_version</i>, ulong <i>msg_sequence</i>, ConnectionCipherState <i>cipherstate</i>, RandomNumberGenerator <i>rng</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Create a TLS record
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>SecureVector!ubyte <i>output</i></td>
+<td>the <i>output</i> record is placed here</td></tr>
+<tr><td>ubyte <i>msg_type</i></td>
+<td>is the type of the message (handshake, alert, ...)</td></tr>
+<tr><td>const(ubyte)* <i>msg</i></td>
+<td>is the plaintext message</td></tr>
+<tr><td>size_t <i>msg_length</i></td>
+<td>is the length of <i>msg</i></td></tr>
+<tr><td>TLSProtocolVersion <i>_version</i></td>
+<td>is the protocol version</td></tr>
+<tr><td>ulong <i>msg_sequence</i></td>
+<td>is the sequence number</td></tr>
+<tr><td>ConnectionCipherState <i>cipherstate</i></td>
+<td>is the writing cipher state</td></tr>
+<tr><td>RandomNumberGenerator <i>rng</i></td>
+<td>is a random number generator</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>number of bytes written to write_buffer</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>package size_t <span class="symbol-target" id="readRecord">&nbsp;</span><a class="symbol-link" href="#readRecord">readRecord</a>(ref SecureVector!ubyte <i>readbuf</i>, const(ubyte)* <i>input</i>, size_t <i>input_sz</i>, ref size_t <i>consumed</i>, ref SecureVector!ubyte <i>record</i>, ref ulong <i>record_sequence</i>, ref TLSProtocolVersion <i>record_version</i>, ref RecordType <i>record_type</i>, ConnectionSequenceNumbers <i>sequence_numbers</i>, in const(ConnectionCipherState) delegate(ushort) <i>get_cipherstate</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Decode a TLS <i>record</i>
+</p>
+<dt>Returns</dt><dd>zero if full message, else number of bytes still needed</dd>
+</dl>
+</div>
+
 
 				</div>
 				

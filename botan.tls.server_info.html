@@ -954,6 +954,36 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>struct <span class="symbol-target" id="TLSServerInformation">&nbsp;</span><a class="symbol-link" href="#TLSServerInformation">TLSServerInformation</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>Represents information known about a TLS server.</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>this(in string <i>hostname</i>, ushort <i>port</i> = 0);
+</h3></div>
+<div class="declaration-content"><dl><dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>hostname</i></td>
+<td>the host's DNS name, if known</td></tr>
+<tr><td>ushort <i>port</i></td>
+<td>specifies the protocol <i>port</i> of the server (eg for
+          TCP/UDP). Zero represents unknown.</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(in string <i>hostname</i>, in string <i>service</i>, ushort <i>port</i> = 0);
+</h3></div>
+<div class="declaration-content"><dl><dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>hostname</i></td>
+<td>the host's DNS name, if known</td></tr>
+<tr><td>string <i>service</i></td>
+<td>is a text string of the <i>service</i> type
+          (eg "https", "tor", or "git")</td></tr>
+<tr><td>ushort <i>port</i></td>
+<td>specifies the protocol <i>port</i> of the server (eg for
+          TCP/UDP). Zero represents unknown.</td></tr>
+</table></dd>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

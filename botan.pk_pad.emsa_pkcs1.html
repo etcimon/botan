@@ -954,6 +954,29 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="EMSAPKCS1v15">&nbsp;</span><a class="symbol-link" href="#EMSAPKCS1v15">EMSAPKCS1v15</a>: <u>botan.pk_pad.emsa.EMSA</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>PKCS #1 v1.5 signature padding
+ aka PKCS #1 block type 1
+ aka EMSA3 from IEEE 1363</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>this(HashFunction <i>hash</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>HashFunction <i>hash</i></td>
+<td>the <i>hash</i> object to use</td></tr>
+</table></dd>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="EMSAPKCS1v15Raw">&nbsp;</span><a class="symbol-link" href="#EMSAPKCS1v15Raw">EMSAPKCS1v15Raw</a>: <u>botan.pk_pad.emsa.EMSA</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>EMSA_PKCS1v15_Raw which is EMSA_PKCS1v15 without a hash or digest id
+ (which according to QCA docs is "identical to PKCS#11's CKM_RSA_PKCS
+ mechanism", something I have not confirmed)</p>
+</dl>
+</div>
+
 
 				</div>
 				

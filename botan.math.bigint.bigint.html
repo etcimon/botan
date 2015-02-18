@@ -954,6 +954,573 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>struct <span class="symbol-target" id="BigInt">&nbsp;</span><a class="symbol-link" href="#BigInt">BigInt</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>Arbitrary precision integer</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="DivideByZero">&nbsp;</span><a class="symbol-link" href="#DivideByZero">DivideByZero</a>: <u>object.Exception</u>;
+</h3></div>
+<div class="declaration-content"><dl><p><span class="symbol-target" id="DivideByZero">&nbsp;</span><a class="symbol-link" href="#DivideByZero">DivideByZero</a> Exception</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(T)(T <i>n</i>) if (isNumeric!T);
+</h3></div>
+<div class="declaration-content"><dl><p>Create BigInt from any integer
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>T n</td>
+<td>initial value of this BigInt</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>ref BigInt <span class="symbol-target" id="opAssign">&nbsp;</span><a class="symbol-link" href="#opAssign">opAssign</a>(size_t <i>other</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Move constructor</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(in string <i>str</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Create BigInt from a string. If the string starts with 0x the
+ rest of the string will be interpreted as hexadecimal digits.
+ Otherwise, it will be interpreted as a decimal number.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>str</i></td>
+<td>the string to parse for an integer value</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(const(ubyte)* <i>input</i>, size_t <i>length</i>, Base <i>base</i> = Binary);
+</h3></div>
+<div class="declaration-content"><dl><p>Create a BigInt from an integer in a ubyte array
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>const(ubyte)* <i>input</i></td>
+<td>the ubyte array holding the value</td></tr>
+<tr><td>size_t <i>length</i></td>
+<td>size of buf</td></tr>
+<tr><td>Base <i>base</i></td>
+<td>is the number <i>base</i> of the integer in buf</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(RandomNumberGenerator <i>rng</i>, size_t <i>bits</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Create a random BigInt of the specified size
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>RandomNumberGenerator <i>rng</i></td>
+<td>random number generator</td></tr>
+<tr><td>size_t <i>bits</i></td>
+<td>size in <i>bits</i></td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(Sign <i>s</i>, size_t <i>size</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Create BigInt of specified <i>size</i>, all zeros
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>Sign <i>s</i></td>
+<td>the sign</td></tr>
+<tr><td>size_t <i>size</i></td>
+<td>of the internal register in words</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this()(auto ref BigInt <i>other</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Move constructor</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="opAssign">&nbsp;</span><a class="symbol-link" href="#opAssign">opAssign</a>()(auto ref BigInt <i>other</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Move assignment</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="swap">&nbsp;</span><a class="symbol-link" href="#swap">swap</a>()(auto ref BigInt <i>other</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Copy assignment
+</p>
+<p>Swap this value with another
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt other</td>
+<td>BigInt to <span class="symbol-target" id="swap">&nbsp;</span><a class="symbol-link" href="#swap">swap</a> values with</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="opOpAssign">&nbsp;</span><a class="symbol-link" href="#opOpAssign">opOpAssign</a>(string op)(auto ref const BigInt <i>y</i>) if (op == "+");
+</h3></div>
+<div class="declaration-content"><dl><p>+= operator
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt y</td>
+<td>the BigInt to add to this</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="opOpAssign">&nbsp;</span><a class="symbol-link" href="#opOpAssign">opOpAssign</a>(string op)(auto ref const BigInt <i>y</i>) if (op == "-");
+</h3></div>
+<div class="declaration-content"><dl><p> -= operator
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt y</td>
+<td>the BigInt to subtract from this</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="opOpAssign">&nbsp;</span><a class="symbol-link" href="#opOpAssign">opOpAssign</a>(string op)(ref const BigInt <i>y</i>) if (op == "*");
+</h3></div>
+<div class="declaration-content"><dl><p>*= operator
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt y</td>
+<td>the BigInt to multiply with this</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="opOpAssign">&nbsp;</span><a class="symbol-link" href="#opOpAssign">opOpAssign</a>(string op)(auto ref const BigInt <i>y</i>) if (op == "/");
+</h3></div>
+<div class="declaration-content"><dl><p>/= operator
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt y</td>
+<td>the BigInt to divide this by</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="opOpAssign">&nbsp;</span><a class="symbol-link" href="#opOpAssign">opOpAssign</a>(string op)(auto ref const BigInt <i>mod</i>) if (op == "%");
+</h3></div>
+<div class="declaration-content"><dl><p>Modulo operator
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt mod</td>
+<td>the modulus to reduce this by</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="opOpAssign">&nbsp;</span><a class="symbol-link" href="#opOpAssign">opOpAssign</a>(string op)(word <i>mod</i>) if (op == "%");
+</h3></div>
+<div class="declaration-content"><dl><p>Modulo operator
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>word mod</td>
+<td>the modulus (word) to reduce this by</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="opOpAssign">&nbsp;</span><a class="symbol-link" href="#opOpAssign">opOpAssign</a>(string op)(size_t <i>shift</i>) if (op == "&lt;&lt;");
+</h3></div>
+<div class="declaration-content"><dl><p>Left shift operator
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t shift</td>
+<td>the number of bits to shift this left by</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="opOpAssign">&nbsp;</span><a class="symbol-link" href="#opOpAssign">opOpAssign</a>(string op)(size_t <i>shift</i>) if (op == "&gt;&gt;");
+</h3></div>
+<div class="declaration-content"><dl><p>Right shift operator
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t shift</td>
+<td>the number of bits to shift this right by</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>ref BigInt <span class="symbol-target" id="opUnary">&nbsp;</span><a class="symbol-link" href="#opUnary">opUnary</a>(string op)() if (op == "++");
+</h3></div>
+<div class="declaration-content"><dl><p>Increment operator</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>ref BigInt <span class="symbol-target" id="opUnary">&nbsp;</span><a class="symbol-link" href="#opUnary">opUnary</a>(string op)() if (op == "--");
+</h3></div>
+<div class="declaration-content"><dl><p>Decrement operator</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const BigInt <span class="symbol-target" id="opUnary">&nbsp;</span><a class="symbol-link" href="#opUnary">opUnary</a>(string op)() if (op == "-");
+</h3></div>
+<div class="declaration-content"><dl><p>Unary negation operator
+</p>
+<dt>Returns</dt><dd>negative this</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const T <span class="symbol-target" id="opCast">&nbsp;</span><a class="symbol-link" href="#opCast">opCast</a>(T : bool)();
+</h3></div>
+<div class="declaration-content"><dl><p>bool cast
+</p>
+<dt>Returns</dt><dd><span class="d_keyword">true</span> iff this is not zero, otherwise <span class="d_keyword">false</span></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="clear">&nbsp;</span><a class="symbol-link" href="#clear">clear</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Zeroize the BigInt. The size of the underlying register is not
+ modified.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const int <span class="symbol-target" id="cmp">&nbsp;</span><a class="symbol-link" href="#cmp">cmp</a>(ref const BigInt <i>other</i>, bool <i>check_signs</i> = true);
+</h3></div>
+<div class="declaration-content"><dl><p>Compare this to another BigInt
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt <i>other</i></td>
+<td>the BigInt value to compare with</td></tr>
+<tr><td>bool <i>check_signs</i></td>
+<td>include sign in comparison?</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>if (this<n) return -1, if (this>n) return 1, if both
+ values are identical return 0 [like Perl's &lt;=&gt; operator]</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="isEven">&nbsp;</span><a class="symbol-link" href="#isEven">isEven</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Test if the integer has an even value
+</p>
+<dt>Returns</dt><dd><span class="d_keyword">true</span> if the integer is even, <span class="d_keyword">false</span> otherwise</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="isOdd">&nbsp;</span><a class="symbol-link" href="#isOdd">isOdd</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Test if the integer has an odd value
+</p>
+<dt>Returns</dt><dd><span class="d_keyword">true</span> if the integer is odd, <span class="d_keyword">false</span> otherwise</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="isNonzero">&nbsp;</span><a class="symbol-link" href="#isNonzero">isNonzero</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Test if the integer is not zero
+</p>
+<dt>Returns</dt><dd><span class="d_keyword">true</span> if the integer is non-zero, <span class="d_keyword">false</span> otherwise</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="isZero">&nbsp;</span><a class="symbol-link" href="#isZero">isZero</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Test if the integer is zero
+</p>
+<dt>Returns</dt><dd><span class="d_keyword">true</span> if the integer is zero, <span class="d_keyword">false</span> otherwise</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="setBit">&nbsp;</span><a class="symbol-link" href="#setBit">setBit</a>(size_t <i>n</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Set bit at specified position
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t <i>n</i></td>
+<td>bit position to set</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="clearBit">&nbsp;</span><a class="symbol-link" href="#clearBit">clearBit</a>(size_t <i>n</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Clear bit at specified position
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t <i>n</i></td>
+<td>bit position to clear</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="maskBits">&nbsp;</span><a class="symbol-link" href="#maskBits">maskBits</a>(size_t <i>n</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Clear all but the lowest <i>n</i> bits
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t <i>n</i></td>
+<td>amount of bits to keep</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="getBit">&nbsp;</span><a class="symbol-link" href="#getBit">getBit</a>(size_t <i>n</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Return bit value at specified position
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t <i>n</i></td>
+<td>the bit offset to test</td></tr>
+</table></dd>
+<dt>Returns</dt><dd><span class="d_keyword">true</span>, if the bit at position <i>n</i> is set, <span class="d_keyword">false</span> otherwise</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const uint <span class="symbol-target" id="getSubstring">&nbsp;</span><a class="symbol-link" href="#getSubstring">getSubstring</a>(size_t <i>offset</i>, size_t <i>length</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Return (a maximum of) 32 bits of the complete value
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t <i>offset</i></td>
+<td>the <i>offset</i> to start extracting</td></tr>
+<tr><td>size_t <i>length</i></td>
+<td>amount of bits to extract (starting at <i>offset</i>)</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>the integer extracted from the register starting at
+ <i>offset</i> with specified <i>length</i></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const uint <span class="symbol-target" id="toUint">&nbsp;</span><a class="symbol-link" href="#toUint">toUint</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Convert this value into a uint, if it is in the range
+ [0 ... 2**32-1], or otherwise throw new an exception.
+</p>
+<dt>Returns</dt><dd>the value as a uint if conversion is possible</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const ubyte <span class="symbol-target" id="byteAt">&nbsp;</span><a class="symbol-link" href="#byteAt">byteAt</a>(size_t <i>n</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t <i>n</i></td>
+<td>the offset to get a ubyte from</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>ubyte at offset <i>n</i></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const word <span class="symbol-target" id="wordAt">&nbsp;</span><a class="symbol-link" href="#wordAt">wordAt</a>(size_t <i>n</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Return the word at a specified position of the internal register
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t <i>n</i></td>
+<td>position in the register</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>value at position <i>n</i></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="isNegative">&nbsp;</span><a class="symbol-link" href="#isNegative">isNegative</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Tests if the sign of the integer is negative
+</p>
+<dt>Returns</dt><dd><span class="d_keyword">true</span>, iff the integer has a negative sign</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="isPositive">&nbsp;</span><a class="symbol-link" href="#isPositive">isPositive</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Tests if the sign of the integer is positive
+</p>
+<dt>Returns</dt><dd><span class="d_keyword">true</span>, iff the integer has a positive sign</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const Sign <span class="symbol-target" id="sign">&nbsp;</span><a class="symbol-link" href="#sign">sign</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Return the <span class="symbol-target" id="sign">&nbsp;</span><a class="symbol-link" href="#sign">sign</a> of the integer
+</p>
+<dt>Returns</dt><dd>the <span class="symbol-target" id="sign">&nbsp;</span><a class="symbol-link" href="#sign">sign</a> of the integer</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const Sign <span class="symbol-target" id="reverseSign">&nbsp;</span><a class="symbol-link" href="#reverseSign">reverseSign</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>the opposite sign of the represented integer value</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="flipSign">&nbsp;</span><a class="symbol-link" href="#flipSign">flipSign</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Flip the sign of this BigInt</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="setSign">&nbsp;</span><a class="symbol-link" href="#setSign">setSign</a>(Sign <i>s</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Set sign of the integer
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>Sign <i>s</i></td>
+<td>new Sign to set</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const BigInt <span class="symbol-target" id="abs">&nbsp;</span><a class="symbol-link" href="#abs">abs</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>absolute (positive) value of this</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const size_t <span class="symbol-target" id="size">&nbsp;</span><a class="symbol-link" href="#size">size</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Give <span class="symbol-target" id="size">&nbsp;</span><a class="symbol-link" href="#size">size</a> of internal register
+</p>
+<dt>Returns</dt><dd><span class="symbol-target" id="size">&nbsp;</span><a class="symbol-link" href="#size">size</a> of internal register in words</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const size_t <span class="symbol-target" id="sigWords">&nbsp;</span><a class="symbol-link" href="#sigWords">sigWords</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Return how many words we need to hold this value
+</p>
+<dt>Returns</dt><dd>significant words of the represented integer value</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const size_t <span class="symbol-target" id="bytes">&nbsp;</span><a class="symbol-link" href="#bytes">bytes</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Give ubyte length of the integer
+</p>
+<dt>Returns</dt><dd>ubyte length of the represented integer value</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const size_t <span class="symbol-target" id="bits">&nbsp;</span><a class="symbol-link" href="#bits">bits</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Get the bit length of the integer
+</p>
+<dt>Returns</dt><dd>bit length of the represented integer value</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>word* <span class="symbol-target" id="mutablePtr">&nbsp;</span><a class="symbol-link" href="#mutablePtr">mutablePtr</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Return a mutable pointer to the register
+</p>
+<dt>Returns</dt><dd>a pointer to the start of the internal register</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const @property const(word*) <span class="symbol-target" id="ptr">&nbsp;</span><a class="symbol-link" href="#ptr">ptr</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Return a const pointer to the register
+</p>
+<dt>Returns</dt><dd>a pointer to the start of the internal register</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="growTo">&nbsp;</span><a class="symbol-link" href="#growTo">growTo</a>(size_t <i>n</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Increase internal register buffer to at least <i>n</i> words
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t <i>n</i></td>
+<td>new size of register</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="randomize">&nbsp;</span><a class="symbol-link" href="#randomize">randomize</a>(RandomNumberGenerator <i>rng</i>, size_t <i>bitsize</i> = 0);
+</h3></div>
+<div class="declaration-content"><dl><p>Fill BigInt with a random number with size of <i>bitsize</i>
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>RandomNumberGenerator <i>rng</i></td>
+<td>the random number generator to use</td></tr>
+<tr><td>size_t <i>bitsize</i></td>
+<td>number of bits the created random value should have</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const void <span class="symbol-target" id="binaryEncode">&nbsp;</span><a class="symbol-link" href="#binaryEncode">binaryEncode</a>(ubyte* <i>output</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Store BigInt-value in a given ubyte array
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>ubyte* <i>output</i></td>
+<td>destination ubyte array for the integer value</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="binaryDecode">&nbsp;</span><a class="symbol-link" href="#binaryDecode">binaryDecode</a>(const(ubyte)* <i>buf</i>, size_t <i>length</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Read integer value from a ubyte array with given size
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>const(ubyte)* <i>buf</i></td>
+<td>ubyte array buffer containing the integer</td></tr>
+<tr><td>size_t <i>length</i></td>
+<td>size of <i>buf</i></td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="binaryDecode">&nbsp;</span><a class="symbol-link" href="#binaryDecode">binaryDecode</a>(ALLOC)(auto ref const Vector!(ubyte, ALLOC) <i>buf</i>);
+<br>void <span class="symbol-target" id="binaryDecode">&nbsp;</span><a class="symbol-link" href="#binaryDecode">binaryDecode</a>(ALLOC)(auto ref const RefCounted!(Vector!(ubyte, ALLOC), ALLOC) <i>buf</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Read integer value from a ubyte array (SecureVector!ubyte)
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>Vector!(ubyte, ALLOC) buf</td>
+<td>the array to load from</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const size_t <span class="symbol-target" id="encodedSize">&nbsp;</span><a class="symbol-link" href="#encodedSize">encodedSize</a>(Base <i>base</i> = Binary);
+</h3></div>
+<div class="declaration-content"><dl><dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>Base <i>base</i></td>
+<td>the <i>base</i> to measure the size for</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>size of this integer in <i>base</i> <i>base</i></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>BigInt <span class="symbol-target" id="randomInteger">&nbsp;</span><a class="symbol-link" href="#randomInteger">randomInteger</a>()(RandomNumberGenerator <i>rng</i>, auto ref const BigInt <i>min</i>, auto ref const BigInt <i>max</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>RandomNumberGenerator rng</td>
+<td>a random number generator</td></tr>
+<tr><td>BigInt min</td>
+<td>the minimum value</td></tr>
+<tr><td>BigInt max</td>
+<td>the maximum value</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>random integer in [min,max)</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>static BigInt <span class="symbol-target" id="powerOf2">&nbsp;</span><a class="symbol-link" href="#powerOf2">powerOf2</a>(size_t <i>n</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Create a power of two
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t <i>n</i></td>
+<td>the power of two to create</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>bigint representing 2^<i>n</i></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>Vector!ubyte <span class="symbol-target" id="encode">&nbsp;</span><a class="symbol-link" href="#encode">encode</a>()(auto ref const BigInt <i>n</i>, Base <i>base</i> = Binary);
+</h3></div>
+<div class="declaration-content"><dl><p>Encode the integer value from a BigInt to an Array of bytes
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt n</td>
+<td>the BigInt to use as integer source</td></tr>
+<tr><td>Base base</td>
+<td>number-base of resulting ubyte array representation</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>SecureVector of bytes containing the integer with given base</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>SecureVector!ubyte <span class="symbol-target" id="encodeLocked">&nbsp;</span><a class="symbol-link" href="#encodeLocked">encodeLocked</a>()(auto ref const BigInt <i>n</i>, Base <i>base</i> = Binary);
+</h3></div>
+<div class="declaration-content"><dl><p>Encode the integer value from a BigInt to a Secure Array of bytes
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt n</td>
+<td>the BigInt to use as integer source</td></tr>
+<tr><td>Base base</td>
+<td>number-base of resulting ubyte array representation</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>SecureVector of bytes containing the integer with given base</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="encode">&nbsp;</span><a class="symbol-link" href="#encode">encode</a>()(ubyte* <i>output</i>, auto ref const BigInt <i>n</i>, Base <i>base</i> = Binary);
+</h3></div>
+<div class="declaration-content"><dl><p>Encode the integer value from a BigInt to a ubyte array
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>ubyte* output</td>
+<td>destination ubyte array for the encoded integer
+ value with given base</td></tr>
+<tr><td>BigInt n</td>
+<td>the BigInt to use as integer source</td></tr>
+<tr><td>Base base</td>
+<td>number-base of resulting ubyte array representation</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>static BigInt <span class="symbol-target" id="decode">&nbsp;</span><a class="symbol-link" href="#decode">decode</a>(const(ubyte)* <i>buf</i>, size_t <i>length</i>, Base <i>base</i> = Binary);
+</h3></div>
+<div class="declaration-content"><dl><p>Create a BigInt from an integer in a ubyte array
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>const(ubyte)* <i>buf</i></td>
+<td>the binary value to load</td></tr>
+<tr><td>size_t <i>length</i></td>
+<td>size of <i>buf</i></td></tr>
+<tr><td>Base <i>base</i></td>
+<td>number-<i>base</i> of the integer in <i>buf</i></td></tr>
+</table></dd>
+<dt>Returns</dt><dd>BigInt representing the integer in the ubyte array</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>BigInt <span class="symbol-target" id="decode">&nbsp;</span><a class="symbol-link" href="#decode">decode</a>(ALLOC)(auto ref const RefCounted!(Vector!(ubyte, ALLOC), ALLOC) <i>buf</i>, Base <i>base</i> = Binary);
+</h3></div>
+<div class="declaration-content"><dl><p>Create a BigInt from an integer in a ubyte array
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>RefCounted!(Vector!(ubyte, ALLOC), ALLOC) buf</td>
+<td>the binary value to load</td></tr>
+<tr><td>Base base</td>
+<td>number-base of the integer in buf</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>BigInt representing the integer in the ubyte array</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>BigInt <span class="symbol-target" id="decode">&nbsp;</span><a class="symbol-link" href="#decode">decode</a>(ALLOC)(auto ref const Vector!(ubyte, ALLOC) <i>buf</i>, Base <i>base</i> = Binary);
+</h3></div>
+<div class="declaration-content"><dl><p>Create a BigInt from an integer in a ubyte array
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>Vector!(ubyte, ALLOC) buf</td>
+<td>the binary value to load</td></tr>
+<tr><td>Base base</td>
+<td>number-base of the integer in buf</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>BigInt representing the integer in the ubyte array</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>SecureVector!ubyte <span class="symbol-target" id="encode1363">&nbsp;</span><a class="symbol-link" href="#encode1363">encode1363</a>()(auto ref const BigInt <i>n</i>, size_t <i>bytes</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Encode a BigInt to a ubyte array according to IEEE 1363
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt n</td>
+<td>the BigInt to encode</td></tr>
+<tr><td>size_t bytes</td>
+<td>the length of the resulting SecureVector!ubyte</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>a SecureVector!ubyte containing the encoded BigInt</dd>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

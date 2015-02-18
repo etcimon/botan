@@ -954,6 +954,231 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>BigInt <span class="symbol-target" id="mulAdd">&nbsp;</span><a class="symbol-link" href="#mulAdd">mulAdd</a>()(auto ref const BigInt <i>a</i>, auto ref const BigInt <i>b</i>, auto ref const BigInt <i>c</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Fused multiply-add
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt a</td>
+<td>an integer</td></tr>
+<tr><td>BigInt b</td>
+<td>an integer</td></tr>
+<tr><td>BigInt c</td>
+<td>an integer</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>(a*b)+c</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>BigInt <span class="symbol-target" id="subMul">&nbsp;</span><a class="symbol-link" href="#subMul">subMul</a>()(auto ref const BigInt <i>a</i>, auto ref const BigInt <i>b</i>, auto ref const BigInt <i>c</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Fused subtract-multiply
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt a</td>
+<td>an integer</td></tr>
+<tr><td>BigInt b</td>
+<td>an integer</td></tr>
+<tr><td>BigInt c</td>
+<td>an integer</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>(a-b)*c</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>BigInt <span class="symbol-target" id="abs">&nbsp;</span><a class="symbol-link" href="#abs">abs</a>()(auto ref const BigInt <i>n</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Return the absolute value
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt n</td>
+<td>an integer</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>absolute value of n</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>BigInt <span class="symbol-target" id="gcd">&nbsp;</span><a class="symbol-link" href="#gcd">gcd</a>()(auto ref const BigInt <i>a</i>, auto ref const BigInt <i>b</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Compute the greatest common divisor
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt a</td>
+<td>positive integer x</td></tr>
+<tr><td>BigInt b</td>
+<td>positive integer y</td></tr>
+</table></dd>
+<dt>Returns</dt><dd><span class="symbol-target" id="gcd">&nbsp;</span><a class="symbol-link" href="#gcd">gcd</a>(x,y)</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>BigInt <span class="symbol-target" id="lcm">&nbsp;</span><a class="symbol-link" href="#lcm">lcm</a>()(auto ref const BigInt <i>a</i>, auto ref const BigInt <i>b</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Least common multiple
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt a</td>
+<td>a positive integer x</td></tr>
+<tr><td>BigInt b</td>
+<td>a positive integer y</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>z, smallest integer such that z % x == 0 and z % y == 0</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>BigInt <span class="symbol-target" id="square">&nbsp;</span><a class="symbol-link" href="#square">square</a>()(auto ref const BigInt <i>x</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt x</td>
+<td>an integer</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>(x*x)</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>BigInt <span class="symbol-target" id="inverseMod">&nbsp;</span><a class="symbol-link" href="#inverseMod">inverseMod</a>()(auto ref const BigInt <i>n</i>, auto ref const BigInt <i>mod</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Modular inversion
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt n</td>
+<td>a positive integer x</td></tr>
+<tr><td>BigInt mod</td>
+<td>a positive integer modulus</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>y st (x*y) % modulus == 1</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>int <span class="symbol-target" id="jacobi">&nbsp;</span><a class="symbol-link" href="#jacobi">jacobi</a>()(auto ref const BigInt <i>a</i>, auto ref const BigInt <i>n</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Compute the Jacobi symbol. If n is prime, this is equivalent
+ to the Legendre symbol.
+ @see http://mathworld.wolfram.com/JacobiSymbol.html
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt a</td>
+<td>is a non-negative integer</td></tr>
+<tr><td>BigInt n</td>
+<td>is an odd integer &gt; 1</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>(n / m)</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>BigInt <span class="symbol-target" id="powerMod">&nbsp;</span><a class="symbol-link" href="#powerMod">powerMod</a>()(auto ref const BigInt <i>base</i>, auto ref const BigInt <i>exp</i>, auto ref const BigInt <i>mod</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Modular exponentation
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt base</td>
+<td>an integer base b</td></tr>
+<tr><td>BigInt exp</td>
+<td>a positive exponent x</td></tr>
+<tr><td>BigInt mod</td>
+<td>a positive modulus m</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>(b^x) % m</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>BigInt <span class="symbol-target" id="ressol">&nbsp;</span><a class="symbol-link" href="#ressol">ressol</a>()(auto ref const BigInt <i>a</i>, auto ref const BigInt <i>p</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Compute the square root of x modulo a prime using the
+ Shanks-Tonnelli algorithm
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt a</td>
+<td>the input x</td></tr>
+<tr><td>BigInt p</td>
+<td>the prime p</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>y such that (y*y)%p == x, or -1 if no such integer</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>size_t <span class="symbol-target" id="lowZeroBits">&nbsp;</span><a class="symbol-link" href="#lowZeroBits">lowZeroBits</a>()(auto ref const BigInt <i>n</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt n</td>
+<td>a positive integer x</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>count of the zero bits in x, or, equivalently, the largest
+            value of n such that 2^n divides x evenly. Returns zero if
+            n is less than or equal to zero.</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>bool <span class="symbol-target" id="isPrime">&nbsp;</span><a class="symbol-link" href="#isPrime">isPrime</a>()(auto ref const BigInt <i>n</i>, RandomNumberGenerator <i>rng</i>, size_t <i>prob</i> = 56, bool <i>is_random</i> = false);
+</h3></div>
+<div class="declaration-content"><dl><p>Check for primality using Miller-Rabin
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt n</td>
+<td>a positive integer to test for primality</td></tr>
+<tr><td>RandomNumberGenerator rng</td>
+<td>a random number generator</td></tr>
+<tr><td>size_t prob</td>
+<td>chance of <span class="d_keyword">false</span> positive is bounded by 1/2**prob</td></tr>
+<tr><td>bool is_random</td>
+<td><span class="d_keyword">true</span> if n was randomly chosen by us</td></tr>
+</table></dd>
+<dt>Returns</dt><dd><span class="d_keyword">true</span> if all primality tests passed, otherwise <span class="d_keyword">false</span></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>BigInt <span class="symbol-target" id="randomPrime">&nbsp;</span><a class="symbol-link" href="#randomPrime">randomPrime</a>()(RandomNumberGenerator <i>rng</i>, size_t <i>bits</i>, ref const BigInt <i>coprime</i>, size_t <i>equiv</i> = 1, size_t <i>modulo</i> = 2);
+<br>BigInt <span class="symbol-target" id="randomPrime">&nbsp;</span><a class="symbol-link" href="#randomPrime">randomPrime</a>()(RandomNumberGenerator <i>rng</i>, size_t <i>bits</i>, const BigInt <i>coprime</i> = 1, size_t <i>equiv</i> = 1, size_t <i>modulo</i> = 2);
+</h3></div>
+<div class="declaration-content"><dl><p>Randomly generate a prime
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>RandomNumberGenerator rng</td>
+<td>a random number generator</td></tr>
+<tr><td>size_t bits</td>
+<td>how large the resulting prime should be in bits</td></tr>
+<tr><td>BigInt coprime</td>
+<td>a positive integer the result should be coprime to</td></tr>
+<tr><td>size_t equiv</td>
+<td>a non-negative number that the result should be
+                    equivalent to modulo equiv_mod</td></tr>
+<tr><td>size_t modulo</td>
+<td>the modulus equiv should be checked against</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>random prime with the specified criteria</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>BigInt <span class="symbol-target" id="randomSafePrime">&nbsp;</span><a class="symbol-link" href="#randomSafePrime">randomSafePrime</a>(RandomNumberGenerator <i>rng</i>, size_t <i>bits</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Return a random 'safe' prime, of the form p=2*q+1 with q prime
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>RandomNumberGenerator <i>rng</i></td>
+<td>a random number generator</td></tr>
+<tr><td>size_t <i>bits</i></td>
+<td>is how long the resulting prime should be</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>prime randomly chosen from safe primes of length <i>bits</i></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>Vector!ubyte <span class="symbol-target" id="generateDsaPrimes">&nbsp;</span><a class="symbol-link" href="#generateDsaPrimes">generateDsaPrimes</a>(RandomNumberGenerator <i>rng</i>, AlgorithmFactory <i>af</i>, ref BigInt <i>p_out</i>, ref BigInt <i>q_out</i>, size_t <i>pbits</i>, size_t <i>qbits</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Generate DSA parameters using the FIPS 186 kosherizer
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>RandomNumberGenerator <i>rng</i></td>
+<td>a random number generator</td></tr>
+<tr><td>AlgorithmFactory <i>af</i></td>
+<td>an algorithm factory</td></tr>
+<tr><td>BigInt <i>p_out</i></td>
+<td>where the prime p will be stored</td></tr>
+<tr><td>BigInt <i>q_out</i></td>
+<td>where the prime q will be stored</td></tr>
+<tr><td>size_t <i>pbits</i></td>
+<td>how long p will be in bits</td></tr>
+<tr><td>size_t <i>qbits</i></td>
+<td>how long q will be in bits</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>random seed used to generate this parameter set</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>bool <span class="symbol-target" id="generateDsaPrimes">&nbsp;</span><a class="symbol-link" href="#generateDsaPrimes">generateDsaPrimes</a>()(RandomNumberGenerator <i>rng</i>, AlgorithmFactory <i>af</i>, ref BigInt <i>p_out</i>, ref BigInt <i>q_out</i>, size_t <i>pbits</i>, size_t <i>qbits</i>, auto ref const Vector!ubyte <i>seed_c</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Generate DSA parameters using the FIPS 186 kosherizer
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>RandomNumberGenerator rng</td>
+<td>a random number generator</td></tr>
+<tr><td>AlgorithmFactory af</td>
+<td>an algorithm factory</td></tr>
+<tr><td>BigInt p_out</td>
+<td>where the prime p will be stored</td></tr>
+<tr><td>BigInt q_out</td>
+<td>where the prime q will be stored</td></tr>
+<tr><td>size_t pbits</td>
+<td>how long p will be in bits</td></tr>
+<tr><td>size_t qbits</td>
+<td>how long q will be in bits</td></tr>
+<tr><td>Vector!ubyte seed_c</td>
+<td>the seed used to generate the parameters</td></tr>
+</table></dd>
+<dt>Returns</dt><dd><span class="d_keyword">true</span> if seed generated a valid DSA parameter set, otherwise
+             <span class="d_keyword">false</span>. p_out and q_out are only valid if <span class="d_keyword">true</span> was returned.</dd>
+</dl>
+</div>
+
 
 				</div>
 				

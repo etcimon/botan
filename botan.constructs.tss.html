@@ -954,6 +954,65 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>struct <span class="symbol-target" id="RTSS">&nbsp;</span><a class="symbol-link" href="#RTSS">RTSS</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>A split secret, using the format from draft-mcgrew-tss-03</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>static Vector!RTSS <span class="symbol-target" id="split">&nbsp;</span><a class="symbol-link" href="#split">split</a>(ubyte <i>M</i>, ubyte <i>N</i>, const(ubyte)* <i>S</i>, size_t <i>S_len</i>, in ubyte[16] <i>identifier</i>, RandomNumberGenerator <i>rng</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>ubyte <i>M</i></td>
+<td>the number of shares needed to reconstruct</td></tr>
+<tr><td>ubyte <i>N</i></td>
+<td>the number of shares generated</td></tr>
+<tr><td>const(ubyte)* <i>S</i></td>
+<td>the secret to <span class="symbol-target" id="split">&nbsp;</span><a class="symbol-link" href="#split">split</a></td></tr>
+<tr><td>size_t <i>S_len</i></td>
+<td>the length of the secret</td></tr>
+<tr><td>ubyte[16] <i>identifier</i></td>
+<td>the 16 ubyte share <i>identifier</i></td></tr>
+<tr><td>RandomNumberGenerator <i>rng</i></td>
+<td>the random number generator to use</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>SecureVector!ubyte <span class="symbol-target" id="reconstruct">&nbsp;</span><a class="symbol-link" href="#reconstruct">reconstruct</a>()(auto ref const Vector!RTSS <i>shares</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>Vector!RTSS shares</td>
+<td>the list of shares</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(in string <i>hex_input</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>hex_input</i></td>
+<td>the share encoded in hexadecimal</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const string <span class="symbol-target" id="toString">&nbsp;</span><a class="symbol-link" href="#toString">toString</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>hex representation</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const ubyte <span class="symbol-target" id="shareId">&nbsp;</span><a class="symbol-link" href="#shareId">shareId</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>share identifier</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const size_t <span class="symbol-target" id="size">&nbsp;</span><a class="symbol-link" href="#size">size</a>();
+<br>const @property size_t <span class="symbol-target" id="length">&nbsp;</span><a class="symbol-link" href="#length">length</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd><span class="symbol-target" id="size">&nbsp;</span><a class="symbol-link" href="#size">size</a> of this share in bytes</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="initialized">&nbsp;</span><a class="symbol-link" href="#initialized">initialized</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>if this TSS share was <span class="symbol-target" id="initialized">&nbsp;</span><a class="symbol-link" href="#initialized">initialized</a> or not</dd>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

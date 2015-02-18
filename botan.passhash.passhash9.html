@@ -954,6 +954,39 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>string <span class="symbol-target" id="generatePasshash9">&nbsp;</span><a class="symbol-link" href="#generatePasshash9">generatePasshash9</a>(in string <i>pass</i>, RandomNumberGenerator <i>rng</i>, ushort <i>work_factor</i> = 10, ubyte <i>alg_id</i> = 1);
+</h3></div>
+<div class="declaration-content"><dl><p>Create a password hash using PBKDF2
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>pass</i></td>
+<td>the password</td></tr>
+<tr><td>RandomNumberGenerator <i>rng</i></td>
+<td>a random number generator</td></tr>
+<tr><td>ushort <i>work_factor</i></td>
+<td>how much work to do to slow down guessing attacks</td></tr>
+<tr><td>ubyte <i>alg_id</i></td>
+<td>specifies which PRF to use with PBKDF2
+          0 is HMAC(SHA-1)
+          1 is HMAC(SHA-256)
+          2 is CMAC(Blowfish)
+          3 is HMAC(SHA-384)
+          4 is HMAC(SHA-512)
+          all other values are currently undefined</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>bool <span class="symbol-target" id="checkPasshash9">&nbsp;</span><a class="symbol-link" href="#checkPasshash9">checkPasshash9</a>(in string <i>password</i>, in string <i>hash</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Check a previously created <i>password</i> <i>hash</i>
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>password</i></td>
+<td>the <i>password</i> to check against</td></tr>
+<tr><td>string <i>hash</i></td>
+<td>the stored <i>hash</i> to check against</td></tr>
+</table></dd>
+</dl>
+</div>
+
 
 				</div>
 				

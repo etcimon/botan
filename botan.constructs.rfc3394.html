@@ -954,6 +954,37 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>SecureVector!ubyte <span class="symbol-target" id="rfc3394Keywrap">&nbsp;</span><a class="symbol-link" href="#rfc3394Keywrap">rfc3394Keywrap</a>()(auto ref const SecureVector!ubyte <i>key</i>, in SymmetricKey <i>kek</i>, AlgorithmFactory <i>af</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Encrypt a key under a key encryption key using the algorithm
+ described in RFC 3394
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>SecureVector!ubyte key</td>
+<td>the plaintext key to encrypt</td></tr>
+<tr><td>SymmetricKey kek</td>
+<td>the key encryption key</td></tr>
+<tr><td>AlgorithmFactory af</td>
+<td>an algorithm factory</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>key encrypted under kek</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>SecureVector!ubyte <span class="symbol-target" id="rfc3394Keyunwrap">&nbsp;</span><a class="symbol-link" href="#rfc3394Keyunwrap">rfc3394Keyunwrap</a>()(auto ref const SecureVector!ubyte <i>key</i>, in SymmetricKey <i>kek</i>, AlgorithmFactory <i>af</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Decrypt a key under a key encryption key using the algorithm
+ described in RFC 3394
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>SecureVector!ubyte key</td>
+<td>the encrypted key to decrypt</td></tr>
+<tr><td>SymmetricKey kek</td>
+<td>the key encryption key</td></tr>
+<tr><td>AlgorithmFactory af</td>
+<td>an algorithm factory</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>key decrypted under kek</dd>
+</dl>
+</div>
+
 
 				</div>
 				

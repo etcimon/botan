@@ -954,6 +954,27 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>enum <span class="symbol-target" id="KeyConstraints">&nbsp;</span><a class="symbol-link" href="#KeyConstraints">KeyConstraints</a>: int;
+</h3></div>
+<div class="declaration-content"><dl><p>X.509v3 Key Constraints.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>KeyConstraints <span class="symbol-target" id="findConstraints">&nbsp;</span><a class="symbol-link" href="#findConstraints">findConstraints</a>(in PublicKey <i>pub_key</i>, KeyConstraints <i>limits</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Create the key constraints for a specific public key.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>PublicKey <i>pub_key</i></td>
+<td>the public key from which the basic set of
+ constraints to be placed in the return value is derived</td></tr>
+<tr><td>KeyConstraints <i>limits</i></td>
+<td>additional <i>limits</i> that will be incorporated into the
+ return value</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>combination of key type specific constraints and
+ additional <i>limits</i></dd>
+</dl>
+</div>
+
 
 				</div>
 				

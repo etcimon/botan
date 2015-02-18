@@ -954,6 +954,92 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>struct <span class="symbol-target" id="TLSCiphersuite">&nbsp;</span><a class="symbol-link" href="#TLSCiphersuite">TLSCiphersuite</a>;
+</h3></div>
+<div class="declaration-content"><dl><p><span class="symbol-target" id="TLSCiphersuite">&nbsp;</span><a class="symbol-link" href="#TLSCiphersuite">TLSCiphersuite</a> Information</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>static TLSCiphersuite <span class="symbol-target" id="byId">&nbsp;</span><a class="symbol-link" href="#byId">byId</a>(ushort <i>suite</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Convert an SSL/TLS ciphersuite to algorithm fields
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>ushort <i>suite</i></td>
+<td>the ciphersuite code number</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>ciphersuite object</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>static TLSCiphersuite <span class="symbol-target" id="byName">&nbsp;</span><a class="symbol-link" href="#byName">byName</a>(in string <i>name</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Lookup a ciphersuite by <i>name</i>
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>name</i></td>
+<td>the <i>name</i> (eg TLS_RSA_WITH_RC4_128_SHA)</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>ciphersuite object</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>static Vector!TLSCiphersuite <span class="symbol-target" id="allKnownCiphersuites">&nbsp;</span><a class="symbol-link" href="#allKnownCiphersuites">allKnownCiphersuites</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Generate a static list of all known ciphersuites and return it.
+</p>
+<dt>Returns</dt><dd>list of all known ciphersuites</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const string <span class="symbol-target" id="toString">&nbsp;</span><a class="symbol-link" href="#toString">toString</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Formats the ciphersuite back to an RFC-style ciphersuite string
+</p>
+<dt>Returns</dt><dd>RFC ciphersuite string identifier</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const ushort <span class="symbol-target" id="ciphersuiteCode">&nbsp;</span><a class="symbol-link" href="#ciphersuiteCode">ciphersuiteCode</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>ciphersuite number</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="pskCiphersuite">&nbsp;</span><a class="symbol-link" href="#pskCiphersuite">pskCiphersuite</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd><span class="d_keyword">true</span> if this is a PSK ciphersuite</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="eccCiphersuite">&nbsp;</span><a class="symbol-link" href="#eccCiphersuite">eccCiphersuite</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd><span class="d_keyword">true</span> if this is an ECC ciphersuite</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const string <span class="symbol-target" id="kexAlgo">&nbsp;</span><a class="symbol-link" href="#kexAlgo">kexAlgo</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>key exchange algorithm used by this ciphersuite</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const string <span class="symbol-target" id="sigAlgo">&nbsp;</span><a class="symbol-link" href="#sigAlgo">sigAlgo</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>signature algorithm used by this ciphersuite</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const string <span class="symbol-target" id="cipherAlgo">&nbsp;</span><a class="symbol-link" href="#cipherAlgo">cipherAlgo</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>symmetric cipher algorithm used by this ciphersuite</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const string <span class="symbol-target" id="macAlgo">&nbsp;</span><a class="symbol-link" href="#macAlgo">macAlgo</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>message authentication algorithm used by this ciphersuite</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const size_t <span class="symbol-target" id="cipherKeylen">&nbsp;</span><a class="symbol-link" href="#cipherKeylen">cipherKeylen</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>cipher key length used by this ciphersuite</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="valid">&nbsp;</span><a class="symbol-link" href="#valid">valid</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd><span class="d_keyword">true</span> if this is a <span class="symbol-target" id="valid">&nbsp;</span><a class="symbol-link" href="#valid">valid</a>/known ciphersuite</dd>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

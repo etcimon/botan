@@ -954,6 +954,96 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>abstract class <span class="symbol-target" id="KDF">&nbsp;</span><a class="symbol-link" href="#KDF">KDF</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>Key Derivation Function</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>const SecureVector!ubyte <span class="symbol-target" id="deriveKey">&nbsp;</span><a class="symbol-link" href="#deriveKey">deriveKey</a>()(size_t <i>key_len</i>, auto ref const SecureVector!ubyte <i>secret</i>, in string <i>salt</i> = "");
+</h3></div>
+<div class="declaration-content"><dl><p>Derive a key
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t key_len</td>
+<td>the desired output length in bytes</td></tr>
+<tr><td>SecureVector!ubyte secret</td>
+<td>the secret input</td></tr>
+<tr><td>string salt</td>
+<td>a diversifier</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const SecureVector!ubyte <span class="symbol-target" id="deriveKey">&nbsp;</span><a class="symbol-link" href="#deriveKey">deriveKey</a>(Alloc)(size_t <i>key_len</i>, auto ref const SecureVector!ubyte <i>secret</i>, auto ref const Vector!(ubyte, Alloc) <i>salt</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Derive a key
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t key_len</td>
+<td>the desired output length in bytes</td></tr>
+<tr><td>SecureVector!ubyte secret</td>
+<td>the secret input</td></tr>
+<tr><td>Vector!(ubyte, Alloc) salt</td>
+<td>a diversifier</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const SecureVector!ubyte <span class="symbol-target" id="deriveKey">&nbsp;</span><a class="symbol-link" href="#deriveKey">deriveKey</a>()(size_t <i>key_len</i>, auto ref const SecureVector!ubyte <i>secret</i>, const(ubyte)* <i>salt</i>, size_t <i>salt_len</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Derive a key
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t key_len</td>
+<td>the desired output length in bytes</td></tr>
+<tr><td>SecureVector!ubyte secret</td>
+<td>the secret input</td></tr>
+<tr><td>const(ubyte)* salt</td>
+<td>a diversifier</td></tr>
+<tr><td>size_t salt_len</td>
+<td>size of salt in bytes</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const SecureVector!ubyte <span class="symbol-target" id="deriveKey">&nbsp;</span><a class="symbol-link" href="#deriveKey">deriveKey</a>(size_t <i>key_len</i>, const(ubyte)* <i>secret</i>, size_t <i>secret_len</i>, in string <i>salt</i> = "");
+</h3></div>
+<div class="declaration-content"><dl><p>Derive a key
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t <i>key_len</i></td>
+<td>the desired output length in bytes</td></tr>
+<tr><td>const(ubyte)* <i>secret</i></td>
+<td>the <i>secret</i> input</td></tr>
+<tr><td>size_t <i>secret_len</i></td>
+<td>size of <i>secret</i> in bytes</td></tr>
+<tr><td>string <i>salt</i></td>
+<td>a diversifier</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const SecureVector!ubyte <span class="symbol-target" id="deriveKey">&nbsp;</span><a class="symbol-link" href="#deriveKey">deriveKey</a>(size_t <i>key_len</i>, const(ubyte)* <i>secret</i>, size_t <i>secret_len</i>, const(ubyte)* <i>salt</i>, size_t <i>salt_len</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Derive a key
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t <i>key_len</i></td>
+<td>the desired output length in bytes</td></tr>
+<tr><td>const(ubyte)* <i>secret</i></td>
+<td>the <i>secret</i> input</td></tr>
+<tr><td>size_t <i>secret_len</i></td>
+<td>size of <i>secret</i> in bytes</td></tr>
+<tr><td>const(ubyte)* <i>salt</i></td>
+<td>a diversifier</td></tr>
+<tr><td>size_t <i>salt_len</i></td>
+<td>size of <i>salt</i> in bytes</td></tr>
+</table></dd>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>KDF <span class="symbol-target" id="getKdf">&nbsp;</span><a class="symbol-link" href="#getKdf">getKdf</a>(in string <i>algo_spec</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Factory method for KDF (key derivation function)
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>algo_spec</i></td>
+<td>the name of the KDF to create</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>pointer to newly allocated object of that type</dd>
+</dl>
+</div>
+
 
 				</div>
 				

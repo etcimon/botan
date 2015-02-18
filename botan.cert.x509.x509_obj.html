@@ -954,6 +954,73 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>abstract class <span class="symbol-target" id="X509Object">&nbsp;</span><a class="symbol-link" href="#X509Object">X509Object</a>: <u>botan.asn1.asn1_obj.ASN1Object</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>This class represents abstract X.509 signed objects as
+ in the X.500 SIGNED macro</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>final const const(Vector!ubyte) <span class="symbol-target" id="tbsData">&nbsp;</span><a class="symbol-link" href="#tbsData">tbsData</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>The underlying data that is to be or was signed
+</p>
+<dt>Returns</dt><dd>data that is or was signed</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>final const ref const(Vector!ubyte) <span class="symbol-target" id="signature">&nbsp;</span><a class="symbol-link" href="#signature">signature</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd><span class="symbol-target" id="signature">&nbsp;</span><a class="symbol-link" href="#signature">signature</a> on tbsData()</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>final const const(AlgorithmIdentifier) <span class="symbol-target" id="signatureAlgorithm">&nbsp;</span><a class="symbol-link" href="#signatureAlgorithm">signatureAlgorithm</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>signature algorithm that was used to generate signature</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>final const string <span class="symbol-target" id="hashUsedForSignature">&nbsp;</span><a class="symbol-link" href="#hashUsedForSignature">hashUsedForSignature</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>hash algorithm that was used to generate signature</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>Vector!ubyte <span class="symbol-target" id="makeSigned">&nbsp;</span><a class="symbol-link" href="#makeSigned">makeSigned</a>(ALLOC)(ref PKSigner <i>signer</i>, RandomNumberGenerator <i>rng</i>, in AlgorithmIdentifier <i>algo</i>, auto ref const Vector!(ubyte, ALLOC) <i>tbs_bits</i>);
+<br>Vector!ubyte <span class="symbol-target" id="makeSigned">&nbsp;</span><a class="symbol-link" href="#makeSigned">makeSigned</a>(ALLOC)(ref PKSigner <i>signer</i>, RandomNumberGenerator <i>rng</i>, in AlgorithmIdentifier <i>algo</i>, auto ref const RefCounted!(Vector!(ubyte, ALLOC), ALLOC) <i>tbs_bits</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Create a signed X509 object.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>PKSigner signer</td>
+<td>the signer used to sign the object</td></tr>
+<tr><td>RandomNumberGenerator rng</td>
+<td>the random number generator to use</td></tr>
+<tr><td>AlgorithmIdentifier algo</td>
+<td>the algorithm identifier of the signature scheme</td></tr>
+<tr><td>Vector!(ubyte, ALLOC) tbs_bits</td>
+<td>the tbs bits to be signed</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>signed X509 object</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>final const bool <span class="symbol-target" id="checkSignature">&nbsp;</span><a class="symbol-link" href="#checkSignature">checkSignature</a>(in PublicKey <i>pub_key</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Check the signature on this data
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>PublicKey <i>pub_key</i></td>
+<td>the public key purportedly used to sign this data</td></tr>
+</table></dd>
+<dt>Returns</dt><dd><span class="d_keyword">true</span> if the signature is valid, otherwise <span class="d_keyword">false</span></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>final const Vector!ubyte <span class="symbol-target" id="BER_encode">&nbsp;</span><a class="symbol-link" href="#BER_encode">BER_encode</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>BER encoding of this</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>final const string <span class="symbol-target" id="PEM_encode">&nbsp;</span><a class="symbol-link" href="#PEM_encode">PEM_encode</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>PEM encoding of this</dd>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

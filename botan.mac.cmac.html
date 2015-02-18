@@ -954,6 +954,29 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="CMAC">&nbsp;</span><a class="symbol-link" href="#CMAC">CMAC</a>: <u>botan.mac.mac.MessageAuthenticationCode</u>, <u>botan.algo_base.buf_comp.BufferedComputation</u>, <u>botan.algo_base.sym_algo.SymmetricAlgorithm</u>;
+</h3></div>
+<div class="declaration-content"><dl><p><span class="symbol-target" id="CMAC">&nbsp;</span><a class="symbol-link" href="#CMAC">CMAC</a>, also known as OMAC1</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>static SecureVector!ubyte <span class="symbol-target" id="polyDouble">&nbsp;</span><a class="symbol-link" href="#polyDouble">polyDouble</a>(ref const SecureVector!ubyte <i>input</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>CMAC's polynomial doubling operation
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>SecureVector!ubyte <i>input</i></td>
+<td>the <i>input</i></td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(BlockCipher <i>cipher</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BlockCipher <i>cipher</i></td>
+<td>the underlying block <i>cipher</i> to use</td></tr>
+</table></dd>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

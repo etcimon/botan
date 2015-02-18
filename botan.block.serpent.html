@@ -954,6 +954,29 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="Serpent">&nbsp;</span><a class="symbol-link" href="#Serpent">Serpent</a>: <u>botan.block.block_cipher.BlockCipherFixedParams!(16LU, 16LU, 32LU, 8LU).BlockCipherFixedParams</u>, <u>botan.block.block_cipher.BlockCipher</u>, <u>botan.algo_base.sym_algo.SymmetricAlgorithm</u>;
+</h3></div>
+<div class="declaration-content"><dl><p><span class="symbol-target" id="Serpent">&nbsp;</span><a class="symbol-link" href="#Serpent">Serpent</a>, an AES finalist</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>protected const ref const(SecureVector!uint) <span class="symbol-target" id="getRoundKeys">&nbsp;</span><a class="symbol-link" href="#getRoundKeys">getRoundKeys</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>For use by subclasses using SIMD, asm, etc
+</p>
+<dt>Returns</dt><dd>const reference to the key schedule</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>protected void <span class="symbol-target" id="setRoundKeys">&nbsp;</span><a class="symbol-link" href="#setRoundKeys">setRoundKeys</a>(in uint[132] <i>ks</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>For use by subclasses that implement the key schedule
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>uint[132] <i>ks</i></td>
+<td>is the new key schedule value to set</td></tr>
+</table></dd>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

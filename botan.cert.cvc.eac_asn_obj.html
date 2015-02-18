@@ -954,6 +954,192 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="EACTimeImpl">&nbsp;</span><a class="symbol-link" href="#EACTimeImpl">EACTimeImpl</a>: <u>botan.asn1.asn1_obj.ASN1Object</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>This class represents CVC EAC Time objects.
+ It only models year, month and day. Only limited sanity checks of
+ the inputted date value are performed.</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>const string <span class="symbol-target" id="toString">&nbsp;</span><a class="symbol-link" href="#toString">toString</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Return a string representation of the time
+</p>
+<dt>Returns</dt><dd>date string</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const string <span class="symbol-target" id="readableString">&nbsp;</span><a class="symbol-link" href="#readableString">readableString</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Get a this objects value as a readable formatted string.
+</p>
+<dt>Returns</dt><dd>date string</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="timeIsSet">&nbsp;</span><a class="symbol-link" href="#timeIsSet">timeIsSet</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Find out whether this object's values have been set.
+</p>
+<dt>Returns</dt><dd><span class="d_keyword">true</span> if this object's internal values are set</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const int <span class="symbol-target" id="cmp">&nbsp;</span><a class="symbol-link" href="#cmp">cmp</a>(in EACTimeImpl <i>other</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Compare this to another EACTime object.
+</p>
+<dt>Returns</dt><dd> -1 if this object's date is earlier than
+ <i>other</i>, +1 in the opposite case, and 0 if both dates are
+ equal.</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="setTo">&nbsp;</span><a class="symbol-link" href="#setTo">setTo</a>(in string <i>time_str</i> = "");
+</h3></div>
+<div class="declaration-content"><dl><p>Set this' value by a human readable string
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>time_str</i></td>
+<td>a string in the format "yyyy mm dd",
+ e.g. "2007 08 01"</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="addYears">&nbsp;</span><a class="symbol-link" href="#addYears">addYears</a>(uint <i>years</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Add the specified number of <i>years</i> to this.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>uint <i>years</i></td>
+<td>the number of <i>years</i> to add</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="addMonths">&nbsp;</span><a class="symbol-link" href="#addMonths">addMonths</a>(uint <i>months</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Add the specified number of <i>months</i> to this.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>uint <i>months</i></td>
+<td>the number of <i>months</i> to add</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const uint <span class="symbol-target" id="getYear">&nbsp;</span><a class="symbol-link" href="#getYear">getYear</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Get the year value of this objects.
+</p>
+<dt>Returns</dt><dd>year value</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const uint <span class="symbol-target" id="getMonth">&nbsp;</span><a class="symbol-link" href="#getMonth">getMonth</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Get the month value of this objects.
+</p>
+<dt>Returns</dt><dd>month value</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const uint <span class="symbol-target" id="getDay">&nbsp;</span><a class="symbol-link" href="#getDay">getDay</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Get the day value of this objects.
+</p>
+<dt>Returns</dt><dd>day value</dd>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="ASN1CedImpl">&nbsp;</span><a class="symbol-link" href="#ASN1CedImpl">ASN1CedImpl</a>: <u>botan.cert.cvc.eac_asn_obj.EACTimeImpl</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>This class represents CVC CEDs. Only limited sanity checks of
+ the inputted date value are performed.</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>this(in string <i>str</i> = "");
+</h3></div>
+<div class="declaration-content"><dl><p>Construct a CED from a string value.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>str</i></td>
+<td>a string in the format "yyyy mm dd",
+ e.g. "2007 08 01"</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(in SysTime <i>time</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Construct a CED from a <i>time</i> point</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(in EACTime <i>other</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Copy constructor (for general EACTime objects).
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>EACTime <i>other</i></td>
+<td>the object to copy from</td></tr>
+</table></dd>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="ASN1CexImpl">&nbsp;</span><a class="symbol-link" href="#ASN1CexImpl">ASN1CexImpl</a>: <u>botan.cert.cvc.eac_asn_obj.EACTimeImpl</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>This class represents CVC CEXs. Only limited sanity checks of
+ the inputted date value are performed.</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>this(in string <i>str</i> = "");
+</h3></div>
+<div class="declaration-content"><dl><p>Construct a CEX from a string value.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>str</i></td>
+<td>a string in the format "yyyy mm dd",
+ e.g. "2007 08 01"</td></tr>
+</table></dd>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="ASN1EACString">&nbsp;</span><a class="symbol-link" href="#ASN1EACString">ASN1EACString</a>: <u>botan.asn1.asn1_obj.ASN1Object</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>Base class for car/chr of cv certificates.</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>const string <span class="symbol-target" id="value">&nbsp;</span><a class="symbol-link" href="#value">value</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Get this objects string <span class="symbol-target" id="value">&nbsp;</span><a class="symbol-link" href="#value">value</a>.
+</p>
+<dt>Returns</dt><dd>string <span class="symbol-target" id="value">&nbsp;</span><a class="symbol-link" href="#value">value</a></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const string <span class="symbol-target" id="iso8859">&nbsp;</span><a class="symbol-link" href="#iso8859">iso8859</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Get this objects string value.
+</p>
+<dt>Returns</dt><dd>string value in <span class="symbol-target" id="iso8859">&nbsp;</span><a class="symbol-link" href="#iso8859">iso8859</a> encoding</dd>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="ASN1CarImpl">&nbsp;</span><a class="symbol-link" href="#ASN1CarImpl">ASN1CarImpl</a>: <u>botan.cert.cvc.eac_asn_obj.ASN1EACString</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>This class represents CARs of CVCs. (String tagged with 2)</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>this(in string <i>str</i> = "");
+</h3></div>
+<div class="declaration-content"><dl><p>Create a CAR with the specified content.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>str</i></td>
+<td>the CAR value</td></tr>
+</table></dd>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="ASN1ChrImpl">&nbsp;</span><a class="symbol-link" href="#ASN1ChrImpl">ASN1ChrImpl</a>: <u>botan.cert.cvc.eac_asn_obj.ASN1EACString</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>This class represents CHRs of CVCs (tag 32)</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>this(in string <i>str</i> = "");
+</h3></div>
+<div class="declaration-content"><dl><p>Create a CHR with the specified content.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>str</i></td>
+<td>the CHR value</td></tr>
+</table></dd>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

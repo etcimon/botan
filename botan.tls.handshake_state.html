@@ -954,6 +954,40 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="HandshakeState">&nbsp;</span><a class="symbol-link" href="#HandshakeState">HandshakeState</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>SSL/TLS Handshake State</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="receivedHandshakeMsg">&nbsp;</span><a class="symbol-link" href="#receivedHandshakeMsg">receivedHandshakeMsg</a>(HandshakeType <i>handshake_msg</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Return <span class="d_keyword">true</span> iff we have received a particular message already
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>HandshakeType <i>handshake_msg</i></td>
+<td>the message type</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="confirmTransitionTo">&nbsp;</span><a class="symbol-link" href="#confirmTransitionTo">confirmTransitionTo</a>(HandshakeType <i>handshake_msg</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Confirm that we were expecting this message type
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>HandshakeType <i>handshake_msg</i></td>
+<td>the message type</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="setExpectedNext">&nbsp;</span><a class="symbol-link" href="#setExpectedNext">setExpectedNext</a>(HandshakeType <i>handshake_msg</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Record that we are expecting a particular message type next
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>HandshakeType <i>handshake_msg</i></td>
+<td>the message type</td></tr>
+</table></dd>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

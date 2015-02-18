@@ -954,6 +954,139 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="TLSPolicy">&nbsp;</span><a class="symbol-link" href="#TLSPolicy">TLSPolicy</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>TLS <span class="symbol-target" id="TLSPolicy">&nbsp;</span><a class="symbol-link" href="#TLSPolicy">TLSPolicy</a> Base Class
+ Inherit and overload as desired to suit local policy concerns</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>const Vector!string <span class="symbol-target" id="allowedCiphers">&nbsp;</span><a class="symbol-link" href="#allowedCiphers">allowedCiphers</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Returns a list of ciphers we are willing to negotiate, in
+ order of preference.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const Vector!string <span class="symbol-target" id="allowedSignatureHashes">&nbsp;</span><a class="symbol-link" href="#allowedSignatureHashes">allowedSignatureHashes</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Returns a list of hash algorithms we are willing to use for
+ signatures, in order of preference.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const Vector!string <span class="symbol-target" id="allowedMacs">&nbsp;</span><a class="symbol-link" href="#allowedMacs">allowedMacs</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Returns a list of MAC algorithms we are willing to use.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const Vector!string <span class="symbol-target" id="allowedKeyExchangeMethods">&nbsp;</span><a class="symbol-link" href="#allowedKeyExchangeMethods">allowedKeyExchangeMethods</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Returns a list of key exchange algorithms we are willing to
+ use, in order of preference. Allowed values: DH, empty string
+ (representing RSA using server certificate key)</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const Vector!string <span class="symbol-target" id="allowedSignatureMethods">&nbsp;</span><a class="symbol-link" href="#allowedSignatureMethods">allowedSignatureMethods</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Returns a list of signature algorithms we are willing to
+ use, in order of preference. Allowed values RSA and DSA.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const Vector!string <span class="symbol-target" id="allowedEccCurves">&nbsp;</span><a class="symbol-link" href="#allowedEccCurves">allowedEccCurves</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Return list of ECC curves we are willing to use in order of preference</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const Vector!ubyte <span class="symbol-target" id="compression">&nbsp;</span><a class="symbol-link" href="#compression">compression</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Returns a list of <span class="symbol-target" id="compression">&nbsp;</span><a class="symbol-link" href="#compression">compression</a> algorithms we are willing to use,
+ in order of preference. Allowed values any value of
+ Compression_Method.
+</p>
+<p>@note Compression is not currently supported</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const string <span class="symbol-target" id="chooseCurve">&nbsp;</span><a class="symbol-link" href="#chooseCurve">chooseCurve</a>(in Vector!string <i>curve_names</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Choose an elliptic curve to use</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="negotiateHeartbeatSupport">&nbsp;</span><a class="symbol-link" href="#negotiateHeartbeatSupport">negotiateHeartbeatSupport</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Attempt to negotiate the use of the heartbeat extension</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="allowInsecureRenegotiation">&nbsp;</span><a class="symbol-link" href="#allowInsecureRenegotiation">allowInsecureRenegotiation</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Allow renegotiation even if the counterparty doesn't
+ support the secure renegotiation extension.
+</p>
+<dt>Notes:</dt><dd>
+Changing this to <span class="d_keyword">true</span> exposes you to injected plaintext attacks.
+  Read RFC 5746 for background.</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="allowServerInitiatedRenegotiation">&nbsp;</span><a class="symbol-link" href="#allowServerInitiatedRenegotiation">allowServerInitiatedRenegotiation</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Allow servers to initiate a new handshake</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const DLGroup <span class="symbol-target" id="dhGroup">&nbsp;</span><a class="symbol-link" href="#dhGroup">dhGroup</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Return the group to use for ephemeral Diffie-Hellman key agreement</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const size_t <span class="symbol-target" id="minimumDhGroupSize">&nbsp;</span><a class="symbol-link" href="#minimumDhGroupSize">minimumDhGroupSize</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Return the minimum DH group size we're willing to use</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="hideUnknownUsers">&nbsp;</span><a class="symbol-link" href="#hideUnknownUsers">hideUnknownUsers</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>If this function returns <span class="d_keyword">false</span>, unknown SRP/PSK identifiers
+ will be rejected with an unknown_psk_identifier alert as soon
+ as the non-existence is identified. Otherwise, a <span class="d_keyword">false</span>
+ identifier value will be used and the protocol allowed to
+ proceed, causing the handshake to eventually fail without
+ revealing that the username does not exist on this system.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const Duration <span class="symbol-target" id="sessionTicketLifetime">&nbsp;</span><a class="symbol-link" href="#sessionTicketLifetime">sessionTicketLifetime</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Return the allowed lifetime of a session ticket. If 0, session
+ tickets do not expire until the session ticket key rolls over.
+ Expired session tickets cannot be used to resume a session.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="acceptableProtocolVersion">&nbsp;</span><a class="symbol-link" href="#acceptableProtocolVersion">acceptableProtocolVersion</a>(TLSProtocolVersion <i>_version</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd><span class="d_keyword">true</span> if and only if we are willing to accept this version
+ Default accepts only TLS, so if you want to enable DTLS override
+ in your application.</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="serverUsesOwnCiphersuitePreferences">&nbsp;</span><a class="symbol-link" href="#serverUsesOwnCiphersuitePreferences">serverUsesOwnCiphersuitePreferences</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd><span class="d_keyword">true</span> if servers should choose the ciphersuite matching
+            their highest preference, rather than the clients.
+            Has no effect on client side.</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const Vector!ushort <span class="symbol-target" id="ciphersuiteList">&nbsp;</span><a class="symbol-link" href="#ciphersuiteList">ciphersuiteList</a>(TLSProtocolVersion <i>_version</i>, bool <i>have_srp</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Return allowed ciphersuites, in order of preference</p>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="NSASuiteB128">&nbsp;</span><a class="symbol-link" href="#NSASuiteB128">NSASuiteB128</a>: <u>botan.tls.policy.TLSPolicy</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>NSA Suite B 128-bit security level (see @rfc 6460)</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="DatagramPolicy">&nbsp;</span><a class="symbol-link" href="#DatagramPolicy">DatagramPolicy</a>: <u>botan.tls.policy.TLSPolicy</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>TLSPolicy for DTLS. We require DTLS v1.2 and an AEAD mode</p>
+</dl>
+</div>
+
 
 				</div>
 				

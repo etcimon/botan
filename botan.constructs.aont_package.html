@@ -954,6 +954,41 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="aontPackage">&nbsp;</span><a class="symbol-link" href="#aontPackage">aontPackage</a>(RandomNumberGenerator <i>rng</i>, BlockCipher <i>cipher</i>, const(ubyte)* <i>input</i>, size_t <i>input_len</i>, ubyte* <i>output</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Rivest's Package Tranform
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>RandomNumberGenerator <i>rng</i></td>
+<td>the random number generator to use</td></tr>
+<tr><td>BlockCipher <i>cipher</i></td>
+<td>the block <i>cipher</i> to use</td></tr>
+<tr><td>const(ubyte)* <i>input</i></td>
+<td>the <i>input</i> data buffer</td></tr>
+<tr><td>size_t <i>input_len</i></td>
+<td>the length of the <i>input</i> data in bytes</td></tr>
+<tr><td>ubyte* <i>output</i></td>
+<td>the <i>output</i> data buffer (must be at least
+          <i>input_len</i> + <i>cipher</i>.BLOCK_SIZE bytes long)</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="aontUnpackage">&nbsp;</span><a class="symbol-link" href="#aontUnpackage">aontUnpackage</a>(BlockCipher <i>cipher</i>, const(ubyte)* <i>input</i>, size_t <i>input_len</i>, ubyte* <i>output</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Rivest's Package Tranform (Inversion)
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BlockCipher <i>cipher</i></td>
+<td>the block <i>cipher</i> to use</td></tr>
+<tr><td>const(ubyte)* <i>input</i></td>
+<td>the <i>input</i> data buffer</td></tr>
+<tr><td>size_t <i>input_len</i></td>
+<td>the length of the <i>input</i> data in bytes</td></tr>
+<tr><td>ubyte* <i>output</i></td>
+<td>the <i>output</i> data buffer (must be at least
+          <i>input_len</i> - <i>cipher</i>.BLOCK_SIZE bytes long)</td></tr>
+</table></dd>
+</dl>
+</div>
+
 
 				</div>
 				

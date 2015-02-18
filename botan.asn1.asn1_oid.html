@@ -954,6 +954,96 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="OIDImpl">&nbsp;</span><a class="symbol-link" href="#OIDImpl">OIDImpl</a>: <u>botan.asn1.asn1_obj.ASN1Object</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>This class represents ASN.1 object identifiers.</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>const @property bool <span class="symbol-target" id="empty">&nbsp;</span><a class="symbol-link" href="#empty">empty</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Find out whether this OID is <span class="symbol-target" id="empty">&nbsp;</span><a class="symbol-link" href="#empty">empty</a>
+</p>
+<dt>Returns</dt><dd><span class="d_keyword">true</span> is no OID value is set</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const ref const(Vector!uint) <span class="symbol-target" id="getId">&nbsp;</span><a class="symbol-link" href="#getId">getId</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Get this OID as list (vector) of its components.
+</p>
+<dt>Returns</dt><dd>vector representing this OID</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const string <span class="symbol-target" id="toString">&nbsp;</span><a class="symbol-link" href="#toString">toString</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Get this OID as a string
+</p>
+<dt>Returns</dt><dd>string representing this OID</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="opEquals">&nbsp;</span><a class="symbol-link" href="#opEquals">opEquals</a>(in OIDImpl <i>oid</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Compare two OIDs.
+</p>
+<dt>Returns</dt><dd><span class="d_keyword">true</span> if they are equal, <span class="d_keyword">false</span> otherwise</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="clear">&nbsp;</span><a class="symbol-link" href="#clear">clear</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Reset this instance to an empty OID.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>OID <span class="symbol-target" id="opBinary">&nbsp;</span><a class="symbol-link" href="#opBinary">opBinary</a>(string op)(in OID <i>oid</i>, uint <i>component</i>) if (op == "+");
+</h3></div>
+<div class="declaration-content"><dl><p>Append another component onto the OID.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>OID oid</td>
+<td>the OID to add the new component to</td></tr>
+<tr><td>uint component</td>
+<td>the new component to add</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const int <span class="symbol-target" id="opCmp">&nbsp;</span><a class="symbol-link" href="#opCmp">opCmp</a>(in OID <i>b</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Compare two OIDs.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>OID <i>b</i></td>
+<td>the second OID</td></tr>
+</table></dd>
+<dt>Returns</dt><dd><span class="d_keyword">true</span> if a is not equal to <i>b</i></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>bool <span class="symbol-target" id="opBinary">&nbsp;</span><a class="symbol-link" href="#opBinary">opBinary</a>(string op)(in OID <i>b</i>) if (op == "&lt;");
+</h3></div>
+<div class="declaration-content"><dl><p>Compare two OIDs.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>OID b</td>
+<td>the second OID</td></tr>
+</table></dd>
+<dt>Returns</dt><dd><span class="d_keyword">true</span> if a is lexicographically smaller than b</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="opOpAssign">&nbsp;</span><a class="symbol-link" href="#opOpAssign">opOpAssign</a>(string op)(uint <i>new_comp</i>) if (op == "~");
+</h3></div>
+<div class="declaration-content"><dl><p>Add a component to this OID.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>uint new_comp</td>
+<td>the new component to add to the end of this OID</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>reference to this</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(in string <i>oid_str</i> = "");
+</h3></div>
+<div class="declaration-content"><dl><p>Construct an OID from a string.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>oid_str</i></td>
+<td>a string in the form "a.b.c" etc., where a,b,c are numbers</td></tr>
+</table></dd>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

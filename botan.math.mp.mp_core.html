@@ -954,6 +954,86 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>pure void <span class="symbol-target" id="bigint_add2">&nbsp;</span><a class="symbol-link" href="#bigint_add2">bigint_add2</a>(word* <i>x</i>, size_t <i>x_size</i>, in word* <i>y</i>, size_t <i>y_size</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Two operand addition
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>word* <i>x</i></td>
+<td>the first operand (and output)</td></tr>
+<tr><td>size_t <i>x_size</i></td>
+<td>size of <i>x</i></td></tr>
+<tr><td>word* <i>y</i></td>
+<td>the second operand</td></tr>
+<tr><td>size_t <i>y_size</i></td>
+<td>size of <i>y</i> (must be &gt;= <i>x_size</i>)</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>pure void <span class="symbol-target" id="bigint_add3">&nbsp;</span><a class="symbol-link" href="#bigint_add3">bigint_add3</a>(word* <i>z</i>, in word* <i>x</i>, size_t <i>x_size</i>, in word* <i>y</i>, size_t <i>y_size</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Three operand addition</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>pure word <span class="symbol-target" id="bigint_add2_nc">&nbsp;</span><a class="symbol-link" href="#bigint_add2_nc">bigint_add2_nc</a>(word* <i>x</i>, size_t <i>x_size</i>, in word* <i>y</i>, size_t <i>y_size</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Two operand addition with carry out</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>pure word <span class="symbol-target" id="bigint_add3_nc">&nbsp;</span><a class="symbol-link" href="#bigint_add3_nc">bigint_add3_nc</a>(word* <i>z</i>, in word* <i>x</i>, size_t <i>x_size</i>, in word* <i>y</i>, size_t <i>y_size</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Three operand addition with carry out</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>pure word <span class="symbol-target" id="bigint_sub2">&nbsp;</span><a class="symbol-link" href="#bigint_sub2">bigint_sub2</a>(word* <i>x</i>, size_t <i>x_size</i>, in word* <i>y</i>, size_t <i>y_size</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Two operand subtraction</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>pure void <span class="symbol-target" id="bigint_sub2_rev">&nbsp;</span><a class="symbol-link" href="#bigint_sub2_rev">bigint_sub2_rev</a>(word* <i>x</i>, in word* <i>y</i>, size_t <i>y_size</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Two operand subtraction, <i>x</i> = <i>y</i> - <i>x</i>; assumes <i>y</i> &gt;= <i>x</i></p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>pure word <span class="symbol-target" id="bigint_sub3">&nbsp;</span><a class="symbol-link" href="#bigint_sub3">bigint_sub3</a>(word* <i>z</i>, in word* <i>x</i>, size_t <i>x_size</i>, in word* <i>y</i>, size_t <i>y_size</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Three operand subtraction</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>pure void <span class="symbol-target" id="bigint_monty_redc">&nbsp;</span><a class="symbol-link" href="#bigint_monty_redc">bigint_monty_redc</a>(word* <i>z</i>, in word* <i>p</i>, size_t <i>p_size</i>, word <i>p_dash</i>, word* <i>ws</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Montgomery Reduction
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>word* <i>z</i></td>
+<td>integer to reduce, of size exactly 2*(<i>p_size</i>+1).
+              Output is in the first <i>p_size</i>+1 words, higher
+              words are set to zero.</td></tr>
+<tr><td>word* <i>p</i></td>
+<td>modulus</td></tr>
+<tr><td>size_t <i>p_size</i></td>
+<td>size of <i>p</i></td></tr>
+<tr><td>word <i>p_dash</i></td>
+<td>Montgomery value</td></tr>
+<tr><td>word* <i>ws</i></td>
+<td>workspace array of at least 2*(<i>p_size</i>+1) words</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>pure int <span class="symbol-target" id="bigint_cmp">&nbsp;</span><a class="symbol-link" href="#bigint_cmp">bigint_cmp</a>(in word* <i>x</i>, size_t <i>x_size</i>, in word* <i>y</i>, size_t <i>y_size</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Compare <i>x</i> and <i>y</i></p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>pure word <span class="symbol-target" id="bigint_divop">&nbsp;</span><a class="symbol-link" href="#bigint_divop">bigint_divop</a>(word <i>n1</i>, word <i>n0</i>, word <i>d</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Compute ((<i>n1</i>&lt;<bits) + <i>n0</i>) / <i>d</i></p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>pure word <span class="symbol-target" id="bigint_modop">&nbsp;</span><a class="symbol-link" href="#bigint_modop">bigint_modop</a>(word <i>n1</i>, word <i>n0</i>, word <i>d</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Compute ((<i>n1</i>&lt;<bits) + <i>n0</i>) % <i>d</i></p>
+</dl>
+</div>
+
 
 				</div>
 				

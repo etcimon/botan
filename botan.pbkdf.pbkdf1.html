@@ -954,6 +954,24 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="PKCS5_PBKDF1">&nbsp;</span><a class="symbol-link" href="#PKCS5_PBKDF1">PKCS5_PBKDF1</a>: <u>botan.pbkdf.pbkdf.PBKDF</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>PKCS #5 v1 PBKDF, aka PBKDF1
+ Can only generate a key up to the size of the hash output.
+ Unless needed for backwards compatability, use PKCS5_PBKDF2</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>this(HashFunction <i>hash_input</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Create a PKCS #5 instance using the specified hash function.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>HashFunction <i>hash_input</i></td>
+<td>pointer to a hash function object to use</td></tr>
+</table></dd>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

@@ -954,6 +954,34 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>string <span class="symbol-target" id="generateBcrypt">&nbsp;</span><a class="symbol-link" href="#generateBcrypt">generateBcrypt</a>(in string <i>password</i>, RandomNumberGenerator <i>rng</i>, ushort <i>work_factor</i> = 10);
+</h3></div>
+<div class="declaration-content"><dl><p>Create a <i>password</i> hash using Bcrypt
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>password</i></td>
+<td>the <i>password</i></td></tr>
+<tr><td>RandomNumberGenerator <i>rng</i></td>
+<td>a random number generator</td></tr>
+<tr><td>ushort <i>work_factor</i></td>
+<td>how much work to do to slow down guessing attacks
+<br><br>
+
+ @see http://www.usenix.org/events/usenix99/provos/provos_html/</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>bool <span class="symbol-target" id="checkBcrypt">&nbsp;</span><a class="symbol-link" href="#checkBcrypt">checkBcrypt</a>(in string <i>password</i>, in string <i>hash</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Check a previously created <i>password</i> <i>hash</i>
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>password</i></td>
+<td>the <i>password</i> to check against</td></tr>
+<tr><td>string <i>hash</i></td>
+<td>the stored <i>hash</i> to check against</td></tr>
+</table></dd>
+</dl>
+</div>
+
 
 				</div>
 				

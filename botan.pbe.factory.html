@@ -954,6 +954,37 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>PBE <span class="symbol-target" id="getPbe">&nbsp;</span><a class="symbol-link" href="#getPbe">getPbe</a>(in string <i>algo_spec</i>, in string <i>passphrase</i>, Duration <i>dur</i>, RandomNumberGenerator <i>rng</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Factory function for PBEs.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>algo_spec</i></td>
+<td>the name of the PBE algorithm to retrieve</td></tr>
+<tr><td>string <i>passphrase</i></td>
+<td>the <i>passphrase</i> to use for encryption</td></tr>
+<tr><td>Duration <i>dur</i></td>
+<td>how many milliseconds to run the PBKDF</td></tr>
+<tr><td>RandomNumberGenerator <i>rng</i></td>
+<td>a random number generator</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>pointer to a PBE with randomly created parameters</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>PBE <span class="symbol-target" id="getPbe">&nbsp;</span><a class="symbol-link" href="#getPbe">getPbe</a>()(in OID <i>pbe_oid</i>, auto ref const Vector!ubyte <i>params</i>, in string <i>passphrase</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Factory function for PBEs.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>OID pbe_oid</td>
+<td>the oid of the desired PBE</td></tr>
+<tr><td>Vector!ubyte params</td>
+<td>a DataSource providing the DER encoded parameters to use</td></tr>
+<tr><td>string passphrase</td>
+<td>the passphrase to use for decryption</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>pointer to the PBE with the specified parameters</dd>
+</dl>
+</div>
+
 
 				</div>
 				

@@ -954,6 +954,107 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>struct <span class="symbol-target" id="TLSProtocolVersion">&nbsp;</span><a class="symbol-link" href="#TLSProtocolVersion">TLSProtocolVersion</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>TLS Protocol Version</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>this(VersionCode <i>named_version</i> = 0);
+</h3></div>
+<div class="declaration-content"><dl><dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>VersionCode <i>named_version</i></td>
+<td>a specific named version of the protocol</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(ubyte <i>major</i>, ubyte <i>minor</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>ubyte <i>major</i></td>
+<td>the <i>major</i> version</td></tr>
+<tr><td>ubyte <i>minor</i></td>
+<td>the <i>minor</i> version</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="valid">&nbsp;</span><a class="symbol-link" href="#valid">valid</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd><span class="d_keyword">true</span> if this is a <span class="symbol-target" id="valid">&nbsp;</span><a class="symbol-link" href="#valid">valid</a> protocol version</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="knownVersion">&nbsp;</span><a class="symbol-link" href="#knownVersion">knownVersion</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd><span class="d_keyword">true</span> if this is a protocol version we know about</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const ubyte <span class="symbol-target" id="majorVersion">&nbsp;</span><a class="symbol-link" href="#majorVersion">majorVersion</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>major version of the protocol version</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const ubyte <span class="symbol-target" id="minorVersion">&nbsp;</span><a class="symbol-link" href="#minorVersion">minorVersion</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>minor version of the protocol version</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const string <span class="symbol-target" id="toString">&nbsp;</span><a class="symbol-link" href="#toString">toString</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>human-readable description of this version</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const TLSProtocolVersion <span class="symbol-target" id="bestKnownMatch">&nbsp;</span><a class="symbol-link" href="#bestKnownMatch">bestKnownMatch</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>If this version is known, return that. Otherwise return the
+ best (most recent) version we know of.
+</p>
+<dt>Returns</dt><dd>best matching protocol version</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="isDatagramProtocol">&nbsp;</span><a class="symbol-link" href="#isDatagramProtocol">isDatagramProtocol</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd><span class="d_keyword">true</span> iff this is a DTLS version</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="supportsNegotiableSignatureAlgorithms">&nbsp;</span><a class="symbol-link" href="#supportsNegotiableSignatureAlgorithms">supportsNegotiableSignatureAlgorithms</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd><span class="d_keyword">true</span> if this version supports negotiable signature algorithms</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="supportsExplicitCbcIvs">&nbsp;</span><a class="symbol-link" href="#supportsExplicitCbcIvs">supportsExplicitCbcIvs</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd><span class="d_keyword">true</span> if this version uses explicit IVs for block ciphers</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="supportsCiphersuiteSpecificPrf">&nbsp;</span><a class="symbol-link" href="#supportsCiphersuiteSpecificPrf">supportsCiphersuiteSpecificPrf</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd><span class="d_keyword">true</span> if this version uses a ciphersuite specific PRF</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="opEquals">&nbsp;</span><a class="symbol-link" href="#opEquals">opEquals</a>(in TLSProtocolVersion <i>other</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>if this version is equal to <i>other</i></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const int <span class="symbol-target" id="opCmp">&nbsp;</span><a class="symbol-link" href="#opCmp">opCmp</a>(in TLSProtocolVersion <i>other</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>if this version is not equal to <i>other</i></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="opEquals">&nbsp;</span><a class="symbol-link" href="#opEquals">opEquals</a>(in ushort <i>other</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>if this version is equal to <i>other</i></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const int <span class="symbol-target" id="opCmp">&nbsp;</span><a class="symbol-link" href="#opCmp">opCmp</a>(in ushort <i>other</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>if this version is not equal to <i>other</i></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="isGreaterThan">&nbsp;</span><a class="symbol-link" href="#isGreaterThan">isGreaterThan</a>(in TLSProtocolVersion <i>other</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>if this version is later than <i>other</i></dd>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

@@ -954,6 +954,34 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="SHA160">&nbsp;</span><a class="symbol-link" href="#SHA160">SHA160</a>: <u>botan.hash.mdx_hash.MDxHashFunction</u>, <u>botan.hash.hash.HashFunction</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>NIST's SHA-160</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>protected this(size_t <i>W_size</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Set a custom size for the W array. Normally 80, but some
+ subclasses need slightly more for best performance/internal
+ constraints
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t <i>W_size</i></td>
+<td>how big to make W</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>protected SecureVector!uint <span class="symbol-target" id="m_digest">&nbsp;</span><a class="symbol-link" href="#m_digest">m_digest</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>The digest value, exposed for use by subclasses (asm, SSE2)</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>protected SecureVector!uint <span class="symbol-target" id="m_W">&nbsp;</span><a class="symbol-link" href="#m_W">m_W</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>The message buffer, exposed for use by subclasses (asm, SSE2)</p>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

@@ -954,6 +954,33 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="GOST3411">&nbsp;</span><a class="symbol-link" href="#GOST3411">GOST3411</a>: <u>botan.hash.hash.HashFunction</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>GOST 34.11</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>this();
+</h3></div>
+<div class="declaration-content"><dl><p>GOST 34.11 Constructor</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>protected void <span class="symbol-target" id="compress_n">&nbsp;</span><a class="symbol-link" href="#compress_n">compress_n</a>(const(ubyte)* <i>input</i>, size_t <i>blocks</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>The GOST 34.11 compression function</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>protected void <span class="symbol-target" id="addData">&nbsp;</span><a class="symbol-link" href="#addData">addData</a>(const(ubyte)* <i>input</i>, size_t <i>length</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Hash additional inputs</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>protected void <span class="symbol-target" id="finalResult">&nbsp;</span><a class="symbol-link" href="#finalResult">finalResult</a>(ubyte* <i>output</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Produce the final GOST 34.11 <i>output</i></p>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

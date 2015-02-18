@@ -954,6 +954,51 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>abstract class <span class="symbol-target" id="AEADMode">&nbsp;</span><a class="symbol-link" href="#AEADMode">AEADMode</a>: <u>botan.modes.cipher_mode.CipherMode</u>, <u>botan.algo_base.transform.Transformation</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>Interface for AEAD (Authenticated Encryption with Associated Data)
+ modes. These modes provide both encryption and message
+ authentication, and can authenticate additional per-message data
+ which is not included in the ciphertext (for instance a sequence
+ number).</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>abstract void <span class="symbol-target" id="setAssociatedData">&nbsp;</span><a class="symbol-link" href="#setAssociatedData">setAssociatedData</a>(const(ubyte)* <i>ad</i>, size_t <i>ad_len</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Set associated data that is not included in the ciphertext but
+ that should be authenticated. Must be called after setKey
+ and before finish.
+</p>
+<p>Unless reset by another call, the associated data is kept
+ between messages. Thus, if the AD does not change, calling
+ once (after setKey) is the optimum.
+
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>const(ubyte)* <i>ad</i></td>
+<td>the associated data</td></tr>
+<tr><td>size_t <i>ad_len</i></td>
+<td>length of add in bytes</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const size_t <span class="symbol-target" id="defaultNonceLength">&nbsp;</span><a class="symbol-link" href="#defaultNonceLength">defaultNonceLength</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Default AEAD nonce size (a commonly supported value among AEAD
+ modes, and large enough that random collisions are unlikely).</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>abstract const size_t <span class="symbol-target" id="tagSize">&nbsp;</span><a class="symbol-link" href="#tagSize">tagSize</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Return the size of the authentication tag used (in bytes)</p>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>AEADMode <span class="symbol-target" id="getAead">&nbsp;</span><a class="symbol-link" href="#getAead">getAead</a>(in string <i>algo_spec</i>, CipherDir <i>direction</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Get an AEAD mode by name (eg "AES-128/GCM" or "Serpent/EAX")</p>
+</dl>
+</div>
+
 
 				</div>
 				

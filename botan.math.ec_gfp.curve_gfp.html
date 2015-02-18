@@ -954,6 +954,97 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>struct <span class="symbol-target" id="CurveGFp">&nbsp;</span><a class="symbol-link" href="#CurveGFp">CurveGFp</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>This class represents an elliptic curve over GF(p)</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>this()(auto ref const BigInt <i>p</i>, auto ref const BigInt <i>a</i>, auto ref const BigInt <i>b</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Construct the elliptic curve E: y^2 = x^3 + ax + b over GF(p)
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt p</td>
+<td>prime number of the field</td></tr>
+<tr><td>BigInt a</td>
+<td>first coefficient</td></tr>
+<tr><td>BigInt b</td>
+<td>second coefficient</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const ref const(BigInt) <span class="symbol-target" id="getA">&nbsp;</span><a class="symbol-link" href="#getA">getA</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>curve coefficient a</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const ref const(BigInt) <span class="symbol-target" id="getB">&nbsp;</span><a class="symbol-link" href="#getB">getB</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>curve coefficient b</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const ref const(BigInt) <span class="symbol-target" id="getP">&nbsp;</span><a class="symbol-link" href="#getP">getP</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Get prime modulus of the field of the curve
+</p>
+<dt>Returns</dt><dd>prime modulus of the field of the curve</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const ref const(BigInt) <span class="symbol-target" id="getR2">&nbsp;</span><a class="symbol-link" href="#getR2">getR2</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>Montgomery parameter r^2 % p</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const ref const(BigInt) <span class="symbol-target" id="getAR">&nbsp;</span><a class="symbol-link" href="#getAR">getAR</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>a * r mod p</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const ref const(BigInt) <span class="symbol-target" id="getBR">&nbsp;</span><a class="symbol-link" href="#getBR">getBR</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>b * r mod p</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const word <span class="symbol-target" id="getPDash">&nbsp;</span><a class="symbol-link" href="#getPDash">getPDash</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>Montgomery parameter p-dash</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const size_t <span class="symbol-target" id="getPWords">&nbsp;</span><a class="symbol-link" href="#getPWords">getPWords</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>p.sigWords()</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="swap">&nbsp;</span><a class="symbol-link" href="#swap">swap</a>()(auto ref CurveGFp <i>other</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>swaps the states of this and other, does not throw
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>CurveGFp other</td>
+<td>curve to <span class="symbol-target" id="swap">&nbsp;</span><a class="symbol-link" href="#swap">swap</a> values with</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="opEquals">&nbsp;</span><a class="symbol-link" href="#opEquals">opEquals</a>(ref const CurveGFp <i>other</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Equality operator
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>CurveGFp <i>other</i></td>
+<td>curve to compare with</td></tr>
+</table></dd>
+<dt>Returns</dt><dd><span class="d_keyword">true</span> iff this is the same curve as <i>other</i></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const int <span class="symbol-target" id="opCmp">&nbsp;</span><a class="symbol-link" href="#opCmp">opCmp</a>(ref CurveGFp <i>rhs</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Equality operator
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>CurveGFp <i>rhs</i></td>
+<td>a curve</td></tr>
+</table></dd>
+<dt>Returns</dt><dd><span class="d_keyword">true</span> iff lhs is not the same as <i>rhs</i></dd>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

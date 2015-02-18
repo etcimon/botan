@@ -954,6 +954,58 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>struct <span class="symbol-target" id="TLSAlert">&nbsp;</span><a class="symbol-link" href="#TLSAlert">TLSAlert</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>SSL/TLS <span class="symbol-target" id="TLSAlert">&nbsp;</span><a class="symbol-link" href="#TLSAlert">TLSAlert</a> Message</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="isValid">&nbsp;</span><a class="symbol-link" href="#isValid">isValid</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd><span class="d_keyword">true</span> iff this alert is non-empty</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const bool <span class="symbol-target" id="isFatal">&nbsp;</span><a class="symbol-link" href="#isFatal">isFatal</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>if this alert is a fatal one or not</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const TLSAlertType <span class="symbol-target" id="type">&nbsp;</span><a class="symbol-link" href="#type">type</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd><span class="symbol-target" id="type">&nbsp;</span><a class="symbol-link" href="#type">type</a> of alert</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const string <span class="symbol-target" id="typeString">&nbsp;</span><a class="symbol-link" href="#typeString">typeString</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>type of alert</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const Vector!ubyte <span class="symbol-target" id="serialize">&nbsp;</span><a class="symbol-link" href="#serialize">serialize</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Serialize an alert</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(ref const SecureVector!ubyte <i>buf</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Deserialize an TLSAlert message
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>SecureVector!ubyte <i>buf</i></td>
+<td>the serialized alert</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(TLSAlertType <i>type_code</i> = NULL_ALERT, bool <i>fatal</i> = false);
+</h3></div>
+<div class="declaration-content"><dl><p>Create a new TLSAlert
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>TLSAlertType <i>type_code</i></td>
+<td>the type of alert</td></tr>
+<tr><td>bool <i>fatal</i></td>
+<td>specifies if this is a <i>fatal</i> alert</td></tr>
+</table></dd>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

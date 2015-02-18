@@ -954,6 +954,128 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>interface <span class="symbol-target" id="Extension">&nbsp;</span><a class="symbol-link" href="#Extension">Extension</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>Base class representing a TLS extension of some kind</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>abstract const HandshakeExtensionType <span class="symbol-target" id="type">&nbsp;</span><a class="symbol-link" href="#type">type</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>code number of the extension</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>abstract const Vector!ubyte <span class="symbol-target" id="serialize">&nbsp;</span><a class="symbol-link" href="#serialize">serialize</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>serialized binary for the extension</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>abstract const @property bool <span class="symbol-target" id="empty">&nbsp;</span><a class="symbol-link" href="#empty">empty</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>if we should encode this extension or not</dd>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="ServerNameIndicator">&nbsp;</span><a class="symbol-link" href="#ServerNameIndicator">ServerNameIndicator</a>: <u>botan.tls.extensions.Extension</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>TLS Server Name Indicator extension (RFC 3546)</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="SRPIdentifier">&nbsp;</span><a class="symbol-link" href="#SRPIdentifier">SRPIdentifier</a>: <u>botan.tls.extensions.Extension</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>SRP identifier extension (RFC 5054)</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="RenegotiationExtension">&nbsp;</span><a class="symbol-link" href="#RenegotiationExtension">RenegotiationExtension</a>: <u>botan.tls.extensions.Extension</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>Renegotiation Indication Extension (RFC 5746)</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="MaximumFragmentLength">&nbsp;</span><a class="symbol-link" href="#MaximumFragmentLength">MaximumFragmentLength</a>: <u>botan.tls.extensions.Extension</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>Maximum Fragment Length Negotiation Extension (RFC 4366 sec 3.2)</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>this(size_t <i>max_fragment</i>);
+</h3></div>
+<div class="declaration-content"><dl><dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>size_t <i>max_fragment</i></td>
+<td>specifies what maximum fragment size to
+          advertise. Currently must be one of 512, 1024, 2048, or
+          4096.</td></tr>
+</table></dd>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="NextProtocolNotification">&nbsp;</span><a class="symbol-link" href="#NextProtocolNotification">NextProtocolNotification</a>: <u>botan.tls.extensions.Extension</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>Next Protocol Negotiation
+</p>
+<dt>http:</dt><dd>
+//technotes.googlecode.com/git/nextprotoneg.html
+<br><br>
+
+ This implementation requires the semantics defined in the Google
+ spec (implemented in Chromium); the internet draft leaves the format
+ unspecified.</dd>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>this();
+</h3></div>
+<div class="declaration-content"><dl><p>Empty extension, used by client</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(Vector!string <i>protocols</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>List of <i>protocols</i>, used by server</p>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="SessionTicket">&nbsp;</span><a class="symbol-link" href="#SessionTicket">SessionTicket</a>: <u>botan.tls.extensions.Extension</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>TLSSession Ticket Extension (RFC 5077)</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>const ref const(Vector!ubyte) <span class="symbol-target" id="contents">&nbsp;</span><a class="symbol-link" href="#contents">contents</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd><span class="symbol-target" id="contents">&nbsp;</span><a class="symbol-link" href="#contents">contents</a> of the session ticket</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this();
+</h3></div>
+<div class="declaration-content"><dl><p>Create empty extension, used by both client and server</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(Vector!ubyte <i>session_ticket</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Extension with ticket, used by client</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(ref TLSDataReader <i>reader</i>, ushort <i>extension_size</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Deserialize a session ticket</p>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="SupportedEllipticCurves">&nbsp;</span><a class="symbol-link" href="#SupportedEllipticCurves">SupportedEllipticCurves</a>: <u>botan.tls.extensions.Extension</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>Supported Elliptic Curves Extension (RFC 4492)</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="SignatureAlgorithms">&nbsp;</span><a class="symbol-link" href="#SignatureAlgorithms">SignatureAlgorithms</a>: <u>botan.tls.extensions.Extension</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>Signature Algorithms Extension for TLS 1.2 (RFC 5246)</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="HeartbeatSupportIndicator">&nbsp;</span><a class="symbol-link" href="#HeartbeatSupportIndicator">HeartbeatSupportIndicator</a>: <u>botan.tls.extensions.Extension</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>Heartbeat Extension (RFC 6520)</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>struct <span class="symbol-target" id="TLSExtensions">&nbsp;</span><a class="symbol-link" href="#TLSExtensions">TLSExtensions</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>Represents a block of extensions in a hello message</p>
+</dl>
+</div>
+
 
 				</div>
 				

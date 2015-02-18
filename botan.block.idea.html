@@ -954,6 +954,28 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="IDEA">&nbsp;</span><a class="symbol-link" href="#IDEA">IDEA</a>: <u>botan.block.block_cipher.BlockCipherFixedParams!(8LU, 16LU, 0LU, 1LU).BlockCipherFixedParams</u>, <u>botan.block.block_cipher.BlockCipher</u>, <u>botan.algo_base.sym_algo.SymmetricAlgorithm</u>;
+</h3></div>
+<div class="declaration-content"><dl><p><span class="symbol-target" id="IDEA">&nbsp;</span><a class="symbol-link" href="#IDEA">IDEA</a></p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>protected const ref const(SecureVector!ushort) <span class="symbol-target" id="getEK">&nbsp;</span><a class="symbol-link" href="#getEK">getEK</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>const reference to encryption subkeys</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>protected const ref const(SecureVector!ushort) <span class="symbol-target" id="getDK">&nbsp;</span><a class="symbol-link" href="#getDK">getDK</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>const reference to decryption subkeys</dd>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>package void <span class="symbol-target" id="idea_op">&nbsp;</span><a class="symbol-link" href="#idea_op">idea_op</a>(const(ubyte)* <i>input</i>, ubyte* <i>output</i>, size_t <i>blocks</i>, in const(ushort)* <i>K</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>IDEA is involutional, depending only on the key schedule</p>
+</dl>
+</div>
+
 
 				</div>
 				

@@ -954,6 +954,91 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>SRP6KeyPair <span class="symbol-target" id="srp6ClientAgree">&nbsp;</span><a class="symbol-link" href="#srp6ClientAgree">srp6ClientAgree</a>(in string <i>identifier</i>, in string <i>password</i>, in string <i>group_id</i>, in string <i>hash_id</i>, ref const Vector!ubyte <i>salt</i>, ref const BigInt <i>B</i>, RandomNumberGenerator <i>rng</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>SRP6a Client side
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>identifier</i></td>
+<td>the username we are attempting login for</td></tr>
+<tr><td>string <i>password</i></td>
+<td>the <i>password</i> we are attempting to use</td></tr>
+<tr><td>string <i>group_id</i></td>
+<td>specifies the shared SRP group</td></tr>
+<tr><td>string <i>hash_id</i></td>
+<td>specifies a secure hash function</td></tr>
+<tr><td>Vector!ubyte <i>salt</i></td>
+<td>is the <i>salt</i> value sent by the server</td></tr>
+<tr><td>BigInt <i>B</i></td>
+<td>is the server's public value</td></tr>
+<tr><td>RandomNumberGenerator <i>rng</i></td>
+<td>is a random number generator</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>(A,K) the client public key and the shared secret key</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>BigInt <span class="symbol-target" id="generateSrp6Verifier">&nbsp;</span><a class="symbol-link" href="#generateSrp6Verifier">generateSrp6Verifier</a>(in string <i>identifier</i>, in string <i>password</i>, ref const Vector!ubyte <i>salt</i>, in string <i>group_id</i>, in string <i>hash_id</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Generate a new SRP-6 verifier
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>identifier</i></td>
+<td>a username or other client <i>identifier</i></td></tr>
+<tr><td>string <i>password</i></td>
+<td>the secret used to authenticate user</td></tr>
+<tr><td>Vector!ubyte <i>salt</i></td>
+<td>a randomly chosen value, at least 128 bits long</td></tr>
+<tr><td>string <i>group_id</i></td>
+<td>specifies the shared SRP group</td></tr>
+<tr><td>string <i>hash_id</i></td>
+<td>specifies a secure hash function</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>string <span class="symbol-target" id="srp6GroupIdentifier">&nbsp;</span><a class="symbol-link" href="#srp6GroupIdentifier">srp6GroupIdentifier</a>(ref const BigInt <i>N</i>, ref const BigInt <i>g</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Return the group id for this SRP param set, or else thrown an
+ exception
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt <i>N</i></td>
+<td>the group modulus</td></tr>
+<tr><td>BigInt <i>g</i></td>
+<td>the group generator</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>group identifier</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="SRP6ServerSession">&nbsp;</span><a class="symbol-link" href="#SRP6ServerSession">SRP6ServerSession</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>Represents a SRP-6a server session</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>ref const(BigInt) <span class="symbol-target" id="step1">&nbsp;</span><a class="symbol-link" href="#step1">step1</a>(ref const BigInt <i>v</i>, in string <i>group_id</i>, in string <i>hash_id</i>, RandomNumberGenerator <i>rng</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Server side step 1
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt <i>v</i></td>
+<td>the verification value saved from client registration</td></tr>
+<tr><td>string <i>group_id</i></td>
+<td>the SRP group id</td></tr>
+<tr><td>string <i>hash_id</i></td>
+<td>the SRP hash in use</td></tr>
+<tr><td>RandomNumberGenerator <i>rng</i></td>
+<td>a random number generator</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>SRP-6 B value</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>SymmetricKey <span class="symbol-target" id="step2">&nbsp;</span><a class="symbol-link" href="#step2">step2</a>()(auto ref const BigInt <i>A</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Server side step 2
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>BigInt A</td>
+<td>the client's value</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>shared symmetric key</dd>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				

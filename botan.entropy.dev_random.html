@@ -954,6 +954,24 @@
 </p>
 <dt>License</dt><dd>Botan is released under the Simplified BSD License (see LICENSE.md)</dd>
 </dl>
+<hr><div class="row-fluid declaration"><h3>class <span class="symbol-target" id="DeviceEntropySource">&nbsp;</span><a class="symbol-link" href="#DeviceEntropySource">DeviceEntropySource</a>: <u>botan.entropy.entropy_src.EntropySource</u>;
+</h3></div>
+<div class="declaration-content"><dl><p>Entropy source reading from kernel devices like /dev/random</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="poll">&nbsp;</span><a class="symbol-link" href="#poll">poll</a>(ref EntropyAccumulator <i>accum</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Gather entropy from a RNG device</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this()(auto ref const Vector!string <i>fsnames</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Device_EntropySource constructor
+    Open a file descriptor to each (available) device in fsnames</p>
+</dl>
+</div>
+</div>
+</div>
+
 
 				</div>
 				
