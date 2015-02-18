@@ -67,7 +67,7 @@
     "dependencies": {
             "memutils": { "version": "~master", "path": "../memutils" } 
     }, 
-    "libs": ["dl"],
+    "libs-posix": ["dl"],
     "buildOptions": ["inline"],
     "versions": ["Have_botan"]
 }

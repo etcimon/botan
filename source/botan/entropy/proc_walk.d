@@ -11,6 +11,7 @@
 module botan.entropy.proc_walk;
 
 import botan.constants;
+version(Posix):
 static if (BOTAN_HAS_ENTROPY_SRC_PROC_WALKER):
 
 import botan.entropy.entropy_src;

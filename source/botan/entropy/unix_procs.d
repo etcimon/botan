@@ -11,6 +11,7 @@
 module botan.entropy.unix_procs;
 
 import botan.constants;
+version(Posix):
 static if (BOTAN_HAS_ENTROPY_SRC_UNIX_PROCESS_RUNNER):
 
 import botan.entropy.entropy_src;

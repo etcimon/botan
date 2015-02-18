@@ -8,7 +8,7 @@
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
 */
-module botan.engine.simd_engine.simd_engine;
+module botan.engine.simd_engine;
 
 import botan.constants;
 static if (BOTAN_HAS_ENGINE_SIMD):

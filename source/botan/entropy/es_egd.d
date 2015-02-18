@@ -11,6 +11,7 @@
 module botan.entropy.es_egd;
 
 import botan.constants;
+version(Posix):
 static if (BOTAN_HAS_ENTROPY_SRC_EGD):
 
 import botan.entropy.entropy_src;

@@ -69,12 +69,12 @@ public:
         HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPALL, 0);
         
         
-        TOOLHELP32_ITER!(MODULEENTRY32, Module32First, Module32Next)(accum);
-        TOOLHELP32_ITER!(PROCESSENTRY32, Process32First, Process32Next)(accum);
-        TOOLHELP32_ITER!(THREADENTRY32, Thread32First, Thread32Next)(accum);
+        TOOLHELP32_ITER!(MODULEENTRY32, Module32First, Module32Next, snapshot)(accum);
+		TOOLHELP32_ITER!(PROCESSENTRY32, Process32First, Process32Next, snapshot)(accum);
+		TOOLHELP32_ITER!(THREADENTRY32, Thread32First, Thread32Next, snapshot)(accum);
         
         
-        if (!accum.polling_goal_achieved())
+        if (!accum.pollingGoalAchieved())
         {
             size_t heap_lists_found = 0;
             HEAPLIST32 heap_list;
@@ -106,7 +106,7 @@ public:
                         } while(Heap32Next(&heap_entry));
                     }
                     
-                    if (accum.polling_goal_achieved())
+                    if (accum.pollingGoalAchieved())
                         break;
                     
                 } while(Heap32ListNext(snapshot, &heap_list));
@@ -119,30 +119,34 @@ public:
 
 
 
-void TOOLHELP32_ITER(alias DATA_TYPE, alias FUNC_FIRST, alias FUNC_NEXT)(ref EntropyAccumulator accum) {
-    if (!accum.polling_goal_achieved())
+void TOOLHELP32_ITER(alias DATA_TYPE, alias FUNC_FIRST, alias FUNC_NEXT, alias SNAPSHOT)(ref EntropyAccumulator accum) {
+    if (!accum.pollingGoalAchieved())
     {
         DATA_TYPE info;
         info.dwSize = (DATA_TYPE).sizeof;
-        if (FUNC_FIRST(snapshot, &info))
+		if (FUNC_FIRST(SNAPSHOT, &info))
         {
             do
             {
                 accum.add(info, 1);
-            } while(FUNC_NEXT(snapshot, &info));
+			} while(FUNC_NEXT(SNAPSHOT, &info));
         }
     }
 }
 
-import std.c.windows.windows;
+import core.sys.windows.windows;
 
 extern(Windows) private nothrow @nogc:
 
+DWORD GetMessagePos();
+LONG GetMessageTime();
+BOOL GetInputState();
 enum : uint {
     HF32_DEFAULT = 1,
     HF32_SHARED
 }
 
+alias LARGE_INTEGER = long;
 enum : uint {
     LF32_FIXED    = 0x1,
     LF32_FREE     = 0x2,

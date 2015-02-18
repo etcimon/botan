@@ -37,7 +37,7 @@ static if (BOTAN_HAS_ENGINE_ASSEMBLER)
 static if (BOTAN_HAS_ENGINE_AES_ISA)
     import botan.engine.aes_isa_engine;
 static if (BOTAN_HAS_ENGINE_SIMD)
-    import botan.engine.simd_engine.simd_engine;
+    import botan.engine.simd_engine;
 static if (BOTAN_HAS_ENGINE_GNU_MP)
     import botan.engine.gnump_engine;
 static if (BOTAN_HAS_ENGINE_OPENSSL)
@@ -196,7 +196,7 @@ private:
             ));
                 
         static if (BOTAN_HAS_ENTROPY_SRC_CAPI) version(Windows)
-            sources.pushBack(EntropySource(new Win32CAPIEntropySource));
+            sources.pushBack(new Win32CAPIEntropySource);
 
                 
         static if (BOTAN_HAS_ENTROPY_SRC_WIN32) version(Windows)
@@ -208,15 +208,15 @@ private:
         static if (BOTAN_HAS_ENTROPY_SRC_UNIX_PROCESS_RUNNER) version(Posix)
             sources.pushBack(new UnixProcessInfoEntropySource);
             
-        static if (BOTAN_HAS_ENTROPY_SRC_PROC_WALKER)
+        static if (BOTAN_HAS_ENTROPY_SRC_PROC_WALKER) version(Posix)
             sources.pushBack(new ProcWalkingEntropySource("/proc"));
             
-        static if (BOTAN_HAS_ENTROPY_SRC_UNIX_PROCESS_RUNNER)
+		static if (BOTAN_HAS_ENTROPY_SRC_UNIX_PROCESS_RUNNER) version(Posix)
             sources.pushBack(
                 new UnixEntropySource(   Vector!string( [ "/bin", "/sbin", "/usr/bin", "/usr/sbin" ] ) )
             );
                 
-        static if (BOTAN_HAS_ENTROPY_SRC_EGD)
+		static if (BOTAN_HAS_ENTROPY_SRC_EGD) version(Posix)
             sources.pushBack(
                 new EGDEntropySource( Vector!string( [ "/var/run/egd-pool", "/dev/egd-pool" ] ) )
             );

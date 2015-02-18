@@ -11,13 +11,12 @@
 module botan.entropy.es_capi;
 
 version(Windows):
+import botan.constants;
 static if (BOTAN_HAS_ENTROPY_SRC_CAPI):
 
 import botan.entropy.entropy_src;
 import botan.utils.types;
 import botan.utils.parsing;
-import windows.h;
-import wincrypt.h;
 
 /**
 * Win32 CAPI Entropy Source
@@ -32,11 +31,11 @@ public:
     */
     void poll(ref EntropyAccumulator accum)
     {
-        SecureVector!ubyte io_buffer = accum.getIoBuffer(32);
+        SecureVector!ubyte* io_buffer = &accum.getIoBuffer(32);
         
         foreach (prov_type; m_prov_types[])
         {
-            CSPHandle csp = CSPHandle(prov_type);
+            auto csp = scoped!CSPHandle(prov_type);
             
             size_t got = csp.genRandom(io_buffer.ptr, io_buffer.length);
             
@@ -57,7 +56,7 @@ public:
     {
         Vector!string capi_provs = splitter(provs, ':');
         
-        foreach (capi_prov; capi_provs)
+        foreach (capi_prov; capi_provs[])
         {
             if (capi_prov == "RSA_FULL")  m_prov_types.pushBack(PROV_RSA_FULL);
             if (capi_prov == "INTEL_SEC") m_prov_types.pushBack(PROV_INTEL_SEC);
@@ -81,8 +80,7 @@ public:
         m_valid = false;
         DWORD prov_type = cast(DWORD)capi_provider;
         
-        if (CryptAcquireContext(&m_handle, 0, 0,
-                                prov_type, CRYPT_VERIFYCONTEXT))
+        if (CryptAcquireContext(&m_handle, null, null, prov_type, CRYPT_VERIFYCONTEXT))
             m_valid = true;
     }
     
@@ -92,10 +90,10 @@ public:
             CryptReleaseContext(m_handle, 0);
     }
     
-    size_t genRandom(ubyte* output) const
+    size_t genRandom(ubyte* output, size_t length) const
     {
-        if (isValid() && CryptGenRandom(m_handle, cast(DWORD)(output.length), output))
-            return output.length;
+        if (isValid() && CryptGenRandom(m_handle, cast(DWORD) length, output))
+            return length;
         return 0;
     }
     
@@ -105,4 +103,36 @@ public:
 private:
     HCRYPTPROV m_handle;
     bool m_valid;
+}
+
+private:
+
+alias ULONG = uint;
+alias DWORD = ULONG;
+alias HCRYPTPROV = ULONG;
+alias PBYTE = ubyte*;
+enum {
+	PROV_RSA_FULL = 1,
+	PROV_FORTEZZA = 4,
+	PROV_RNG = 21,
+	PROV_INTEL_SEC = 22
+}
+alias BOOL = int;
+alias LPCSTR = const(char)*;
+enum {
+	CRYPT_VERIFYCONTEXT = 0xF0000000,
+}
+
+extern (Windows) {
+	BOOL CryptReleaseContext(HCRYPTPROV, DWORD);
+	BOOL CryptGenRandom(HCRYPTPROV, DWORD, PBYTE);
+	
+	version(Unicode) { 
+		BOOL CryptAcquireContextW(HCRYPTPROV*, LPCWSTR, LPCWSTR, DWORD, DWORD);
+		alias CryptAcquireContext = CryptAcquireContextW;
+	}
+	else {
+		BOOL CryptAcquireContextA(HCRYPTPROV*, LPCSTR, LPCSTR, DWORD, DWORD);
+		alias CryptAcquireContext = CryptAcquireContextA;
+	}
 }

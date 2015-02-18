@@ -8,7 +8,7 @@
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
 */
-module botan.benchmark.benchmark;
+module botan.utils.benchmark;
 
 import botan.constants;
 static if (BOTAN_HAS_BENCHMARK):
