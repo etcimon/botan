@@ -9,7 +9,10 @@ module botan.utils.simd.emmintrin;
 
 import botan.constants;
 static if (BOTAN_HAS_SIMD_SSE2):
-version(D_InlineAsm_X86) pragma(msg, "Error: Loaded SIMD SSE2 in a x86 build! Use --config=full_x86 in dub");
+version(D_InlineAsm_X86) {
+	version(Windows) { pragma(msg, "Error: Loaded SIMD SSE2 in a x86 build! Use --config=windows_x86 in dub"); }
+	else { pragma(msg, "Error: Loaded SIMD SSE2 in a x86 build! Use --config=posix_x86 in dub"); }
+}
 import core.simd;
 import std.conv : to;
 

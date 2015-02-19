@@ -326,7 +326,7 @@ static if (!SKIP_BIGINT_TEST) unittest
                 if (nextline[$-1] == '\\') nextline = nextline[0 .. $-1];
                 line ~= nextline;
                 line_data = test_data.readln();
-                if (!line_data) break;
+                if (line_data.length == 0) break;
                 nextline = line_data[0 .. $-1].strip();
             }
         }

@@ -22,6 +22,7 @@ import botan.utils.xor_buf;
 import botan.utils.get_byte;
 import std.conv : to;
 import std.algorithm;
+import botan.codec.hex;
 
 /**
 * Base class for CCM encryption and decryption
@@ -48,6 +49,7 @@ public:
         ubyte* buf = buffer.ptr + offset;
         
         m_msg_buf ~= buf[0 .. sz];
+		logDebug("m_msg_buf: ", hexEncode(m_msg_buf.ptr, m_msg_buf.length));
         buffer.length = offset; // truncate msg
     }
 
@@ -148,7 +150,7 @@ protected:
     final void inc(ref SecureVector!ubyte C)
     {
         for (size_t i = 0; i != C.length; ++i)
-            if (++(C[$-i-1]))
+            if (++(C.ptr[C.length-i-1]))
                 break;
     }
 
@@ -217,13 +219,10 @@ public:
 
     override void finish(ref SecureVector!ubyte buffer, size_t offset = 0)
     {
-		import botan.codec.hex;
         import std.algorithm : max;
         assert(buffer.length >= offset, "Offset is sane");
-		logDebug("Buffer: ", hexEncode(buffer.ptr, buffer.length));
         buffer.resize(max(buffer.length, offset + msgBuf().length));
         buffer[offset .. offset + msgBuf().length] = msgBuf()[0 .. msgBuf().length];
-        
         const size_t sz = buffer.length - offset;
         ubyte* buf = buffer.ptr + offset;
         
@@ -240,12 +239,11 @@ public:
             xorBuf(T.ptr, &(*ad)[i], BS);
             E.encrypt(T);
         }
-        
+
         SecureVector!ubyte C = formatC0();
         SecureVector!ubyte S0 = SecureVector!ubyte(BS);
         E.encrypt(C, S0);
         inc(C);
-        
         SecureVector!ubyte X = SecureVector!ubyte(BS);
         
         const(ubyte)* buf_end = &buf[sz];
@@ -255,15 +253,12 @@ public:
             const size_t to_proc = std.algorithm.min(BS, buf_end - buf);
             
             xorBuf(T.ptr, buf, to_proc);
-            E.encrypt(T);
-            
+            E.encrypt(T);            
             E.encrypt(C, X);
             xorBuf(buf, X.ptr, to_proc);
             inc(C);
-            
             buf += to_proc;
         }
-        
         T ^= S0;
         
         buffer ~= T.ptr[0 .. tagSize()];

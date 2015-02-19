@@ -77,7 +77,7 @@ public:
         for (size_t i = output.length; i != 0; --i)
         {
             ubyte temp = output[i-1];
-            output[i-1] = cast(ubyte)( (temp << 1) | carry );
+            output.ptr[i-1] = cast(ubyte)( (temp << 1) | carry );
             carry = (temp >> 7);
         }
         
@@ -86,18 +86,18 @@ public:
             switch(input.length)
             {
                 case 8:
-                    output[$-1] ^= 0x1B;
+                    output.ptr[output.length-1] ^= 0x1B;
                     break;
                 case 16:
-                    output[$-1] ^= 0x87;
-                    break;
+					output.ptr[output.length-1] ^= 0x87;
+					break;
                 case 32:
-                    output[$-2] ^= 0x4;
-                    output[$-1] ^= 0x25;
+					output.ptr[output.length-2] ^= 0x4;
+					output.ptr[output.length-1] ^= 0x25;
                     break;
                 case 64:
-                    output[$-2] ^= 0x1;
-                    output[$-1] ^= 0x25;
+					output.ptr[output.length-2] ^= 0x1;
+					output.ptr[output.length-1] ^= 0x25;
                     break;
                 default:
                     assert(false, "Unhandled length input");
@@ -166,7 +166,7 @@ protected:
         }
         else
         {
-            m_state[m_position] ^= 0x80;
+            m_state.ptr[m_position] ^= 0x80;
             xorBuf(m_state, m_P, outputLength());
         }
         
