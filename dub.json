@@ -23,7 +23,7 @@
             "Noekeon_SIMD", "XTEA_SIMD", "IDEA_SSE2", "SHA1_SSE2", "Engine_ASM", "Engine_AES_ISA", "Engine_SIMD",
             "Entropy_HRTimer", "Entropy_Rdrand", "Entropy_DevRand", "Entropy_EGD", "Entropy_UnixProc", "Entropy_CAPI", 
             "Entropy_Win32", "Entropy_ProcWalk", "X931_RNG", "HMAC_DRBG", "KDF1", "KDF2", "SSL_V3_PRF", "TLS_V10_PRF", "TLS_V12_PRF", "X942_PRF",
-            "X509", "PUBKEY", "FPE_FE1", "RFC3394", "PassHash9", "BCrypt", "SRP6", "TSS", "CryptoBox", 
+            "TLS", "X509", "PUBKEY", "FPE_FE1", "RFC3394", "PassHash9", "BCrypt", "SRP6", "TSS", "CryptoBox", 
             "CryptoBox_PSK", "ZLib"]
         },
         {
@@ -41,7 +41,7 @@
             "Noekeon_SIMD", "XTEA_SIMD", "Engine_ASM", "Engine_AES_ISA",
             "Entropy_HRTimer", "Entropy_Rdrand", "Entropy_DevRand", "Entropy_EGD", "Entropy_UnixProc", "Entropy_CAPI", 
             "Entropy_Win32", "Entropy_ProcWalk", "X931_RNG", "HMAC_DRBG", "KDF1", "KDF2", "SSL_V3_PRF", "TLS_V10_PRF", "TLS_V12_PRF", "X942_PRF",
-            "TLS", "X509", "CVC", "PUBKEY", "FPE_FE1", "RFC3394", "PassHash9", "BCrypt", "SRP6", "TSS", "CryptoBox", "CryptoBox_PSK"],
+            "TLS", "X509", "PUBKEY", "FPE_FE1", "RFC3394", "PassHash9", "BCrypt", "SRP6", "TSS", "CryptoBox", "CryptoBox_PSK"],
             
         }, 
         {
