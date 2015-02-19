@@ -13,7 +13,7 @@
             "name": "full",
             "versions": ["SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24", "PBKDF1", "PBKDF2", "CTR_BE", "HMAC", 
             "EMSA1", "EMSA1_BSI", "EMSA_X931", "EMSA_PKCS1", "EMSA_PSSR", "EMSA_RAW", "EME_OAEP", "EME_PKCS1v15", "PBE_PKCSv20", 
-            "RT_Test", "RT_Test_Priv", "RT_Test_Priv_Gen", "Self_Tests", "ECB", "CBC", "XTS", "OFB", "CFB", 
+            "Self_Tests", "ECB", "CBC", "XTS", "OFB", "CFB", 
             "AEAD_FILTER", "AEAD_CCM", "AEAD_EAX", "AEAD_OCB", "AEAD_GCM", "GCM_CLMUL", "AEAD_SIV", "RFC6979", "RSA", "RW", "DLIES", "DSA", "ECDSA", "ElGamal", "GOST_3410", 
             "Nyberg_Rueppel", "Diffie_Hellman", "ECDH", "AES", "Blowfish", "Camellia", "CAST", "Cascade", "DES", "GOST_28147", "IDEA", 
             "KASUMI", "LION", "MARS", "MISTY1", "NOEKEON", "RC2", "RC5", "RC6", "SAFER", "SEED", "Serpent", "TEA", "Twofish", "Threefish", 
@@ -23,17 +23,15 @@
             "Noekeon_SIMD", "XTEA_SIMD", "IDEA_SSE2", "SHA1_SSE2", "Engine_ASM", "Engine_AES_ISA", "Engine_SIMD",
             "Entropy_HRTimer", "Entropy_Rdrand", "Entropy_DevRand", "Entropy_EGD", "Entropy_UnixProc", "Entropy_CAPI", 
             "Entropy_Win32", "Entropy_ProcWalk", "X931_RNG", "HMAC_DRBG", "KDF1", "KDF2", "SSL_V3_PRF", "TLS_V10_PRF", "TLS_V12_PRF", "X942_PRF",
-            "TLS", "X509", "CVC", "PUBKEY", "FPE_FE1", "RFC3394", "PassHash9", "BCrypt", "SRP6", "TSS", "CryptoBox", 
-            "CryptoBox_PSK", "SQLite", "ZLib"],
-            
-            "libs": ["sqlite3"]
-        }, 
+            "X509", "PUBKEY", "FPE_FE1", "RFC3394", "PassHash9", "BCrypt", "SRP6", "TSS", "CryptoBox", 
+            "CryptoBox_PSK", "ZLib"]
+        },
         {
             "name": "full_x86",
             "versions": ["Serpent_x86_32", "MD4_x86_32", "MD5_x86_32", "SHA1_x86_32",
             "SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24", "PBKDF1", "PBKDF2", "CTR_BE", "HMAC", 
             "EMSA1", "EMSA1_BSI", "EMSA_X931", "EMSA_PKCS1", "EMSA_PSSR", "EMSA_RAW", "EME_OAEP", "EME_PKCS1v15", "PBE_PKCSv20", 
-            "RT_Test", "RT_Test_Priv", "RT_Test_Priv_Gen", "Self_Tests", "ECB", "CBC", "XTS", "OFB", "CFB", 
+            "Self_Tests", "ECB", "CBC", "XTS", "OFB", "CFB", 
             "AEAD_FILTER", "AEAD_CCM", "AEAD_EAX", "AEAD_OCB", "AEAD_GCM", "AEAD_SIV", "RFC6979", "RSA", "RW", "DLIES", "DSA", "ECDSA", "ElGamal", "GOST_3410", 
             "Nyberg_Rueppel", "Diffie_Hellman", "ECDH", "AES", "Blowfish", "Camellia", "CAST", "Cascade", "DES", "GOST_28147", "IDEA", 
             "KASUMI", "LION", "MARS", "MISTY1", "NOEKEON", "RC2", "RC5", "RC6", "SAFER", "SEED", "Serpent", "TEA", "Twofish", "Threefish", 
@@ -47,21 +45,21 @@
             
         }, 
         {
-            "name": "windows_test_x64",
-            "versions": ["SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24", "PBKDF1", "PBKDF2", "CTR_BE", "HMAC", 
+            "name": "windows_x86",
+            "versions": ["Serpent_x86_32", "MD4_x86_32", "MD5_x86_32", "SHA1_x86_32",
+            "SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24", "PBKDF1", "PBKDF2", "CTR_BE", "HMAC", 
             "EMSA1", "EMSA1_BSI", "EMSA_X931", "EMSA_PKCS1", "EMSA_PSSR", "EMSA_RAW", "EME_OAEP", "EME_PKCS1v15", "PBE_PKCSv20", 
-            "RT_Test", "RT_Test_Priv", "RT_Test_Priv_Gen", "Self_Tests", "ECB", "CBC", "XTS", "OFB", "CFB", 
-            "AEAD_FILTER", "AEAD_CCM", "AEAD_EAX", "AEAD_OCB", "AEAD_GCM", "GCM_CLMUL", "AEAD_SIV", "RFC6979", "RSA", "RW", "DLIES", "DSA", "ECDSA", "ElGamal", "GOST_3410", 
+            "Self_Tests", "ECB", "CBC", "XTS", "OFB", "CFB", 
+            "AEAD_FILTER", "AEAD_CCM", "AEAD_EAX", "AEAD_OCB", "AEAD_GCM", "AEAD_SIV", "RFC6979", "RSA", "RW", "DLIES", "DSA", "ECDSA", "ElGamal", "GOST_3410", 
             "Nyberg_Rueppel", "Diffie_Hellman", "ECDH", "AES", "Blowfish", "Camellia", "CAST", "Cascade", "DES", "GOST_28147", "IDEA", 
             "KASUMI", "LION", "MARS", "MISTY1", "NOEKEON", "RC2", "RC5", "RC6", "SAFER", "SEED", "Serpent", "TEA", "Twofish", "Threefish", 
-            "XTEA", "Adler32",  "CRC32", "GOST_3411", "HAS_160", "Keccak", "MD2",  "RIPEMD_128", "RIPEMD_160", "SHA1_x86_64",
+            "XTEA", "Adler32",  "CRC32", "GOST_3411", "HAS_160", "Keccak", "MD2",  "RIPEMD_128", "RIPEMD_160", 
             "SHA2_64", "Skein_512", "Tiger", "Whirlpool", "ParallelHash", "Comb4P", "CBC_MAC", "CMAC", "SSL3_MAC", 
-            "ANSI_X919_MAC", "RC4", "ChaCha", "Salsa20", "AES_NI", "AES_SSSE3", "Serpent_SIMD",  "SIMD_Scalar", "SIMD_SSE2",
-            "Noekeon_SIMD", "XTEA_SIMD", "IDEA_SSE2", "SHA1_SSE2",
+            "ANSI_X919_MAC", "RC4", "ChaCha", "Salsa20", "Serpent_SIMD",  "SIMD_Scalar",
+            "Noekeon_SIMD", "XTEA_SIMD", "Engine_ASM", "Engine_AES_ISA",
             "Entropy_HRTimer", "Entropy_Rdrand", "Entropy_DevRand", "Entropy_EGD", "Entropy_UnixProc", "Entropy_CAPI", 
             "Entropy_Win32", "Entropy_ProcWalk", "X931_RNG", "HMAC_DRBG", "KDF1", "KDF2", "SSL_V3_PRF", "TLS_V10_PRF", "TLS_V12_PRF", "X942_PRF",
-            "RFC3394", "PassHash9", "BCrypt", "TSS",
-            "ZLib"]
+            "TLS", "X509", "CVC", "PUBKEY", "FPE_FE1", "RFC3394", "PassHash9", "BCrypt", "SRP6", "TSS", "CryptoBox", "CryptoBox_PSK"]
         }, 
         {
             "name": "lite",
@@ -86,6 +84,5 @@
     }, 
     "libs-posix": ["dl"],
 	"libs-windows": ["advapi32", "crypt32", "user32"],
-    "buildOptions": ["inline"],
     "versions": ["Have_botan"]
 }

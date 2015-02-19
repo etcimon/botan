@@ -27,9 +27,9 @@ public:
     /**
     * Returns: new instance of this same algorithm
     */
-    abstract PBKDF clone() const;
+    PBKDF clone() const;
 
-    abstract @property string name() const;
+    @property string name() const;
 
     /**
     * Derive a key from a passphrase
@@ -130,7 +130,7 @@ public:
     *          run until duration has passed.
     * Returns: the number of iterations performed and the derived key
     */
-    abstract Pair!(size_t, OctetString)
+    Pair!(size_t, OctetString)
         keyDerivation(size_t output_len,
                       in string passphrase,
                       const(ubyte)* salt, size_t salt_len,

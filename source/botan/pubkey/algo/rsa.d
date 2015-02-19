@@ -24,6 +24,7 @@ import botan.pubkey.algo.keypair;
 import botan.rng.rng;
 import memutils.helpers : Embed;
 import std.concurrency;
+import core.thread;
 
 struct RSAOptions {
     enum algoName = "RSA";
@@ -223,21 +224,20 @@ private:
                 {
                     auto powermod_d1_p = FixedExponentPowerMod(*cast(const BigInt*)d1, *cast(const BigInt*)p);
                     *ret = (*powermod_d1_p)(*cast(const BigInt*)m2);
-                    send(cast(Tid) tid, true);
-                }
-                auto done = receiveOnly!bool;
+					send(cast(Tid) tid, cast(shared)Thread.getThis());
+				}
+				auto done = receiveOnly!bool;
                 destroy(*ret);
-                send(cast(Tid) tid, true);
              }, 
             cast(shared) thisTid(), cast(shared)m_d1, cast(shared)m_p, cast(shared)&m, cast(shared)&j1);
         
         BigInt j2 = (cast(FixedExponentPowerModImpl)*m_powermod_d2_q)(m);
-        bool done = receiveOnly!bool();
-
-        BigInt j3 = m_mod_p.reduce(subMul(j1, j2, *m_c));
+		Thread thr = cast(Thread)receiveOnly!(shared(Thread))();
+		
+		BigInt j3 = m_mod_p.reduce(subMul(j1, j2, *m_c));
         send(tid, true); // Destroy j1
         BigInt ret = mulAdd(j3, *m_q, j2);
-        done = receiveOnly!bool(); // wait for destruction...
+		thr.join();
         return ret;
     }
 
