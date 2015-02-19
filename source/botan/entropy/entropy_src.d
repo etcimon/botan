@@ -62,8 +62,7 @@ public:
     */
     void add(const void* bytes, size_t length, double entropy_bits_per_byte)
     {
-        m_done = m_accum_fn(cast(const(ubyte)*)(bytes),
-                            length, entropy_bits_per_byte * length);
+        m_done = m_accum_fn(cast(const(ubyte)*)(bytes), length, entropy_bits_per_byte * length);
     }
 
     /**

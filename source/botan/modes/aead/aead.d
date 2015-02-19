@@ -192,10 +192,9 @@ size_t aeadTest(string algo, string input, string expected, string nonce_hex, st
 
     // should first update if possible
     enc.finish(vec);
-    
     if (vec != expected_ct)
     {
-        logError(algo ~ " got ct " ~ hexEncode(vec) ~ " expected " ~ expected);
+        logError("1: ", algo ~ " got ct " ~ hexEncode(vec) ~ " expected " ~ expected);
         logError(algo ~ " \n");
         ++fail;
     }
@@ -207,7 +206,7 @@ size_t aeadTest(string algo, string input, string expected, string nonce_hex, st
     
     if (vec != pt)
     {
-        logError(algo ~ " got pt " ~ hexEncode(vec) ~ " expected " ~ input);
+        logError("2: ", algo ~ " got pt " ~ hexEncode(vec) ~ " expected " ~ input);
         ++fail;
     }
     

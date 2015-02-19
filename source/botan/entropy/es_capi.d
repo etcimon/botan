@@ -68,8 +68,8 @@ public:
             m_prov_types.pushBack(PROV_RSA_FULL);
     }
 
-    private:
-        Vector!( ulong ) m_prov_types;
+private:
+    Vector!( ulong ) m_prov_types;
 }
 
 final class CSPHandle

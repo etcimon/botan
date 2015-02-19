@@ -217,10 +217,12 @@ public:
 
     override void finish(ref SecureVector!ubyte buffer, size_t offset = 0)
     {
+		import botan.codec.hex;
         import std.algorithm : max;
         assert(buffer.length >= offset, "Offset is sane");
+		logDebug("Buffer: ", hexEncode(buffer.ptr, buffer.length));
         buffer.resize(max(buffer.length, offset + msgBuf().length));
-        buffer.ptr[offset .. offset + msgBuf().length] = msgBuf().ptr[0 .. msgBuf().length];
+        buffer[offset .. offset + msgBuf().length] = msgBuf()[0 .. msgBuf().length];
         
         const size_t sz = buffer.length - offset;
         ubyte* buf = buffer.ptr + offset;

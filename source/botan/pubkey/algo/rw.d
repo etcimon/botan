@@ -25,6 +25,7 @@ import botan.utils.types;
 import memutils.helpers;
 import std.algorithm;
 import std.concurrency;
+import core.thread;
 
 struct RWOptions {
     enum algoName = "RW";
@@ -165,7 +166,9 @@ public:
     override size_t maxInputBits() const { return (m_n.bits() - 1); }
 
     override SecureVector!ubyte sign(const(ubyte)* msg, size_t msg_len, RandomNumberGenerator rng)
-    {
+	{
+		import core.memory : GC;
+		GC.disable();
         rng.addEntropy(msg, msg_len);
 
         if (!m_blinder.initialized()) { // initialize here because we need rng
@@ -193,18 +196,17 @@ public:
                 BigInt* ret = cast(BigInt*)j1_2;
 
                 {
-                    auto powermod_d1_p = FixedExponentPowerMod(*cast(const BigInt*)d1, *cast(const BigInt*)p);
+                    Unique!FixedExponentPowerModImpl powermod_d1_p = new FixedExponentPowerModImpl(*cast(const BigInt*)d1, *cast(const BigInt*)p);
                     *ret = (*powermod_d1_p)(*cast(BigInt*)i2);
-                    send(cast(Tid) tid, true); // send j1 available signal
+					send(cast(Tid) tid, cast(shared)Thread.getThis());
                 }
                 auto done = receiveOnly!bool; // can destroy j1
                 destroy(*ret);
-                send(cast(Tid)tid, true); // signal j1 destroyed
             }, 
             cast(shared)thisTid(), cast(shared)m_d1, cast(shared)m_p, cast(shared)&i, cast(shared)&j1
             );
         const BigInt j2 = (*m_powermod_d2_q)(i);
-        bool done = receiveOnly!bool();        
+		Thread thr = cast(Thread)receiveOnly!(shared(Thread))();
         BigInt j3 = m_mod_p.reduce(subMul(j1, j2, *m_c));
         send(cast(Tid)tid, true);
         BigInt r = m_blinder.unblind(mulAdd(j3, *m_q, j2));
@@ -214,7 +216,8 @@ public:
         if (cmp2 < min_val)
             min_val = cmp2.move();
         auto ret = BigInt.encode1363(min_val, m_n.bytes());
-        done = receiveOnly!bool(); // make sure j1 is destroyed
+		thr.join();
+		GC.enable();
         return ret;
     }
 private:

@@ -213,20 +213,22 @@ public:
 private:
     BigInt privateOp()(auto const ref BigInt m) const
     {
+		import core.memory : GC;
+		GC.disable();
         if (m >= *m_n)
             throw new InvalidArgument("RSA private op - input is too large");
         BigInt j1;
         auto tid = spawn((shared(Tid) tid, shared(const BigInt*) d1, shared(const BigInt*) p, shared(const BigInt*) m2, shared(BigInt*) j1_2)
             { 
-                import botan.libstate.libstate : modexpInit;
+				import botan.libstate.libstate : modexpInit;
                 modexpInit(); // enable quick path for powermod
                 BigInt* ret = cast(BigInt*) j1_2;
                 {
                     auto powermod_d1_p = FixedExponentPowerMod(*cast(const BigInt*)d1, *cast(const BigInt*)p);
-                    *ret = (*powermod_d1_p)(*cast(const BigInt*)m2);
+					*ret = (*powermod_d1_p)( *cast(const BigInt*) m2);
 					send(cast(Tid) tid, cast(shared)Thread.getThis());
 				}
-				auto done = receiveOnly!bool;
+				bool done = receiveOnly!bool;
                 destroy(*ret);
              }, 
             cast(shared) thisTid(), cast(shared)m_d1, cast(shared)m_p, cast(shared)&m, cast(shared)&j1);
@@ -236,9 +238,9 @@ private:
 		
 		BigInt j3 = m_mod_p.reduce(subMul(j1, j2, *m_c));
         send(tid, true); // Destroy j1
-        BigInt ret = mulAdd(j3, *m_q, j2);
 		thr.join();
-        return ret;
+		GC.enable();
+		return mulAdd(j3, *m_q, j2);
     }
 
     const BigInt* m_n;
