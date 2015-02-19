@@ -3,18 +3,29 @@ Botan Crypto Library
 
 Botan is a D library inteded for native crypto and TLS.
 
-It compiles only with DMD, druntime and Phobos git ~master at the moment, which requires it to be `git clone` and compiled manually. The most optimal development environment for Botan is [Mono-D](http://wiki.dlang.org/Mono-D). 
+It is a translation of the C++ library [Botan](http://botan.randombit.net/), although the code is now in D and uses the [memutils](https://github.com/etcimon/memutils) library as a replacement for the C++ STL.
 
-It is a translation of the C++ library [Botan](http://botan.randombit.net/), although the code is now in D and uses the [memutils](https://github.com/etcimon/memutils) library as a replacement for the C++ STL. The commits are mirrored manually from C++ to D for future version increments.
+Current Version: v1.11.10, commit ref# [455bd2557cbb1343e59eefd97cb449f06a702c28](https://github.com/randombit/botan/commit/455bd2557cbb1343e59eefd97cb449f06a702c28)
 
-Current Version: v1.11.10 <==> Botan/C++ git commit: 455bd2557cbb1343e59eefd97cb449f06a702c28
+Getting Started
+---------------
 
-Usage
------
+Botan has been tested on Windows x86, Windows x64, OSX x64, Linux x86, Linux x64 with DMD v2.067.
+
+For development, you should use the [Mono-D](http://wiki.dlang.org/Mono-D) IDE, as it has been specifically crafted to handle the high amount of symbols.
+
+- Compile [DMD](https://github.com/D-Programming-Language/dmd), [druntime](https://github.com/D-Programming-Language/druntime) and [Phobos](https://github.com/D-Programming-Language/phobos) v2.067 (only available through Git at the moment). You can find information on compiling D in the [wiki](http://wiki.dlang.org/Building_DMD).
+
+- Install [dub](http://code.dlang.org/download) v0.9.22+
+
+- Compile Botan tests using `dub test --arch=x86_64` for x64, or `dub test --config=full_x86` for x86.
+
+Learning
+--------
+
+For further information, start with the [GitHub Wiki](https://github.com/etcimon/botan/wiki) for information on how to use this library.
 
 You can read the API documentation in the [GitHub Pages](http://etcimon.github.io/botan)
-
-You should however start with the [GitHub Wiki](https://github.com/etcimon/botan/wiki) for information on how to use this library.
 
 Supported Algorithms
 --------------------
