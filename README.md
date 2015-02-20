@@ -1,7 +1,7 @@
 Botan Crypto Library
 ====================
 
-Botan is a D library inteded for native crypto and TLS.
+Botan is a D library intended for native crypto and TLS.
 
 It is a translation of the C++ library [Botan](http://botan.randombit.net/), although the code is now in D and uses the [memutils](https://github.com/etcimon/memutils) library as a replacement for the C++ STL.
 
