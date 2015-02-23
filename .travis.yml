@@ -1,0 +1,6 @@
+language: d
+
+d:
+  - dmd-2.067.0-b2
+script:
+  - dub test
