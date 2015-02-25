@@ -452,8 +452,8 @@ private:
         return toVector()[].idup;
     }
 
-    public Vector!ubyte toVector() const {
-        Vector!ubyte ret;
+    public Vector!char toVector() const {
+        Vector!char ret;
         ret ~= "p: ";
         ret ~= m_p.toVector()[];
         ret ~= "\n";

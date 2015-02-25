@@ -117,11 +117,11 @@ public:
         return toVector()[].idup;
     }
 
-    Vector!ubyte toVector() const {
-        Vector!ubyte oid_str;
+    Vector!char toVector() const {
+        Vector!char oid_str;
         foreach (size_t i; 0 .. m_id.length)
         {
-            oid_str ~= to!string(m_id[i]);
+            oid_str ~= to!(char[])(m_id[i]);
             if (i != m_id.length - 1)
                 oid_str ~= '.';
         }

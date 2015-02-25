@@ -40,14 +40,14 @@ public:
     /*
     * Write the BigInt into a vector
     */
-    Vector!ubyte toVector(Base base = Decimal) const
+    Vector!char toVector(Base base = Decimal) const
     {
         Vector!ubyte buffer = BigInt.encode(this, base);
-        Vector!ubyte ret;
+        Vector!char ret;
         size_t skip = 0;
         while(skip < buffer.length && buffer[skip] == '0')
             ++skip;
-        ret[] = (buffer.ptr + skip)[0 .. buffer.length - skip];
+        ret[] = cast(char[])(buffer.ptr + skip)[0 .. buffer.length - skip];
         return ret.move();
     }
 
@@ -56,9 +56,9 @@ public:
     */
     string toString(Base base = Decimal) const
     {
-        Vector!ubyte vec = toVector(base);
+        auto vec = toVector(base);
         //logTrace("toString: ", vec[]);
-        return vec[].idup;
+        return (vec[]).idup;
     }
     alias Base = int;
     /**

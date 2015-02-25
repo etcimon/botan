@@ -282,9 +282,9 @@ public:
         return toVector()[].idup;
     }
 
-    Vector!ubyte toVector() const
+    Vector!char toVector() const
     {
-        Vector!ubyte output;
+        Vector!char output;
         DictionaryListRef!(string, string) contents = contents();
         
         foreach(const ref string key, const ref string val; contents)

@@ -296,9 +296,9 @@ SecureVector!ubyte base64Decode(in string input, bool ignore_ws = true)
                          exception if whitespace is encountered
 * Returns: decoded base64 output
 */
-SecureVector!ubyte base64Decode(const ref Vector!ubyte input, bool ignore_ws = true)
+SecureVector!ubyte base64Decode(const ref Vector!char input, bool ignore_ws = true)
 {
-    return base64Decode(input[], ignore_ws);
+    return base64Decode(cast(string)input[], ignore_ws);
 }
 
 

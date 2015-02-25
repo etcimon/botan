@@ -254,9 +254,9 @@ Vector!ubyte hexDecode(string input, bool ignore_ws = true)
                          exception if whitespace is encountered
 * Returns: decoded hex output
 */
-Vector!ubyte hexDecode(const ref Vector!ubyte input, bool ignore_ws = true)
+Vector!ubyte hexDecode(const ref Vector!char input, bool ignore_ws = true)
 {
-    return hexDecode(input[], ignore_ws);
+    return hexDecode(cast(string)input[], ignore_ws);
 }
 
 /**

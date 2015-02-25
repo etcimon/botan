@@ -29,8 +29,7 @@ import botan.utils.mem_ops;
 size_t total_tests;
 
 string toString(PointGFp point) {
-    import std.array : Appender;
-    Vector!ubyte output;
+    Vector!char output;
     output ~= "(" ~ point.getAffineX().toString() ~ " " ~ point.getAffineY().toString() ~ " )";
     return output[].idup;
 }

@@ -22,6 +22,7 @@ import botan.algo_base.scan_token;
 import botan.algo_factory.algo_factory;
 import std.algorithm : canFind;
 import std.conv : to;
+import memutils.scoped;
 
 import botan.constants;
 static if (BOTAN_HAS_MODE_CFB)        import botan.modes.cfb;
@@ -128,14 +129,14 @@ public:
     {
         Vector!string algo_parts = splitter(algo_spec, '/');
         if (algo_parts.empty)
-            throw new InvalidAlgorithmName(algo_spec);
+            throw alloc!InvalidAlgorithmName(algo_spec);
         
         const string cipher_name = algo_parts[0];
         
         // check if it is a stream cipher first (easy case)
         const StreamCipher stream_cipher = af.prototypeStreamCipher(cipher_name);
         if (stream_cipher)
-            return new StreamCipherFilter(stream_cipher.clone());
+            return alloc!StreamCipherFilter(stream_cipher.clone());
         
         const BlockCipher block_cipher = af.prototypeBlockCipher(cipher_name);
         if (!block_cipher)
@@ -145,7 +146,7 @@ public:
             return null; // 4 part mode, not something we know about
         
         if (algo_parts.length < 2)
-            throw new LookupError("Cipher specification '" ~ algo_spec ~ "' is missing mode identifier");
+            throw alloc!LookupError("Cipher specification '" ~ algo_spec ~ "' is missing mode identifier");
         
         string mode = algo_parts[1];
         
@@ -158,16 +159,16 @@ public:
         if (mode == "ECB" && padding == "CTS")
             return null;
         else if ((mode != "CBC" && mode != "ECB") && padding != "NoPadding")
-            throw new InvalidAlgorithmName(algo_spec);
+            throw alloc!InvalidAlgorithmName(algo_spec);
         
         KeyedFilter filt = getCipherMode(block_cipher, direction, mode, padding);
         if (filt)
             return filt;
         
         if (padding != "NoPadding")
-            throw new AlgorithmNotFound(cipher_name ~ "/" ~ mode ~ "/" ~ padding);
+            throw alloc!AlgorithmNotFound(cipher_name ~ "/" ~ mode ~ "/" ~ padding);
         else
-            throw new AlgorithmNotFound(cipher_name ~ "/" ~ mode);
+            throw alloc!AlgorithmNotFound(cipher_name ~ "/" ~ mode);
     }
 
     override BlockCipher findBlockCipher(in SCANToken request, AlgorithmFactory af) const
@@ -176,121 +177,121 @@ public:
         
         static if (BOTAN_HAS_AES) {
             if (request.algoName == "AES-128")
-                return new AES128;
+                return alloc!AES128;
             if (request.algoName == "AES-192")
-                return new AES192;
+                return alloc!AES192;
             if (request.algoName == "AES-256")
-                return new AES256;
+                return alloc!AES256;
         }
         
         static if (BOTAN_HAS_BLOWFISH) {
             if (request.algoName == "Blowfish")
-                return new Blowfish;
+                return alloc!Blowfish;
         }
         
         static if (BOTAN_HAS_CAMELLIA) {
             if (request.algoName == "Camellia-128")
-                return new Camellia128;
+                return alloc!Camellia128;
             if (request.algoName == "Camellia-192")
-                return new Camellia192;
+                return alloc!Camellia192;
             if (request.algoName == "Camellia-256")
-                return new Camellia256;
+                return alloc!Camellia256;
         }
         
         static if (BOTAN_HAS_CAST) {
             if (request.algoName == "CAST-128")
-                return new CAST128;
+                return alloc!CAST128;
             if (request.algoName == "CAST-256")
-                return new CAST256;
+                return alloc!CAST256;
         }
         
         static if (BOTAN_HAS_DES) {
             if (request.algoName == "DES")
-                return new DES;
+                return alloc!DES;
             if (request.algoName == "DESX")
-                return new DESX;
+                return alloc!DESX;
             if (request.algoName == "TripleDES")
-                return new TripleDES;
+                return alloc!TripleDES;
         }
         
         static if (BOTAN_HAS_GOST_28147_89) {
             if (request.algoName == "GOST-28147-89")
-                return new GOST_28147_89(request.arg(0, "R3411_94_TestParam"));
+                return alloc!GOST_28147_89(request.arg(0, "R3411_94_TestParam"));
         }
         
         static if (BOTAN_HAS_IDEA) {
             if (request.algoName == "IDEA")
-                return new IDEA;
+                return alloc!IDEA;
         }
         
         static if (BOTAN_HAS_KASUMI) {
             if (request.algoName == "KASUMI")
-                return new KASUMI;
+                return alloc!KASUMI;
         }
         
         static if (BOTAN_HAS_MARS) {
             if (request.algoName == "MARS")
-                    return new MARS;
+                    return alloc!MARS;
         }
         
         static if (BOTAN_HAS_MISTY1) {
             if (request.algoName == "MISTY1")
-                return new MISTY1(request.argAsInteger(0, 8));
+                return alloc!MISTY1(request.argAsInteger(0, 8));
         }
         
         static if (BOTAN_HAS_NOEKEON) {
             if (request.algoName == "Noekeon")
-                return new Noekeon;
+                return alloc!Noekeon;
         }
         
         static if (BOTAN_HAS_RC2) {
             if (request.algoName == "RC2")
-                return new RC2;
+                return alloc!RC2;
         }
         
         static if (BOTAN_HAS_RC5) {
             if (request.algoName == "RC5")
-                return new RC5(request.argAsInteger(0, 12));
+                return alloc!RC5(request.argAsInteger(0, 12));
         }
         
         static if (BOTAN_HAS_RC6) {
             if (request.algoName == "RC6")
-                return new RC6;
+                return alloc!RC6;
         }
         
         static if (BOTAN_HAS_SAFER) {
             if (request.algoName == "SAFER-SK")
-                return new SAFERSK(request.argAsInteger(0, 10));
+                return alloc!SAFERSK(request.argAsInteger(0, 10));
         }
         
         static if (BOTAN_HAS_SEED) {
             if (request.algoName == "SEED")
-                return new SEED;
+                return alloc!SEED;
         }
         
         static if (BOTAN_HAS_SERPENT) {
             if (request.algoName == "Serpent")
-                return new Serpent;
+                return alloc!Serpent;
         }
         
         static if (BOTAN_HAS_TEA) {
             if (request.algoName == "TEA")
-                return new TEA;
+                return alloc!TEA;
         }
         
         static if (BOTAN_HAS_TWOFISH) {
             if (request.algoName == "Twofish")
-                return new Twofish;
+                return alloc!Twofish;
         }
         
         static if (BOTAN_HAS_TWOFISH) {
             if (request.algoName == "Threefish-512")
-                return new Threefish512;
+                return alloc!Threefish512;
         }
         
         static if (BOTAN_HAS_XTEA) {
             if (request.algoName == "XTEA")
-                return new XTEA;
+                return alloc!XTEA;
         }
         
         static if (BOTAN_HAS_CASCADE) {
@@ -300,7 +301,7 @@ public:
                 const BlockCipher c2 = af.prototypeBlockCipher(request.arg(1));
                 
                 if (c1 && c2)
-                    return new CascadeCipher(c1.clone(), c2.clone());
+                    return alloc!CascadeCipher(c1.clone(), c2.clone());
             }
         }
         
@@ -316,7 +317,7 @@ public:
                 if (!hash || !stream_cipher)
                     return null;
                 
-                return new Lion(hash.clone(), stream_cipher.clone(), block_size);
+                return alloc!Lion(hash.clone(), stream_cipher.clone(), block_size);
             }
         }
         
@@ -330,7 +331,7 @@ public:
             if (request.algoName == "OFB" && request.argCount() == 1)
             {
                 if (auto proto = af.prototypeBlockCipher(request.arg(0)))
-                    return new OFB(proto.clone());
+                    return alloc!OFB(proto.clone());
             }
         }
         
@@ -338,25 +339,25 @@ public:
             if (request.algoName == "CTR-BE" && request.argCount() == 1)
             {
                 if (auto proto = af.prototypeBlockCipher(request.arg(0)))
-                    return new CTRBE(proto.clone());
+                    return alloc!CTRBE(proto.clone());
             }
         }
         
         static if (BOTAN_HAS_RC4) {
             if (request.algoName == "RC4")
-                return new RC4(request.argAsInteger(0, 0));
+                return alloc!RC4(request.argAsInteger(0, 0));
             if (request.algoName == "RC4_drop")
-                return new RC4(768);
+                return alloc!RC4(768);
         }
         
         static if (BOTAN_HAS_CHACHA) {
             if (request.algoName == "ChaCha")
-                return new ChaCha;
+                return alloc!ChaCha;
         }
         
         static if (BOTAN_HAS_SALSA20) {
             if (request.algoName == "Salsa20")
-                return new Salsa20;
+                return alloc!Salsa20;
         }
         
         return null;
@@ -367,93 +368,93 @@ public:
         //logTrace("FindHash Core");
         static if (BOTAN_HAS_ADLER32) {
             if (request.algoName == "Adler32")
-                return new Adler32;
+                return alloc!Adler32;
         }
         
         static if (BOTAN_HAS_CRC24) {
             if (request.algoName == "CRC24")
-                return new CRC24;
+                return alloc!CRC24;
         }
         
         static if (BOTAN_HAS_CRC32) {
             if (request.algoName == "CRC32")
-                return new CRC32;
+                return alloc!CRC32;
         }
         
         static if (BOTAN_HAS_GOST_34_11) {
             if (request.algoName == "GOST-R-34.11-94")
-                return new GOST3411;
+                return alloc!GOST3411;
         }
         
         static if (BOTAN_HAS_HAS_160) {
             if (request.algoName == "HAS-160")
-                return new HAS160;
+                return alloc!HAS160;
         }
         
         static if (BOTAN_HAS_KECCAK) {
             if (request.algoName == "Keccak-1600")
-                return new Keccak1600(request.argAsInteger(0, 512));
+                return alloc!Keccak1600(request.argAsInteger(0, 512));
         }
         
         static if (BOTAN_HAS_MD2) {
             if (request.algoName == "MD2")
-                return new MD2;
+                return alloc!MD2;
         }
         
         static if (BOTAN_HAS_MD4) {
             if (request.algoName == "MD4")
-                return new MD4;
+                return alloc!MD4;
         }
         
         static if (BOTAN_HAS_MD5) {
             if (request.algoName == "MD5")
-                return new MD5;
+                return alloc!MD5;
         }
         
         static if (BOTAN_HAS_RIPEMD_128) {
             if (request.algoName == "RIPEMD-128")
-                return new RIPEMD128;
+                return alloc!RIPEMD128;
         }
         
         static if (BOTAN_HAS_RIPEMD_160) {
             if (request.algoName == "RIPEMD-160")
-                return new RIPEMD160;
+                return alloc!RIPEMD160;
         }
         
         static if (BOTAN_HAS_SHA1) {
             if (request.algoName == "SHA-160")
-                return new SHA160;
+                return alloc!SHA160;
         }
         
         static if (BOTAN_HAS_SHA2_32) {
             if (request.algoName == "SHA-224")
-                return new SHA224;
+                return alloc!SHA224;
             if (request.algoName == "SHA-256")
-                return new SHA256;
+                return alloc!SHA256;
         }
         
         static if (BOTAN_HAS_SHA2_64) {
             if (request.algoName == "SHA-384")
-                return new SHA384;
+                return alloc!SHA384;
             if (request.algoName == "SHA-512")
-                return new SHA512;
+                return alloc!SHA512;
         }
         
         static if (BOTAN_HAS_TIGER) {
             if (request.algoName == "Tiger")
-                return new Tiger(request.argAsInteger(0, 24), // hash output
+                return alloc!Tiger(request.argAsInteger(0, 24), // hash output
                                  request.argAsInteger(1, 3)); // # passes
         }
         
         static if (BOTAN_HAS_SKEIN_512) {
             if (request.algoName == "Skein-512")
-                return new Skein512(request.argAsInteger(0, 512),
+                return alloc!Skein512(request.argAsInteger(0, 512),
                                      request.arg(1, ""));
         }
         
         static if (BOTAN_HAS_WHIRLPOOL) {
             if (request.algoName == "Whirlpool")
-                return new Whirlpool;
+                return alloc!Whirlpool;
         }
         
         static if (BOTAN_HAS_COMB4P) {
@@ -463,7 +464,7 @@ public:
                 const HashFunction h2 = af.prototypeHashFunction(request.arg(1));
                 
                 if (h1 && h2)
-                    return new Comb4P(h1.clone(), h2.clone());
+                    return alloc!Comb4P(h1.clone(), h2.clone());
             }
         }
         
@@ -489,7 +490,7 @@ public:
                 foreach (hash_prototype; hash_prototypes[])
                     hashes.pushBack(hash_prototype.clone());
                 
-                return new Parallel(hashes.move());
+                return alloc!Parallel(hashes.move());
             }
         }
         
@@ -502,28 +503,28 @@ public:
         //logTrace("FindMac Core");
         static if (BOTAN_HAS_CBC_MAC) {
             if (request.algoName == "CBC-MAC" && request.argCount() == 1)
-                return new CBCMAC(af.makeBlockCipher(request.arg(0)));
+                return alloc!CBCMAC(af.makeBlockCipher(request.arg(0)));
         }
         
         static if (BOTAN_HAS_CMAC) {
             if (request.algoName == "CMAC" && request.argCount() == 1)
-                return new CMAC(af.makeBlockCipher(request.arg(0)));
+                return alloc!CMAC(af.makeBlockCipher(request.arg(0)));
         }
         
         static if (BOTAN_HAS_HMAC) {
             if (request.algoName == "HMAC" && request.argCount() == 1) {
-                return new HMAC(af.makeHashFunction(request.arg(0)));
+                return alloc!HMAC(af.makeHashFunction(request.arg(0)));
             }
         }
         
         static if (BOTAN_HAS_SSL3_MAC) {
             if (request.algoName == "SSL3-MAC" && request.argCount() == 1)
-                return new SSL3MAC(af.makeHashFunction(request.arg(0)));
+                return alloc!SSL3MAC(af.makeHashFunction(request.arg(0)));
         }
         
         static if (BOTAN_HAS_ANSI_X919_MAC) {
             if (request.algoName == "X9.19-MAC" && request.argCount() == 0)
-                return new ANSIX919MAC(af.makeBlockCipher("DES"));
+                return alloc!ANSIX919MAC(af.makeBlockCipher("DES"));
         }
         
         return null;
@@ -535,16 +536,16 @@ public:
         //logTrace("FindPbkdf Core");
         static if (BOTAN_HAS_PBKDF1) {
             if (algo_spec.algoName == "PBKDF1" && algo_spec.argCount() == 1)
-                return new PKCS5_PBKDF1(af.makeHashFunction(algo_spec.arg(0)));
+                return alloc!PKCS5_PBKDF1(af.makeHashFunction(algo_spec.arg(0)));
         }
         
         static if (BOTAN_HAS_PBKDF2) {
             if (algo_spec.algoName == "PBKDF2" && algo_spec.argCount() == 1)
             {
                 if (const MessageAuthenticationCode mac_proto = af.prototypeMac(algo_spec.arg(0)))
-                    return new PKCS5_PBKDF2(mac_proto.clone());
+                    return alloc!PKCS5_PBKDF2(mac_proto.clone());
                 
-                return new PKCS5_PBKDF2(af.makeMac("HMAC(" ~ algo_spec.arg(0) ~ ")"));
+                return alloc!PKCS5_PBKDF2(af.makeMac("HMAC(" ~ algo_spec.arg(0) ~ ")"));
             }
         }
         
@@ -557,22 +558,22 @@ public:
     {
         if (n.isOdd()) {
             //logTrace("Loading MontgomeryExponentiator");
-            return new MontgomeryExponentiator(n, hints);
+            return alloc!MontgomeryExponentiator(n, hints);
         }
         //logTrace("Loading FixedWindowExponentiator");
-        return new FixedWindowExponentiator(n, hints);
+        return alloc!FixedWindowExponentiator(n, hints);
     }
 
     override KeyAgreement getKeyAgreementOp(in PrivateKey key, RandomNumberGenerator rng) const
     {
         static if (BOTAN_HAS_DIFFIE_HELLMAN) {
             if (DHPrivateKey.algoName == key.algoName)
-                return new DHKAOperation(key, rng);
+                return alloc!DHKAOperation(key, rng);
         }
         
         static if (BOTAN_HAS_ECDH) {
             if (ECDHPrivateKey.algoName == key.algoName)
-                return new ECDHKAOperation(key);
+                return alloc!ECDHKAOperation(key);
         }
         
         return null;
@@ -582,33 +583,33 @@ public:
     {
         static if (BOTAN_HAS_RSA) {
             if (RSAPrivateKey.algoName == key.algoName) {
-                return new RSAPrivateOperation(key, rng);
+                return alloc!RSAPrivateOperation(key, rng);
             }
         }
         
         static if (BOTAN_HAS_RW) {
             if (RWPrivateKey.algoName == key.algoName)
-                return new RWSignatureOperation(key);
+                return alloc!RWSignatureOperation(key);
         }
         
         static if (BOTAN_HAS_DSA) {
             if (DSAPrivateKey.algoName == key.algoName)
-                return new DSASignatureOperation(key);
+                return alloc!DSASignatureOperation(key);
         }
         
         static if (BOTAN_HAS_ECDSA) {
             if (ECDSAPrivateKey.algoName == key.algoName)
-                return new ECDSASignatureOperation(key);
+                return alloc!ECDSASignatureOperation(key);
         }
         
         static if (BOTAN_HAS_GOST_34_10_2001) {
             if (GOST3410PrivateKey.algoName == key.algoName)
-                return new GOST3410SignatureOperation(key);
+                return alloc!GOST3410SignatureOperation(key);
         }
         
         static if (BOTAN_HAS_NYBERG_RUEPPEL) {
             if (NRPrivateKey.algoName == key.algoName)
-                return new NRSignatureOperation(key);
+                return alloc!NRSignatureOperation(key);
         }
         
         return null;
@@ -618,32 +619,32 @@ public:
     {
         static if (BOTAN_HAS_RSA) {
             if (RSAPublicKey.algoName == key.algoName)
-                return new RSAPublicOperation(key);
+                return alloc!RSAPublicOperation(key);
         }
         
         static if (BOTAN_HAS_RW) {
             if (RWPublicKey.algoName == key.algoName)
-                return new RWVerificationOperation(key);
+                return alloc!RWVerificationOperation(key);
         }
         
         static if (BOTAN_HAS_DSA) {
             if (DSAPublicKey.algoName == key.algoName)
-                return new DSAVerificationOperation(key);
+                return alloc!DSAVerificationOperation(key);
         }
         
         static if (BOTAN_HAS_ECDSA) {
             if (ECDSAPublicKey.algoName == key.algoName)
-                return new ECDSAVerificationOperation(key);
+                return alloc!ECDSAVerificationOperation(key);
         }
         
         static if (BOTAN_HAS_GOST_34_10_2001) {
             if (GOST3410PublicKey.algoName == key.algoName)
-                return new GOST3410VerificationOperation(key);
+                return alloc!GOST3410VerificationOperation(key);
         }
         
         static if (BOTAN_HAS_NYBERG_RUEPPEL) {
             if (NRPublicKey.algoName == key.algoName)
-                return new NRVerificationOperation(key);
+                return alloc!NRVerificationOperation(key);
         }
         
         return null;
@@ -654,12 +655,12 @@ public:
     {
         static if (BOTAN_HAS_RSA) {
             if (RSAPublicKey.algoName == key.algoName)
-                return new RSAPublicOperation(key);
+                return alloc!RSAPublicOperation(key);
         }
         
         static if (BOTAN_HAS_ELGAMAL) {
             if (ElGamalPublicKey.algoName == key.algoName)
-                return new ElGamalEncryptionOperation(key);
+                return alloc!ElGamalEncryptionOperation(key);
         }
         
         return null;
@@ -669,12 +670,12 @@ public:
     {
         static if (BOTAN_HAS_RSA) {
             if (RSAPrivateKey.algoName == key.algoName)
-                return new RSAPrivateOperation(key, rng);
+                return alloc!RSAPrivateOperation(key, rng);
         }
         
         static if (BOTAN_HAS_ELGAMAL) {
             if (ElGamalPrivateKey.algoName == key.algoName)
-                return new ElGamalDecryptionOperation(key, rng);
+                return alloc!ElGamalDecryptionOperation(key, rng);
         }
         
         return null;
@@ -696,23 +697,23 @@ KeyedFilter getCipherMode(const BlockCipher block_cipher,
 {
     static if (BOTAN_HAS_OFB) {
         if (mode == "OFB")
-            return new StreamCipherFilter(new OFB(block_cipher.clone()));
+            return alloc!StreamCipherFilter(alloc!OFB(block_cipher.clone()));
     }
         
     static if (BOTAN_HAS_CTR_BE) {
         if (mode == "CTR-BE")
-            return new StreamCipherFilter(new CTRBE(block_cipher.clone()));
+            return alloc!StreamCipherFilter(alloc!CTRBE(block_cipher.clone()));
     }
         
     static if (BOTAN_HAS_MODE_ECB) {
         if (mode == "ECB" || mode == "")
         {
             if (direction == ENCRYPTION)
-                return new TransformationFilter(
-                    new ECBEncryption(block_cipher.clone(), getBcPad(padding, "NoPadding")));
+                return alloc!TransformationFilter(
+                    alloc!ECBEncryption(block_cipher.clone(), getBcPad(padding, "NoPadding")));
             else
-                return new TransformationFilter(
-                    new ECBDecryption(block_cipher.clone(), getBcPad(padding, "NoPadding")));
+                return alloc!TransformationFilter(
+                    alloc!ECBDecryption(block_cipher.clone(), getBcPad(padding, "NoPadding")));
         }
     }
     
@@ -722,17 +723,17 @@ KeyedFilter getCipherMode(const BlockCipher block_cipher,
                 if (padding == "CTS")
                 {
                     if (direction == ENCRYPTION)
-                        return new TransformationFilter(new CTSEncryption(block_cipher.clone()));
+                        return alloc!TransformationFilter(alloc!CTSEncryption(block_cipher.clone()));
                     else
-                        return new TransformationFilter(new CTSDecryption(block_cipher.clone()));
+                        return alloc!TransformationFilter(alloc!CTSDecryption(block_cipher.clone()));
                 }
                 
                 if (direction == ENCRYPTION)
-                    return new TransformationFilter(
-                        new CBCEncryption(block_cipher.clone(), getBcPad(padding, "PKCS7")));
+                    return alloc!TransformationFilter(
+                        alloc!CBCEncryption(block_cipher.clone(), getBcPad(padding, "PKCS7")));
                 else
-                    return new TransformationFilter(
-                        new CBCDecryption(block_cipher.clone(), getBcPad(padding, "PKCS7")));
+                    return alloc!TransformationFilter(
+                        alloc!CBCDecryption(block_cipher.clone(), getBcPad(padding, "PKCS7")));
         } else {
                 return null;
         }
@@ -742,9 +743,9 @@ KeyedFilter getCipherMode(const BlockCipher block_cipher,
         if (mode == "XTS")
         {
             if (direction == ENCRYPTION)
-                return new TransformationFilter(new XTSEncryption(block_cipher.clone()));
+                return alloc!TransformationFilter(alloc!XTSEncryption(block_cipher.clone()));
             else
-                return new TransformationFilter(new XTSDecryption(block_cipher.clone()));
+                return alloc!TransformationFilter(alloc!XTSDecryption(block_cipher.clone()));
         }
     }
     
@@ -765,14 +766,14 @@ KeyedFilter getCipherMode(const BlockCipher block_cipher,
                 if (mode_name == "CFB")
                 {
                     if (direction == ENCRYPTION)
-                        return new TransformationFilter(new CFBEncryption(block_cipher.clone(), bits));
+                        return alloc!TransformationFilter(alloc!CFBEncryption(block_cipher.clone(), bits));
                     else
-                        return new TransformationFilter(new CFBDecryption(block_cipher.clone(), bits));
+                        return alloc!TransformationFilter(alloc!CFBDecryption(block_cipher.clone(), bits));
                 }
         }
                 
         if (bits % 8 != 0)
-            throw new InvalidArgument("AEAD interface does not support non-octet length tags");
+            throw alloc!InvalidArgument("AEAD interface does not support non-octet length tags");
         
         static if (BOTAN_HAS_AEAD_FILTER) {
         
@@ -783,9 +784,9 @@ KeyedFilter getCipherMode(const BlockCipher block_cipher,
                     {
                         const size_t L = (algo_info.length == 3) ? to!uint(algo_info[2]) : 3;
                         if (direction == ENCRYPTION)
-                            return new AEADFilter(new CCMEncryption(block_cipher.clone(), tag_size, L));
+                            return alloc!AEADFilter(alloc!CCMEncryption(block_cipher.clone(), tag_size, L));
                         else
-                            return new AEADFilter(new CCMDecryption(block_cipher.clone(), tag_size, L));
+                            return alloc!AEADFilter(alloc!CCMDecryption(block_cipher.clone(), tag_size, L));
                     }
             }
                     
@@ -793,9 +794,9 @@ KeyedFilter getCipherMode(const BlockCipher block_cipher,
                     if (mode_name == "EAX")
                     {
                         if (direction == ENCRYPTION)
-                            return new AEADFilter(new EAXEncryption(block_cipher.clone(), tag_size));
+                            return alloc!AEADFilter(alloc!EAXEncryption(block_cipher.clone(), tag_size));
                         else
-                            return new AEADFilter(new EAXDecryption(block_cipher.clone(), tag_size));
+                            return alloc!AEADFilter(alloc!EAXDecryption(block_cipher.clone(), tag_size));
                     }
             }
                     
@@ -803,9 +804,9 @@ KeyedFilter getCipherMode(const BlockCipher block_cipher,
                     if (mode_name == "OCB")
                     {
                         if (direction == ENCRYPTION)
-                            return new AEADFilter(new OCBEncryption(block_cipher.clone(), tag_size));
+                            return alloc!AEADFilter(alloc!OCBEncryption(block_cipher.clone(), tag_size));
                         else
-                            return new AEADFilter(new OCBDecryption(block_cipher.clone(), tag_size));
+                            return alloc!AEADFilter(alloc!OCBDecryption(block_cipher.clone(), tag_size));
                     }
             }
                     
@@ -813,9 +814,9 @@ KeyedFilter getCipherMode(const BlockCipher block_cipher,
                     if (mode_name == "GCM")
                     {
                         if (direction == ENCRYPTION)
-                            return new AEADFilter(new GCMEncryption(block_cipher.clone(), tag_size));
+                            return alloc!AEADFilter(alloc!GCMEncryption(block_cipher.clone(), tag_size));
                         else
-                            return new AEADFilter(new GCMDecryption(block_cipher.clone(), tag_size));
+                            return alloc!AEADFilter(alloc!GCMDecryption(block_cipher.clone(), tag_size));
                     }
             }
             
@@ -834,20 +835,20 @@ private {
     {
         static if (BOTAN_HAS_CIPHER_MODE_PADDING) {
             if (algo_spec == "NoPadding" || (algo_spec == "" && def_if_empty == "NoPadding"))
-                return new NullPadding;
+                return alloc!NullPadding;
             
             if (algo_spec == "PKCS7" || (algo_spec == "" && def_if_empty == "PKCS7"))
-                return new PKCS7Padding;
+                return alloc!PKCS7Padding;
             
             if (algo_spec == "OneAndZeros")
-                return new OneAndZerosPadding;
+                return alloc!OneAndZerosPadding;
             
             if (algo_spec == "X9.23")
-                return new ANSIX923Padding;
+                return alloc!ANSIX923Padding;
             
         }
         
-        throw new AlgorithmNotFound(algo_spec);
+        throw alloc!AlgorithmNotFound(algo_spec);
     }
     
 }

@@ -406,7 +406,7 @@ public:
         hash.update(BER_encode());
         const auto hex_print = hexEncode(hash.finished());
         
-        Vector!ubyte formatted_print;
+        Vector!char formatted_print;
         
         for (size_t i = 0; i != hex_print.length; i += 2)
         {

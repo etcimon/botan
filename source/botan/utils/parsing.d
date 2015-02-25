@@ -207,7 +207,7 @@ string stringJoin(const ref Vector!string strs, char delim)
 Vector!uint parseAsn1Oid(in string oid)
 {
     import std.array : Appender, array;
-    Vector!ubyte substring;
+    Vector!char substring;
     Vector!uint oid_elems;
     
 

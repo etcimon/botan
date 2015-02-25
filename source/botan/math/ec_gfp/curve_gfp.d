@@ -138,8 +138,8 @@ struct CurveGFp
         return toVector()[].idup;
     }
 
-    Vector!ubyte toVector() const {
-        Vector!ubyte ret;
+    Vector!char toVector() const {
+        Vector!char ret;
         ret ~= "m_p: ";
         ret ~= m_p.toString();
         ret ~= "\nm_a: ";

@@ -312,7 +312,7 @@ static if (!SKIP_BIGINT_TEST) unittest
             throw new StreamIOError("File I/O error reading from " ~ filename);
         string line_data = test_data.readln();
         if (!line_data) break;
-        Vector!ubyte line = Vector!ubyte(line_data[0 .. $-1].strip());
+        Vector!char line = Vector!char(line_data[0 .. $-1].strip());
         if (line.length == 0) continue;
         
         // Do line continuation

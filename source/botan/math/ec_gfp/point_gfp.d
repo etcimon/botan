@@ -732,8 +732,8 @@ private:
 
     @disable this(this);
 
-    public Vector!ubyte toVector() const {
-        Vector!ubyte ret;
+    public Vector!char toVector() const {
+        Vector!char ret;
         ret ~= "m_curve: ";
         ret ~= m_curve.toVector()[];
         ret ~= "\nm_coord_x: ";

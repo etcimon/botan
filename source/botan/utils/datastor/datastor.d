@@ -170,7 +170,7 @@ public:
     }
 
     string toString() const {
-        Vector!ubyte buffer;
+        Vector!char buffer;
         foreach (const ref string k, const ref string v; m_contents) {
             buffer ~= "Key: ";
             buffer ~= k;
