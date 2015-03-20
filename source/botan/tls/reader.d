@@ -119,7 +119,7 @@ public:
     {
         Vector!ubyte v = getRangeVector!ubyte(len_bytes, min_bytes, max_bytes);
 
-        return (cast(immutable(char)*) v.ptr)[0 .. v.length];
+        return (cast(immutable(char)*) v.ptr)[0 .. v.length].idup;
     }
 
     Vector!T getFixed(T)(size_t size)
