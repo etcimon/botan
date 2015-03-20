@@ -2,7 +2,7 @@
 * SSL/TLS Protocol Constants
 * 
 * Copyright:
-* (C) 2004-2010 Jack Lloyd
+* (C) 2004-2010,2015 Jack Lloyd
 * (C) 2014-2015 Etienne Cimon
 *
 * License:

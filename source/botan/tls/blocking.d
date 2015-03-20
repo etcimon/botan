@@ -2,7 +2,7 @@
 * TLS Blocking API
 * 
 * Copyright:
-* (C) 2013 Jack Lloyd
+* (C) 2013,2015 Jack Lloyd
 * (C) 2014-2015 Etienne Cimon
 *
 * License:

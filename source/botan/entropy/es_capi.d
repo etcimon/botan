@@ -2,7 +2,7 @@
 * Win32 CAPI EntropySource
 * 
 * Copyright:
-* (C) 1999-2007 Jack Lloyd
+* (C) 1999-2007,2015 Jack Lloyd
 * (C) 2014-2015 Etienne Cimon
 *
 * License:
@@ -31,17 +31,16 @@ public:
     */
     void poll(ref EntropyAccumulator accum)
     {
-        SecureVector!ubyte* io_buffer = &accum.getIoBuffer(32);
+		m_buf.length = 32;
         
         foreach (prov_type; m_prov_types[])
         {
             auto csp = scoped!CSPHandle(prov_type);
             
-            size_t got = csp.genRandom(io_buffer.ptr, io_buffer.length);
             
-            if (got)
+            if (size_t got = csp.genRandom(m_buf.ptr, m_buf.length))
             {
-                accum.add(io_buffer.ptr, io_buffer.length, 6);
+                accum.add(m_buf.ptr, got, 6);
                 break;
             }
         }
@@ -70,6 +69,7 @@ public:
 
 private:
     Vector!( ulong ) m_prov_types;
+	SecureVector!ubyte m_buf;
 }
 
 final class CSPHandle

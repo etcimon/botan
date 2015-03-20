@@ -2,7 +2,7 @@
 * TLS Extensions
 * 
 * Copyright:
-* (C) 2011-2012 Jack Lloyd
+* (C) 2011-2012,2015 Jack Lloyd
 * (C) 2014-2015 Etienne Cimon
 *
 * License:
