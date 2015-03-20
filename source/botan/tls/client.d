@@ -43,17 +43,10 @@ public:
     *  server_info = is identifying information about the TLS server
     *  offer_version = specifies which version we will offer
     *          to the TLS server.
-    *  next_protocol = allows the client to specify what the next protocol will be. 
+    *  next_protocols = specifies protocols to advertise with ALPN
     *  reserved_io_buffer_size = This many bytes of memory will
     *          be preallocated for the read and write buffers. Smaller
     *          values just mean reallocations and copies are more likely.
-    * 
-    * Notes: For more information on NPN, read http://technotes.googlecode.com/git/nextprotoneg.html.
-    *
-    *          If the function is not empty, NPN will be negotiated
-    *          and if the server supports NPN the function will be
-    *          called with the list of protocols the server advertised;
-    *          the client should return the protocol it would like to use.
     */
     this(void delegate(in ubyte[]) socket_output_fn,
          void delegate(in ubyte[]) proc_cb,
@@ -65,7 +58,7 @@ public:
          RandomNumberGenerator rng,
          in TLSServerInformation server_info = TLSServerInformation(),
          in TLSProtocolVersion offer_version = TLSProtocolVersion.latestTlsVersion(),
-         string delegate(const ref Vector!string) next_protocol = null,
+         Vector!string next_protocols = Vector!string(),
          size_t reserved_io_buffer_size = 16*1024)
     { 
         super(socket_output_fn, proc_cb, alert_cb, handshake_cb, session_manager, rng, reserved_io_buffer_size);
@@ -74,8 +67,10 @@ public:
         m_info = server_info;
         const string srp_identifier = m_creds.srpIdentifier("tls-client", m_info.hostname());
         HandshakeState state = createHandshakeState(offer_version);
-        sendClientHello(state, false, offer_version, srp_identifier, next_protocol);
+        sendClientHello(state, false, offer_version, srp_identifier, next_protocols.move());
     }
+
+	string applicationProtocol() const { return m_application_protocol; }
 
 protected:
     override Vector!X509Certificate getPeerCertChain(in HandshakeState state) const
@@ -88,28 +83,22 @@ protected:
     /**
     * Send a new client hello to renegotiate
     */
-    override void initiateHandshake(HandshakeState state,
-                            bool force_full_renegotiation)
+    override void initiateHandshake(HandshakeState state, bool force_full_renegotiation)
     {
-        sendClientHello(state,
-                          force_full_renegotiation,
-                          state.Version());
+        sendClientHello(state, force_full_renegotiation, state.Version());
     }
 
     void sendClientHello(HandshakeState state_base,
                            bool force_full_renegotiation,
                            TLSProtocolVersion _version,
                            in string srp_identifier = "",
-                           string delegate(const ref Vector!string) next_protocol = null)
+                           Vector!string next_protocols = Vector!string())
     {
         ClientHandshakeState state = cast(ClientHandshakeState)(state_base);
 
         if (state.Version().isDatagramProtocol())
             state.setExpectedNext(HELLO_VERIFY_REQUEST); // optional
         state.setExpectedNext(SERVER_HELLO);
-        state.client_npn_cb = next_protocol;
-
-        const bool send_npn_request = cast(bool)(next_protocol);
         
         if (!force_full_renegotiation && !m_info.empty)
         {
@@ -125,7 +114,7 @@ protected:
                                       rng(),
                                       secureRenegotiationDataForClientHello().dup,
                                       session_info,
-                                      send_npn_request));
+                                      next_protocols.move));
                     
                     state.resume_master_secret = session_info.masterSecret().dup;
                 }
@@ -140,7 +129,7 @@ protected:
                                               m_policy,
                                               rng(),
                                               secureRenegotiationDataForClientHello().dup,
-                                              send_npn_request,
+                                              next_protocols.move,
                                               m_info.hostname(),
                                               srp_identifier));
         }
@@ -199,15 +188,13 @@ protected:
             
             if (!state.clientHello().offeredSuite(state.serverHello().ciphersuite()))
             {
-                throw new TLSException(TLSAlert.HANDSHAKE_FAILURE,
-                                        "TLSServer replied with ciphersuite we didn't send");
+                throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "TLSServer replied with ciphersuite we didn't send");
             }
             
             if (!valueExists(state.clientHello().compressionMethods(),
                              state.serverHello().compressionMethod()))
             {
-                throw new TLSException(TLSAlert.HANDSHAKE_FAILURE,
-                                        "TLSServer replied with compression method we didn't send");
+                throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "TLSServer replied with compression method we didn't send");
             }
             
             auto client_extn = state.clientHello().extensionTypes()[];
@@ -223,7 +210,8 @@ protected:
             }
             
             state.setVersion(state.serverHello().Version());
-            
+			m_application_protocol = state.serverHello().nextProtocol();
+
             secureRenegotiationCheck(state.serverHello());
             
             const bool server_returned_same_session_id = !state.serverHello().sessionId().empty &&
@@ -393,14 +381,6 @@ protected:
             
             changeCipherSpecWriter(CLIENT);
             
-            if (state.serverHello().nextProtocolNotification())
-            {
-                auto next_proto = state.serverHello().nextProtocols();
-                const string protocol = state.client_npn_cb(next_proto);
-                
-                state.nextProtocol(new NextProtocol(state.handshakeIo(), state.hash(), protocol));
-            }
-            
             state.clientFinished(new Finished(state.handshakeIo(), state, CLIENT));
             
             if (state.serverHello().supportsSessionTicket())
@@ -434,14 +414,6 @@ protected:
                 state.handshakeIo().send(scoped!ChangeCipherSpec());
                 
                 changeCipherSpecWriter(CLIENT);
-                
-                if (state.serverHello().nextProtocolNotification())
-                {
-                    auto next_proto = state.serverHello().nextProtocols();
-                    const string protocol = state.client_npn_cb(next_proto);
-                    
-                    state.nextProtocol(new NextProtocol(state.handshakeIo(), state.hash(), protocol));
-                }
                 
                 state.clientFinished(new Finished(state.handshakeIo(), state, CLIENT));
             }
@@ -492,6 +464,7 @@ private:
     const TLSPolicy m_policy;
     TLSCredentialsManager m_creds;
     const TLSServerInformation m_info;
+	string m_application_protocol;
 }
 
 

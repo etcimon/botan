@@ -40,10 +40,9 @@ enum : HandshakeExtensionType {
     TLSEXT_SRP_IDENTIFIER            = 12,
     TLSEXT_SIGNATURE_ALGORITHMS      = 13,
     TLSEXT_HEARTBEAT_SUPPORT         = 15,
+	TLSEXT_ALPN						 = 16,
 
     TLSEXT_SESSION_TICKET            = 35,
-
-    TLSEXT_NEXT_PROTOCOL             = 13172,
 
     TLSEXT_SAFE_RENEGOTIATION        = 65281,
 }
@@ -287,48 +286,53 @@ private:
 }
 
 /**
-* Next Protocol Negotiation
-* http://technotes.googlecode.com/git/nextprotoneg.html
-*
-* This implementation requires the semantics defined in the Google
-* spec (implemented in Chromium); the internet draft leaves the format
-* unspecified.
+* ALPN (RFC 7301)
 */
-class NextProtocolNotification : Extension
+class ApplicationLayerProtocolNotification : Extension
 {
 public:
-    static HandshakeExtensionType staticType() { return TLSEXT_NEXT_PROTOCOL; }
+    static HandshakeExtensionType staticType() { return TLSEXT_ALPN; }
 
     override HandshakeExtensionType type() const { return staticType(); }
 
     ref const(Vector!string) protocols() const { return m_protocols; }
 
     /**
-    * Empty extension, used by client
+    * Single protocol, used by server
     */
     this() {}
 
     /**
-    * List of protocols, used by server
+    * List of protocols, used by client
     */
     this(Vector!string protocols) 
     {
         m_protocols = protocols.move(); 
     }
 
+	this(string protocol) {
+		m_protocols.length = 1;
+		m_protocols[0] = protocol;
+	}
+
     this(ref TLSDataReader reader, ushort extension_size)
     {
         if (extension_size == 0)
             return; // empty extension
         
-        size_t bytes_remaining = extension_size;
+		const ushort name_bytes = reader.get_ushort();
         
+		size_t bytes_remaining = extension_size - 2;
+
+		if (name_bytes != bytes_remaining)
+			throw new DecodingError("Bad encoding of ALPN extension, bad length field");
+
         while (bytes_remaining)
         {
             const string p = reader.getString(1, 0, 255);
             
             if (bytes_remaining < p.length + 1)
-                throw new DecodingError("Bad encoding for next protocol extension");
+                throw new DecodingError("Bad encoding of ALPN, length field too long");
             
             bytes_remaining -= (p.length + 1);
             
@@ -336,22 +340,33 @@ public:
         }
     }
 
-    override Vector!ubyte serialize() const
+    ref string singleProtocol() const
     {
-        Vector!ubyte buf;
+        if (m_protocols.length != 1)
+			throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "Server sent " ~ m_protocols.length.to!string ~ " protocols in ALPN extension response");
         
-        for (size_t i = 0; i != m_protocols.length; ++i)
-        {
-            const string p = m_protocols[i];
-            
-            if (p != "")
+		return m_protocols[0];
+	}
+
+	override Vector!ubyte serialize() const
+	{
+		Vector!ubyte buf = Vector!ubyte(2);
+
+		foreach (ref p; m_protocols)
+		{
+			if (p.length >= 256)
+				throw new TLSException(TLSAlert.INTERNAL_ERROR, "ALPN name too long");
+			if (p != "")
                 appendTlsLengthValue(buf, cast(const(ubyte)*) p.ptr, p.length, 1);
         }
-        
+		ushort len = cast(ushort)( buf.length - 2 );
+		buf[0] = get_byte!ushort(0, len);
+		buf[1] = get_byte!ushort(1, len);
+
         return buf.move();
     }
 
-    override @property bool empty() const { return false; }
+    override @property bool empty() const { return m_protocols.empty; }
 private:
     Vector!string m_protocols;
 }
@@ -850,8 +865,8 @@ Extension makeExtension(ref TLSDataReader reader, ushort code, ushort size)
         case TLSEXT_SIGNATURE_ALGORITHMS:
             return new SignatureAlgorithms(reader, size);
             
-        case TLSEXT_NEXT_PROTOCOL:
-            return new NextProtocolNotification(reader, size);
+        case TLSEXT_ALPN:
+            return new ApplicationLayerProtocolNotification(reader, size);
             
         case TLSEXT_HEARTBEAT_SUPPORT:
             return new HeartbeatSupportIndicator(reader, size);

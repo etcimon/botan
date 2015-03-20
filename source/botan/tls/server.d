@@ -30,6 +30,8 @@ import std.datetime;
 final class TLSServer : TLSChannel
 {
 public:
+	alias NextProtocolHandler = string delegate(in Vector!string);
+
     /**
     * TLSServer initialization
     */
@@ -41,13 +43,13 @@ public:
          TLSCredentialsManager creds,
          in TLSPolicy policy,
          RandomNumberGenerator rng,
-         Vector!string next_protocols = Vector!string.init,
+         NextProtocolHandler next_proto = null,
          size_t io_buf_sz = 16*1024) 
     {
         super(output_fn, data_cb, alert_cb, handshake_cb, session_manager, rng, io_buf_sz);
         m_policy = policy;
         m_creds = creds;
-        m_possible_protocols = next_protocols.move();
+        m_choose_next_protocol = next_proto;
     }
 
     /**
@@ -67,8 +69,7 @@ protected:
     /*
     * Send a hello request to the client
     */
-    override void initiateHandshake(HandshakeState state,
-                            bool force_full_renegotiation)
+    override void initiateHandshake(HandshakeState state, bool force_full_renegotiation)
     {
         (cast(ServerHandshakeState)state).allow_session_resumption = !force_full_renegotiation;
         
@@ -79,9 +80,9 @@ protected:
     * Process a handshake message
     */
     override void processHandshakeMsg(in HandshakeState active_state,
-                                        HandshakeState state_base,
-                                        HandshakeType type,
-                                        const ref Vector!ubyte contents)
+                                      HandshakeState state_base,
+                                      HandshakeType type,
+                                      const ref Vector!ubyte contents)
     {
         ServerHandshakeState state = cast(ServerHandshakeState)(state_base);
         
@@ -165,10 +166,6 @@ protected:
                                         "TLSClient version is unacceptable by policy");
             }
             
-            if (!initial_handshake && state.clientHello().nextProtocolNotification())
-                throw new TLSException(TLSAlert.HANDSHAKE_FAILURE,
-                                        "TLSClient included NPN extension for renegotiation");
-            
             secureRenegotiationCheck(state.clientHello());
             
             state.setVersion(negotiated_version);
@@ -189,6 +186,11 @@ protected:
             }
             catch (Throwable) {}
 
+			m_next_protocol = "";
+
+			if (state.clientHello().supportsAlpn())
+				m_next_protocol = m_choose_next_protocol(state.clientHello().nextProtocols());
+
             if (resuming)
             {
                 // resume session
@@ -208,8 +210,8 @@ protected:
                                                   state.clientHello().secureRenegotiation(),
                                                   secureRenegotiationDataForServerHello(),
                                                   offer_new_session_ticket,
-                                                  state.clientHello().nextProtocolNotification(),
-                                                  m_possible_protocols.dup(),
+                                                  state.clientHello().supportsAlpn(),
+                                                  m_next_protocol,
                                                   state.clientHello().supportsHeartbeats(),
                                                   rng()));
                 
@@ -265,36 +267,32 @@ protected:
                 
                 if (sni_hostname != "" && cert_chains.length == 0)
                 {
-                    cert_chains = getServerCerts("", m_creds);
-                        
-                    /*
-                    * Only send the unrecognized_name alert if we couldn't
-                    * find any certs for the requested name but did find at
-                    * least one cert to use in general. That avoids sending an
-                    * unrecognized_name when a server is configured for purely
-                    * anonymous operation.
-                    */
-                    if (cert_chains.length != 0)
-                        sendAlert(TLSAlert(TLSAlert.UNRECOGNIZED_NAME));
-                   }
+	                cert_chains = getServerCerts("", m_creds);
+	                    
+	                /*
+	                * Only send the unrecognized_name alert if we couldn't
+	                * find any certs for the requested name but did find at
+	                * least one cert to use in general. That avoids sending an
+	                * unrecognized_name when a server is configured for purely
+	                * anonymous operation.
+	                */
+	                if (cert_chains.length != 0)
+	                    sendAlert(TLSAlert(TLSAlert.UNRECOGNIZED_NAME));
+	            }
                 state.serverHello(
                     new ServerHello(    state.handshakeIo(),
                                         state.hash(),
                                         m_policy,
                                         makeHelloRandom(rng()), // new session ID
                                         state.Version(),
-                                        chooseCiphersuite(m_policy,
-                                                          state.Version(),
-                                                          m_creds,
-                                                          cert_chains,
-                                                          state.clientHello()),
+                                        chooseCiphersuite(m_policy, state.Version(), m_creds, cert_chains, state.clientHello()),
                                         chooseCompression(m_policy, state.clientHello().compressionMethods()),
                                         state.clientHello().fragmentSize(),
                                         state.clientHello().secureRenegotiation(),
                                         secureRenegotiationDataForServerHello(),
                                         state.clientHello().supportsSessionTicket() && have_session_ticket_key,
-                                        state.clientHello().nextProtocolNotification(),
-                                        m_possible_protocols.dup(),
+                                        state.clientHello().supportsAlpn(),
+                                        m_next_protocol,
                                         state.clientHello().supportsHeartbeats(),
                                         rng()
                     )
@@ -310,10 +308,7 @@ protected:
                     assert(!cert_chains[sig_algo].empty,
                     "Attempting to send empty certificate chain");
                     
-                    state.serverCerts(
-                        new Certificate(state.handshakeIo(),
-                                        state.hash(),
-                                        cert_chains[sig_algo])
+                    state.serverCerts(new Certificate(state.handshakeIo(), state.hash(), cert_chains[sig_algo])
                     );
                 }
                 
@@ -357,11 +352,8 @@ protected:
                 
                 if (!client_auth_CAs.empty && state.ciphersuite().sigAlgo() != "")
                 {
-                    state.certReq(new CertificateReq(state.handshakeIo(),
-                                                       state.hash(),
-                                                       m_policy,
-                                                       client_auth_CAs.move(),
-                                                       state.Version()));
+                    state.certReq(new CertificateReq(state.handshakeIo(), state.hash(), m_policy,
+                                                     client_auth_CAs.move(), state.Version()));
                     
                     state.setExpectedNext(CERTIFICATE);
                 }
@@ -373,9 +365,7 @@ protected:
                 */
                 state.setExpectedNext(CLIENT_KEX);
                 
-                state.serverHelloDone(
-                    new ServerHelloDone(state.handshakeIo(), state.hash())
-                );
+                state.serverHelloDone(new ServerHelloDone(state.handshakeIo(), state.hash()));
             }
         }
         else if (type == CERTIFICATE)
@@ -428,21 +418,9 @@ protected:
         }
         else if (type == HANDSHAKE_CCS)
         {
-            if (state.serverHello().nextProtocolNotification())
-                state.setExpectedNext(NEXT_PROTOCOL);
-            else
-                state.setExpectedNext(FINISHED);
-            
-            changeCipherSpecReader(SERVER);
-        }
-        else if (type == NEXT_PROTOCOL)
-        {
             state.setExpectedNext(FINISHED);
+			changeCipherSpecReader(SERVER);
             
-            state.nextProtocol(new NextProtocol(contents));
-            
-            // should this be a callback?
-            m_next_protocol = state.nextProtocol().protocol();
         }
         else if (type == FINISHED)
         {
@@ -505,9 +483,7 @@ protected:
                 
                 changeCipherSpecWriter(SERVER);
                 
-                state.serverFinished(
-                    new Finished(state.handshakeIo(), state, SERVER)
-                );
+                state.serverFinished(new Finished(state.handshakeIo(), state, SERVER));
             }
             activateSession();
         }
@@ -526,7 +502,7 @@ private:
     const TLSPolicy m_policy;
     TLSCredentialsManager m_creds;
 
-    Vector!string m_possible_protocols;
+    NextProtocolHandler m_choose_next_protocol;
     string m_next_protocol;
 }
 

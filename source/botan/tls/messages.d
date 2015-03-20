@@ -199,11 +199,6 @@ public:
         return Vector!ubyte();
     }
 
-    bool nextProtocolNotification() const
-    {
-        return m_extensions.get!NextProtocolNotification() !is null;
-    }
-
     size_t fragmentSize() const
     {
         if (MaximumFragmentLength frag = m_extensions.get!MaximumFragmentLength())
@@ -222,6 +217,18 @@ public:
             return ticket.contents().dup();
         return Vector!ubyte();
     }
+
+	bool supportsAlpn() const
+	{
+		return m_extensions.get!ApplicationLayerProtocolNotification() !is null;
+	}
+
+	const(Vector!string) nextProtocols() const
+	{
+		if (auto alpn = m_extensions.get!ApplicationLayerProtocolNotification())
+			return alpn.protocols().dup;
+		return Vector!string();
+	}
 
     bool supportsHeartbeats() const
     {
@@ -255,7 +262,7 @@ public:
          in TLSPolicy policy,
          RandomNumberGenerator rng,
          Vector!ubyte reneg_info,
-         bool next_protocol,
+         Vector!string next_protocols,
          in string hostname,
          in string srp_identifier) 
     {
@@ -277,8 +284,8 @@ public:
             m_extensions.add(new SignatureAlgorithms(policy.allowedSignatureHashes(),
                                                      policy.allowedSignatureMethods()));
 
-        if (reneg_empty && next_protocol)
-            m_extensions.add(new NextProtocolNotification());
+        if (reneg_empty && !next_protocols.empty)
+            m_extensions.add(new ApplicationLayerProtocolNotification(next_protocols.move));
         
         hash.update(io.send(this));
     }
@@ -293,7 +300,7 @@ public:
          RandomNumberGenerator rng,
          Vector!ubyte reneg_info,
          const ref TLSSession session,
-         bool next_protocol = false)
+		 Vector!string next_protocols)
     { 
         bool reneg_empty = reneg_info.empty;
 
@@ -324,8 +331,8 @@ public:
             m_extensions.add(new SignatureAlgorithms(policy.allowedSignatureHashes(),
                                                       policy.allowedSignatureMethods()));
         
-        if (reneg_empty && next_protocol)
-            m_extensions.add(new NextProtocolNotification());
+        if (reneg_empty && !next_protocols.empty)
+            m_extensions.add(new ApplicationLayerProtocolNotification(next_protocols.move));
         
         hash.update(io.send(this));
     }
@@ -497,18 +504,6 @@ public:
         return Vector!ubyte();
     }
 
-    bool nextProtocolNotification() const
-    {
-        return m_extensions.get!NextProtocolNotification() !is null;
-    }
-
-    Vector!string nextProtocols() const
-    {
-        if (NextProtocolNotification npn = m_extensions.get!NextProtocolNotification())
-            return npn.protocols().dup;
-        return Vector!string();
-    }
-
     size_t fragmentSize() const
     {
         if (MaximumFragmentLength frag = m_extensions.get!MaximumFragmentLength())
@@ -528,10 +523,17 @@ public:
 
     bool peerCanSendHeartbeats() const
     {
-        if (HeartbeatSupportIndicator hb = m_extensions.get!HeartbeatSupportIndicator())
+        if (auto hb = m_extensions.get!HeartbeatSupportIndicator())
             return hb.peerAllowedToSend();
         return false;
     }
+
+	string nextProtocol() const
+	{
+		if (auto alpn = m_extensions.get!ApplicationLayerProtocolNotification())
+			return alpn.singleProtocol();
+		return "";
+	}
 
     const(Vector!HandshakeExtensionType) extensionTypes() const
     { return m_extensions.extensionTypes(); }
@@ -550,8 +552,8 @@ public:
          bool client_has_secure_renegotiation,
          Vector!ubyte reneg_info,
          bool offer_session_ticket,
-         bool client_has_npn,
-         Vector!string next_protocols,
+         bool client_has_alpn,
+         in string next_protocol,
          bool client_has_heartbeat,
          RandomNumberGenerator rng) 
     {
@@ -574,8 +576,8 @@ public:
         if (max_fragment_size)
             m_extensions.add(new MaximumFragmentLength(max_fragment_size));
         
-        if (client_has_npn)
-            m_extensions.add(new NextProtocolNotification(next_protocols.move()));
+        if (next_protocol != "" && client_has_alpn)
+            m_extensions.add(new ApplicationLayerProtocolNotification(next_protocol));
         
         if (offer_session_ticket)
             m_extensions.add(new SessionTicket());
@@ -1760,58 +1762,6 @@ protected:
     {
         return Vector!ubyte();
     }
-}
-
-/**
-* Next Protocol Message
-*/
-final class NextProtocol : HandshakeMessage
-{
-public:
-    override const(HandshakeType) type() const { return NEXT_PROTOCOL; }
-
-    string protocol() const { return m_protocol; }
-
-    this(const ref Vector!ubyte buf)
-    {
-        TLSDataReader reader = TLSDataReader("NextProtocol", buf);
-        
-        m_protocol = reader.getString(1, 0, 255);
-        
-        reader.getRangeVector!ubyte(1, 0, 255); // padding, ignored
-    }
-
-    this(HandshakeIO io,
-         ref HandshakeHash hash,
-         in string protocol)
-    {
-        hash.update(io.send(this));
-        m_protocol = protocol;
-    }
-
-protected:
-
-    override Vector!ubyte serialize() const
-    {
-        Vector!ubyte buf;
-        
-        appendTlsLengthValue(buf,
-                                cast(const(ubyte)*)(m_protocol.ptr),
-                                m_protocol.length,
-                                1);
-        
-        const ubyte padding_len = 32 - ((m_protocol.length + 2) % 32);
-        
-        buf.pushBack(padding_len);
-        
-        foreach (size_t i; 0 .. padding_len)
-            buf.pushBack(0);
-        
-        return buf.move();
-    }
-
-private:
-    string m_protocol;
 }
 
 /**

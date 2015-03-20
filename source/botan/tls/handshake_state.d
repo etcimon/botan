@@ -315,12 +315,6 @@ public:
         noteMessage(*m_client_verify);
     }
     
-    void nextProtocol(NextProtocol next_protocol)
-    {
-        m_next_protocol = next_protocol;
-        noteMessage(*m_next_protocol);
-    }
-
     void newSessionTicket(NewSessionTicket new_session_ticket)
     {
         m_new_session_ticket = new_session_ticket;
@@ -365,9 +359,6 @@ public:
 
     const(CertificateVerify) clientVerify() const
     { return *m_client_verify; }
-
-    const(NextProtocol) nextProtocol() const
-    { return *m_next_protocol; }
 
     const(NewSessionTicket) newSessionTicket() const
     { return *m_new_session_ticket; }
@@ -424,7 +415,6 @@ private:
     Unique!Certificate m_client_certs;
     Unique!ClientKeyExchange m_client_kex;
     Unique!CertificateVerify m_client_verify;
-    Unique!NextProtocol m_next_protocol;
     Unique!NewSessionTicket m_new_session_ticket;
     Unique!Finished m_server_finished;
     Unique!Finished m_client_finished;
@@ -477,17 +467,14 @@ uint bitmaskForHandshakeType(HandshakeType type)
         case CLIENT_KEX:
             return (1 << 11);
             
-        case NEXT_PROTOCOL:
+        case NEW_SESSION_TICKET:
             return (1 << 12);
             
-        case NEW_SESSION_TICKET:
+        case HANDSHAKE_CCS:
             return (1 << 13);
             
-        case HANDSHAKE_CCS:
-            return (1 << 14);
-            
         case FINISHED:
-            return (1 << 15);
+            return (1 << 14);
             
             // allow explicitly disabling new handshakes
         case HANDSHAKE_NONE:

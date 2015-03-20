@@ -60,8 +60,6 @@ enum : HandshakeType {
     CERTIFICATE_URL       = 21,
     CERTIFICATE_STATUS    = 22,
 
-    NEXT_PROTOCOL         = 67,
-
     HANDSHAKE_CCS         = 254, // Not a wire value
     HANDSHAKE_NONE        = 255  // Null value
 }

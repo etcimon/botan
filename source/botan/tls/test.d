@@ -181,7 +181,17 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
     auto save_client_data = delegate(in ubyte[] buf) {
         s2c_data.insert(buf);
     };
-    
+
+	auto next_protocol_chooser = delegate(in Vector!string protos) {
+		if (protos.length != 2)
+			logTrace("Bad protocol size");
+		if (protos[0] != "test/1" || protos[1] != "test/2")
+			logTrace("Bad protocol values");
+		return "test/3";
+	};
+
+	Vector!string protocols_offered = ["test/1", "test/2"];
+
     auto server = new TLSServer((in ubyte[] buf) { s2c_q.insert(buf); },
                                 save_server_data,
                                 print_alert,
@@ -190,27 +200,21 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
                                 creds,
                                 policy,
                                 rng,
-                                Vector!string(["test/1", "test/2"]));
+                                next_protocol_chooser);
     
-    auto next_protocol_chooser = delegate(const ref Vector!string protos) {
-        if (protos.length != 2)
-            logTrace("Bad protocol size");
-        if (protos[0] != "test/1" || protos[1] != "test/2")
-            logTrace("Bad protocol values");
-        return "test/3";
-    };
-    
-    auto client = new TLSClient((in ubyte[] buf) { c2s_q.insert(buf); },
-                                    save_client_data,
-                                    print_alert,
-                                    handshake_complete,
-                                    client_sessions,
-                                    creds,
-                                    policy,
-                                    rng,
-                                    TLSServerInformation(),
-                                    offer_version,
-                                    next_protocol_chooser);
+
+    auto client = new TLSClient(
+		(in ubyte[] buf) { c2s_q.insert(buf); },
+        save_client_data,
+        print_alert,
+        handshake_complete,
+        client_sessions,
+        creds,
+        policy,
+        rng,
+        TLSServerInformation(),
+        offer_version,
+		protocols_offered.move);
     
     while(true)
     {
