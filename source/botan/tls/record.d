@@ -35,12 +35,12 @@ import std.algorithm;
 import std.datetime;
 import memutils.refcounted;
 
-alias ConnectionCipherState = RefCounted!ConnectionCipherStateImpl;
+//alias ConnectionCipherState = RefCounted!ConnectionCipherStateImpl;
 
 /**
 * TLS Cipher State
 */
-final class ConnectionCipherStateImpl
+final class ConnectionCipherState
 {
 public:
     /**
@@ -351,7 +351,7 @@ size_t readRecord(ref SecureVector!ubyte readbuf,
                   ref TLSProtocolVersion record_version,
                   ref RecordType record_type,
                   ConnectionSequenceNumbers sequence_numbers,
-                  in const(ConnectionCipherState) delegate(ushort) const get_cipherstate)
+                  const(ConnectionCipherState) delegate(ushort) const get_cipherstate)
 {
     consumed = 0;
     if (readbuf.length < TLS_HEADER_SIZE) // header incomplete?
@@ -459,7 +459,8 @@ size_t readRecord(ref SecureVector!ubyte readbuf,
     }
     
     // Otherwise, decrypt, check MAC, return plaintext
-    ConnectionCipherState cipherstate = cast(ConnectionCipherState) get_cipherstate(epoch);
+	auto ccs = get_cipherstate(epoch);
+    ConnectionCipherState cipherstate = cast(ConnectionCipherState) &ccs;
     
     // FIXME: DTLS reordering might cause us not to have the cipher state
     

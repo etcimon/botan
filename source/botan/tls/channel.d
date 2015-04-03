@@ -578,7 +578,7 @@ protected:
                "No read cipher state currently set for next epoch");
         
         // flip side as we are reading
-        ConnectionCipherState read_state = ConnectionCipherState(pending.Version(),
+        ConnectionCipherState read_state = new ConnectionCipherState(pending.Version(),
                                                                  (side == CLIENT) ? SERVER : CLIENT,
                                                                  false,
                                                                  pending.ciphersuite(),
@@ -602,11 +602,11 @@ protected:
         
         assert(m_write_cipher_states.get(epoch, ConnectionCipherState.init) is ConnectionCipherState.init, "No write cipher state currently set for next epoch");
         
-        ConnectionCipherState write_state = ConnectionCipherState(pending.Version(),
-                                                                      side,
-                                                                      true,
-                                                                      pending.ciphersuite(),
-                                                                      pending.sessionKeys());
+        ConnectionCipherState write_state = new ConnectionCipherState(pending.Version(),
+                                                                  side,
+                                                                  true,
+                                                                  pending.ciphersuite(),
+                                                                  pending.sessionKeys());
         
         m_write_cipher_states[epoch] = write_state;
     }
@@ -835,8 +835,8 @@ private:
     Unique!HandshakeState m_pending_state;
 
     /* cipher states for each epoch */
-    HashMapRef!(ushort, ConnectionCipherState) m_write_cipher_states;
-    HashMapRef!(ushort, ConnectionCipherState) m_read_cipher_states;
+    HashMap!(ushort, ConnectionCipherState) m_write_cipher_states;
+    HashMap!(ushort, ConnectionCipherState) m_read_cipher_states;
 
     /* I/O buffers */
     SecureVector!ubyte m_writebuf;
