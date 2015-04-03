@@ -807,6 +807,79 @@ size_t testCurveCpCtor()
     return 0;
 }
 
+
+size_t randomizedTest(RandomNumberGenerator rng, const ref ECGroup group)
+{
+    const BigInt a = BigInt.randomInteger(rng, BigInt(2), group.getOrder());
+    const BigInt b = BigInt.randomInteger(rng, BigInt(2), group.getOrder());
+    const BigInt c = a + b;
+    
+    PointGFp P = group.getBasePoint() * a;
+    PointGFp Q = group.getBasePoint() * b;
+    PointGFp R = group.getBasePoint() * c;
+    
+    PointGFp A1 = P + Q;
+    PointGFp A2 = Q + P;
+    
+    size_t fails = 0;
+    
+    mixin( CHECK(`A1 == R`) );
+    mixin( CHECK(`A2 == R`) );
+    
+    return fails;
+}
+
+size_t randomizedTest()
+{
+    auto rng = AutoSeededRNG();
+    size_t fails = 0;
+    
+    const string[] groups = [
+        "brainpool160r1",
+        "brainpool192r1",
+        "brainpool224r1",
+        "brainpool256r1",
+        "brainpool320r1",
+        "brainpool384r1",
+        "brainpool512r1",
+        "gost_256A",
+        "gost_256A",
+        "secp112r1",
+        "secp112r2",
+        "secp128r1",
+        "secp128r2",
+        "secp160k1",
+        "secp160r1",
+        "secp160r2",
+        "secp192k1",
+        "secp192r1",
+        "secp224k1",
+        "secp224r1",
+        "secp256k1",
+        "secp256r1",
+        "secp384r1",
+        "secp521r1",
+        "x962_p192v2",
+        "x962_p192v3",
+        "x962_p239v1",
+        "x962_p239v2",
+        "x962_p239v3"
+    ];
+    
+    foreach(group_name; groups)
+    {
+        ECGroup group = ECGroup(group_name);
+        
+        PointGFp inf = group.getBasePoint() * group.getOrder();
+        mixin( CHECK(`inf.isZero()`) );
+        
+        for(size_t i = 0; i != 32; ++i)
+            fails += randomizedTest(rng, group);
+    }
+    
+    return fails;
+}
+
 static if (!SKIP_EC_GFP_TEST) unittest
 {
     import botan.libstate.global_state;
@@ -863,7 +936,9 @@ static if (!SKIP_EC_GFP_TEST) unittest
     fails += testMultSecMass();
     logTrace("testCurveCpCtor");
     fails += testCurveCpCtor();
-    
+    logTrace("randomizedTest");
+    fails += randomizedTest();
+
     testReport("ECC", total_tests, fails);
 
 }

@@ -726,7 +726,6 @@ size_t testPkKeygen(RandomNumberGenerator rng) {
     return fails;
 }
 
-
 size_t ecdsaSigKat(string group_id,
                    string x,
                    string hash,
@@ -747,6 +746,37 @@ size_t ecdsaSigKat(string group_id,
     PKSigner sign = PKSigner(*ecdsa, padding);
     
     return validateSignature(verify, sign, "DSA/" ~ hash, msg, *rng, nonce, signature);
+}
+
+size_t eccPointMul(in string group_id,
+    in string m_s,
+    in string X_s,
+    in string Y_s)
+{
+    atomicOp!"+="(total_tests, 2);
+    ECGroup group = OIDS.lookup(group_id);
+    
+    const BigInt m = BigInt(m_s);
+    const BigInt X = BigInt(X_s);
+    const BigInt Y = BigInt(Y_s);
+    
+    PointGFp p = group.getBasePoint() * m;
+    
+    size_t fails = 0;
+    
+    if(p.getAffineX() != X)
+    {
+        logError( p.getAffineY().toString() ~ " != " ~ X.toString() ~ "\n");
+        ++fails;
+    }
+    
+    if(p.getAffineY() != Y)
+    {
+        logError( p.getAffineY().toString() ~ " != " ~ Y.toString() ~ "\n");
+        ++fails;
+    }
+    
+    return fails;
 }
 
 static if (!SKIP_ECDSA_TEST) unittest
@@ -784,6 +814,13 @@ static if (!SKIP_ECDSA_TEST) unittest
             return ecdsaSigKat(m["Group"], m["X"], m["Hash"], m["Msg"], m["Nonce"], m["Signature"]);
         });
 
+    File ecc_mul = File("../test_data/pubkey/ecc.vec", "r");
+
+    fails += runTestsBb(ecc_mul, "ECC Point Mult", "Y", false,
+        (ref HashMap!(string, string) m)
+        {
+            return eccPointMul(m["Group"], m["m"], m["X"], m["Y"]);
+        });
 
     testReport("ECDSA", total_tests, fails);
 
