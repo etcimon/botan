@@ -810,8 +810,9 @@ size_t testCurveCpCtor()
 
 size_t randomizedTest(RandomNumberGenerator rng, const ref ECGroup group)
 {
-    const BigInt a = BigInt.randomInteger(rng, BigInt(2), group.getOrder());
-    const BigInt b = BigInt.randomInteger(rng, BigInt(2), group.getOrder());
+	auto b2 = BigInt(2);
+    const BigInt a = BigInt.randomInteger(rng, b2, group.getOrder());
+    const BigInt b = BigInt.randomInteger(rng, b2, group.getOrder());
     const BigInt c = a + b;
     
     PointGFp P = group.getBasePoint() * a;
