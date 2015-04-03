@@ -105,8 +105,8 @@ public:
     }
 
     Vector!T getRangeVector(T)(size_t len_bytes,
-                                 size_t min_elems,
-                                 size_t max_elems)
+                               size_t min_elems,
+                               size_t max_elems)
     {
         const size_t num_elems = getNumElems(len_bytes, T.sizeof, min_elems, max_elems);
 
@@ -114,8 +114,8 @@ public:
     }
 
     string getString(size_t len_bytes,
-                      size_t min_bytes,
-                      size_t max_bytes)
+                     size_t min_bytes,
+                     size_t max_bytes)
     {
         Vector!ubyte v = getRangeVector!ubyte(len_bytes, min_bytes, max_bytes);
 
@@ -141,9 +141,9 @@ private:
     }
 
     size_t getNumElems(size_t len_bytes,
-                            size_t T_size,
-                            size_t min_elems,
-                            size_t max_elems)
+                       size_t T_size,
+                       size_t min_elems,
+                       size_t max_elems)
     {
         const size_t byte_length = getLengthField(len_bytes);
 
@@ -179,7 +179,7 @@ private:
 * Helper function for encoding length-tagged vectors
 */
 void appendTlsLengthValue(T, Alloc)(ref Vector!( ubyte, Alloc ) buf, in T* vals, 
-                                        size_t vals_size, size_t tag_size)
+                                    size_t vals_size, size_t tag_size)
 {
     const size_t T_size = T.sizeof;
     const size_t val_bytes = T_size * vals_size;
@@ -200,14 +200,14 @@ void appendTlsLengthValue(T, Alloc)(ref Vector!( ubyte, Alloc ) buf, in T* vals,
 }
 
 void appendTlsLengthValue(T, Alloc, Alloc2)(ref Vector!( ubyte, Alloc ) buf, 
-                                                    auto const ref Vector!( T, Alloc2 ) vals, 
-                                                    size_t tag_size)
+                                            auto const ref Vector!( T, Alloc2 ) vals, 
+                                            size_t tag_size)
 {
     appendTlsLengthValue(buf, vals.ptr, vals.length, tag_size);
 }
 
 void appendTlsLengthValue(Alloc)(ref Vector!( ubyte, Alloc ) buf, 
-                                     in string str, size_t tag_size)
+                                 in string str, size_t tag_size)
 {
     appendTlsLengthValue(buf, cast(const(ubyte)*)(str.ptr), str.length, tag_size);
 }

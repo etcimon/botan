@@ -2,7 +2,7 @@
 * TLS Record Handling
 * 
 * Copyright:
-* (C) 2004-2012 Jack Lloyd
+* (C) 2004-2012,2014 Jack Lloyd
 * (C) 2014-2015 Etienne Cimon
 *
 * License:
@@ -33,11 +33,14 @@ import botan.utils.loadstor;
 import botan.utils.types;
 import std.algorithm;
 import std.datetime;
+import memutils.refcounted;
+
+alias ConnectionCipherState = RefCounted!ConnectionCipherStateImpl;
 
 /**
 * TLS Cipher State
 */
-final class ConnectionCipherState
+final class ConnectionCipherStateImpl
 {
 public:
     /**
@@ -348,7 +351,7 @@ size_t readRecord(ref SecureVector!ubyte readbuf,
                   ref TLSProtocolVersion record_version,
                   ref RecordType record_type,
                   ConnectionSequenceNumbers sequence_numbers,
-                  in const(ConnectionCipherState) delegate(ushort) get_cipherstate)
+                  in const(ConnectionCipherState) delegate(ushort) const get_cipherstate)
 {
     consumed = 0;
     if (readbuf.length < TLS_HEADER_SIZE) // header incomplete?
@@ -441,8 +444,10 @@ size_t readRecord(ref SecureVector!ubyte readbuf,
         epoch = 0;
     }
 
-    if (sequence_numbers && sequence_numbers.alreadySeen(record_sequence))
+    if (sequence_numbers && sequence_numbers.alreadySeen(record_sequence)) {
+        readbuf.clear();
         return 0;
+    }
     
     ubyte* record_contents = &readbuf[header_size];
     

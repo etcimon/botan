@@ -220,10 +220,10 @@ public:
 
     override SecureVector!ubyte verifyMr(const(ubyte)* msg, size_t msg_len)
     {
-		import core.memory : GC;
-		// DMD 2.067: This fails horribly here on windows so we disable the GC for other OS too just in case
-		GC.disable();
-		const BigInt* q = &m_mod_q.getModulus(); // TODO: why not use m_q?
+        import core.memory : GC;
+        // DMD 2.067: This fails horribly here on windows so we disable the GC for other OS too just in case
+        GC.disable();
+        const BigInt* q = &m_mod_q.getModulus(); // TODO: why not use m_q?
         if (msg_len != 2*q.bytes())
             throw new InvalidArgument("NR verification: Invalid signature");
         
@@ -244,22 +244,22 @@ public:
                 {
                     Unique!FixedBasePowerModImpl powermod_y_p = new FixedBasePowerModImpl(*cast(const BigInt*)y, *cast(const BigInt*)p);
                     *ret = (*powermod_y_p)(*cast(BigInt*)c2);
-					send(cast(Tid) tid, cast(shared)Thread.getThis());
-				}
-				auto done = receiveOnly!bool;
+                    send(cast(Tid) tid, cast(shared)Thread.getThis());
+                }
+                auto done = receiveOnly!bool;
                 destroy(*ret);
             }, 
             cast(shared)thisTid, cast(shared)m_y, cast(shared)m_p, cast(shared)&c, cast(shared)&res 
             );
         BigInt g_d = (*m_powermod_g_p)(d);
-		Thread thr = cast(Thread)receiveOnly!(shared(Thread))();
-		BigInt i = m_mod_p.multiply(g_d, res);
+        Thread thr = cast(Thread)receiveOnly!(shared(Thread))();
+        BigInt i = m_mod_p.multiply(g_d, res);
 
         send(cast(Tid)tid, true);
         auto ret = BigInt.encodeLocked(m_mod_q.reduce(c - i));
-		thr.join();
-		GC.enable();
-		return ret;
+        thr.join();
+        GC.enable();
+        return ret;
     }
 private:
     const BigInt* m_q;

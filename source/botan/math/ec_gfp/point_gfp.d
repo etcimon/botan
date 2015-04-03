@@ -70,9 +70,9 @@ public:
         auto b1 = BigInt(1);
         m_coord_y = b1.move;
         m_coord_z = BigInt(0);
-		m_curve.toRep(m_coord_x, m_ws_ref);
-		m_curve.toRep(m_coord_y, m_ws_ref);
-		m_curve.toRep(m_coord_z, m_ws_ref);
+        m_curve.toRep(m_coord_x, m_ws_ref);
+        m_curve.toRep(m_coord_y, m_ws_ref);
+        m_curve.toRep(m_coord_z, m_ws_ref);
     }
 
 
@@ -109,9 +109,9 @@ public:
         m_coord_y = y.dup;
         auto bi = BigInt(1);
         m_coord_z = bi.move;
-		m_curve.toRep(m_coord_x, m_ws_ref);
-		m_curve.toRep(m_coord_y, m_ws_ref);
-		m_curve.toRep(m_coord_z, m_ws_ref);
+        m_curve.toRep(m_coord_x, m_ws_ref);
+        m_curve.toRep(m_coord_y, m_ws_ref);
+        m_curve.toRep(m_coord_z, m_ws_ref);
     }
 
     /**
@@ -332,7 +332,7 @@ public:
             throw new IllegalTransformation("Cannot convert zero point to affine");
                 
         BigInt z2 = curveSqr(m_coord_z);
-		m_curve.fromRep(z2, m_ws_ref);
+        m_curve.fromRep(z2, m_ws_ref);
         z2 = inverseMod(z2, m_curve.getP());
         
         return curveMult(z2, m_coord_x);
@@ -349,7 +349,7 @@ public:
                 
         BigInt z3 = curveMult(m_coord_z, curveSqr(m_coord_z));
         z3 = inverseMod(z3, m_curve.getP());
-		m_curve.toRep(z3, m_ws_ref);
+        m_curve.toRep(z3, m_ws_ref);
         return curveMult(z3, m_coord_y);
     }
 
@@ -384,7 +384,7 @@ public:
         
         if (m_coord_z == z2) // Is z equal to 1 (in Montgomery form)?
         {
-			if (y2 != m_curve.fromRep(x3 + ax + m_curve.getBRep(), m_ws_ref)) {
+            if (y2 != m_curve.fromRep(x3 + ax + m_curve.getBRep(), m_ws_ref)) {
                 return false;
             }
         }
@@ -393,7 +393,7 @@ public:
         BigInt ax_z4 = curveMult(ax, curveSqr(z2));
         BigInt b_z6 = curveMult(m_curve.getBRep(), curveSqr(z3));
         
-		if (y2 != m_curve.fromRep(x3 + ax_z4 + b_z6, m_ws_ref)) {
+        if (y2 != m_curve.fromRep(x3 + ax_z4 + b_z6, m_ws_ref)) {
             return false;
         }
         return true;
@@ -411,7 +411,7 @@ public:
         m_coord_x.swap(other.m_coord_x);
         m_coord_y.swap(other.m_coord_y);
         m_coord_z.swap(other.m_coord_z);
-		m_ws.swap(other.m_ws);
+        m_ws.swap(other.m_ws);
     }
 
     @property PointGFp dup() const
@@ -441,54 +441,54 @@ public:
     }
 
 private:
-	
-	/**
+    
+    /**
     * Montgomery multiplication/reduction
     * Params:
     *   x = first multiplicand
     *   y = second multiplicand
     */
-	BigInt curveMult()(auto const ref BigInt x, auto const ref BigInt y) const
-	{
-		BigInt z = BigInt(0);
-		m_curve.mul(z, x, y, m_ws_ref);
-		return z.move();
-	}
-	
-	/**
+    BigInt curveMult()(auto const ref BigInt x, auto const ref BigInt y) const
+    {
+        BigInt z = BigInt(0);
+        m_curve.mul(z, x, y, m_ws_ref);
+        return z.move();
+    }
+    
+    /**
     * Montgomery multiplication/reduction
     * Params:
     *   z = output
     *   x = first multiplicand
     *   y = second multiplicand
     */
-	void curveMult()(ref BigInt z, auto const ref BigInt x, auto const ref BigInt y) const
-	{
-		m_curve.mul(z, x, y, m_ws_ref);
-	}
+    void curveMult()(ref BigInt z, auto const ref BigInt x, auto const ref BigInt y) const
+    {
+        m_curve.mul(z, x, y, m_ws_ref);
+    }
 
-	/**
+    /**
     * Montgomery squaring/reduction
     * Params:
     *   x = multiplicand
     */
-	BigInt curveSqr()(auto const ref BigInt x) const
-	{
-		BigInt z;
-		m_curve.sqr(z, x, m_ws_ref);
-		return z.move();
-	}
+    BigInt curveSqr()(auto const ref BigInt x) const
+    {
+        BigInt z;
+        m_curve.sqr(z, x, m_ws_ref);
+        return z.move();
+    }
 
-	/**
+    /**
     * Montgomery squaring/reduction
     * Params:
     *   z = output
     *   x = multiplicand
     */
-	void curveSqr()(ref BigInt z, auto const ref BigInt x) const
-	{
-		m_curve.sqr(z, x, m_ws_ref);
-	}
+    void curveSqr()(ref BigInt z, auto const ref BigInt x) const
+    {
+        m_curve.sqr(z, x, m_ws_ref);
+    }
 
     /**
     * Point addition
@@ -713,9 +713,9 @@ private:
 
     CurveGFp m_curve;
     BigInt m_coord_x, m_coord_y, m_coord_z;
-	SecureVector!word m_ws; // workspace for Montgomery
-	@property SecureVector!word* m_ws_ref() const { return cast(mutable)&m_ws; }
-	alias mutable = SecureVector!word*;
+    SecureVector!word m_ws; // workspace for Montgomery
+    @property SecureVector!word* m_ws_ref() const { return cast(mutable)&m_ws; }
+    alias mutable = SecureVector!word*;
 }
 
 // encoding and decoding

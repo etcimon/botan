@@ -62,13 +62,13 @@ public:
         setKey(key.ptr, key.length);
     }
     
-	/// ditto
+    /// ditto
     final void setKey(Alloc)(auto const ref RefCounted!(Vector!( ubyte, Alloc ), Alloc) key)
     {
         setKey(key.ptr, key.length);
     }
 
-	/// ditto
+    /// ditto
     final void setKey(Alloc)(auto const ref Vector!( ubyte, Alloc ) key)
     {
         setKey(key.ptr, key.length);
@@ -88,7 +88,7 @@ public:
         keySchedule(key, length);
     }
 
-	/// Clear underlying buffers
+    /// Clear underlying buffers
     abstract void clear();
     
     /**

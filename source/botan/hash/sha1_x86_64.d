@@ -79,9 +79,9 @@ void botan_sha160_x86_64_compress(uint* arg1, const(ubyte)* arg2, uint* arg3)
     */
     enum ASM = 
             START_ASM ~
-			"mov " ~ DIGEST_ARR ~ ", arg1;" ~ 
-			"mov " ~ INPUT ~ ", arg2;" ~ 
-			"mov " ~ W ~ ", arg3;" ~
+            "mov " ~ DIGEST_ARR ~ ", arg1;" ~ 
+            "mov " ~ INPUT ~ ", arg2;" ~ 
+            "mov " ~ W ~ ", arg3;" ~
             ZEROIZE(LOOP_CTR) ~
             ALIGN ~ `;
 LOOP_LOAD_INPUT:

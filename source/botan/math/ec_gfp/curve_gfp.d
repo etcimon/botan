@@ -25,68 +25,68 @@ interface CurveGFpRepr
 {
 public:
 
-	ref const(BigInt) getP() const;
-	
-	ref const(BigInt) getA() const;
-	
-	ref const(BigInt) getB() const;
+    ref const(BigInt) getP() const;
+    
+    ref const(BigInt) getA() const;
+    
+    ref const(BigInt) getB() const;
 
-	/// Returns toCurveRep(getA())
-	ref const(BigInt) getARep() const;
+    /// Returns toCurveRep(getA())
+    ref const(BigInt) getARep() const;
 
-	/// Returns toCurveRep(getB())
-	ref const(BigInt) getBRep() const;
+    /// Returns toCurveRep(getB())
+    ref const(BigInt) getBRep() const;
 
-	void toCurveRep(ref BigInt x, ref SecureVector!word ws) const;
+    void toCurveRep(ref BigInt x, ref SecureVector!word ws) const;
 
-	void fromCurveRep(ref BigInt x, ref SecureVector!word ws) const;
+    void fromCurveRep(ref BigInt x, ref SecureVector!word ws) const;
 
-	void curveMul(ref BigInt z, const ref BigInt x, const ref BigInt y, ref SecureVector!word ws) const;
+    void curveMul(ref BigInt z, const ref BigInt x, const ref BigInt y, ref SecureVector!word ws) const;
 
-	void curveSqr(ref BigInt z, const ref BigInt x, ref SecureVector!word ws) const;
+    void curveSqr(ref BigInt z, const ref BigInt x, ref SecureVector!word ws) const;
 
-	Vector!char toVector() const;
+    Vector!char toVector() const;
 }
 
 class CurveGFpMontgomery : CurveGFpRepr
 {
-	this()(auto const ref BigInt p, auto const ref BigInt a, auto const ref BigInt b)
-	{
-		m_p = p.dup;
-		m_a = a.dup;
-		m_b = b.dup;
-		m_p_words = m_p.sigWords();
-		m_p_dash = montyInverse(m_p.wordAt(0));
-		BigInt r = BigInt.powerOf2(m_p_words * BOTAN_MP_WORD_BITS);
-		m_r2  = (r * r) % m_p;
-		m_a_r = (m_a * r) % m_p;
-		m_b_r = (m_b * r) % m_p;
-	}
+    this()(auto const ref BigInt p, auto const ref BigInt a, auto const ref BigInt b)
+    {
+        m_p = p.dup;
+        m_a = a.dup;
+        m_b = b.dup;
+        m_p_words = m_p.sigWords();
+        m_p_dash = montyInverse(m_p.wordAt(0));
+        BigInt r = BigInt.powerOf2(m_p_words * BOTAN_MP_WORD_BITS);
+        m_r2  = (r * r) % m_p;
+        m_a_r = (m_a * r) % m_p;
+        m_b_r = (m_b * r) % m_p;
+    }
 
-	ref const(BigInt) getP() const { return m_p; }
+    ref const(BigInt) getP() const { return m_p; }
 
-	ref const(BigInt) getA() const { return m_a; }
+    ref const(BigInt) getA() const { return m_a; }
 
-	ref const(BigInt) getB() const { return m_b; }
-		
-	ref const(BigInt) getARep() const { return m_a_r; }
+    ref const(BigInt) getB() const { return m_b; }
+        
+    ref const(BigInt) getARep() const { return m_a_r; }
 
-	ref const(BigInt) getBRep() const { return m_b_r; }
+    ref const(BigInt) getBRep() const { return m_b_r; }
 
-	void toCurveRep(ref BigInt x, ref SecureVector!word ws) const
-	{
-		const BigInt tx = x.dup;
-		curveMul(x, tx, m_r2, ws);
-	}
+    void toCurveRep(ref BigInt x, ref SecureVector!word ws) const
+    {
+        const BigInt tx = x.dup;
+        curveMul(x, tx, m_r2, ws);
+    }
 
-	void fromCurveRep(ref BigInt x, ref SecureVector!word ws) const
-	{
-		const BigInt tx = x.dup;
-		BigInt bi = BigInt(1);
-		curveMul(x, tx, bi, ws);
-	}
+    void fromCurveRep(ref BigInt x, ref SecureVector!word ws) const
+    {
+        const BigInt tx = x.dup;
+        BigInt bi = BigInt(1);
+        curveMul(x, tx, bi, ws);
+    }
 
-	/**
+    /**
     * Montgomery multiplication/reduction
     * Notes: z cannot alias x or y
     * Params:
@@ -94,86 +94,86 @@ class CurveGFpMontgomery : CurveGFpRepr
     *  x = first multiplicand
     *  y = second multiplicand
     */
-	void curveMul(ref BigInt z, const ref BigInt x, const ref BigInt y, ref SecureVector!word ws) const
-	{
-		
-		if (x.isZero() || y.isZero())
-		{
-			z = 0;
-			return;
-		}
+    void curveMul(ref BigInt z, const ref BigInt x, const ref BigInt y, ref SecureVector!word ws) const
+    {
+        
+        if (x.isZero() || y.isZero())
+        {
+            z = 0;
+            return;
+        }
 
-		const size_t output_size = 2*m_p_words + 1;
-		ws.resize(2*(m_p_words+2));
+        const size_t output_size = 2*m_p_words + 1;
+        ws.resize(2*(m_p_words+2));
 
-		z.growTo(output_size);
-		z.clear();
-		
-		bigint_monty_mul(z.mutablePtr(), output_size,
-			x.ptr, x.length, x.sigWords(),
-			y.ptr, y.length, y.sigWords(),
-			m_p.ptr, m_p_words, m_p_dash,
-			ws.ptr);
-	}
+        z.growTo(output_size);
+        z.clear();
+        
+        bigint_monty_mul(z.mutablePtr(), output_size,
+            x.ptr, x.length, x.sigWords(),
+            y.ptr, y.length, y.sigWords(),
+            m_p.ptr, m_p_words, m_p_dash,
+            ws.ptr);
+    }
 
-	/**
+    /**
     * Montgomery squaring/reduction
     * Notes: z cannot alias x
     * Params:
     *  z = output
     *  x = multiplicand
     */
-	void curveSqr(ref BigInt z, const ref BigInt x, ref SecureVector!word ws) const
-	{
-		if (x.isZero())
-		{
-			z = 0;
-			return;
-		}
+    void curveSqr(ref BigInt z, const ref BigInt x, ref SecureVector!word ws) const
+    {
+        if (x.isZero())
+        {
+            z = 0;
+            return;
+        }
 
-		const size_t output_size = 2*m_p_words + 1;
-		ws.resize(2*(m_p_words+2));
-		
-		z.growTo(output_size);
-		z.clear();
-		bigint_monty_sqr(z.mutablePtr(), output_size,
-			x.ptr, x.length, x.sigWords(),
-			m_p.ptr, m_p_words, m_p_dash,
-			ws.ptr);
-	}
+        const size_t output_size = 2*m_p_words + 1;
+        ws.resize(2*(m_p_words+2));
+        
+        z.growTo(output_size);
+        z.clear();
+        bigint_monty_sqr(z.mutablePtr(), output_size,
+            x.ptr, x.length, x.sigWords(),
+            m_p.ptr, m_p_words, m_p_dash,
+            ws.ptr);
+    }
 
-	Vector!char toVector() const
-	{
-		Vector!char ret;
-		ret ~= "m_p: ";
-		ret ~= m_p.toString();
-		ret ~= "\nm_a: ";
-		ret ~= m_a.toString();
-		ret ~= "\nm_b: ";
-		ret ~= m_b.toString();
-		ret ~= "\nm_r2: ";
-		ret ~= m_r2.toString();
-		ret ~= "\nm_a_r: ";
-		ret ~= m_a_r.toString();
-		ret ~= "\nm_b_r: ";
-		ret ~= m_b_r.toString();
-		ret ~= "\nm_p_dash: ";
-		ret ~= m_p_dash.to!string;
-		ret ~= "\nm_p_words: ";
-		ret ~= m_p_words.to!string;
-		ret ~= "\n";
-		return ret.move();
-	}
+    Vector!char toVector() const
+    {
+        Vector!char ret;
+        ret ~= "m_p: ";
+        ret ~= m_p.toString();
+        ret ~= "\nm_a: ";
+        ret ~= m_a.toString();
+        ret ~= "\nm_b: ";
+        ret ~= m_b.toString();
+        ret ~= "\nm_r2: ";
+        ret ~= m_r2.toString();
+        ret ~= "\nm_a_r: ";
+        ret ~= m_a_r.toString();
+        ret ~= "\nm_b_r: ";
+        ret ~= m_b_r.toString();
+        ret ~= "\nm_p_dash: ";
+        ret ~= m_p_dash.to!string;
+        ret ~= "\nm_p_words: ";
+        ret ~= m_p_words.to!string;
+        ret ~= "\n";
+        return ret.move();
+    }
 
 private:
-	// Curve parameters
-	BigInt m_p, m_a, m_b;
-	
-	size_t m_p_words; // cache of m_p.sigWords()
-	
-	// Montgomery parameters
-	BigInt m_r2, m_a_r, m_b_r;
-	word m_p_dash;
+    // Curve parameters
+    BigInt m_p, m_a, m_b;
+    
+    size_t m_p_words; // cache of m_p.sigWords()
+    
+    // Montgomery parameters
+    BigInt m_r2, m_a_r, m_b_r;
+    word m_p_dash;
 
 }
 
@@ -191,7 +191,7 @@ struct CurveGFp
     */
     this()(auto const ref BigInt p, auto const ref BigInt a, auto const ref BigInt b)
     {
-		m_repr = chooseRepr(p, a, b);
+        m_repr = chooseRepr(p, a, b);
     }
 
     /**
@@ -202,40 +202,40 @@ struct CurveGFp
     /**
     * Returns: curve coefficient b
     */
-	ref const(BigInt) getB() const { return m_repr.getB(); }
+    ref const(BigInt) getB() const { return m_repr.getB(); }
 
     /**
     * Get prime modulus of the field of the curve
     * Returns: prime modulus of the field of the curve
     */
-	ref const(BigInt) getP() const { return m_repr.getP(); }
+    ref const(BigInt) getP() const { return m_repr.getP(); }
 
     /**
     * Returns: a * r mod p
     */
-	ref const(BigInt) getARep() const { return m_repr.getARep(); }
+    ref const(BigInt) getARep() const { return m_repr.getARep(); }
 
     /**
     * Returns: b * r mod p
     */
-	ref const(BigInt) getBRep() const { return m_repr.getBRep(); }
+    ref const(BigInt) getBRep() const { return m_repr.getBRep(); }
 
-	void toRep()(ref BigInt x, SecureVector!word* ws) const
-	{ 
-		m_repr.toCurveRep(x, *ws); 
-	}
-	
-	void fromRep(ref BigInt x, SecureVector!word* ws) const 
-	{ 
-		m_repr.fromCurveRep(x, *ws);
-	}
+    void toRep()(ref BigInt x, SecureVector!word* ws) const
+    { 
+        m_repr.toCurveRep(x, *ws); 
+    }
+    
+    void fromRep(ref BigInt x, SecureVector!word* ws) const 
+    { 
+        m_repr.fromCurveRep(x, *ws);
+    }
 
-	BigInt fromRep()(auto const ref BigInt x, SecureVector!word* ws) const
-	{ 
-		BigInt xt = x.dup;
-		m_repr.fromCurveRep(xt, *ws);
-		return xt.move;
-	}
+    BigInt fromRep()(auto const ref BigInt x, SecureVector!word* ws) const
+    { 
+        BigInt xt = x.dup;
+        m_repr.fromCurveRep(xt, *ws);
+        return xt.move;
+    }
 
     /**
     * swaps the states of this and other, does not throw
@@ -244,7 +244,7 @@ struct CurveGFp
     */
     void swap()(auto ref CurveGFp other)
     {
-		.swap(m_repr, other.m_repr);
+        .swap(m_repr, other.m_repr);
     }
 
     /**
@@ -276,29 +276,29 @@ struct CurveGFp
         return CurveGFp(getP(), getA(), getB());
     }
 
-	void mul()(ref BigInt z, auto const ref BigInt x, auto const ref BigInt y, SecureVector!word* ws) const
-	{
-		m_repr.curveMul(z, x, y, *ws);
-	}
+    void mul()(ref BigInt z, auto const ref BigInt x, auto const ref BigInt y, SecureVector!word* ws) const
+    {
+        m_repr.curveMul(z, x, y, *ws);
+    }
 
-	BigInt mul()(auto const ref BigInt x, auto const ref BigInt y, SecureVector!word* ws) const
-	{
-		BigInt z;
-		m_repr.curveMul(z, x, y, *ws);
-		return z.move;
-	}
+    BigInt mul()(auto const ref BigInt x, auto const ref BigInt y, SecureVector!word* ws) const
+    {
+        BigInt z;
+        m_repr.curveMul(z, x, y, *ws);
+        return z.move;
+    }
 
-	void sqr()(auto ref BigInt z, auto const ref BigInt x, SecureVector!word* ws) const
-	{
-		m_repr.curveSqr(z, x, *ws);
-	}
+    void sqr()(auto ref BigInt z, auto const ref BigInt x, SecureVector!word* ws) const
+    {
+        m_repr.curveSqr(z, x, *ws);
+    }
 
-	BigInt sqr()(auto const ref BigInt x, SecureVector!word* ws) const
-	{
-		BigInt z;
-		m_repr.curveSqr(z, x, *ws);
-		return z.move;
-	}
+    BigInt sqr()(auto const ref BigInt x, SecureVector!word* ws) const
+    {
+        BigInt z;
+        m_repr.curveSqr(z, x, *ws);
+        return z.move;
+    }
 
     @disable this(this);
 
@@ -307,16 +307,16 @@ struct CurveGFp
     }
 
     Vector!char toVector() const {
-		return m_repr.toVector();
+        return m_repr.toVector();
     }
 
     ~this() {
     }
 
-	static CurveGFpRepr chooseRepr()(auto const ref BigInt p, auto const ref BigInt a, auto const ref BigInt b)
-	{
-		return cast(CurveGFpRepr) new CurveGFpMontgomery(p, a, b);
-	}
+    static CurveGFpRepr chooseRepr()(auto const ref BigInt p, auto const ref BigInt a, auto const ref BigInt b)
+    {
+        return cast(CurveGFpRepr) new CurveGFpMontgomery(p, a, b);
+    }
 
-	Unique!CurveGFpRepr m_repr;
+    Unique!CurveGFpRepr m_repr;
 }

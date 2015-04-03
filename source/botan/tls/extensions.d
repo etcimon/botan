@@ -40,7 +40,7 @@ enum : HandshakeExtensionType {
     TLSEXT_SRP_IDENTIFIER            = 12,
     TLSEXT_SIGNATURE_ALGORITHMS      = 13,
     TLSEXT_HEARTBEAT_SUPPORT         = 15,
-	TLSEXT_ALPN						 = 16,
+    TLSEXT_ALPN                         = 16,
 
     TLSEXT_SESSION_TICKET            = 35,
 
@@ -310,22 +310,22 @@ public:
         m_protocols = protocols.move(); 
     }
 
-	this(string protocol) {
-		m_protocols.length = 1;
-		m_protocols[0] = protocol;
-	}
+    this(string protocol) {
+        m_protocols.length = 1;
+        m_protocols[0] = protocol;
+    }
 
     this(ref TLSDataReader reader, ushort extension_size)
     {
         if (extension_size == 0)
             return; // empty extension
         
-		const ushort name_bytes = reader.get_ushort();
+        const ushort name_bytes = reader.get_ushort();
         
-		size_t bytes_remaining = extension_size - 2;
+        size_t bytes_remaining = extension_size - 2;
 
-		if (name_bytes != bytes_remaining)
-			throw new DecodingError("Bad encoding of ALPN extension, bad length field");
+        if (name_bytes != bytes_remaining)
+            throw new DecodingError("Bad encoding of ALPN extension, bad length field");
 
         while (bytes_remaining)
         {
@@ -343,25 +343,25 @@ public:
     ref string singleProtocol() const
     {
         if (m_protocols.length != 1)
-			throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "Server sent " ~ m_protocols.length.to!string ~ " protocols in ALPN extension response");
+            throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "Server sent " ~ m_protocols.length.to!string ~ " protocols in ALPN extension response");
         
-		return m_protocols[0];
-	}
+        return m_protocols[0];
+    }
 
-	override Vector!ubyte serialize() const
-	{
-		Vector!ubyte buf = Vector!ubyte(2);
+    override Vector!ubyte serialize() const
+    {
+        Vector!ubyte buf = Vector!ubyte(2);
 
-		foreach (ref p; m_protocols)
-		{
-			if (p.length >= 256)
-				throw new TLSException(TLSAlert.INTERNAL_ERROR, "ALPN name too long");
-			if (p != "")
+        foreach (ref p; m_protocols)
+        {
+            if (p.length >= 256)
+                throw new TLSException(TLSAlert.INTERNAL_ERROR, "ALPN name too long");
+            if (p != "")
                 appendTlsLengthValue(buf, cast(const(ubyte)*) p.ptr, p.length, 1);
         }
-		ushort len = cast(ushort)( buf.length - 2 );
-		buf[0] = get_byte!ushort(0, len);
-		buf[1] = get_byte!ushort(1, len);
+        ushort len = cast(ushort)( buf.length - 2 );
+        buf[0] = get_byte!ushort(0, len);
+        buf[1] = get_byte!ushort(1, len);
 
         return buf.move();
     }

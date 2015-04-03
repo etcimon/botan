@@ -2,7 +2,7 @@
 * TLS Channel
 * 
 * Copyright:
-* (C) 2011,2012 Jack Lloyd
+* (C) 2011,2012,2014 Jack Lloyd
 * (C) 2014-2015 Etienne Cimon
 *
 * License:
@@ -48,8 +48,6 @@ public:
     */
     size_t receivedData(const(ubyte)* input, size_t input_size)
     {
-        const auto get_cipherstate = (ushort epoch)
-        { return this.readCipherStateEpoch(epoch); };
         
         const size_t max_fragment_size = maximumFragmentSize();
         
@@ -63,7 +61,6 @@ public:
                 TLSProtocolVersion record_version;
 
                 size_t consumed = 0;
-                
                 const size_t needed = .readRecord(m_readbuf,
                                                   input,
                                                   input_size,
@@ -73,8 +70,8 @@ public:
                                                   record_version,
                                                   record_type,
                                                   *m_sequence_numbers,
-                                                  get_cipherstate);
-                
+                                                  &readCipherStateEpoch);
+                assert(consumed > 0, "Got to eat something");
                 assert(consumed <= input_size, "Record reader consumed sane amount");
                 
                 input += consumed;
@@ -92,24 +89,50 @@ public:
                 {
                     if (!m_pending_state)
                     {
-                        createHandshakeState(record_version);
-                        if (record_version.isDatagramProtocol())
+                        if (record_version.isDatagramProtocol()) {
+
                             (*m_sequence_numbers).readAccept(record_sequence);
+                            
+                            /*
+                            * Might be a peer retransmit under epoch - 1 in which
+                            * case we must retransmit last flight
+                            */
+                                                        
+                            const ushort epoch = record_sequence >> 48;
+                            
+                            if(epoch == sequenceNumbers().currentReadEpoch())
+                            {
+                                createHandshakeState(record_version);
+                            }
+                            else if(epoch == sequenceNumbers().currentReadEpoch() - 1)
+                            {
+                                auto rec = unlock(record);
+                                m_active_state.handshakeIo().addRecord(rec, record_type, record_sequence);
+                            }
+                        }
+                        else
+                        {
+                            createHandshakeState(record_version);
+                        }
+                        
                     }
-                    auto rec = unlock(record);
-                    m_pending_state.handshakeIo().addRecord(rec, record_type, record_sequence);
-                    
-                    while (true)
+
+                    if (m_pending_state)
                     {
-                        if (HandshakeState pending = *m_pending_state) {
-                            auto msg = pending.getNextHandshakeMsg();
-                            
-                            if (msg.type == HANDSHAKE_NONE) // no full handshake yet
-                                break;
-                            
-                            processHandshakeMsg(activeState(), pending,
-                                                msg.type, msg.data);
-                        } else break;
+                        auto rec = unlock(record);
+                        m_pending_state.handshakeIo().addRecord(rec, record_type, record_sequence);
+                        
+                        while (true) {
+                            if (auto pending = *m_pending_state) {
+                                auto msg = pending.getNextHandshakeMsg();
+                                
+                                if (msg.type == HANDSHAKE_NONE) // no full handshake yet
+                                    break;
+                                
+                                processHandshakeMsg(activeState(), pending,
+                                                    msg.type, msg.data);
+                            } else break;
+                        }
                     }
                 }
                 else if (record_type == HEARTBEAT && peerSupportsHeartbeats())
@@ -214,6 +237,7 @@ public:
 
     /**
     * Inject plaintext intended for counterparty
+    * Throws an exception if isActive() is false
     */
     void send(const(ubyte)* buf, size_t buf_size)
     {
@@ -225,6 +249,7 @@ public:
 
     /**
     * Inject plaintext intended for counterparty
+    * Throws an exception if isActive() is false
     */
     void send(in string str)
     {
@@ -233,6 +258,7 @@ public:
 
     /**
     * Inject plaintext intended for counterparty
+    * Throws an exception if isActive() is false
     */
     void send(Alloc)(const ref Vector!( char, Alloc ) val)
     {
@@ -482,8 +508,11 @@ protected:
         }
         
         Unique!HandshakeIO io;
-        if (_version.isDatagramProtocol())
-            io = new DatagramHandshakeIO(*m_sequence_numbers, &sendRecordUnderEpoch);
+        if (_version.isDatagramProtocol()) {
+			// default MTU is IPv6 min MTU minus UDP/IP headers (TODO: make configurable)
+			const ushort mtu = 1280 - 40 - 8;
+            io = new DatagramHandshakeIO(*m_sequence_numbers, &sendRecordUnderEpoch, mtu);
+        }
         else
             io = new StreamHandshakeIO(&sendRecord);
 
@@ -493,6 +522,18 @@ protected:
             m_pending_state.setVersion(active.Version());
         
         return *m_pending_state;
+    }
+
+    /**
+    * Perform a handshake timeout check. This does nothing unless
+    * this is a DTLS channel with a pending handshake state, in
+    * which case we check for timeout and potentially retransmit
+    * handshake packets.
+    */
+    bool timeoutCheck() {
+        if (m_pending_state)
+            return m_pending_state.handshakeIo().timeoutCheck();
+        return false;
     }
 
     void activateSession()
@@ -537,11 +578,11 @@ protected:
                "No read cipher state currently set for next epoch");
         
         // flip side as we are reading
-        ConnectionCipherState read_state = new ConnectionCipherState(pending.Version(),
-                                                                     (side == CLIENT) ? SERVER : CLIENT,
-                                                                     false,
-                                                                     pending.ciphersuite(),
-                                                                     pending.sessionKeys());
+        ConnectionCipherState read_state = ConnectionCipherState(pending.Version(),
+                                                                 (side == CLIENT) ? SERVER : CLIENT,
+                                                                 false,
+                                                                 pending.ciphersuite(),
+                                                                 pending.sessionKeys());
         
         m_read_cipher_states[epoch] = read_state;
     }
@@ -561,7 +602,7 @@ protected:
         
         assert(m_write_cipher_states.get(epoch, ConnectionCipherState.init) is ConnectionCipherState.init, "No write cipher state currently set for next epoch");
         
-        ConnectionCipherState write_state = new ConnectionCipherState(pending.Version(),
+        ConnectionCipherState write_state = ConnectionCipherState(pending.Version(),
                                                                       side,
                                                                       true,
                                                                       pending.ciphersuite(),
@@ -704,7 +745,7 @@ private:
         
         if (type == APPLICATION_DATA && cipher_state.cbcWithoutExplicitIv())
         {
-            writeRecord(cipher_state, type, input, 1);
+            writeRecord(cipher_state, epoch, type, input, 1);
             input += 1;
             length -= 1;
         }
@@ -714,27 +755,25 @@ private:
         while (length)
         {
             const size_t sending = std.algorithm.min(length, max_fragment_size);
-            writeRecord(cipher_state, type, input, sending);
+            writeRecord(cipher_state, epoch, type, input, sending);
             
             input += sending;
             length -= sending;
         }
     }
 
-    void writeRecord(ConnectionCipherState cipher_state,
-                      ubyte record_type, const(ubyte)* input, size_t length)
+    void writeRecord(ConnectionCipherState cipher_state, ushort epoch, ubyte record_type, const(ubyte)* input, size_t length)
     {
         assert(m_pending_state || m_active_state, "Some connection state exists");
         
-        TLSProtocolVersion record_version =
-            (m_pending_state) ? (m_pending_state.Version()) : (m_active_state.Version());
+        TLSProtocolVersion record_version = (m_pending_state) ? (m_pending_state.Version()) : (m_active_state.Version());
         
         .writeRecord(m_writebuf,
                      record_type,
                      input,
                      length,
                      record_version,
-                     (*m_sequence_numbers).nextWriteSequence(),
+                     (*m_sequence_numbers).nextWriteSequence(epoch),
                      cipher_state,
                      m_rng);
         

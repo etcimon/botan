@@ -218,17 +218,17 @@ public:
         return Vector!ubyte();
     }
 
-	bool supportsAlpn() const
-	{
-		return m_extensions.get!ApplicationLayerProtocolNotification() !is null;
-	}
+    bool supportsAlpn() const
+    {
+        return m_extensions.get!ApplicationLayerProtocolNotification() !is null;
+    }
 
-	const(Vector!string) nextProtocols() const
-	{
-		if (auto alpn = m_extensions.get!ApplicationLayerProtocolNotification())
-			return alpn.protocols().dup;
-		return Vector!string();
-	}
+    const(Vector!string) nextProtocols() const
+    {
+        if (auto alpn = m_extensions.get!ApplicationLayerProtocolNotification())
+            return alpn.protocols().dup;
+        return Vector!string();
+    }
 
     bool supportsHeartbeats() const
     {
@@ -300,7 +300,7 @@ public:
          RandomNumberGenerator rng,
          Vector!ubyte reneg_info,
          const ref TLSSession session,
-		 Vector!string next_protocols)
+         Vector!string next_protocols)
     { 
         bool reneg_empty = reneg_info.empty;
 
@@ -528,12 +528,12 @@ public:
         return false;
     }
 
-	string nextProtocol() const
-	{
-		if (auto alpn = m_extensions.get!ApplicationLayerProtocolNotification())
-			return alpn.singleProtocol();
-		return "";
-	}
+    string nextProtocol() const
+    {
+        if (auto alpn = m_extensions.get!ApplicationLayerProtocolNotification())
+            return alpn.singleProtocol();
+        return "";
+    }
 
     const(Vector!HandshakeExtensionType) extensionTypes() const
     { return m_extensions.extensionTypes(); }

@@ -31,7 +31,7 @@ public:
     */
     void poll(ref EntropyAccumulator accum)
     {
-		m_buf.length = 32;
+        m_buf.length = 32;
         
         foreach (prov_type; m_prov_types[])
         {
@@ -69,7 +69,7 @@ public:
 
 private:
     Vector!( ulong ) m_prov_types;
-	SecureVector!ubyte m_buf;
+    SecureVector!ubyte m_buf;
 }
 
 final class CSPHandle
@@ -112,27 +112,27 @@ alias DWORD = ULONG;
 alias HCRYPTPROV = ULONG;
 alias PBYTE = ubyte*;
 enum {
-	PROV_RSA_FULL = 1,
-	PROV_FORTEZZA = 4,
-	PROV_RNG = 21,
-	PROV_INTEL_SEC = 22
+    PROV_RSA_FULL = 1,
+    PROV_FORTEZZA = 4,
+    PROV_RNG = 21,
+    PROV_INTEL_SEC = 22
 }
 alias BOOL = int;
 alias LPCSTR = const(char)*;
 enum {
-	CRYPT_VERIFYCONTEXT = 0xF0000000,
+    CRYPT_VERIFYCONTEXT = 0xF0000000,
 }
 
 extern (Windows) {
-	BOOL CryptReleaseContext(HCRYPTPROV, DWORD);
-	BOOL CryptGenRandom(HCRYPTPROV, DWORD, PBYTE);
-	
-	version(Unicode) { 
-		BOOL CryptAcquireContextW(HCRYPTPROV*, LPCWSTR, LPCWSTR, DWORD, DWORD);
-		alias CryptAcquireContext = CryptAcquireContextW;
-	}
-	else {
-		BOOL CryptAcquireContextA(HCRYPTPROV*, LPCSTR, LPCSTR, DWORD, DWORD);
-		alias CryptAcquireContext = CryptAcquireContextA;
-	}
+    BOOL CryptReleaseContext(HCRYPTPROV, DWORD);
+    BOOL CryptGenRandom(HCRYPTPROV, DWORD, PBYTE);
+    
+    version(Unicode) { 
+        BOOL CryptAcquireContextW(HCRYPTPROV*, LPCWSTR, LPCWSTR, DWORD, DWORD);
+        alias CryptAcquireContext = CryptAcquireContextW;
+    }
+    else {
+        BOOL CryptAcquireContextA(HCRYPTPROV*, LPCSTR, LPCSTR, DWORD, DWORD);
+        alias CryptAcquireContext = CryptAcquireContextA;
+    }
 }

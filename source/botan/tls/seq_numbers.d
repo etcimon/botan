@@ -16,6 +16,7 @@ package:
 
 import botan.utils.types;
 import std.exception;
+import memutils.hashmap;
 
 
 interface ConnectionSequenceNumbers
@@ -27,7 +28,7 @@ public:
     abstract ushort currentReadEpoch() const;
     abstract ushort currentWriteEpoch() const;
 
-    abstract ulong nextWriteSequence();
+    abstract ulong nextWriteSequence(ushort);
     abstract ulong nextReadSequence();
 
     abstract bool alreadySeen(ulong seq) const;
@@ -43,7 +44,7 @@ public:
     override ushort currentReadEpoch() const { return m_read_epoch; }
     override ushort currentWriteEpoch() const { return m_write_epoch; }
 
-    override ulong nextWriteSequence() { return m_write_seq_no++; }
+    override ulong nextWriteSequence(ushort) { return m_write_seq_no++; }
     override ulong nextReadSequence() { return m_read_seq_no; }
 
     override bool alreadySeen(ulong) const { return false; }
@@ -58,18 +59,25 @@ private:
 final class DatagramSequenceNumbers : ConnectionSequenceNumbers
 {
 public:
+    this() { m_write_seqs[0] = 0; }
+
     override void newReadCipherState() { m_read_epoch += 1; }
 
     override void newWriteCipherState()
     {
-        // increment epoch
-        m_write_seq_no = ((m_write_seq_no >> 48) + 1) << 48;
+        m_write_epoch += 1;
+        m_write_seqs[m_write_epoch] = 0;
     }
 
     override ushort currentReadEpoch() const { return m_read_epoch; }
-    override ushort currentWriteEpoch() const { return (m_write_seq_no >> 48); }
+    override ushort currentWriteEpoch() const { return m_write_epoch; }
 
-    override ulong nextWriteSequence() { return m_write_seq_no++; }
+    override ulong nextWriteSequence(ushort epoch) 
+    { 
+        ulong* i = epoch in m_write_seqs;
+        assert(i !is null, "Found epoch");
+        return ((cast(ulong) epoch) << 48 ) | ((*i)++);
+    }
 
     override ulong nextReadSequence()
     {
@@ -115,7 +123,8 @@ public:
     }
 
 private:
-    ulong m_write_seq_no;
+    HashMap!(ushort, ulong) m_write_seqs;
+    ushort m_write_epoch;
     ushort m_read_epoch;
     ulong m_window_highest;
     ulong m_window_bits;

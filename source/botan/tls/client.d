@@ -70,7 +70,7 @@ public:
         sendClientHello(state, false, offer_version, srp_identifier, next_protocols.move());
     }
 
-	string applicationProtocol() const { return m_application_protocol; }
+    string applicationProtocol() const { return m_application_protocol; }
 
 protected:
     override Vector!X509Certificate getPeerCertChain(in HandshakeState state) const
@@ -210,7 +210,7 @@ protected:
             }
             
             state.setVersion(state.serverHello().Version());
-			m_application_protocol = state.serverHello().nextProtocol();
+            m_application_protocol = state.serverHello().nextProtocol();
 
             secureRenegotiationCheck(state.serverHello());
             
@@ -252,7 +252,7 @@ protected:
                 
                 if (!m_policy.acceptableProtocolVersion(state.Version()))
                 {
-                    throw new TLSException(TLSAlert.PROTOCOL_VERSION, "TLSServer version is unacceptable by policy");
+                    throw new TLSException(TLSAlert.PROTOCOL_VERSION, "TLSServer version " ~ state.Version().toString() ~ " is unacceptable by policy");
                 }
                 
                 if (state.ciphersuite().sigAlgo() != "")
@@ -464,7 +464,7 @@ private:
     const TLSPolicy m_policy;
     TLSCredentialsManager m_creds;
     const TLSServerInformation m_info;
-	string m_application_protocol;
+    string m_application_protocol;
 }
 
 

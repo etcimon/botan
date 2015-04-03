@@ -49,7 +49,7 @@ public:
         ubyte* buf = buffer.ptr + offset;
         
         m_msg_buf ~= buf[0 .. sz];
-		logDebug("m_msg_buf: ", hexEncode(m_msg_buf.ptr, m_msg_buf.length));
+        logDebug("m_msg_buf: ", hexEncode(m_msg_buf.ptr, m_msg_buf.length));
         buffer.length = offset; // truncate msg
     }
 

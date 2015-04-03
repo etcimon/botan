@@ -145,23 +145,23 @@ public:
         keySchedule(key, length);
     }
 
-	/// ditto
-	final void setKey(Alloc)(in RefCounted!(Vector!( ubyte, Alloc ), Alloc) key)
-	{
-		setKey(key.ptr, key.length);
-	}
+    /// ditto
+    final void setKey(Alloc)(in RefCounted!(Vector!( ubyte, Alloc ), Alloc) key)
+    {
+        setKey(key.ptr, key.length);
+    }
 
-	/// ditto	
-	final void setKey(Alloc)(const ref Vector!( ubyte, Alloc ) key)
-	{
-		setKey(key.ptr, key.length);
-	}
+    /// ditto    
+    final void setKey(Alloc)(const ref Vector!( ubyte, Alloc ) key)
+    {
+        setKey(key.ptr, key.length);
+    }
 
-	/// ditto
-	final void setKey(in SymmetricKey key)
-	{
-		setKey(key.ptr, key.length);
-	}
+    /// ditto
+    final void setKey(in SymmetricKey key)
+    {
+        setKey(key.ptr, key.length);
+    }
 
 
 protected:

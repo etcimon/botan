@@ -179,7 +179,7 @@ public:
         else return 1;
     }
 
-	/// Append another $(D OctetString) to this
+    /// Append another $(D OctetString) to this
     void opOpAssign(string op)(auto const ref OctetString other)
         if (op == "~")
     {
@@ -221,7 +221,7 @@ public:
         return OctetString(ret);
     }
 
-	/// Returns: A copy of the underlying bits in a new octet string
+    /// Returns: A copy of the underlying bits in a new octet string
     @property OctetString dup() const
     {
         return OctetString(m_bits.dup);

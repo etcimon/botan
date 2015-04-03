@@ -70,8 +70,8 @@ public:
         
         
         TOOLHELP32_ITER!(MODULEENTRY32, Module32First, Module32Next, snapshot)(accum);
-		TOOLHELP32_ITER!(PROCESSENTRY32, Process32First, Process32Next, snapshot)(accum);
-		TOOLHELP32_ITER!(THREADENTRY32, Thread32First, Thread32Next, snapshot)(accum);
+        TOOLHELP32_ITER!(PROCESSENTRY32, Process32First, Process32Next, snapshot)(accum);
+        TOOLHELP32_ITER!(THREADENTRY32, Thread32First, Thread32Next, snapshot)(accum);
         
         
         if (!accum.pollingGoalAchieved())
@@ -124,12 +124,12 @@ void TOOLHELP32_ITER(alias DATA_TYPE, alias FUNC_FIRST, alias FUNC_NEXT, alias S
     {
         DATA_TYPE info;
         info.dwSize = (DATA_TYPE).sizeof;
-		if (FUNC_FIRST(SNAPSHOT, &info))
+        if (FUNC_FIRST(SNAPSHOT, &info))
         {
             do
             {
                 accum.add(info, 1);
-			} while(FUNC_NEXT(SNAPSHOT, &info));
+            } while(FUNC_NEXT(SNAPSHOT, &info));
         }
     }
 }

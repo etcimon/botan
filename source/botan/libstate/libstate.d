@@ -211,12 +211,12 @@ private:
         static if (BOTAN_HAS_ENTROPY_SRC_PROC_WALKER) version(Posix)
             sources.pushBack(new ProcWalkingEntropySource("/proc"));
             
-		static if (BOTAN_HAS_ENTROPY_SRC_UNIX_PROCESS_RUNNER) version(Posix)
+        static if (BOTAN_HAS_ENTROPY_SRC_UNIX_PROCESS_RUNNER) version(Posix)
             sources.pushBack(
                 new UnixEntropySource(   Vector!string( [ "/bin", "/sbin", "/usr/bin", "/usr/sbin" ] ) )
             );
                 
-		static if (BOTAN_HAS_ENTROPY_SRC_EGD) version(Posix)
+        static if (BOTAN_HAS_ENTROPY_SRC_EGD) version(Posix)
             sources.pushBack(
                 new EGDEntropySource( Vector!string( [ "/var/run/egd-pool", "/dev/egd-pool" ] ) )
             );

@@ -59,7 +59,7 @@ public:
         BAD_CERTIFICATE_STATUS_RESPONSE     = 113,
         BAD_CERTIFICATE_HASH_VALUE          = 114,
         UNKNOWN_PSK_IDENTITY                = 115,
-		NO_APPLICATION_PROTOCOL				= 120, // RFC 7301
+        NO_APPLICATION_PROTOCOL                = 120, // RFC 7301
 
         // pseudo alert values
         NULL_ALERT                          = 256,
@@ -149,8 +149,8 @@ public:
                 return "bad_certificate_hash_value";
             case UNKNOWN_PSK_IDENTITY:
                 return "unknown_psk_identity";
-			case NO_APPLICATION_PROTOCOL:
-				return "no_application_protocol";
+            case NO_APPLICATION_PROTOCOL:
+                return "no_application_protocol";
             case NULL_ALERT:
                 return "none";
                 

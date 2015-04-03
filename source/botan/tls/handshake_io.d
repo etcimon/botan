@@ -21,10 +21,11 @@ import botan.tls.messages;
 import botan.tls.record;
 import botan.tls.seq_numbers;
 import botan.utils.exceptn;
-import std.algorithm : count;
+import std.algorithm : count, min;
 import botan.utils.types;
 import memutils.hashmap;
 import std.typecons : Tuple;
+import std.datetime;
 
 struct NextRecord
 {
@@ -42,12 +43,11 @@ public:
 
     abstract Vector!ubyte send(in HandshakeMessage msg);
 
-    abstract const(Vector!ubyte) format(const ref Vector!ubyte handshake_msg,
-                                        HandshakeType handshake_type) const;
+    abstract const(Vector!ubyte) format(const ref Vector!ubyte handshake_msg, HandshakeType handshake_type) const;
 
-    abstract void addRecord(const ref Vector!ubyte record,
-                            RecordType type,
-                            ulong sequence_number);
+    abstract bool timeoutCheck();
+
+    abstract void addRecord(const ref Vector!ubyte record, RecordType type, ulong sequence_number);
 
     /**
     * Returns (HANDSHAKE_NONE, Vector!(  )()) if no message currently available
@@ -70,6 +70,8 @@ public:
     {
         return cast(TLSProtocolVersion)TLSProtocolVersion.TLS_V10;
     }
+
+    override bool timeoutCheck() { return false; }
 
     override Vector!ubyte send(in HandshakeMessage msg)
     {
@@ -117,7 +119,7 @@ public:
             m_queue.insert(ccs_hs);
         }
         else
-            throw new DecodingError("Unknown message type in handshake processing");
+            throw new DecodingError("Unknown message type " ~ record_type.to!string ~ " in handshake processing");
     }
 
     override NextRecord getNextRecord(bool)
@@ -151,12 +153,22 @@ private:
 */
 package final class DatagramHandshakeIO : HandshakeIO
 {
+private:
+    // 1 second initial timeout, 60 second max - see RFC 6347 sec 4.2.4.1
+    const ulong INITIAL_TIMEOUT = 1*1000;
+    const ulong MAXIMUM_TIMEOUT = 60*1000;
+
+    static ulong steadyClockMs() {
+        return (Clock.currTime(UTC()).stdTime - SysTime(DateTime(1970, 1, 1, 0, 0, 0), UTC()).stdTime)/10_000;
+    }
+
 public:
-    this(ConnectionSequenceNumbers seq, void delegate(ushort, ubyte, const ref Vector!ubyte) writer) 
+    this(ConnectionSequenceNumbers seq, void delegate(ushort, ubyte, const ref Vector!ubyte) writer, ushort mtu) 
     {
         m_seqs = seq;
         m_flights.length = 1;
         m_send_hs = writer; 
+        m_mtu = mtu;
     }
 
     override TLSProtocolVersion initialRecordVersion() const
@@ -164,21 +176,69 @@ public:
         return TLSProtocolVersion(TLSProtocolVersion.DTLS_V10);
     }
 
+    override bool timeoutCheck() {
+        import std.range : empty;
+        if(m_last_write == 0 || (m_flights.length > 1 && !m_flights[0].empty))
+        {
+            /*
+            If we haven't written anything yet obviously no timeout.
+            Also no timeout possible if we are mid-flight,
+            */
+            return false;
+        }
+        const ulong ms_since_write = steadyClockMs() - m_last_write;
+        if(ms_since_write < m_next_timeout)
+            return false;
+        Vector!ushort flight;
+        if(m_flights.length == 1)
+            flight = m_flights[0]; // lost initial client hello
+        else
+            flight = m_flights[m_flights.length - 2];
+        assert(flight.length > 0, "Nonempty flight to retransmit");
+        ushort epoch = m_flight_data[flight[0]].epoch;
+        foreach(msg_seq; flight)
+        {
+            auto msg = m_flight_data[msg_seq];
+            if(msg.epoch != epoch)
+            {
+                // Epoch gap: insert the CCS
+                Vector!ubyte ccs;
+                ccs ~= 1;
+                m_send_hs(epoch, CHANGE_CIPHER_SPEC, ccs);
+            }
+            sendMessage(msg_seq, msg.epoch, msg.msg_type, msg.msg_bits);
+            epoch = msg.epoch;
+        }
+        m_next_timeout = min(2 * m_next_timeout, MAXIMUM_TIMEOUT);
+        return true;
+    }
+
     override Vector!ubyte send(in HandshakeMessage msg)
     {
         Vector!ubyte msg_bits = msg.serialize();
         ushort epoch = m_seqs.currentWriteEpoch();
         HandshakeType msg_type = msg.type();
-        
-        FlightData msg_info = FlightData(epoch, msg_type, msg_bits.dupr());
-        
+
         if (msg_type == HANDSHAKE_CCS)
         {
             m_send_hs(epoch, CHANGE_CIPHER_SPEC, msg_bits);
             return Vector!ubyte(); // not included in handshake hashes
         }
         
-        const Vector!ubyte no_fragment = formatWSeq(msg_bits, msg_type, m_out_message_seq);
+        // Note: not saving CCS, instead we know it was there due to change in epoch
+        m_flights[$-1].pushBack(m_out_message_seq);
+        m_flight_data[m_out_message_seq] = MessageInfo(epoch, msg_type, msg_bits);
+
+        m_out_message_seq += 1;
+        m_last_write = steadyClockMs();
+        m_next_timeout = INITIAL_TIMEOUT;
+
+        return sendMessage(cast(ushort)(m_out_message_seq - 1), epoch, msg_type, msg_bits);
+    }
+
+    Vector!ubyte sendMessage(ushort msg_seq, ushort epoch, HandshakeType msg_type, const ref Vector!ubyte msg_bits)
+    {
+        const Vector!ubyte no_fragment = formatWSeq(msg_bits, msg_type, msg_seq);
         
         if (no_fragment.length + DTLS_HEADER_SIZE <= m_mtu)
             m_send_hs(epoch, HANDSHAKE, no_fragment);
@@ -194,42 +254,33 @@ public:
             {
                 const size_t frag_len =    std.algorithm.min(msg_bits.length - frag_offset, parts_size);
                 auto frag = formatFragment(cast(const(ubyte)*)&msg_bits[frag_offset],
-                                           frag_len,
-                                           cast(ushort)frag_offset,
-                                           cast(ushort)msg_bits.length,
-                                           msg_type,
-                                           m_out_message_seq);
+                    frag_len,
+                    cast(ushort)frag_offset,
+                    cast(ushort)msg_bits.length,
+                    msg_type,
+                    msg_seq);
 
                 m_send_hs(epoch, HANDSHAKE, frag);
-                
+
                 frag_offset += frag_len;
             }
         }
-        
-        // Note: not saving CCS, instead we know it was there due to change in epoch
-        m_flights[$-1].pushBack(m_out_message_seq);
-        m_flight_data[m_out_message_seq] = msg_info;
-        
-        m_out_message_seq += 1;
-        
-        return no_fragment.dup;
-    }
 
+        return (cast()no_fragment).move;
+    }
     override const(Vector!ubyte) format(const ref Vector!ubyte msg, HandshakeType type) const
     {
         return formatWSeq(msg, type, cast(ushort) (m_in_message_seq - 1));
     }
 
-    override void addRecord(const ref Vector!ubyte record,
-                             RecordType record_type,
-                             ulong record_sequence)
+    override void addRecord(const ref Vector!ubyte record, RecordType record_type, ulong record_sequence)
     {
         const ushort epoch = cast(ushort)(record_sequence >> 48);
         
         if (record_type == CHANGE_CIPHER_SPEC)
         {
-            if (!m_ccs_epochs.canFind(epoch))
-                m_ccs_epochs ~= epoch;
+            // TODO: check this is otherwise empty
+            m_ccs_epochs ~= epoch;
             return;
         }
         
@@ -264,7 +315,9 @@ public:
                                                     msg_type,
                                                     msg_len);
             }
-            
+            else {
+                // TODO: detect retransmitted flight
+            }
             record_bits += total_size;
             record_size -= total_size;
         }
@@ -272,6 +325,8 @@ public:
 
     override NextRecord getNextRecord(bool expecting_ccs)
     {
+        // Expecting a message means the last flight is concluded
+
         if (!m_flights[$-1].empty)
             m_flights.pushBack(Vector!ushort());
         
@@ -330,6 +385,7 @@ private:
         return formatFragment(msg.ptr, msg.length, cast(ushort)  0, cast(ushort) msg.length, type, msg_sequence);
     }
 
+
     struct HandshakeReassembly
     {
     public:
@@ -351,7 +407,7 @@ private:
             }
             
             if (msg_type != m_msg_type || msg_length != m_msg_length || epoch != m_epoch)
-                throw new DecodingError("Inconsistent values in DTLS handshake header");
+                throw new DecodingError("Inconsistent values in fragmented  DTLS handshake header");
             
             if (fragment_offset > m_msg_length)
                 throw new DecodingError("Fragment offset past end of message");
@@ -411,23 +467,34 @@ private:
             Array!ubyte m_message;
     }
 
+    struct MessageInfo
+    {
+        this(ushort e, HandshakeType mt, const ref Vector!ubyte msg)
+        {
+            epoch = e;
+            msg_type = mt;
+            msg_bits = msg.dupr;
+        }
+
+        ushort epoch = 0xFFFF;
+        HandshakeType msg_type = HANDSHAKE_NONE;
+        Array!ubyte msg_bits;
+    };
+
+
     ConnectionSequenceNumbers m_seqs;
     HashMap!(ushort, HandshakeReassembly) m_messages;
     ushort[] m_ccs_epochs;
     Vector!( Array!ushort ) m_flights;
-    HashMap!(ushort, FlightData ) m_flight_data;
+    HashMap!(ushort, MessageInfo ) m_flight_data;
 
-    // default MTU is IPv6 min MTU minus UDP/IP headers
-    ushort m_mtu = 1280 - 40 - 8;
+    ulong m_last_write = 0;
+    ulong m_next_timeout = 0;
+
     ushort m_in_message_seq = 0;
     ushort m_out_message_seq = 0;
     void delegate(ushort, ubyte, const ref Vector!ubyte) m_send_hs;
-
-    static struct FlightData {
-        ushort epoch;
-        ubyte msg_type;
-        Array!ubyte msg_bits;
-    }
+    ushort m_mtu;
 }
 
 

@@ -66,6 +66,6 @@
             "memutils": { "version": "~master" } 
     }, 
     "libs-posix": ["dl"],
-	"libs-windows": ["advapi32", "user32"],
+    "libs-windows": ["advapi32", "user32"],
     "versions": ["Have_botan"]
 }

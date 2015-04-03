@@ -749,7 +749,7 @@ size_t findEoc(DataSource ber)
         
         length += item_size + length_size + tag_size;
         
-        if (type_tag == ASN1Tag.EOC)
+        if(type_tag == ASN1Tag.EOC && class_tag == ASN1Tag.UNIVERSAL)
             break;
     }
     return length;

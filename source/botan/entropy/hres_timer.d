@@ -2,7 +2,7 @@
 * High Resolution Timestamp Entropy Source
 * 
 * Copyright:
-* (C) 1999-2009 Jack Lloyd
+* (C) 1999-2009, 2014 Jack Lloyd
 * (C) 2014-2015 Etienne Cimon
 *
 * License:
@@ -40,19 +40,6 @@ public:
         // Don't count any timestamps as contributing any entropy
         const double ESTIMATED_ENTROPY_PER_BYTE = 1.0;
 
-        {
-            auto timestamp = Clock.currStdTime();
-            accum.add(timestamp, ESTIMATED_ENTROPY_PER_BYTE);
-        }
-
-        static if (is(typeof(QueryPerformanceCounter)))
-        {
-            long tv;
-            QueryPerformanceCounter(&tv);
-            accum.add(tv, ESTIMATED_ENTROPY_PER_BYTE);
-        }
-
-        
         static if (is(typeof(clock_gettime))) {
 
             void CLOCK_GETTIME_POLL(clockid_t src)
@@ -66,24 +53,12 @@ public:
                 CLOCK_GETTIME_POLL(CLOCK_REALTIME);
             }
             
-            static if (is(typeof(CLOCK_REALTIME_COARSE))) {
-                CLOCK_GETTIME_POLL(CLOCK_REALTIME_COARSE);
-            }
-            
             static if (is(typeof(CLOCK_MONOTONIC))) {
                 CLOCK_GETTIME_POLL(CLOCK_MONOTONIC);
             }
             
-            static if (is(typeof(CLOCK_MONOTONIC_COARSE))) {
-                CLOCK_GETTIME_POLL(CLOCK_MONOTONIC_COARSE);
-            }
-            
             static if (is(typeof(CLOCK_MONOTONIC_RAW))) {
                 CLOCK_GETTIME_POLL(CLOCK_MONOTONIC_RAW);
-            }
-            
-            static if (is(typeof(CLOCK_BOOTTIME))) {
-                CLOCK_GETTIME_POLL(CLOCK_BOOTTIME);
             }
             
             static if (is(typeof(CLOCK_PROCESS_CPUTIME_ID))) {
@@ -95,7 +70,19 @@ public:
             }
             
         }
+        else 
+        {
+            auto timestamp = Clock.currStdTime();
+            accum.add(timestamp, ESTIMATED_ENTROPY_PER_BYTE);
+
+        }
             
+        static if (is(typeof(QueryPerformanceCounter)))
+        {
+            long tv;
+            QueryPerformanceCounter(&tv);
+            accum.add(tv, ESTIMATED_ENTROPY_PER_BYTE);
+        }
     }
 
 }

@@ -181,7 +181,9 @@ void bigint_add3(word* z, in word* x, size_t x_size,
 word bigint_add2_nc(word* x, size_t x_size, in word* y, size_t y_size)
 {
     word carry = 0;
-    
+
+    assert(x_size >= y_size, "Expected sizes");
+
     const size_t blocks = y_size - (y_size % 8);
     
     for (size_t i = 0; i != blocks; i += 8)
@@ -226,6 +228,8 @@ word bigint_add3_nc(word* z, in word* x, size_t x_size, in word* y, size_t y_siz
 word bigint_sub2(word* x, size_t x_size, in word* y, size_t y_size)
 {
     word borrow = 0;
+
+    assert(x_size >= y_size, "Expected sizes");
     
     const size_t blocks = y_size - (y_size % 8);
     
@@ -256,8 +260,7 @@ void bigint_sub2_rev(word* x,  in word* y, size_t y_size)
     foreach (size_t i; blocks .. y_size)
         x[i] = word_sub(y[i], x[i], &borrow);
     
-    if (borrow)
-        throw new InternalError("bigint_sub2_rev: x >= y");
+    assert(!borrow, "y must be greater than x");
 }
 
 /**
@@ -266,6 +269,8 @@ void bigint_sub2_rev(word* x,  in word* y, size_t y_size)
 word bigint_sub3(word* z, in word* x, size_t x_size, in word* y, size_t y_size)
 {
     word borrow = 0;
+
+    assert(x_size >= y_size, "Expected sizes");
 
     const size_t blocks = y_size - (y_size % 8);
     

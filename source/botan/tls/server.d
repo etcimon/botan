@@ -30,7 +30,7 @@ import std.datetime;
 final class TLSServer : TLSChannel
 {
 public:
-	alias NextProtocolHandler = string delegate(in Vector!string);
+    alias NextProtocolHandler = string delegate(in Vector!string);
 
     /**
     * TLSServer initialization
@@ -162,8 +162,7 @@ protected:
             
             if (!m_policy.acceptableProtocolVersion(negotiated_version))
             {
-                throw new TLSException(TLSAlert.PROTOCOL_VERSION,
-                                        "TLSClient version is unacceptable by policy");
+                throw new TLSException(TLSAlert.PROTOCOL_VERSION, "Client version " ~ negotiated_version.toString() ~ " is unacceptable by policy");
             }
             
             secureRenegotiationCheck(state.clientHello());
@@ -186,10 +185,10 @@ protected:
             }
             catch (Throwable) {}
 
-			m_next_protocol = "";
+            m_next_protocol = "";
 
-			if (state.clientHello().supportsAlpn())
-				m_next_protocol = m_choose_next_protocol(state.clientHello().nextProtocols());
+            if (state.clientHello().supportsAlpn())
+                m_next_protocol = m_choose_next_protocol(state.clientHello().nextProtocols());
 
             if (resuming)
             {
@@ -267,18 +266,18 @@ protected:
                 
                 if (sni_hostname != "" && cert_chains.length == 0)
                 {
-	                cert_chains = getServerCerts("", m_creds);
-	                    
-	                /*
-	                * Only send the unrecognized_name alert if we couldn't
-	                * find any certs for the requested name but did find at
-	                * least one cert to use in general. That avoids sending an
-	                * unrecognized_name when a server is configured for purely
-	                * anonymous operation.
-	                */
-	                if (cert_chains.length != 0)
-	                    sendAlert(TLSAlert(TLSAlert.UNRECOGNIZED_NAME));
-	            }
+                    cert_chains = getServerCerts("", m_creds);
+                        
+                    /*
+                    * Only send the unrecognized_name alert if we couldn't
+                    * find any certs for the requested name but did find at
+                    * least one cert to use in general. That avoids sending an
+                    * unrecognized_name when a server is configured for purely
+                    * anonymous operation.
+                    */
+                    if (cert_chains.length != 0)
+                        sendAlert(TLSAlert(TLSAlert.UNRECOGNIZED_NAME));
+                }
                 state.serverHello(
                     new ServerHello(    state.handshakeIo(),
                                         state.hash(),
@@ -419,7 +418,7 @@ protected:
         else if (type == HANDSHAKE_CCS)
         {
             state.setExpectedNext(FINISHED);
-			changeCipherSpecReader(SERVER);
+            changeCipherSpecReader(SERVER);
             
         }
         else if (type == FINISHED)

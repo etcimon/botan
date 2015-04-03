@@ -147,10 +147,10 @@ public:
     override size_t maxInputBits() const { return m_q.bits(); }
 
     override SecureVector!ubyte sign(const(ubyte)* msg, size_t msg_len, RandomNumberGenerator rng)
-	{	
-		import core.memory : GC;
-		GC.disable();
-		import std.concurrency : spawn, receiveOnly, thisTid, send;
+    {    
+        import core.memory : GC;
+        GC.disable();
+        import std.concurrency : spawn, receiveOnly, thisTid, send;
         rng.addEntropy(msg, msg_len);
         
         BigInt i = BigInt(msg, msg_len);
@@ -194,7 +194,7 @@ public:
         SecureVector!ubyte output = SecureVector!ubyte(2*m_q.bytes());
         r.binaryEncode(&output[output.length / 2 - r.bytes()]);
         s.binaryEncode(&output[output.length - s.bytes()]);
-		GC.enable();
+        GC.enable();
         return output.move;
     }
 private:
@@ -239,10 +239,10 @@ public:
 
     override SecureVector!ubyte verifyMr(const(ubyte)*, size_t) { throw new InvalidState("Message recovery not supported"); }
     override bool verify(const(ubyte)* msg, size_t msg_len, const(ubyte)* sig, size_t sig_len)
-	{
-		import core.memory : GC;
-		GC.disable();
-		import std.concurrency : spawn, receiveOnly, send, thisTid;
+    {
+        import core.memory : GC;
+        GC.disable();
+        import std.concurrency : spawn, receiveOnly, send, thisTid;
         const BigInt* q = &m_mod_q.getModulus();
         
         if (sig_len != 2*q.bytes() || msg_len > q.bytes())
@@ -265,7 +265,7 @@ public:
                 globalState();
                 BigInt* ret = cast(BigInt*) s_i2;
                 {
-					Unique!FixedBasePowerModImpl powermod_g_p = new FixedBasePowerModImpl(*cast(const BigInt*)g2, *cast(const BigInt*)p2);
+                    Unique!FixedBasePowerModImpl powermod_g_p = new FixedBasePowerModImpl(*cast(const BigInt*)g2, *cast(const BigInt*)p2);
                     auto mult = (*cast(ModularReducer*)mod_q).multiply(*cast(BigInt*)s2, *cast(BigInt*)i2);
                     *ret = (*powermod_g_p)(mult);
                     send(cast(Tid) tid, cast(shared)Thread.getThis()); 
@@ -281,7 +281,7 @@ public:
         send(cast(Tid)tid, true); // trigger destroy s_i
         auto r2 = m_mod_q.reduce(s.move);
         thr.join();
-		GC.enable();
+        GC.enable();
         return (r2 == r);
     }
 

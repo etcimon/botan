@@ -166,9 +166,9 @@ public:
     override size_t maxInputBits() const { return (m_n.bits() - 1); }
 
     override SecureVector!ubyte sign(const(ubyte)* msg, size_t msg_len, RandomNumberGenerator rng)
-	{
-		import core.memory : GC;
-		GC.disable();
+    {
+        import core.memory : GC;
+        GC.disable();
         rng.addEntropy(msg, msg_len);
 
         if (!m_blinder.initialized()) { // initialize here because we need rng
@@ -198,7 +198,7 @@ public:
                 {
                     Unique!FixedExponentPowerModImpl powermod_d1_p = new FixedExponentPowerModImpl(*cast(const BigInt*)d1, *cast(const BigInt*)p);
                     *ret = (*powermod_d1_p)(*cast(BigInt*)i2);
-					send(cast(Tid) tid, cast(shared)Thread.getThis());
+                    send(cast(Tid) tid, cast(shared)Thread.getThis());
                 }
                 auto done = receiveOnly!bool; // can destroy j1
                 destroy(*ret);
@@ -206,7 +206,7 @@ public:
             cast(shared)thisTid(), cast(shared)m_d1, cast(shared)m_p, cast(shared)&i, cast(shared)&j1
             );
         const BigInt j2 = (*m_powermod_d2_q)(i);
-		Thread thr = cast(Thread)receiveOnly!(shared(Thread))();
+        Thread thr = cast(Thread)receiveOnly!(shared(Thread))();
         BigInt j3 = m_mod_p.reduce(subMul(j1, j2, *m_c));
         send(cast(Tid)tid, true);
         BigInt r = m_blinder.unblind(mulAdd(j3, *m_q, j2));
@@ -216,8 +216,8 @@ public:
         if (cmp2 < min_val)
             min_val = cmp2.move();
         auto ret = BigInt.encode1363(min_val, m_n.bytes());
-		thr.join();
-		GC.enable();
+        thr.join();
+        GC.enable();
         return ret;
     }
 private:

@@ -89,15 +89,15 @@ public:
                     output.ptr[output.length-1] ^= 0x1B;
                     break;
                 case 16:
-					output.ptr[output.length-1] ^= 0x87;
-					break;
+                    output.ptr[output.length-1] ^= 0x87;
+                    break;
                 case 32:
-					output.ptr[output.length-2] ^= 0x4;
-					output.ptr[output.length-1] ^= 0x25;
+                    output.ptr[output.length-2] ^= 0x4;
+                    output.ptr[output.length-1] ^= 0x25;
                     break;
                 case 64:
-					output.ptr[output.length-2] ^= 0x1;
-					output.ptr[output.length-1] ^= 0x25;
+                    output.ptr[output.length-2] ^= 0x1;
+                    output.ptr[output.length-1] ^= 0x25;
                     break;
                 default:
                     assert(false, "Unhandled length input");
