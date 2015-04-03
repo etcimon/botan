@@ -3,7 +3,7 @@
 *
 * Copyright:
 * (C) 2007 Martin Doering, Christoph Ludwig, Falko Strenzke
-*      2008-2011 Jack Lloyd
+*     2008-2011, 2014 Jack Lloyd
 * (C) 2014-2015 Etienne Cimon
 *
 * License:
@@ -65,11 +65,16 @@ public:
     this()(auto const ref CurveGFp curve) 
     {
         m_curve = curve.dup;
-        m_ws.resize(2 * (curve.getPWords() + 2));
+        //m_ws.resize(2 * (curve.getPWords() + 2));
         m_coord_x = BigInt(0);
         auto b1 = BigInt(1);
-        m_coord_y = montyMult(b1, curve.getR2());
+        m_coord_y = b1.move;
         m_coord_z = BigInt(0);
+		m_ws_ref = &m_ws;
+
+		m_curve.toRep(m_coord_x, cast(mutable)m_ws_ref);
+		m_curve.toRep(m_coord_y, cast(mutable)m_ws_ref);
+		m_curve.toRep(m_coord_z, cast(mutable)m_ws_ref);
     }
 
 
@@ -101,11 +106,15 @@ public:
     this(const ref CurveGFp curve, const ref BigInt x, const ref BigInt y)
     { 
         m_curve = curve.dup;
-        m_ws.resize(2 * (curve.getPWords() + 2));
-        m_coord_x = montyMult(x, curve.getR2());
-        m_coord_y = montyMult(y, curve.getR2());
+        //m_ws.resize(2 * (curve.getPWords() + 2));
+        m_coord_x = x.dup;
+        m_coord_y = y.dup;
         auto bi = BigInt(1);
-        m_coord_z = montyMult(bi, curve.getR2());
+        m_coord_z = bi.move;
+		m_ws_ref = &m_ws;
+		m_curve.toRep(m_coord_x, cast(mutable)m_ws_ref);
+		m_curve.toRep(m_coord_y, cast(mutable)m_ws_ref);
+		m_curve.toRep(m_coord_z, cast(mutable)m_ws_ref);
     }
 
     /**
@@ -324,14 +333,12 @@ public:
     {
         if (isZero())
             throw new IllegalTransformation("Cannot convert zero point to affine");
-        
-        const BigInt* r2 = &m_curve.getR2();
-        
-        BigInt z2 = montySqr(m_coord_z);
+                
+        BigInt z2 = curveSqr(m_coord_z);
+		m_curve.fromRep(z2, cast(mutable)m_ws_ref);
         z2 = inverseMod(z2, m_curve.getP());
         
-        z2 = montyMult(z2, *r2);
-        return montyMult(m_coord_x, z2);
+        return curveMult(z2, m_coord_x);
     }
 
     /**
@@ -342,13 +349,11 @@ public:
     {
         if (isZero())
             throw new IllegalTransformation("Cannot convert zero point to affine");
-        
-        const BigInt* r2 = &m_curve.getR2();
-        
-        BigInt z3 = montyMult(m_coord_z, montySqr(m_coord_z));
+                
+        BigInt z3 = curveMult(m_coord_z, curveSqr(m_coord_z));
         z3 = inverseMod(z3, m_curve.getP());
-        z3 = montyMult(z3, *r2);
-        return montyMult(m_coord_y, z3);
+		m_curve.toRep(z3, cast(mutable)m_ws_ref);
+        return curveMult(z3, m_coord_y);
     }
 
     /**
@@ -374,30 +379,24 @@ public:
         if (isZero()) {
             return true;
         }
-        auto b1 = BigInt(1);
-        BigInt y2 = montyMult(montySqr(m_coord_y), b1);
-        BigInt x3 = montyMult(m_coord_x, montySqr(m_coord_x));
-        
-        BigInt ax = montyMult(m_coord_x, m_curve.getAR());
-        
-        const BigInt* b_r = &m_curve.getBR();
-        
-        BigInt z2 = montySqr(m_coord_z);
+
+        BigInt y2 = m_curve.fromRep(curveSqr(m_coord_y), cast(mutable)m_ws_ref);
+        BigInt x3 = curveMult(m_coord_x, curveSqr(m_coord_x));        
+        BigInt ax = curveMult(m_coord_x, m_curve.getARep());        
+        BigInt z2 = curveSqr(m_coord_z);
         
         if (m_coord_z == z2) // Is z equal to 1 (in Montgomery form)?
         {
-            if (y2 != montyMult(x3 + ax + *b_r, b1)) {
+			if (y2 != m_curve.fromRep(x3 + ax + m_curve.getBRep(), cast(mutable)m_ws_ref)) {
                 return false;
             }
         }
         
-        BigInt z3 = montyMult(m_coord_z, z2);
+        BigInt z3 = curveMult(m_coord_z, z2);        
+        BigInt ax_z4 = curveMult(ax, curveSqr(z2));
+        BigInt b_z6 = curveMult(m_curve.getBRep(), curveSqr(z3));
         
-        BigInt ax_z4 = montyMult(ax, montySqr(z2));
-        
-        BigInt b_z6 = montyMult(*b_r, montySqr(z3));
-        auto arg = x3 + ax_z4 + b_z6;
-        if (y2 != montyMult(arg, b1)) {
+		if (y2 != m_curve.fromRep(x3 + ax_z4 + b_z6, cast(mutable)m_ws_ref)) {
             return false;
         }
         return true;
@@ -420,7 +419,7 @@ public:
 
     @property PointGFp dup() const
     {
-           auto point = PointGFp(m_curve);
+        auto point = PointGFp(m_curve);
         point.m_coord_x = m_coord_x.dup;
         point.m_coord_y = m_coord_y.dup;
         point.m_coord_z = m_coord_z.dup;
@@ -445,94 +444,54 @@ public:
     }
 
 private:
-
-    /**
+	
+	/**
     * Montgomery multiplication/reduction
     * Params:
     *   x = first multiplicand
     *   y = second multiplicand
     */
-    BigInt montyMult()(auto const ref BigInt x, auto const ref BigInt y) const
-    {
-        BigInt result = BigInt(0);
-        montyMult(result, x, y);
-        return result.move();
-    }
-
-    /**
+	BigInt curveMult()(auto const ref BigInt x, auto const ref BigInt y) const
+	{
+		BigInt z = BigInt(0);
+		m_curve.mul(z, x, y, cast(mutable)m_ws_ref);
+		return z.move();
+	}
+	
+	/**
     * Montgomery multiplication/reduction
-    * Notes: z cannot alias x or y
     * Params:
-    *  z = output
-    *  x = first multiplicand
-    *  y = second multiplicand
+    *   z = output
+    *   x = first multiplicand
+    *   y = second multiplicand
     */
-    void montyMult()(ref BigInt z, auto const ref BigInt x, auto const ref BigInt y) const
-    {
-        //assert(&z != &x && &z != &y);
-        
-        if (x.isZero() || y.isZero())
-        {
-            z = 0;
-            return;
-        }
-        
-        const size_t p_size = m_curve.getPWords();
-        const word p_dash = m_curve.getPDash();
-        
-        const size_t output_size = 2*p_size + 1;
-        
-        z.growTo(output_size);
-        z.clear();
-        
-        bigint_monty_mul(z.mutablePtr(), output_size,
-                         x.ptr, x.length, x.sigWords(),
-                         y.ptr, y.length, y.sigWords(),
-                         m_curve.getP().ptr, p_size, p_dash,
-                         m_ws.ptr);
-    }
-    
-    /**
+	void curveMult()(ref BigInt z, auto const ref BigInt x, auto const ref BigInt y) const
+	{
+		m_curve.mul(z, x, y, cast(mutable)m_ws_ref);
+	}
+
+	/**
     * Montgomery squaring/reduction
     * Params:
     *   x = multiplicand
     */
-    BigInt montySqr()(auto const ref BigInt x) const
-    {
-        BigInt result;
-        montySqr(result, x);
-        return result.move();
-    }
+	BigInt curveSqr()(auto const ref BigInt x) const
+	{
+		BigInt z;
+		m_curve.sqr(z, x, cast(mutable)m_ws_ref);
+		return z.move();
+	}
 
-    /**
+	/**
     * Montgomery squaring/reduction
-    * Notes: z cannot alias x
     * Params:
-    *  z = output
-    *  x = multiplicand
+    *   z = output
+    *   x = multiplicand
     */
-    void montySqr()(ref BigInt z, auto const ref BigInt x) const
-    {
-        //assert(&z != &x);
-        
-        if (x.isZero())
-        {
-            z = 0;
-            return;
-        }
-        
-        const size_t p_size = m_curve.getPWords();
-        const word p_dash = m_curve.getPDash();
-        
-        const size_t output_size = 2*p_size + 1;
-        
-        z.growTo(output_size);
-        z.clear();
-        bigint_monty_sqr(z.mutablePtr(), output_size,
-                         x.ptr, x.length, x.sigWords(),
-                         m_curve.getP().ptr, p_size, p_dash,
-                         m_ws.ptr);
-    }
+	void curveSqr()(ref BigInt z, auto const ref BigInt x) const
+	{
+		m_curve.sqr(z, x, cast(mutable)m_ws_ref);
+	}
 
     /**
     * Point addition
@@ -564,13 +523,13 @@ private:
         BigInt* H = &*ws_bn[6];
         BigInt* r = &*ws_bn[7];
         
-        montySqr(*rhs_z2, rhs.m_coord_z);
-        montyMult(*U1, m_coord_x, *rhs_z2);
-        montyMult(*S1, m_coord_y, montyMult(rhs.m_coord_z, *rhs_z2));
+        curveSqr(*rhs_z2, rhs.m_coord_z);
+        curveMult(*U1, m_coord_x, *rhs_z2);
+        curveMult(*S1, m_coord_y, curveMult(rhs.m_coord_z, *rhs_z2));
         
-        montySqr(*lhs_z2, m_coord_z);
-        montyMult(*U2, rhs.m_coord_x, *lhs_z2);
-        montyMult(*S2, rhs.m_coord_y, montyMult(m_coord_z, *lhs_z2));
+        curveSqr(*lhs_z2, m_coord_z);
+        curveMult(*U2, rhs.m_coord_x, *lhs_z2);
+        curveMult(*S2, rhs.m_coord_y, curveMult(m_coord_z, *lhs_z2));
         
         *H = U2.dup;
         *H -= *U1;
@@ -594,13 +553,13 @@ private:
             return;
         }
         
-        montySqr(*U2, *H);
+        curveSqr(*U2, *H);
         
-        montyMult(*S2, *U2, *H);
+        curveMult(*S2, *U2, *H);
         
-        *U2 = montyMult(*U1, *U2);
+        *U2 = curveMult(*U1, *U2);
         
-        montySqr(m_coord_x, *r);
+        curveSqr(m_coord_x, *r);
         m_coord_x -= *S2;
         m_coord_x -= (*U2 << 1);
         while (m_coord_x.isNegative())
@@ -610,12 +569,12 @@ private:
         if (U2.isNegative())
             *U2 += *p;
         
-        montyMult(m_coord_y, *r, *U2);
-        m_coord_y -= montyMult(*S1, *S2);
+        curveMult(m_coord_y, *r, *U2);
+        m_coord_y -= curveMult(*S1, *S2);
         if (m_coord_y.isNegative())
             m_coord_y += *p;
         
-        montyMult(m_coord_z, montyMult(m_coord_z, rhs.m_coord_z), *H);
+        curveMult(m_coord_z, curveMult(m_coord_z, rhs.m_coord_z), *H);
     }
 
 
@@ -646,28 +605,28 @@ private:
         BigInt* y = &*ws_bn[7];
         BigInt* z = &*ws_bn[8];
         
-        montySqr(*y_2, m_coord_y);
+        curveSqr(*y_2, m_coord_y);
         
-        montyMult(*S, m_coord_x, *y_2);
+        curveMult(*S, m_coord_x, *y_2);
         *S <<= 2; // * 4
         while (*S >= *p)
             *S -= *p;
         
-        montySqr(*z4, montySqr(m_coord_z));
-        montyMult(*a_z4, m_curve.getAR(), *z4);
+        curveSqr(*z4, curveSqr(m_coord_z));
+        curveMult(*a_z4, m_curve.getARep(), *z4);
         
-        *M = montySqr(m_coord_x);
+        *M = curveSqr(m_coord_x);
         *M *= 3;
         *M += *a_z4;
         while (*M >= *p)
             *M -= *p;
         
-        montySqr(*x, *M);
+        curveSqr(*x, *M);
         *x -= (*S << 1);
         while (x.isNegative())
             *x += *p;
         
-        montySqr(*U, *y_2);
+        curveSqr(*U, *y_2);
         *U <<= 3;
         while (*U >= *p)
             *U -= *p;
@@ -676,12 +635,12 @@ private:
         while (S.isNegative())
             *S += *p;
         
-        montyMult(*y, *M, *S);
+        curveMult(*y, *M, *S);
         *y -= *U;
         if (y.isNegative())
             *y += *p;
         
-        montyMult(*z, m_coord_y, m_coord_z);
+        curveMult(*z, m_coord_y, m_coord_z);
         *z <<= 1;
         if (*z >= *p)
             *z -= *p;
@@ -757,7 +716,9 @@ private:
 
     CurveGFp m_curve;
     BigInt m_coord_x, m_coord_y, m_coord_z;
-    SecureVector!word m_ws; // workspace for Montgomery
+	SecureVector!word m_ws; // workspace for Montgomery
+	SecureVector!word* m_ws_ref;
+	alias mutable = SecureVector!word*;
 }
 
 // encoding and decoding
@@ -804,7 +765,7 @@ SecureVector!ubyte EC2OSP(const ref PointGFp point, ubyte format)
         return result.move();
     }
     else
-        throw new InvalidArgument("illegal point encoding format specification");
+        throw new InvalidArgument("EC2OSP illegal point encoding");
 }
 
 PointGFp OS2ECP()(const(ubyte)* data, size_t data_len, auto const ref CurveGFp curve)
@@ -870,7 +831,7 @@ BigInt decompressPoint(bool yMod2,
     BigInt z = ressol(g, curve.getP());
     
     if (z < 0)
-        throw new IllegalPoint("error during decompression");
+        throw new IllegalPoint("error during EC point decompression");
     
     if (z.getBit(0) != yMod2)
         z = curve.getP() - z;

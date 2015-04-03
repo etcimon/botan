@@ -487,7 +487,4 @@ public:
     SecureVector!ubyte resume_master_secret;
     
     Unique!PublicKey server_public_key;
-    
-    // Used by client using NPN
-    string delegate(const ref Vector!string) client_npn_cb;
 }

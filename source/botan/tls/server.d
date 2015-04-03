@@ -41,7 +41,7 @@ public:
          bool delegate(const ref TLSSession) handshake_cb,
          TLSSessionManager session_manager,
          TLSCredentialsManager creds,
-         in TLSPolicy policy,
+         TLSPolicy policy,
          RandomNumberGenerator rng,
          NextProtocolHandler next_proto = null,
          size_t io_buf_sz = 16*1024) 
@@ -499,7 +499,7 @@ protected:
     }
 
 private:
-    const TLSPolicy m_policy;
+    TLSPolicy m_policy;
     TLSCredentialsManager m_creds;
 
     NextProtocolHandler m_choose_next_protocol;

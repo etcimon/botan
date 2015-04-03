@@ -231,8 +231,6 @@ public:
         this.send(cast(const(ubyte)*)(str.toStringz), str.length);
     }
 
-    void send(in string val);
-
     /**
     * Inject plaintext intended for counterparty
     */

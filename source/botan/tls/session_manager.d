@@ -66,7 +66,7 @@ public:
     * Save a session on a best effort basis; the manager may not in
     * fact be able to save the session for whatever reason; this is
     * not an error. Caller cannot assume that calling save followed
-    * immediately by load_from_* will result in a successful lookup.
+    * immediately by loadFrom* will result in a successful lookup.
     *
     * Params:
     *  session = to save

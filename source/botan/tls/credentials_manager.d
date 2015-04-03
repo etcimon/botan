@@ -94,7 +94,7 @@ public:
     * or else an empty vector.
     *
     * It is assumed that the caller can get the private key of the
-    * leaf with Private_Keyfor
+    * leaf with privateKeyFor
     *
     * Params:
     *  cert_key_types = specifies the key types desired ("RSA",
@@ -123,7 +123,7 @@ public:
     * or else an empty vector.
     *
     * It is assumed that the caller can get the private key of the
-    * leaf with Private_Keyfor
+    * leaf with privateKeyFor
     *
     * Params:
     *  cert_key_type = specifies the type of key requested
