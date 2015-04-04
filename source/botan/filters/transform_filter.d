@@ -182,7 +182,7 @@ protected:
 
     override void startMsg()
     {
-        send(m_transform.startVec(m_nonce.get()));
+        send(m_transform.start(m_nonce.get()));
     }
 
 private:

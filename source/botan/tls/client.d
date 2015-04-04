@@ -423,7 +423,7 @@ protected:
             Vector!ubyte session_ticket = state.sessionTicket();
             
             if (session_id.empty && !session_ticket.empty)
-                session_id = makeHelloRandom(rng());
+                session_id = makeHelloRandom(rng(), m_policy);
 
             TLSSession session_info = TLSSession(session_id.dup,
                                                  state.sessionKeys().masterSecret().dup,

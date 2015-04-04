@@ -282,7 +282,7 @@ protected:
                     new ServerHello(    state.handshakeIo(),
                                         state.hash(),
                                         m_policy,
-                                        makeHelloRandom(rng()), // new session ID
+                                        makeHelloRandom(rng(), m_policy), // new session ID
                                         state.Version(),
                                         chooseCiphersuite(m_policy, state.Version(), m_creds, cert_chains, state.clientHello()),
                                         chooseCompression(m_policy, state.clientHello().compressionMethods()),

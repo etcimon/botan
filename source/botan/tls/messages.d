@@ -268,7 +268,7 @@ public:
     {
         bool reneg_empty = reneg_info.empty;
         m_version = _version;
-        m_random = makeHelloRandom(rng);
+        m_random = makeHelloRandom(rng, policy);
         m_suites = policy.ciphersuiteList(m_version, (srp_identifier != ""));
         m_comp_methods = policy.compression();
         m_extensions.add(new RenegotiationExtension(reneg_info.move()));
@@ -306,7 +306,7 @@ public:
 
         m_version = session.Version();
         m_session_id = session.sessionId().dup;
-        m_random = makeHelloRandom(rng);
+        m_random = makeHelloRandom(rng, policy);
         m_suites = policy.ciphersuiteList(m_version, (session.srpIdentifier() != ""));
         m_comp_methods = policy.compression();
         if (!valueExists(m_suites, session.ciphersuiteCode()))
@@ -416,7 +416,7 @@ protected:
             {
                 if (!reneg.renegotiationInfo().empty)
                     throw new TLSException(TLSAlert.HANDSHAKE_FAILURE,
-                                            "TLSClient send renegotiation SCSV and non-empty extension");
+                                            "Client sent renegotiation SCSV and non-empty extension");
             }
             else
             {
@@ -559,7 +559,7 @@ public:
     {
         m_version = ver;
         m_session_id = session_id.move();
-        m_random = makeHelloRandom(rng);
+        m_random = makeHelloRandom(rng, policy);
         m_ciphersuite = ciphersuite;
         m_comp_method = compression;
         
@@ -1921,13 +1921,16 @@ Vector!ubyte finishedComputeVerify(in HandshakeState state,
     }
 }
 
-Vector!ubyte makeHelloRandom(RandomNumberGenerator rng)
+Vector!ubyte makeHelloRandom(RandomNumberGenerator rng, in TLSPolicy policy)
 {
     Vector!ubyte buf = Vector!ubyte(32);
-    
-    const uint time32 = cast(uint)(Clock.currTime().toUnixTime);
-    
-    storeBigEndian(time32, buf.ptr);
-    rng.randomize(&buf[4], buf.length - 4);
+    rng.randomize(&buf[0], buf.length);
+
+    if (policy.includeTimeInHelloRandom())
+    {
+        const uint time32 = cast(uint)(Clock.currTime().toUnixTime);
+        storeBigEndian(time32, buf.ptr);
+    }
+
     return buf;
 }

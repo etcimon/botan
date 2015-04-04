@@ -188,7 +188,7 @@ size_t aeadTest(string algo, string input, string expected, string nonce_hex, st
     const SecureVector!ubyte expected_ct = hexDecodeLocked(expected);
     
     SecureVector!ubyte vec = pt.dup;
-    enc.startVec(nonce);
+    enc.start(nonce);
 
     // should first update if possible
     enc.finish(vec);
@@ -201,7 +201,7 @@ size_t aeadTest(string algo, string input, string expected, string nonce_hex, st
     
     vec = expected_ct.dup;
     
-    dec.startVec(nonce);
+    dec.start(nonce);
     dec.finish(vec);
     
     if (vec != pt)
@@ -214,7 +214,7 @@ size_t aeadTest(string algo, string input, string expected, string nonce_hex, st
     {
         vec = expected_ct.dup;
         vec[0] ^= 1;
-        dec.startVec(nonce);
+        dec.start(nonce);
         try
         {
             dec.finish(vec);
@@ -229,7 +229,7 @@ size_t aeadTest(string algo, string input, string expected, string nonce_hex, st
             bad_nonce[0] ^= 1;
             vec = expected_ct.dup;
             
-            dec.startVec(bad_nonce);
+            dec.start(bad_nonce);
             
             try
             {
@@ -254,7 +254,7 @@ size_t aeadTest(string algo, string input, string expected, string nonce_hex, st
             aead_dec.setAssociatedDataVec(bad_ad);
             
             vec = expected_ct.dup;
-            dec.startVec(nonce);
+            dec.start(nonce);
             
             try
             {

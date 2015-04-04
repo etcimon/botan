@@ -17,35 +17,62 @@ static if (BOTAN_HAS_PUBLIC_KEY_CRYPTO):
 import botan.math.numbertheory.numthry;
 import botan.math.mp.mp_types;
 import botan.math.mp.mp_core;
+import botan.math.ec_gfp.curve_nistp;
 import std.algorithm : swap;
 import botan.constants;
 import memutils.unique;
 
-interface CurveGFpRepr
+abstract class CurveGFpRepr
 {
 public:
 
-    ref const(BigInt) getP() const;
+    abstract ref const(BigInt) getP() const;
     
-    ref const(BigInt) getA() const;
+    abstract ref const(BigInt) getA() const;
     
-    ref const(BigInt) getB() const;
+    abstract ref const(BigInt) getB() const;
+
+    abstract size_t getPWords() const;
 
     /// Returns toCurveRep(getA())
-    ref const(BigInt) getARep() const;
+    abstract ref const(BigInt) getARep() const;
 
     /// Returns toCurveRep(getB())
-    ref const(BigInt) getBRep() const;
+    abstract ref const(BigInt) getBRep() const;
 
-    void toCurveRep(ref BigInt x, ref SecureVector!word ws) const;
+    abstract void toCurveRep(ref BigInt x, ref SecureVector!word ws) const;
 
-    void fromCurveRep(ref BigInt x, ref SecureVector!word ws) const;
+    abstract void fromCurveRep(ref BigInt x, ref SecureVector!word ws) const;
 
-    void curveMul(ref BigInt z, const ref BigInt x, const ref BigInt y, ref SecureVector!word ws) const;
+    abstract void curveMul(ref BigInt z, const ref BigInt x, const ref BigInt y, ref SecureVector!word ws) const;
 
-    void curveSqr(ref BigInt z, const ref BigInt x, ref SecureVector!word ws) const;
+    abstract void curveSqr(ref BigInt z, const ref BigInt x, ref SecureVector!word ws) const;
 
-    Vector!char toVector() const;
+    void normalize(ref BigInt x, ref SecureVector!word ws, size_t bound) const {
+        const BigInt* p = &getP();
+        
+        while(x.isNegative())
+            x += *p;
+        
+        const size_t p_words = getPWords();
+        const word* prime = p.ptr;
+        
+        x.growTo(p_words + 1);
+        
+        if(ws.length < p_words + 1)
+            ws.resize(p_words + 1);
+        
+        //FIXME: take into account bound if > 0
+        while(true)
+        {
+            if(bigint_sub3(ws.ptr, x.ptr, p_words, prime, p_words)) // borrow?
+                break;
+            
+            x.swapReg(ws);
+        }
+    }
+
+    abstract Vector!char toVector() const;
 }
 
 class CurveGFpMontgomery : CurveGFpRepr
@@ -63,23 +90,25 @@ class CurveGFpMontgomery : CurveGFpRepr
         m_b_r = (m_b * r) % m_p;
     }
 
-    ref const(BigInt) getP() const { return m_p; }
+    override ref const(BigInt) getP() const { return m_p; }
 
-    ref const(BigInt) getA() const { return m_a; }
+    override ref const(BigInt) getA() const { return m_a; }
 
-    ref const(BigInt) getB() const { return m_b; }
+    override ref const(BigInt) getB() const { return m_b; }
         
-    ref const(BigInt) getARep() const { return m_a_r; }
+    override ref const(BigInt) getARep() const { return m_a_r; }
 
-    ref const(BigInt) getBRep() const { return m_b_r; }
+    override ref const(BigInt) getBRep() const { return m_b_r; }
 
-    void toCurveRep(ref BigInt x, ref SecureVector!word ws) const
+    override size_t getPWords() const { return m_p_words; }
+
+    override void toCurveRep(ref BigInt x, ref SecureVector!word ws) const
     {
         const BigInt tx = x.dup;
         curveMul(x, tx, m_r2, ws);
     }
 
-    void fromCurveRep(ref BigInt x, ref SecureVector!word ws) const
+    override void fromCurveRep(ref BigInt x, ref SecureVector!word ws) const
     {
         const BigInt tx = x.dup;
         BigInt bi = BigInt(1);
@@ -94,7 +123,7 @@ class CurveGFpMontgomery : CurveGFpRepr
     *  x = first multiplicand
     *  y = second multiplicand
     */
-    void curveMul(ref BigInt z, const ref BigInt x, const ref BigInt y, ref SecureVector!word ws) const
+    override void curveMul(ref BigInt z, const ref BigInt x, const ref BigInt y, ref SecureVector!word ws) const
     {
         
         if (x.isZero() || y.isZero())
@@ -123,7 +152,7 @@ class CurveGFpMontgomery : CurveGFpRepr
     *  z = output
     *  x = multiplicand
     */
-    void curveSqr(ref BigInt z, const ref BigInt x, ref SecureVector!word ws) const
+    override void curveSqr(ref BigInt z, const ref BigInt x, ref SecureVector!word ws) const
     {
         if (x.isZero())
         {
@@ -142,7 +171,7 @@ class CurveGFpMontgomery : CurveGFpRepr
             ws.ptr);
     }
 
-    Vector!char toVector() const
+    override Vector!char toVector() const
     {
         Vector!char ret;
         ret ~= "m_p: ";
@@ -276,6 +305,8 @@ struct CurveGFp
         return CurveGFp(getP(), getA(), getB());
     }
 
+    // TODO: fromRep taking && ref
+
     void mul()(ref BigInt z, auto const ref BigInt x, auto const ref BigInt y, SecureVector!word* ws) const
     {
         m_repr.curveMul(z, x, y, *ws);
@@ -300,6 +331,16 @@ struct CurveGFp
         return z.move;
     }
 
+    /**
+     * Adjust x to be in [0,p)
+     * @param bound if greater than zero, assume that no more than bound
+     * additions or subtractions are required to move x into range.
+     */
+    void normalize(ref BigInt x, SecureVector!word* ws, size_t bound = 0) const
+    {
+        m_repr.normalize(x, *ws, bound);
+    }
+
     @disable this(this);
 
     string toString() const {
@@ -315,6 +356,8 @@ struct CurveGFp
 
     static CurveGFpRepr chooseRepr()(auto const ref BigInt p, auto const ref BigInt a, auto const ref BigInt b)
     {
+        //if (p == CurveGFpP521.prime)
+        //    return cast(CurveGFpRepr) new CurveGFpP521(a, b);
         return cast(CurveGFpRepr) new CurveGFpMontgomery(p, a, b);
     }
 

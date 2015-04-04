@@ -27,7 +27,7 @@ import botan.utils.types;
 abstract class ECBMode : CipherMode, Transformation
 {
 public:
-    override SecureVector!ubyte start(const(ubyte)*, size_t nonce_len)
+    override SecureVector!ubyte startRaw(const(ubyte)*, size_t nonce_len)
     {
         if (!validNonceLength(nonce_len))
             throw new InvalidIVLength(name(), nonce_len);
@@ -143,7 +143,7 @@ public:
 
     // Interface fallthrough
     override string provider() const { return "core"; }
-    override SecureVector!ubyte start(const(ubyte)* nonce, size_t nonce_len) { return super.start(nonce, nonce_len); }
+    override SecureVector!ubyte startRaw(const(ubyte)* nonce, size_t nonce_len) { return super.startRaw(nonce, nonce_len); }
     override size_t updateGranularity() const { return super.updateGranularity(); }
     override size_t defaultNonceLength() const { return super.defaultNonceLength(); }
     override @property string name() const { return super.name; }
@@ -206,7 +206,7 @@ public:
 
     // Interface fallthrough
     override string provider() const { return "core"; }
-    override SecureVector!ubyte start(const(ubyte)* nonce, size_t nonce_len) { return super.start(nonce, nonce_len); }
+    override SecureVector!ubyte startRaw(const(ubyte)* nonce, size_t nonce_len) { return super.startRaw(nonce, nonce_len); }
     override size_t updateGranularity() const { return super.updateGranularity(); }
     override size_t defaultNonceLength() const { return super.defaultNonceLength(); }
     override @property string name() const { return super.name; }

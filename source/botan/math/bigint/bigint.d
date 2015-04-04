@@ -228,7 +228,12 @@ public:
             m_reg[] = [cast(word)0];
         }
 
-        m_signedness = other.m_signedness;
+        .swap(m_signedness, other.m_signedness);
+    }
+
+    void swapReg(ref SecureVector!word reg)
+    {
+        m_reg.swap(reg);
     }
 
     /**
@@ -634,10 +639,10 @@ public:
     void maskBits(size_t n)
     {
         if (n == 0) { clear(); return; }
-        if (n >= bits()) return;
-        
+        if(n >= bits()) return;
+
         const size_t top_word = n / MP_WORD_BITS;
-        const word mask = (cast(word)(1) << (n % MP_WORD_BITS)) - 1;
+        const word mask = ((cast(word)1) << (n % MP_WORD_BITS)) - 1;
         
         if (top_word < size())
             clearMem(&m_reg[top_word+1], size() - (top_word + 1));

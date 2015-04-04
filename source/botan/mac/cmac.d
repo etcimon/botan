@@ -100,7 +100,7 @@ public:
                     output.ptr[output.length-1] ^= 0x25;
                     break;
                 default:
-                    assert(false, "Unhandled length input");
+                    throw new Exception("Unsupported CMAC size: " ~ input.length.to!string);
             }
         }
         

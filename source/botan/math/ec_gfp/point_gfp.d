@@ -820,17 +820,20 @@ BigInt decompressPoint(bool yMod2,
                        const ref CurveGFp curve)
 {
     BigInt xpow3 = x * x * x;
+
+    const BigInt* p = &curve.getP();
+
     BigInt g = curve.getA() * x;
     g += xpow3;
     g += curve.getB();
-    g = g % curve.getP();
+    g = g % (*p);
     
-    BigInt z = ressol(g, curve.getP());
+    BigInt z = ressol(g, *p);
     
     if (z < 0)
         throw new IllegalPoint("error during EC point decompression");
     
     if (z.getBit(0) != yMod2)
-        z = curve.getP() - z;
+        z = *p - z;
     return z;
 }

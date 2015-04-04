@@ -51,6 +51,8 @@ public:
            in TLSCiphersuite suite, auto const ref TLSSessionKeys keys) 
     {
         m_start_time = Clock.currTime();
+        m_implicit_nonce_size = suite.implicitNonceBytes();
+        m_explicit_nonce_size = suite.explicitNonceBytes();
         m_is_ssl3 = _version == TLSProtocolVersion.SSL_V3;
         SymmetricKey mac_key, cipher_key;
         InitializationVector iv;
@@ -76,9 +78,9 @@ public:
             m_aead = aead;
             m_aead.setKey(cipher_key ~ mac_key);
             
-            assert(iv.length == 4, "Using 4/8 partial implicit nonce");
+            assert(iv.length == explicitNonceBytes(), "Matching nonce sizes");
             m_nonce = iv.bitsOf();
-            m_nonce.resize(12);
+            m_nonce.resize(implicitNonceBytes() + explicitNonceBytes());
             return;
         }
         
@@ -122,10 +124,8 @@ public:
 
     ref const(SecureVector!ubyte) aeadNonce(const(ubyte)* record, size_t record_len)
     {
-        assert(m_aead, "Using AEAD mode");
-        assert(m_nonce.length == 12, "Expected nonce size");
-        assert(record_len >= 8, "Record includes nonce");
-        copyMem(&m_nonce[4], record, 8);
+        assert(record_len >= implicitNonceBytes(), "Record includes nonce");
+        copyMem(&m_nonce[explicitNonceBytes()], record, implicitNonceBytes());
         return m_nonce;
     }
 
@@ -163,7 +163,9 @@ public:
 
     size_t ivSize() const { return m_iv_size; }
 
-    bool macIncludesRecordVersion() const { return !m_is_ssl3; }
+    size_t implicitNonceBytes() const { return m_implicit_nonce_size; }
+
+    size_t explicitNonceBytes() const { return m_explicit_nonce_size; }
 
     bool cipherPaddingSingleByte() const { return m_is_ssl3; }
 
@@ -186,6 +188,8 @@ private:
     SecureVector!ubyte m_nonce, m_ad;
 
     size_t m_block_size;
+    size_t m_explicit_nonce_size;
+    size_t m_implicit_nonce_size;
     size_t m_iv_size;
     bool m_is_ssl3;
 }
@@ -204,11 +208,11 @@ private:
 * Returns: number of bytes written to write_buffer
 */
 void writeRecord(ref SecureVector!ubyte output,
-                  ubyte msg_type, const(ubyte)* msg, size_t msg_length,
-                  TLSProtocolVersion _version,
-                  ulong msg_sequence,
-                  ConnectionCipherState cipherstate,
-                  RandomNumberGenerator rng)
+                 ubyte msg_type, const(ubyte)* msg, size_t msg_length,
+                 TLSProtocolVersion _version,
+                 ulong msg_sequence,
+                 ConnectionCipherState cipherstate,
+                 RandomNumberGenerator rng)
 {
     output.clear();
     
@@ -237,13 +241,13 @@ void writeRecord(ref SecureVector!ubyte output,
         const size_t ctext_size = aead.outputLength(msg_length);
         
         const(SecureVector!ubyte)* nonce = &cipherstate.aeadNonce(msg_sequence);
-        const size_t implicit_nonce_bytes = 4; // FIXME, take from ciphersuite
-        const size_t explicit_nonce_bytes = 8;
+        const size_t implicit_nonce_bytes = cipherstate.implicitNonceBytes(); // FIXME, take from ciphersuite
+        const size_t explicit_nonce_bytes = cipherstate.explicitNonceBytes();
         
         assert(nonce.length == implicit_nonce_bytes + explicit_nonce_bytes, "Expected nonce size");
         
-        // wrong if startVec returns something
-        const size_t rec_size = ctext_size + explicit_nonce_bytes;
+        // wrong if start returns something
+        const size_t rec_size = ctext_size + implicit_nonce_bytes;
 
         assert(rec_size <= 0xFFFF, "Ciphertext length fits in field");
         
@@ -252,8 +256,8 @@ void writeRecord(ref SecureVector!ubyte output,
         
         aead.setAssociatedDataVec(cipherstate.formatAd(msg_sequence, msg_type, _version, cast(ushort) msg_length));
         
-        output ~= nonce.ptr[implicit_nonce_bytes .. implicit_nonce_bytes + explicit_nonce_bytes];
-        output ~= aead.startVec(*nonce);
+        output ~= nonce.ptr[explicit_nonce_bytes .. explicit_nonce_bytes + implicit_nonce_bytes];
+        assert(aead.start(*nonce).empty, "AEAD doesn't return anything from start");
         
         const size_t offset = output.length;
         output ~= msg[0 .. msg_length];
@@ -592,7 +596,7 @@ void decryptRecord(ref SecureVector!ubyte output,
     if (Unique!AEADMode aead = cipherstate.aead())
     {
         const(SecureVector!ubyte)* nonce = &cipherstate.aeadNonce(record_contents, record_len);
-        __gshared immutable size_t nonce_length = 8; // fixme, take from ciphersuite
+        const size_t nonce_length = cipherstate.implicitNonceBytes();
         
         assert(record_len > nonce_length, "Have data past the nonce");
         const(ubyte)* msg = &record_contents[nonce_length];
@@ -602,7 +606,7 @@ void decryptRecord(ref SecureVector!ubyte output,
         
         aead.setAssociatedDataVec(cipherstate.formatAd(record_sequence, record_type, record_version, cast(ushort) ptext_size));
         
-        output ~= aead.startVec(*nonce);
+        output ~= aead.start(*nonce);
         
         const size_t offset = output.length;
         output ~= msg[0 .. msg_length];

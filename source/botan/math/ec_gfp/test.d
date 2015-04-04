@@ -531,9 +531,9 @@ size_t testEncDecCompressed256()
     BigInt bi_a_secp = BigInt.decode( sv_a_secp.ptr, sv_a_secp.length );
     BigInt bi_b_secp = BigInt.decode( sv_b_secp.ptr, sv_b_secp.length );
     
-    CurveGFp secp160r1 = CurveGFp(bi_p_secp, bi_a_secp, bi_b_secp);
+    CurveGFp curve = CurveGFp(bi_p_secp, bi_a_secp, bi_b_secp);
     
-    PointGFp p_G = OS2ECP( sv_G_secp_comp, secp160r1 );
+    PointGFp p_G = OS2ECP( sv_G_secp_comp, curve );
     Vector!ubyte sv_result = unlock(EC2OSP(p_G, PointGFp.COMPRESSED));
     
     mixin( CHECK(`  sv_result == sv_G_secp_comp `) );
@@ -562,9 +562,9 @@ size_t testEncDecUncompressed112()
     BigInt bi_a_secp = BigInt.decode( sv_a_secp.ptr, sv_a_secp.length );
     BigInt bi_b_secp = BigInt.decode( sv_b_secp.ptr, sv_b_secp.length );
     
-    CurveGFp secp160r1 = CurveGFp(bi_p_secp, bi_a_secp, bi_b_secp);
+    CurveGFp curve = CurveGFp(bi_p_secp, bi_a_secp, bi_b_secp);
     
-    PointGFp p_G = OS2ECP( sv_G_secp_uncomp, secp160r1 );
+    PointGFp p_G = OS2ECP( sv_G_secp_uncomp, curve );
     Vector!ubyte sv_result = unlock(EC2OSP(p_G, PointGFp.UNCOMPRESSED));
     
     mixin( CHECK(` sv_result == sv_G_secp_uncomp `) );
@@ -591,9 +591,9 @@ size_t testEncDecUncompressed521()
     BigInt bi_a_secp = BigInt.decode( sv_a_secp.ptr, sv_a_secp.length );
     BigInt bi_b_secp = BigInt.decode( sv_b_secp.ptr, sv_b_secp.length );
     
-    CurveGFp secp160r1 = CurveGFp(bi_p_secp, bi_a_secp, bi_b_secp);
+    CurveGFp curve = CurveGFp(bi_p_secp, bi_a_secp, bi_b_secp);
     
-    PointGFp p_G = OS2ECP( sv_G_secp_uncomp, secp160r1 );
+    PointGFp p_G = OS2ECP( sv_G_secp_uncomp, curve );
     
     Vector!ubyte sv_result = unlock(EC2OSP(p_G, PointGFp.UNCOMPRESSED));
     string result = hexEncode(sv_result.ptr, sv_result.length);
@@ -815,17 +815,22 @@ size_t randomizedTest(RandomNumberGenerator rng, const ref ECGroup group)
     const BigInt b = BigInt.randomInteger(rng, b2, group.getOrder());
     const BigInt c = a + b;
     
-    PointGFp P = group.getBasePoint() * a;
-    PointGFp Q = group.getBasePoint() * b;
-    PointGFp R = group.getBasePoint() * c;
+    const PointGFp P = group.getBasePoint() * a;
+    const PointGFp Q = group.getBasePoint() * b;
+    const PointGFp R = group.getBasePoint() * c;
     
-    PointGFp A1 = P + Q;
-    PointGFp A2 = Q + P;
+    const PointGFp A1 = P + Q;
+    const PointGFp A2 = Q + P;
     
     size_t fails = 0;
     
     mixin( CHECK(`A1 == R`) );
     mixin( CHECK(`A2 == R`) );
+    mixin( CHECK(`P.onTheCurve()`) );
+    mixin( CHECK(`Q.onTheCurve()`) );
+    mixin( CHECK(`R.onTheCurve()`) );
+    mixin( CHECK(`A1.onTheCurve()`) );
+    mixin( CHECK(`A2.onTheCurve()`) );
     
     return fails;
 }
@@ -843,7 +848,6 @@ size_t randomizedTest()
         "brainpool320r1",
         "brainpool384r1",
         "brainpool512r1",
-        "gost_256A",
         "gost_256A",
         "secp112r1",
         "secp112r2",

@@ -45,7 +45,7 @@ SecureVector!ubyte runMode()(string algo, CipherDir dir,
     Unique!CipherMode cipher = getCipher(algo, dir);
 
     cipher.setKey(key);
-    cipher.startVec(nonce);
+    cipher.start(nonce);
 
     SecureVector!ubyte ct = pt;
     cipher.finish(ct);

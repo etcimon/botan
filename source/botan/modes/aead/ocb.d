@@ -2,7 +2,7 @@
 * OCB Mode
 * 
 * Copyright:
-* (C) 2013 Jack Lloyd
+* (C) 2013,2014 Jack Lloyd
 * (C) 2014-2015 Etienne Cimon
 *
 * License:
@@ -35,20 +35,6 @@ import std.algorithm;
 abstract class OCBMode : AEADMode, Transformation
 {
 public:
-    override SecureVector!ubyte start(const(ubyte)* nonce, size_t nonce_len)
-    {
-        if (!validNonceLength(nonce_len))
-            throw new InvalidIVLength(name, nonce_len);
-        
-        assert(m_L, "A key was set");
-        
-        m_offset = updateNonce(nonce, nonce_len);
-        zeroise(m_checksum);
-        m_block_index = 0;
-        
-        return SecureVector!ubyte();
-    }
-
     override void setAssociatedData(const(ubyte)* ad, size_t ad_len)
     {
         assert(m_L, "A key was set");
@@ -72,7 +58,7 @@ public:
 
     override bool validNonceLength(size_t length) const
     {
-        return (length > 0 && length < 16);
+        return (length > 0 && length < BS);
     }
 
     override size_t tagSize() const { return m_tag_size; }
@@ -91,6 +77,21 @@ public:
 
     override size_t defaultNonceLength() const { return super.defaultNonceLength(); }
 protected:
+
+    override SecureVector!ubyte startRaw(const(ubyte)* nonce, size_t nonce_len)
+    {
+        if (!validNonceLength(nonce_len))
+            throw new InvalidIVLength(name, nonce_len);
+        
+        assert(m_L, "A key was set");
+        
+        m_offset = updateNonce(nonce, nonce_len);
+        zeroise(m_checksum);
+        m_block_index = 0;
+        
+        return SecureVector!ubyte();
+    }
+
     /**
     * Params:
     *  cipher = the 128-bit block cipher to use
@@ -99,14 +100,15 @@ protected:
     this(BlockCipher cipher, size_t tag_size)
     {     
         m_cipher = cipher;
+        m_BS = m_cipher.blockSize();
         m_checksum = m_cipher.parallelBytes();
-        m_offset = BS;
-        m_ad_hash = BS;
+        m_offset = m_BS;
+        m_ad_hash = m_BS;
         m_tag_size = tag_size;
-        if (m_cipher.blockSize() != BS)
-            throw new InvalidArgument("OCB requires a 128 bit cipher so cannot be used with " ~ m_cipher.name);
+        if (BS != 16)
+            throw new InvalidArgument("OCB is  not compatible with " ~ m_cipher.name);
         
-        if (m_tag_size != 8 && m_tag_size != 12 && m_tag_size != 16)
+        if (m_tag_size % 4 != 0 || m_tag_size < 8 || m_tag_size > BS)
             throw new InvalidArgument("OCB cannot produce a " ~ to!string(m_tag_size) ~ " ubyte tag");
         
     }
@@ -117,10 +119,13 @@ protected:
         m_L = new LComputer(*m_cipher);
     }
 
+    @property size_t BS() const { return m_BS; }
+
     // fixme make these private
     Unique!BlockCipher m_cipher;
     Unique!LComputer m_L;
 
+    size_t m_BS;
     size_t m_block_index = 0;
 
     SecureVector!ubyte m_checksum;
@@ -130,7 +135,7 @@ private:
     final SecureVector!ubyte
             updateNonce(const(ubyte)* nonce, size_t nonce_len)
     {
-        assert(nonce_len < BS, "Nonce is less than 128 bits");
+        assert(nonce_len < BS, "OCB nonce is less than cipher block size");
         
         SecureVector!ubyte nonce_buf = SecureVector!ubyte(BS);
         
@@ -138,8 +143,8 @@ private:
         nonce_buf[0] = ((tagSize() * 8) % 128) << 1;
         nonce_buf[BS - nonce_len - 1] = 1;
         
-        const ubyte bottom = nonce_buf[15] & 0x3F;
-        nonce_buf[15] &= 0xC0;
+        const ubyte bottom = nonce_buf[BS-1] & 0x3F;
+        nonce_buf[BS-1] &= 0xC0;
         
         const bool need_new_stretch = (m_last_nonce != nonce_buf);
 
@@ -149,7 +154,7 @@ private:
             
             m_cipher.encrypt(nonce_buf);
             
-            foreach (size_t i; 0 .. 8)
+            foreach (size_t i; 0 .. BS/2)
                 nonce_buf.pushBack(nonce_buf[i] ^ nonce_buf[i+1]);
             
             m_stretch = nonce_buf.move;
@@ -258,7 +263,7 @@ public:
 
     // Interface fallthrough
     override string provider() const { return "core"; }
-    override SecureVector!ubyte start(const(ubyte)* nonce, size_t nonce_len) { return super.start(nonce, nonce_len); }
+    override SecureVector!ubyte startRaw(const(ubyte)* nonce, size_t nonce_len) { return super.startRaw(nonce, nonce_len); }
     override size_t updateGranularity() const { return super.updateGranularity(); }
     override size_t defaultNonceLength() const { return super.defaultNonceLength(); }
     override bool validNonceLength(size_t nonce_len) const { return super.validNonceLength(nonce_len); }
@@ -390,7 +395,7 @@ public:
 
     // Interface fallthrough
     override string provider() const { return "core"; }
-    override SecureVector!ubyte start(const(ubyte)* nonce, size_t nonce_len) { return super.start(nonce, nonce_len); }
+    override SecureVector!ubyte startRaw(const(ubyte)* nonce, size_t nonce_len) { return super.startRaw(nonce, nonce_len); }
     override size_t updateGranularity() const { return super.updateGranularity(); }
     override size_t defaultNonceLength() const { return super.defaultNonceLength(); }
     override bool validNonceLength(size_t nonce_len) const { return super.validNonceLength(nonce_len); }
@@ -400,7 +405,6 @@ public:
 private:
     void decrypt(ubyte* buffer, size_t blocks)
     {
-        LComputer L = *m_L; // convenient name
         
         const size_t par_bytes = m_cipher.parallelBytes();
         
@@ -413,7 +417,7 @@ private:
             const size_t proc_blocks = std.algorithm.min(blocks, par_blocks);
             const size_t proc_bytes = proc_blocks * BS;
             
-            const SecureVector!ubyte* offsets = &L.computeOffsets(m_offset, m_block_index, proc_blocks);
+            const SecureVector!ubyte* offsets = &m_L.computeOffsets(m_offset, m_block_index, proc_blocks);
             
             xorBuf(buffer, offsets.ptr, proc_bytes);
             m_cipher.decryptN(buffer, buffer, proc_blocks);
@@ -430,8 +434,6 @@ private:
 }
 
 private:
-
-__gshared immutable size_t BS = 16; // intrinsic to OCB definition
 
 // Has to be in Botan namespace so unique_ptr can reference it
 final class LComputer
@@ -455,8 +457,8 @@ public:
                                                   size_t block_index,
                                                   size_t blocks)
     {
+        const size_t BS = m_L_star.length;
         m_offset_buf.resize(blocks*BS);
-        
         foreach (size_t i; 0 .. blocks)
         { // could be done in parallel
             offset ^= get(ctz(block_index + 1 + i));
@@ -493,6 +495,7 @@ SecureVector!ubyte ocbHash(LComputer L,
                            BlockCipher cipher,
                            const(ubyte)* ad, size_t ad_len)
 {
+    const size_t BS = cipher.blockSize();
     SecureVector!ubyte sum = SecureVector!ubyte(BS);
     SecureVector!ubyte offset = SecureVector!ubyte(BS);
     
@@ -538,9 +541,9 @@ import botan.hash.sha2_32;
 import botan.block.aes;
 
 Vector!ubyte ocbDecrypt(in SymmetricKey key,
-                         const ref Vector!ubyte nonce,
-                         const(ubyte)* ct, size_t ct_len,
-                         const(ubyte)* ad, size_t ad_len)
+                        const ref Vector!ubyte nonce,
+                        const(ubyte)* ct, size_t ct_len,
+                        const(ubyte)* ad, size_t ad_len)
 {
     auto ocb = scoped!OCBDecryption(new AES128);
     

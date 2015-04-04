@@ -192,6 +192,14 @@ public:
     bool allowInsecureRenegotiation() const { return false; }
 
     /**
+     * The protocol dictates that the first 32 bits of the random
+     * field are the current time in seconds. However this allows
+     * client fingerprinting attacks. Set to false to disable, in
+     * which case random bytes will be used instead.
+     */
+    bool includeTimeInHelloRandom() const { return true; }
+
+    /**
     * Allow servers to initiate a new handshake
     */
     bool allowServerInitiatedRenegotiation() const

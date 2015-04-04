@@ -44,9 +44,9 @@ public:
     {
         const size_t cipher_keylen = state.ciphersuite().cipherKeylen();
         const size_t mac_keylen = state.ciphersuite().macKeylen();
-        const size_t cipher_ivlen = state.ciphersuite().cipherIvlen();
+        const size_t cipher_nonce_bytes = state.ciphersuite().explicitNonceBytes();
         
-        const size_t prf_gen = 2 * (mac_keylen + cipher_keylen + cipher_ivlen);
+        const size_t prf_gen = 2 * (mac_keylen + cipher_keylen + cipher_nonce_bytes);
         
         __gshared immutable immutable(ubyte)[] MASTER_SECRET_MAGIC = [
             0x6D, 0x61, 0x73, 0x74, 0x65, 0x72, 0x20, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74 ];
@@ -95,10 +95,10 @@ public:
         m_s_cipher = SymmetricKey(key_data, cipher_keylen);
         key_data += cipher_keylen;
         
-        m_c_iv = InitializationVector(key_data, cipher_ivlen);
-        key_data += cipher_ivlen;
+        m_c_iv = InitializationVector(key_data, cipher_nonce_bytes);
+        key_data += cipher_nonce_bytes;
         
-        m_s_iv = InitializationVector(key_data, cipher_ivlen);
+        m_s_iv = InitializationVector(key_data, cipher_nonce_bytes);
     }
 
 private:

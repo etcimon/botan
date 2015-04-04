@@ -29,14 +29,40 @@ public:
     * Params:
     *  nonce = the per message nonce
     */    
-    final SecureVector!ubyte startVec(Alloc)(auto const ref RefCounted!(Vector!( ubyte, Alloc ), Alloc) nonce)
+    final SecureVector!ubyte start(Alloc)(auto const ref RefCounted!(Vector!( ubyte, Alloc ), Alloc) nonce)
     {
-        return start(nonce.ptr, nonce.length);
+        return startRaw(nonce.ptr, nonce.length);
     }
 
-    final SecureVector!ubyte startVec(Alloc)(auto const ref Vector!( ubyte, Alloc ) nonce)
+    /**
+    * Begin processing a message.
+    * 
+    * Params:
+    *  nonce = the per message nonce
+    */    
+    final SecureVector!ubyte start(Alloc)(auto const ref Vector!( ubyte, Alloc ) nonce)
     {
-        return start(nonce.ptr, nonce.length);
+        return startRaw(nonce.ptr, nonce.length);
+    }
+
+    /**
+    * Begin processing a message.
+    * 
+    * Params:
+    *  nonce = a pointer to the per message nonce
+    *  nonce_len = the length of the message
+    */    
+    final SecureVector!ubyte start(const(ubyte)* nonce, size_t nonce_len)
+    {
+        return startRaw(nonce, nonce_len);
+    }
+
+    /**
+     * Begin processing a message.
+     */
+    final SecureVector!ubyte start()
+    {
+        return startRaw(null, 0);
     }
 
     /**
@@ -46,7 +72,7 @@ public:
     *  nonce = the per message nonce
     *  nonce_len = length of nonce
     */
-    SecureVector!ubyte start(const(ubyte)* nonce, size_t nonce_len);
+    SecureVector!ubyte startRaw(const(ubyte)* nonce, size_t nonce_len);
 
     /**
     * Process some data. Input must be in size $(D updateGranularity()) ubyte blocks.
@@ -191,7 +217,7 @@ SecureVector!ubyte transformTest(string algo,
     Unique!Transformation transform = getTransform(algo);
 
     //transform.setKey(key);
-    transform.startVec(nonce);
+    transform.start(nonce);
     
     SecureVector!ubyte output = input.dup;
     transform.update(output, 0);

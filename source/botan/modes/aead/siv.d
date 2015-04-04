@@ -28,7 +28,7 @@ import std.algorithm;
 abstract class SIVMode : AEADMode, Transformation
 {
 public:
-    override SecureVector!ubyte start(const(ubyte)* nonce, size_t nonce_len)
+    override SecureVector!ubyte startRaw(const(ubyte)* nonce, size_t nonce_len)
     {
         if (!validNonceLength(nonce_len))
             throw new InvalidIVLength(name, nonce_len);
@@ -128,7 +128,7 @@ protected:
     {
         const ubyte[16] zero;
         
-        SecureVector!ubyte V = cmac().process(zero.ptr, 16);
+        SecureVector!ubyte V = m_cmac.process(zero.ptr, 16);
         
         for (size_t i = 0; i != m_ad_macs.length; ++i)
         {
@@ -147,17 +147,16 @@ protected:
             V = CMAC.polyDouble(V);
             xorBuf(V.ptr, text, text_len);
             V[text_len] ^= 0x80;
-            return cmac().process(V);
+            return m_cmac.process(V);
         }
         
-        cmac().update(text, text_len - 16);
+        m_cmac.update(text, text_len - 16);
         xorBuf(V.ptr, text + text_len - 16, 16);
-        cmac().update(V);
+        m_cmac.update(V);
         
-        return cmac().finished();
+        return m_cmac.finished();
     }
 protected:
-    final MessageAuthenticationCode cmac() { return *m_cmac; }
 
     final override void keySchedule(const(ubyte)* key, size_t length)
     {
@@ -221,7 +220,7 @@ public:
 
     // Interface fallthrough
     override string provider() const { return "core"; }
-    override SecureVector!ubyte start(const(ubyte)* nonce, size_t nonce_len) { return super.start(nonce, nonce_len); }
+    override SecureVector!ubyte startRaw(const(ubyte)* nonce, size_t nonce_len) { return super.startRaw(nonce, nonce_len); }
     override void update(ref SecureVector!ubyte blocks, size_t offset = 0) { super.update(blocks, offset); }
     override size_t updateGranularity() const { return super.updateGranularity(); }
     override size_t defaultNonceLength() const { return super.defaultNonceLength(); }
@@ -284,7 +283,7 @@ public:
 
     // Interface fallthrough
     override string provider() const { return "core"; }
-    override SecureVector!ubyte start(const(ubyte)* nonce, size_t nonce_len) { return super.start(nonce, nonce_len); }
+    override SecureVector!ubyte startRaw(const(ubyte)* nonce, size_t nonce_len) { return super.startRaw(nonce, nonce_len); }
     override void update(ref SecureVector!ubyte blocks, size_t offset = 0) { super.update(blocks, offset); }
     override size_t updateGranularity() const { return super.updateGranularity(); }
     override size_t defaultNonceLength() const { return super.defaultNonceLength(); }

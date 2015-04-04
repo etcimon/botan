@@ -203,7 +203,7 @@ public:
         m_hash = af.makeHashFunction(algo_spec);
     }
 
-    ~this() { destroy(m_hash); }
+    ~this() { }
 
     // Interface fallthrough
     override bool attachable() { return super.attachable(); }
@@ -211,7 +211,7 @@ public:
     override void setNext(Filter* filters, size_t sz) { super.setNext(filters, sz); }
 private:
     const size_t m_OUTPUT_LENGTH;
-    HashFunction m_hash;
+    Unique!HashFunction m_hash;
 }
 
 /**
@@ -318,7 +318,7 @@ public:
         m_mac.setKey(key);
     }
 
-    ~this() { destroy(m_mac); }
+    ~this() { }
 
     // Interface fallthrough
     override bool attachable() { return super.attachable(); }
@@ -326,5 +326,5 @@ public:
     override void setNext(Filter* filters, size_t sz) { super.setNext(filters, sz); }
 private:
     const size_t m_OUTPUT_LENGTH;
-    MessageAuthenticationCode m_mac;
+    Unique!MessageAuthenticationCode m_mac;
 }

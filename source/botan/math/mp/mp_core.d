@@ -2,7 +2,7 @@
 * MPI Algorithms
 * 
 * Copyright:
-* (C) 1999-2010 Jack Lloyd
+* (C) 1999-2010,2014 Jack Lloyd
 * (C) 2014-2015 Etienne Cimon
 *      2006 Luca Piccarreta
 *
@@ -89,6 +89,11 @@ void bigint_mul(word* z, size_t z_size, word* workspace,
     {
         bigint_comba_mul8(*cast(word[16]*) z, *cast(word[8]*) x, *cast(word[8]*) y);
     }
+    else if (x_sw <= 9 && x_size >= 9 &&
+             y_sw <= 9 && y_size >= 9 && z_size >= 18)
+    {
+        bigint_comba_mul9(*cast(word[18]*) z, *cast(word[9]*) x, *cast(word[9]*) y);
+    }
     else if (x_sw <= 16 && x_size >= 16 &&
              y_sw <= 16 && y_size >= 16 && z_size >= 32)
     {
@@ -132,6 +137,10 @@ void bigint_sqr(word* z, size_t z_size, word* workspace,
     else if (x_sw <= 8 && x_size >= 8 && z_size >= 16)
     {
         bigint_comba_sqr8(*cast(word[16]*) z, *cast(word[8]*) x);
+    }
+    else if (x_sw <= 9 && x_size >= 9 && z_size >= 18)
+    {
+        bigint_comba_sqr9(*cast(word[18]*) z, *cast(word[9]*) x);
     }
     else if (x_sw <= 16 && x_size >= 16 && z_size >= 32)
     {
@@ -999,6 +1008,218 @@ void bigint_comba_mul8(ref word[16] z, in word[8] x, in word[8] y)
     word3_muladd(&w1, &w0, &w2, x[ 7], y[ 7]);
     z[14] = w2;
     z[15] = w0;
+}
+
+/*
+* Comba 9x9 Squaring
+*/
+void bigint_comba_sqr9(ref word[18] z, in word[9] x)
+{
+    word w2 = 0, w1 = 0, w0 = 0;
+    
+    word3_muladd(&w2, &w1, &w0, x[ 0], x[ 0]);
+    z[ 0] = w0; w0 = 0;
+    
+    word3_muladd_2(&w0, &w2, &w1, x[ 0], x[ 1]);
+    z[ 1] = w1; w1 = 0;
+    
+    word3_muladd_2(&w1, &w0, &w2, x[ 0], x[ 2]);
+    word3_muladd(&w1, &w0, &w2, x[ 1], x[ 1]);
+    z[ 2] = w2; w2 = 0;
+    
+    word3_muladd_2(&w2, &w1, &w0, x[ 0], x[ 3]);
+    word3_muladd_2(&w2, &w1, &w0, x[ 1], x[ 2]);
+    z[ 3] = w0; w0 = 0;
+    
+    word3_muladd_2(&w0, &w2, &w1, x[ 0], x[ 4]);
+    word3_muladd_2(&w0, &w2, &w1, x[ 1], x[ 3]);
+    word3_muladd(&w0, &w2, &w1, x[ 2], x[ 2]);
+    z[ 4] = w1; w1 = 0;
+    
+    word3_muladd_2(&w1, &w0, &w2, x[ 0], x[ 5]);
+    word3_muladd_2(&w1, &w0, &w2, x[ 1], x[ 4]);
+    word3_muladd_2(&w1, &w0, &w2, x[ 2], x[ 3]);
+    z[ 5] = w2; w2 = 0;
+    
+    word3_muladd_2(&w2, &w1, &w0, x[ 0], x[ 6]);
+    word3_muladd_2(&w2, &w1, &w0, x[ 1], x[ 5]);
+    word3_muladd_2(&w2, &w1, &w0, x[ 2], x[ 4]);
+    word3_muladd(&w2, &w1, &w0, x[ 3], x[ 3]);
+    z[ 6] = w0; w0 = 0;
+    
+    word3_muladd_2(&w0, &w2, &w1, x[ 0], x[ 7]);
+    word3_muladd_2(&w0, &w2, &w1, x[ 1], x[ 6]);
+    word3_muladd_2(&w0, &w2, &w1, x[ 2], x[ 5]);
+    word3_muladd_2(&w0, &w2, &w1, x[ 3], x[ 4]);
+    z[ 7] = w1; w1 = 0;
+    
+    word3_muladd_2(&w1, &w0, &w2, x[ 0], x[ 8]);
+    word3_muladd_2(&w1, &w0, &w2, x[ 1], x[ 7]);
+    word3_muladd_2(&w1, &w0, &w2, x[ 2], x[ 6]);
+    word3_muladd_2(&w1, &w0, &w2, x[ 3], x[ 5]);
+    word3_muladd(&w1, &w0, &w2, x[ 4], x[ 4]);
+    z[ 8] = w2; w2 = 0;
+    
+    word3_muladd_2(&w2, &w1, &w0, x[ 1], x[ 8]);
+    word3_muladd_2(&w2, &w1, &w0, x[ 2], x[ 7]);
+    word3_muladd_2(&w2, &w1, &w0, x[ 3], x[ 6]);
+    word3_muladd_2(&w2, &w1, &w0, x[ 4], x[ 5]);
+    z[ 9] = w0; w0 = 0;
+    
+    word3_muladd_2(&w0, &w2, &w1, x[ 2], x[ 8]);
+    word3_muladd_2(&w0, &w2, &w1, x[ 3], x[ 7]);
+    word3_muladd_2(&w0, &w2, &w1, x[ 4], x[ 6]);
+    word3_muladd(&w0, &w2, &w1, x[ 5], x[ 5]);
+    z[10] = w1; w1 = 0;
+    
+    word3_muladd_2(&w1, &w0, &w2, x[ 3], x[ 8]);
+    word3_muladd_2(&w1, &w0, &w2, x[ 4], x[ 7]);
+    word3_muladd_2(&w1, &w0, &w2, x[ 5], x[ 6]);
+    z[11] = w2; w2 = 0;
+    
+    word3_muladd_2(&w2, &w1, &w0, x[ 4], x[ 8]);
+    word3_muladd_2(&w2, &w1, &w0, x[ 5], x[ 7]);
+    word3_muladd(&w2, &w1, &w0, x[ 6], x[ 6]);
+    z[12] = w0; w0 = 0;
+    
+    word3_muladd_2(&w0, &w2, &w1, x[ 5], x[ 8]);
+    word3_muladd_2(&w0, &w2, &w1, x[ 6], x[ 7]);
+    z[13] = w1; w1 = 0;
+    
+    word3_muladd_2(&w1, &w0, &w2, x[ 6], x[ 8]);
+    word3_muladd(&w1, &w0, &w2, x[ 7], x[ 7]);
+    z[14] = w2; w2 = 0;
+    
+    word3_muladd_2(&w2, &w1, &w0, x[ 7], x[ 8]);
+    z[15] = w0; w0 = 0;
+    
+    word3_muladd(&w0, &w2, &w1, x[ 8], x[ 8]);
+    z[16] = w1;
+    z[17] = w2;
+}
+
+/*
+* Comba 9x9 Multiplication
+*/
+void bigint_comba_mul9(ref word[18] z, in word[9] x, in word[9] y)
+{
+    word w2 = 0, w1 = 0, w0 = 0;
+    
+    word3_muladd(&w2, &w1, &w0, x[ 0], y[ 0]);
+    z[ 0] = w0; w0 = 0;
+    
+    word3_muladd(&w0, &w2, &w1, x[ 0], y[ 1]);
+    word3_muladd(&w0, &w2, &w1, x[ 1], y[ 0]);
+    z[ 1] = w1; w1 = 0;
+    
+    word3_muladd(&w1, &w0, &w2, x[ 0], y[ 2]);
+    word3_muladd(&w1, &w0, &w2, x[ 1], y[ 1]);
+    word3_muladd(&w1, &w0, &w2, x[ 2], y[ 0]);
+    z[ 2] = w2; w2 = 0;
+    
+    word3_muladd(&w2, &w1, &w0, x[ 0], y[ 3]);
+    word3_muladd(&w2, &w1, &w0, x[ 1], y[ 2]);
+    word3_muladd(&w2, &w1, &w0, x[ 2], y[ 1]);
+    word3_muladd(&w2, &w1, &w0, x[ 3], y[ 0]);
+    z[ 3] = w0; w0 = 0;
+    
+    word3_muladd(&w0, &w2, &w1, x[ 0], y[ 4]);
+    word3_muladd(&w0, &w2, &w1, x[ 1], y[ 3]);
+    word3_muladd(&w0, &w2, &w1, x[ 2], y[ 2]);
+    word3_muladd(&w0, &w2, &w1, x[ 3], y[ 1]);
+    word3_muladd(&w0, &w2, &w1, x[ 4], y[ 0]);
+    z[ 4] = w1; w1 = 0;
+    
+    word3_muladd(&w1, &w0, &w2, x[ 0], y[ 5]);
+    word3_muladd(&w1, &w0, &w2, x[ 1], y[ 4]);
+    word3_muladd(&w1, &w0, &w2, x[ 2], y[ 3]);
+    word3_muladd(&w1, &w0, &w2, x[ 3], y[ 2]);
+    word3_muladd(&w1, &w0, &w2, x[ 4], y[ 1]);
+    word3_muladd(&w1, &w0, &w2, x[ 5], y[ 0]);
+    z[ 5] = w2; w2 = 0;
+    
+    word3_muladd(&w2, &w1, &w0, x[ 0], y[ 6]);
+    word3_muladd(&w2, &w1, &w0, x[ 1], y[ 5]);
+    word3_muladd(&w2, &w1, &w0, x[ 2], y[ 4]);
+    word3_muladd(&w2, &w1, &w0, x[ 3], y[ 3]);
+    word3_muladd(&w2, &w1, &w0, x[ 4], y[ 2]);
+    word3_muladd(&w2, &w1, &w0, x[ 5], y[ 1]);
+    word3_muladd(&w2, &w1, &w0, x[ 6], y[ 0]);
+    z[ 6] = w0; w0 = 0;
+    
+    word3_muladd(&w0, &w2, &w1, x[ 0], y[ 7]);
+    word3_muladd(&w0, &w2, &w1, x[ 1], y[ 6]);
+    word3_muladd(&w0, &w2, &w1, x[ 2], y[ 5]);
+    word3_muladd(&w0, &w2, &w1, x[ 3], y[ 4]);
+    word3_muladd(&w0, &w2, &w1, x[ 4], y[ 3]);
+    word3_muladd(&w0, &w2, &w1, x[ 5], y[ 2]);
+    word3_muladd(&w0, &w2, &w1, x[ 6], y[ 1]);
+    word3_muladd(&w0, &w2, &w1, x[ 7], y[ 0]);
+    z[ 7] = w1; w1 = 0;
+    
+    word3_muladd(&w1, &w0, &w2, x[ 0], y[ 8]);
+    word3_muladd(&w1, &w0, &w2, x[ 1], y[ 7]);
+    word3_muladd(&w1, &w0, &w2, x[ 2], y[ 6]);
+    word3_muladd(&w1, &w0, &w2, x[ 3], y[ 5]);
+    word3_muladd(&w1, &w0, &w2, x[ 4], y[ 4]);
+    word3_muladd(&w1, &w0, &w2, x[ 5], y[ 3]);
+    word3_muladd(&w1, &w0, &w2, x[ 6], y[ 2]);
+    word3_muladd(&w1, &w0, &w2, x[ 7], y[ 1]);
+    word3_muladd(&w1, &w0, &w2, x[ 8], y[ 0]);
+    z[ 8] = w2; w2 = 0;
+    
+    word3_muladd(&w2, &w1, &w0, x[ 1], y[ 8]);
+    word3_muladd(&w2, &w1, &w0, x[ 2], y[ 7]);
+    word3_muladd(&w2, &w1, &w0, x[ 3], y[ 6]);
+    word3_muladd(&w2, &w1, &w0, x[ 4], y[ 5]);
+    word3_muladd(&w2, &w1, &w0, x[ 5], y[ 4]);
+    word3_muladd(&w2, &w1, &w0, x[ 6], y[ 3]);
+    word3_muladd(&w2, &w1, &w0, x[ 7], y[ 2]);
+    word3_muladd(&w2, &w1, &w0, x[ 8], y[ 1]);
+    z[ 9] = w0; w0 = 0;
+    
+    word3_muladd(&w0, &w2, &w1, x[ 2], y[ 8]);
+    word3_muladd(&w0, &w2, &w1, x[ 3], y[ 7]);
+    word3_muladd(&w0, &w2, &w1, x[ 4], y[ 6]);
+    word3_muladd(&w0, &w2, &w1, x[ 5], y[ 5]);
+    word3_muladd(&w0, &w2, &w1, x[ 6], y[ 4]);
+    word3_muladd(&w0, &w2, &w1, x[ 7], y[ 3]);
+    word3_muladd(&w0, &w2, &w1, x[ 8], y[ 2]);
+    z[10] = w1; w1 = 0;
+    
+    word3_muladd(&w1, &w0, &w2, x[ 3], y[ 8]);
+    word3_muladd(&w1, &w0, &w2, x[ 4], y[ 7]);
+    word3_muladd(&w1, &w0, &w2, x[ 5], y[ 6]);
+    word3_muladd(&w1, &w0, &w2, x[ 6], y[ 5]);
+    word3_muladd(&w1, &w0, &w2, x[ 7], y[ 4]);
+    word3_muladd(&w1, &w0, &w2, x[ 8], y[ 3]);
+    z[11] = w2; w2 = 0;
+    
+    word3_muladd(&w2, &w1, &w0, x[ 4], y[ 8]);
+    word3_muladd(&w2, &w1, &w0, x[ 5], y[ 7]);
+    word3_muladd(&w2, &w1, &w0, x[ 6], y[ 6]);
+    word3_muladd(&w2, &w1, &w0, x[ 7], y[ 5]);
+    word3_muladd(&w2, &w1, &w0, x[ 8], y[ 4]);
+    z[12] = w0; w0 = 0;
+    
+    word3_muladd(&w0, &w2, &w1, x[ 5], y[ 8]);
+    word3_muladd(&w0, &w2, &w1, x[ 6], y[ 7]);
+    word3_muladd(&w0, &w2, &w1, x[ 7], y[ 6]);
+    word3_muladd(&w0, &w2, &w1, x[ 8], y[ 5]);
+    z[13] = w1; w1 = 0;
+    
+    word3_muladd(&w1, &w0, &w2, x[ 6], y[ 8]);
+    word3_muladd(&w1, &w0, &w2, x[ 7], y[ 7]);
+    word3_muladd(&w1, &w0, &w2, x[ 8], y[ 6]);
+    z[14] = w2; w2 = 0;
+    
+    word3_muladd(&w2, &w1, &w0, x[ 7], y[ 8]);
+    word3_muladd(&w2, &w1, &w0, x[ 8], y[ 7]);
+    z[15] = w0; w0 = 0;
+    
+    word3_muladd(&w0, &w2, &w1, x[ 8], y[ 8]);
+    z[16] = w1;
+    z[17] = w2;
 }
 
 /*

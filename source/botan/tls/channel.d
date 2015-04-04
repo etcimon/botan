@@ -469,7 +469,7 @@ public:
 
     ~this()
     {
-
+        resetState();
     }
 protected:
 
@@ -551,12 +551,16 @@ protected:
             auto current_epoch = sequenceNumbers().currentWriteEpoch();
 
             foreach (const ref ushort k, const ref ConnectionCipherState v; m_write_cipher_states) {
-                if (k != current_epoch)
+                if (k != current_epoch) {
+                    v.destroy();
                     m_write_cipher_states.remove(k);
+                }
             }
             foreach (const ref ushort k, const ref ConnectionCipherState v; m_read_cipher_states) {
-                if (k != current_epoch)
-                    m_write_cipher_states.remove(k);
+                if (k != current_epoch) {
+                    v.destroy();
+                    m_write_cipher_states.remove(k);                    
+                }
             }
         }
     }
@@ -809,7 +813,15 @@ private:
         m_active_state.free();
         m_pending_state.free();
         m_readbuf.clear();
+        foreach (const ref k, const ref v; m_write_cipher_states)
+        {
+            v.destroy();
+        }
         m_write_cipher_states.clear();
+        foreach (const ref k, const ref v; m_read_cipher_states)
+        {
+            v.destroy();
+        }
         m_read_cipher_states.clear();
     }
 
