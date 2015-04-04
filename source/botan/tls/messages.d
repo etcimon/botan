@@ -54,7 +54,8 @@ import botan.utils.types;
 // import string;
 
 enum {
-    TLS_EMPTY_RENEGOTIATION_INFO_SCSV          = 0x00FF
+    TLS_EMPTY_RENEGOTIATION_INFO_SCSV  = 0x00FF,
+    TLS_FALLBACK_SCSV                  = 0x5600
 }
 
 /**
@@ -187,6 +188,11 @@ public:
         return "";
     }
 
+    bool sentFallbackSCSV() const
+    {
+        return offeredSuite(cast(ushort) TLS_FALLBACK_SCSV);
+    }
+
     bool secureRenegotiation() const
     {
         return m_extensions.get!RenegotiationExtension() !is null;
@@ -286,7 +292,10 @@ public:
 
         if (reneg_empty && !next_protocols.empty)
             m_extensions.add(new ApplicationLayerProtocolNotification(next_protocols.move));
-        
+        assert(policy.acceptableProtocolVersion(_version), "Our policy accepts the version we are offering");
+
+        if (policy.sendFallbackSCSV(_version))
+            m_suites.pushBack(TLS_FALLBACK_SCSV);
         hash.update(io.send(this));
     }
 

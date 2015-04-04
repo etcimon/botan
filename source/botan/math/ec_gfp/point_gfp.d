@@ -180,87 +180,44 @@ public:
             
             if (value == 2)
                 result.mult2(ws);
-            
+
             if (scalar.isNegative())
                 result.negate();
             
             return result.move();
         }
         const size_t scalar_bits = scalar.bits();
+
         
-        version(none) {
+        PointGFp x1 = PointGFp(m_curve);
+        PointGFp x2 = point.dup;
+        
+        size_t bits_left = scalar_bits;
+        
+        // Montgomery Ladder
+        while (bits_left)
+        {
+            const bool bit_set = scalar.getBit(bits_left - 1);
             
-            PointGFp x1 = PointGFp(curve);
-            PointGFp x2 = point;
-            
-            size_t bits_left = scalar_bits;
-            
-            // Montgomery Ladder
-            while (bits_left)
+            if (bit_set)
             {
-                const bool bit_set = scalar.getBit(bits_left - 1);
-                
-                if (bit_set)
-                {
-                    x1.add(x2, ws);
-                    x2.mult2(ws);
-                }
-                else
-                {
-                    x2.add(x1, ws);
-                    x1.mult2(ws);
-                }
-                
-                --bits_left;
+                x1.add(x2, ws);
+                x2.mult2(ws);
+            }
+            else
+            {
+                x2.add(x1, ws);
+                x1.mult2(ws);
             }
             
-            if (scalar.isNegative())
-                x1.negate();
-            
-            return x1;
-            
-        } else {
-            const size_t window_size = 4;
-            Vector!(RefCounted!PointGFp) Ps = Vector!(RefCounted!PointGFp)(1 << window_size);
-            Ps[0] = RefCounted!PointGFp(point.getCurve());
-            Ps[1] = RefCounted!PointGFp(point.dup);
-            
-            for (size_t i = 2; i != Ps.length; ++i)
-            {
-                Ps[i] = Ps[i-1].dup;
-                Ps[i].add(*point, ws);
-            }
-            
-            PointGFp H = PointGFp(point.getCurve()); // create as zero
-            size_t bits_left = scalar_bits;
-            while (bits_left >= window_size)
-            {
-                foreach (size_t i; 0 .. window_size)
-                    H.mult2(ws);
-                
-                const uint nibble = scalar.getSubstring(bits_left - window_size, window_size);
-
-
-                H.add(*Ps[nibble], ws);
-                //logDebug("H[", nibble, "] = ", H.getAffineX().toString());
-                
-                bits_left -= window_size;
-            }
-            
-            while (bits_left)
-            {
-                H.mult2(ws);
-                if (scalar.getBit(bits_left-1))
-                    H.add(*point, ws);
-                
-                --bits_left;
-            }
-            
-            if (scalar.isNegative())
-                H.negate();
-            
-            return H.move();
+            --bits_left;
         }
+        
+        if (scalar.isNegative())
+            x1.negate();
+        
+        return x1.move;
+      
     }
 
     /**

@@ -64,6 +64,7 @@ public:
                 const size_t needed = .readRecord(m_readbuf,
                                                   input,
                                                   input_size,
+                                                  m_is_datagram,
                                                   consumed,
                                                   record,
                                                   record_sequence,
@@ -89,25 +90,34 @@ public:
                 {
                     if (!m_pending_state)
                     {
-                        if (record_version.isDatagramProtocol()) {
+                        if (record_version.isDatagramProtocol())
+                        {
+                            if (m_sequence_numbers)
+                            {
 
-                            (*m_sequence_numbers).readAccept(record_sequence);
-                            
-                            /*
-                            * Might be a peer retransmit under epoch - 1 in which
-                            * case we must retransmit last flight
-                            */
-                                                        
-                            const ushort epoch = record_sequence >> 48;
-                            
-                            if(epoch == sequenceNumbers().currentReadEpoch())
+                                /*
+                                * Might be a peer retransmit under epoch - 1 in which
+                                * case we must retransmit last flight
+                                */
+
+                                (*m_sequence_numbers).readAccept(record_sequence);
+                                          
+                                const ushort epoch = record_sequence >> 48;
+                                
+                                if (epoch == sequenceNumbers().currentReadEpoch())
+                                {
+                                    createHandshakeState(record_version);
+                                }
+                                else if (epoch == sequenceNumbers().currentReadEpoch() - 1)
+                                {
+                                    assert(m_active_state, "Have active state here");
+                                    auto rec = unlock(record);
+                                    m_active_state.handshakeIo().addRecord(rec, record_type, record_sequence);
+                                }
+                            }
+                            else if (record_sequence == 0)
                             {
                                 createHandshakeState(record_version);
-                            }
-                            else if(epoch == sequenceNumbers().currentReadEpoch() - 1)
-                            {
-                                auto rec = unlock(record);
-                                m_active_state.handshakeIo().addRecord(rec, record_type, record_sequence);
                             }
                         }
                         else
@@ -177,30 +187,30 @@ public:
                     
                     if (alert_msg.type() == TLSAlert.NO_RENEGOTIATION)
                     m_pending_state.free();
-                
-                m_alert_cb(alert_msg, null);
-                
-                if (alert_msg.isFatal())
-                {
-                    if (auto active = activeState()) {
-                        auto entry = &active.serverHello().sessionId();
-                        m_session_manager.removeEntry(*entry);
+                    
+                    m_alert_cb(alert_msg, null);
+                    
+                    if (alert_msg.isFatal())
+                    {
+                        if (auto active = activeState()) {
+                            auto entry = &active.serverHello().sessionId();
+                            m_session_manager.removeEntry(*entry);
+                        }
+                    }
+                            
+                    if (alert_msg.type() == TLSAlert.CLOSE_NOTIFY)
+                        sendWarningAlert(TLSAlert.CLOSE_NOTIFY); // reply in kind
+                                
+                    if (alert_msg.type() == TLSAlert.CLOSE_NOTIFY || alert_msg.isFatal())
+                    {
+                        resetState();
+                        return 0;
                     }
                 }
+                else if (record_type != NO_RECORD)
+                    throw new TLSUnexpectedMessage("Unexpected record type " ~ to!string(record_type) ~ " from counterparty");
+            }
                         
-                if (alert_msg.type() == TLSAlert.CLOSE_NOTIFY)
-                    sendWarningAlert(TLSAlert.CLOSE_NOTIFY); // reply in kind
-                            
-                if (alert_msg.type() == TLSAlert.CLOSE_NOTIFY || alert_msg.isFatal())
-                {
-                    resetState();
-                    return 0;
-                }
-            }
-            else
-                throw new TLSUnexpectedMessage("Unexpected record type " ~ to!string(record_type) ~ " from counterparty");
-            }
-                    
             return 0; // on a record boundary
         }
         catch(TLSException e)
@@ -451,6 +461,7 @@ public:
          bool delegate(const ref TLSSession) handshake_cb,
          TLSSessionManager session_manager,
          RandomNumberGenerator rng,
+         bool is_datagram,
          size_t reserved_io_buffer_size)
     {
         m_handshake_cb = handshake_cb;
@@ -533,6 +544,7 @@ protected:
     bool timeoutCheck() {
         if (m_pending_state)
             return m_pending_state.handshakeIo().timeoutCheck();
+        //FIXME: scan cipher suites and remove epochs older than 2*MSL
         return false;
     }
 
@@ -541,11 +553,7 @@ protected:
         std.algorithm.swap(m_active_state, m_pending_state);
         m_pending_state.free();
         
-        if (m_active_state.Version().isDatagramProtocol())
-        {
-            // FIXME, remove old states when we are sure not needed anymore
-        }
-        else
+        if (!m_active_state.Version().isDatagramProtocol())
         {
             // TLS is easy just remove all but the current state
             auto current_epoch = sequenceNumbers().currentWriteEpoch();
@@ -828,6 +836,8 @@ private:
     const(HandshakeState) activeState() const { return *m_active_state; }
 
     const(HandshakeState) pendingState() const { return *m_pending_state; }
+
+    bool m_is_datagram;
 
     /* callbacks */
     bool delegate(const ref TLSSession) m_handshake_cb;

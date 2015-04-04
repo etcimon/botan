@@ -61,7 +61,7 @@ public:
          Vector!string next_protocols = Vector!string(),
          size_t reserved_io_buffer_size = 16*1024)
     { 
-        super(socket_output_fn, proc_cb, alert_cb, handshake_cb, session_manager, rng, reserved_io_buffer_size);
+        super(socket_output_fn, proc_cb, alert_cb, handshake_cb, session_manager, rng, offer_version.isDatagramProtocol(), reserved_io_buffer_size);
         m_policy = policy;
         m_creds = creds;
         m_info = server_info;

@@ -59,13 +59,13 @@ public:
         
         x.growTo(p_words + 1);
         
-        if(ws.length < p_words + 1)
+        if (ws.length < p_words + 1)
             ws.resize(p_words + 1);
         
         //FIXME: take into account bound if > 0
         while(true)
         {
-            if(bigint_sub3(ws.ptr, x.ptr, p_words, prime, p_words)) // borrow?
+            if (bigint_sub3(ws.ptr, x.ptr, p_words, prime, p_words)) // borrow?
                 break;
             
             x.swapReg(ws);

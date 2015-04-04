@@ -639,7 +639,7 @@ public:
     void maskBits(size_t n)
     {
         if (n == 0) { clear(); return; }
-        if(n >= bits()) return;
+        if (n >= bits()) return;
 
         const size_t top_word = n / MP_WORD_BITS;
         const word mask = ((cast(word)1) << (n % MP_WORD_BITS)) - 1;
@@ -828,7 +828,7 @@ public:
     size_t bits() const
     {
         const size_t words = sigWords();
-        if(words == 0)
+        if (words == 0)
             return 0;
         
         const size_t full_words = words - 1;

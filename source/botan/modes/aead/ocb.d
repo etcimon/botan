@@ -539,90 +539,62 @@ import botan.test;
 import botan.codec.hex;
 import botan.hash.sha2_32;
 import botan.block.aes;
+import botan.libstate.libstate;
+import botan.libstate.lookup;
+import botan.algo_factory.algo_factory;
+import botan.utils.loadstor;
 
-Vector!ubyte ocbDecrypt(in SymmetricKey key,
-                        const ref Vector!ubyte nonce,
-                        const(ubyte)* ct, size_t ct_len,
-                        const(ubyte)* ad, size_t ad_len)
-{
-    auto ocb = scoped!OCBDecryption(new AES128);
-    
-    ocb.setKey(key);
-    ocb.setAssociatedData(ad, ad_len);
-    
-    ocb.start(nonce.ptr, nonce.length);
-    
-    SecureVector!ubyte buf = SecureVector!ubyte(ct[0 .. ct_len]);
-    ocb.finish(buf, 0);
-    
-    return unlock(buf);
-}
-
-Vector!ubyte ocbEncrypt(in SymmetricKey key,
-                         const ref Vector!ubyte nonce,
-                         const(ubyte)* pt, size_t pt_len,
-                         const(ubyte)* ad, size_t ad_len)
-{
-    auto ocb = scoped!OCBEncryption(new AES128);
-    
-    ocb.setKey(key);
-    ocb.setAssociatedData(ad, ad_len);
-    
-    ocb.start(nonce.ptr, nonce.length);
-    
-    SecureVector!ubyte buf = SecureVector!ubyte(pt[0 .. pt_len]);
-    ocb.finish(buf, 0);
-    
-    try
-    {
-        Vector!ubyte pt2 = ocbDecrypt(key, nonce, buf.ptr, buf.length, ad, ad_len);
-        if (pt_len != pt2.length || !sameMem(pt, &pt2[0], pt_len))
-            logTrace("OCB failed to decrypt correctly");
-    }
-    catch(Exception e)
-    {
-        logTrace("OCB round trip error - " ~ e.msg);
-    }
-    
-    return unlock(buf);
-}
-
-Vector!ubyte ocbEncrypt(Alloc, Alloc2)(in SymmetricKey key,
-                                       const ref Vector!ubyte nonce,
-                                       const ref Vector!(ubyte, Alloc) pt,
-                                       const ref Vector!(ubyte, Alloc2) ad)
-{
-    return ocbEncrypt(key, nonce, pt.ptr, pt.length, ad.ptr, ad.length);
-}
-
-Vector!ubyte ocbDecrypt(Alloc, Alloc2)(in SymmetricKey key,
-                                       const ref Vector!ubyte nonce,
-                                       const ref Vector!(ubyte, Alloc) pt,
-                                       const ref Vector!(ubyte, Alloc2) ad)
-{
-    return ocbDecrypt(key, nonce, pt.ptr, pt.length, ad.ptr, ad.length);
-}
-
-Vector!ubyte ocbEncrypt(OCBEncryption ocb,
+Vector!ubyte ocbEncrypt(OCBEncryption enc,
+                        OCBDecryption dec,
                         const ref Vector!ubyte nonce,
                         const ref Vector!ubyte pt,
                         const ref Vector!ubyte ad)
 {
-    ocb.setAssociatedData(ad.ptr, ad.length);
+    enc.setAssociatedData(ad.ptr, ad.length);
     
-    ocb.start(nonce.ptr, nonce.length);
+    enc.start(nonce.ptr, nonce.length);
 
     SecureVector!ubyte buf = SecureVector!ubyte(pt.ptr[0 .. pt.length]);
-    ocb.finish(buf, 0);
+    enc.finish(buf, 0);
+
+    try
+    {
+        SecureVector!ubyte ct = buf.dup;
+
+        dec.setAssociatedData(ad.ptr, ad.length);
+        
+        dec.start(nonce.ptr, nonce.length);
+
+        dec.finish(ct, 0);
+
+        if (ct[0 .. $] != pt[0 .. $])
+            logError("OCB failed to decrypt correctly");
+
+    }
+    catch (Exception e) {
+        logError("OCB round trip error - " ~ e.msg);
+    }
+
     return unlock(buf);
 }
 
-size_t testOcbLong(size_t taglen, in string expected)
+size_t testOcbLong(ref AlgorithmFactory af, size_t keylen, size_t taglen, in string expected)
 {
-    Unique!OCBEncryption ocb = new OCBEncryption(new AES128, taglen/8);
-    
-    ocb.setKey(SymmetricKey("00000000000000000000000000000000"));
-    
+    // Test from RFC 7253 Appendix A
+
+    const string algo = "AES-" ~ keylen.to!string;
+
+    Unique!OCBEncryption enc = new OCBEncryption(af.makeBlockCipher(algo), taglen / 8);
+    Unique!OCBDecryption dec = new OCBDecryption(af.makeBlockCipher(algo), taglen / 8);
+
+    Vector!ubyte key;
+    key.length = keylen/8;
+
+    key[keylen/8-1] = taglen;
+
+    enc.setKey(key);
+    dec.setKey(key);
+
     const Vector!ubyte empty;
     Vector!ubyte N = Vector!ubyte(12);
     Vector!ubyte C;
@@ -630,21 +602,24 @@ size_t testOcbLong(size_t taglen, in string expected)
     for(size_t i = 0; i != 128; ++i)
     {
         Vector!ubyte S = Vector!ubyte(i);
-        N[11] = i;
-        
-        C ~= ocbEncrypt(*ocb, N, S, S)[];
-        C ~= ocbEncrypt(*ocb, N, S, empty)[];
-        C ~= ocbEncrypt(*ocb, N, empty, S)[];
+
+        storeBigEndian(cast(uint)(3*i+1), &N[8]);
+        C ~= ocbEncrypt(*enc, *dec, N, S, S)[];
+        storeBigEndian(cast(uint)(3*i+2), &N[8]);
+        C ~= ocbEncrypt(*enc, *dec, N, S, empty)[];
+        storeBigEndian(cast(uint)(3*i+3), &N[8]);
+        C ~= ocbEncrypt(*enc, *dec, N, empty, S)[];
     }
-    
-    N[11] = 0;
-    const Vector!ubyte cipher = ocbEncrypt(*ocb, N, empty, C);
+
+    storeBigEndian(cast(uint)385, &N[8]);
+
+    const Vector!ubyte cipher = ocbEncrypt(*enc, *dec, N, empty, C);
     
     const string cipher_hex = hexEncode(cipher);
     
     if (cipher_hex != expected)
     {
-        logTrace("OCB AES-128 long test mistmatch " ~ cipher_hex ~ " != " ~ expected);
+        logTrace("OCB " ~ algo ~ " long test mistmatch " ~ cipher_hex ~ " != " ~ expected);
         return 1;
     }
     
@@ -657,10 +632,17 @@ static if (!SKIP_OCB_TEST) unittest
     globalState();
     logDebug("Testing ocb.d ...");
     size_t fails = 0;
-    
-    fails += testOcbLong(128, "B2B41CBF9B05037DA7F16C24A35C1C94");
-    fails += testOcbLong(96, "1A4F0654277709A5BDA0D380");
-    fails += testOcbLong(64, "B7ECE9D381FE437F");
-    
-    testReport("OCB long", 3, fails);
+
+    AlgorithmFactory af = globalState().algorithmFactory();
+
+    fails += testOcbLong(af, 128, 128, "67E944D23256C5E0B6C61FA22FDF1EA2");
+    fails += testOcbLong(af, 192, 128, "F673F2C3E7174AAE7BAE986CA9F29E17");
+    fails += testOcbLong(af, 256, 128, "D90EB8E9C977C88B79DD793D7FFA161C");
+    fails += testOcbLong(af, 128, 96, "77A3D8E73589158D25D01209");
+    fails += testOcbLong(af, 192, 96, "05D56EAD2752C86BE6932C5E");
+    fails += testOcbLong(af, 256, 96, "5458359AC23B0CBA9E6330DD");
+    fails += testOcbLong(af, 128, 64, "192C9B7BD90BA06A");
+    fails += testOcbLong(af, 192, 64, "0066BC6E0EF34E24");
+    fails += testOcbLong(af, 256, 64, "7D4EA5D445501CBE");
+    testReport("OCB long", 9, fails);
 }

@@ -44,9 +44,10 @@ public:
          TLSPolicy policy,
          RandomNumberGenerator rng,
          NextProtocolHandler next_proto = null,
+         bool is_datagram = false,
          size_t io_buf_sz = 16*1024) 
     {
-        super(output_fn, data_cb, alert_cb, handshake_cb, session_manager, rng, io_buf_sz);
+        super(output_fn, data_cb, alert_cb, handshake_cb, session_manager, rng, is_datagram, io_buf_sz);
         m_policy = policy;
         m_creds = creds;
         m_choose_next_protocol = next_proto;
@@ -116,10 +117,12 @@ protected:
             
             state.clientHello(new ClientHello(contents, type));
             
-            TLSProtocolVersion client_version = state.clientHello().Version();
+            const TLSProtocolVersion client_version = state.clientHello().Version();
             
             TLSProtocolVersion negotiated_version;
-            
+
+            const TLSProtocolVersion latest_supported = m_policy.latestSupportedVersion(client_version.isDatagramProtocol());
+
             if ((initial_handshake && client_version.knownVersion()) ||
                 (!initial_handshake && client_version == active_state.Version()))
             {
@@ -155,16 +158,22 @@ protected:
             {
                 /*
                 New negotiation using a version we don't know. Offer
-                them the best we currently know.
+                them the best we currently know and support.
                 */
-                negotiated_version = client_version.bestKnownMatch();
+                negotiated_version = latest_supported;
             }
             
             if (!m_policy.acceptableProtocolVersion(negotiated_version))
             {
                 throw new TLSException(TLSAlert.PROTOCOL_VERSION, "Client version " ~ negotiated_version.toString() ~ " is unacceptable by policy");
             }
-            
+
+            if (state.clientHello().sentFallbackSCSV())
+            {
+                if (latest_supported > client_version)
+                    throw new TLSException(TLSAlert.INAPPROPRIATE_FALLBACK, "Client signalled fallback SCSV, possible attack");
+            }
+
             secureRenegotiationCheck(state.clientHello());
             
             state.setVersion(negotiated_version);

@@ -178,7 +178,7 @@ public:
 
     override bool timeoutCheck() {
         import std.range : empty;
-        if(m_last_write == 0 || (m_flights.length > 1 && !m_flights[0].empty))
+        if (m_last_write == 0 || (m_flights.length > 1 && !m_flights[0].empty))
         {
             /*
             If we haven't written anything yet obviously no timeout.
@@ -187,10 +187,10 @@ public:
             return false;
         }
         const ulong ms_since_write = steadyClockMs() - m_last_write;
-        if(ms_since_write < m_next_timeout)
+        if (ms_since_write < m_next_timeout)
             return false;
         Vector!ushort flight;
-        if(m_flights.length == 1)
+        if (m_flights.length == 1)
             flight = m_flights[0]; // lost initial client hello
         else
             flight = m_flights[m_flights.length - 2];
@@ -199,7 +199,7 @@ public:
         foreach(msg_seq; flight)
         {
             auto msg = m_flight_data[msg_seq];
-            if(msg.epoch != epoch)
+            if (msg.epoch != epoch)
             {
                 // Epoch gap: insert the CCS
                 Vector!ubyte ccs;

@@ -1,368 +1,9 @@
-/**
-* Lzma Compressor
-* 
-* Copyright:
-* (C) 2001 Peter J Jones
-*     2001-2007 Jack Lloyd
-*     2012 Vojtech Kral
-* (C) 2014-2015 Etienne Cimon
-*
-* License:
-* Botan is released under the Simplified BSD License (see LICENSE.md)
-*/
-module botan.filters.lzma;
-import botan.constants;
+﻿module botan.compression.lzma_hd;
 
+import botan.constants;
 static if (BOTAN_HAS_LZMA):
 
-import botan.filters.filter;
-
-import botan.utils.exceptn;
-import std.conv;
-import std.c.string;
-import std.c.stdlib;
-import memutils.hashmap;
-import botan.utils.types;
-import botan.constants;
-import botan.utils.mem_ops;
-
-/**
-* Lzma Compression Filter
-*/
-final class LzmaCompression : Filter, Filterable
-{
-public:
-    override @property string name() const { return "LzmaCompression"; }
-
-    /*
-    * Compress Input with Lzma
-    */
-    override void write(const(ubyte)* input, size_t length)
-    {
-        m_lzma.m_stream.next_in = cast(const(ubyte)*)(input);
-        m_lzma.m_stream.avail_in = length;
-        
-        while (m_lzma.m_stream.avail_in != 0)
-        {
-            m_lzma.m_stream.next_out = cast(ubyte*)(m_buffer.ptr);
-            m_lzma.m_stream.avail_out = m_buffer.length;
-            
-            lzma_ret ret = lzma_code(m_lzma.m_stream, lzma_action.LZMA_RUN);
-            
-            if (ret == lzma_ret.LZMA_MEM_ERROR)
-                throw new MemoryExhaustion("Couldn't write input in Lzma");
-            else if (ret != lzma_ret.LZMA_OK)
-                throw new Exception("Lzma compression: Error writing");
-            
-            send(m_buffer.ptr, m_buffer.length - m_lzma.m_stream.avail_out);
-        }
-    }
-
-    /*
-    * Start Compressing with Lzma
-    */
-    override void startMsg()
-    {
-        clear();
-        m_lzma = new Lzma_Stream;
-        
-        lzma_ret ret = lzma_easy_encoder(m_lzma.m_stream, cast(uint) m_level, lzma_check.LZMA_CHECK_CRC64);
-        
-        if (ret == lzma_ret.LZMA_MEM_ERROR)
-            throw new MemoryExhaustion("Couldn't start message in Lzma");
-        else if (ret != lzma_ret.LZMA_OK)
-            throw new InvalidArgument("Bad setting in lzma_easy_encoder");
-    }
-
-    /*
-    * Finish Compressing with Lzma
-    */
-    override void endMsg()
-    {
-        m_lzma.m_stream.next_in = null;
-        m_lzma.m_stream.avail_in = 0;
-        
-        int ret = lzma_ret.LZMA_OK;
-        while (ret != lzma_ret.LZMA_STREAM_END)
-        {
-            m_lzma.m_stream.next_out = cast(ubyte*)(m_buffer.ptr);
-            m_lzma.m_stream.avail_out = m_buffer.length;
-            
-            ret = lzma_code(m_lzma.m_stream, lzma_action.LZMA_FINISH);
-            send(m_buffer.ptr, m_buffer.length - m_lzma.m_stream.avail_out);
-        }
-        
-        clear();
-    }
-
-    /**
-    * Flush the compressor
-    */
-    void finished()
-    {
-        m_lzma.m_stream.next_in = null;
-        m_lzma.m_stream.avail_in = 0;
-        
-        while (true)
-        {
-            m_lzma.m_stream.next_out = cast(ubyte*)(m_buffer.ptr);
-            m_lzma.m_stream.avail_out = m_buffer.length;
-            
-            lzma_ret ret = lzma_code(m_lzma.m_stream, lzma_action.LZMA_FULL_FLUSH);
-            
-            if (ret == lzma_ret.LZMA_MEM_ERROR)
-                throw new MemoryExhaustion("Couldn't finish Lzma, out of memory.");
-            else if (ret != lzma_ret.LZMA_OK && ret != lzma_ret.LZMA_STREAM_END)
-                throw new Exception("Lzma compression: Error flushing");
-            
-            send(m_buffer.ptr, m_buffer.length - m_lzma.m_stream.avail_out);
-            
-            if (m_lzma.m_stream.avail_out == m_buffer.length)
-                break;
-        }
-    }
-
-    /**
-    * Params:
-    *  level = how much effort to use on compressing (0 to 9);
-    *          higher levels are slower but tend to give better
-    *          compression
-    */
-    this(size_t l = 6)
-    {
-        m_level = (l >= 9) ? 9 : l;
-        m_buffer = SecureVector!ubyte(DEFAULT_BUFFERSIZE);
-        m_lzma = null;
-    }
-
-    ~this() { clear(); }
-
-    // Interface fallthrough
-    override void setNext(Filter* filters, size_t sz) { super.setNext(filters, sz); }
 private:
-    void clear()
-    {
-        zeroise(m_buffer);
-        
-        if (m_lzma)
-        {
-            lzma_end(m_lzma.m_stream);
-            destroy(m_lzma);
-            m_lzma = null;
-        }
-    }
-    const size_t m_level;
-
-    SecureVector!ubyte m_buffer;
-    Lzma_Stream m_lzma;
-}
-
-/**
-* Lzma Decompression Filter
-*/
-final class LzmaDecompression : Filter, Filterable
-{
-public:
-    override @property string name() const { return "LzmaDecompression"; }
-
-    /*
-    * Decompress Input with Lzma
-    */
-    override void write(const(ubyte)* input, size_t length)
-    {
-        if (length) m_no_writes = false;
-               
-        m_lzma.m_stream.next_in = input;
-        m_lzma.m_stream.avail_in = length;
-        
-        while (m_lzma.m_stream.avail_in != 0)
-        {
-            m_lzma.m_stream.next_out = cast(ubyte*)(m_buffer.ptr);
-            m_lzma.m_stream.avail_out = m_buffer.length;
-            
-            lzma_ret ret = lzma_code(m_lzma.m_stream, lzma_action.LZMA_RUN);
-            
-            if (ret != lzma_ret.LZMA_OK && ret != lzma_ret.LZMA_STREAM_END)
-            {
-                clear();
-                if (ret == lzma_ret.LZMA_DATA_ERROR)
-                    throw new DecodingError("LzmaDecompression: Data integrity error");
-                else if (ret == lzma_ret.LZMA_MEM_ERROR)
-                    throw new MemoryExhaustion("Couldn't write decompression");
-                else
-                    throw new Exception("Lzma decompression: Unknown error");
-            }
-            
-            send(m_buffer.ptr, m_buffer.length - m_lzma.m_stream.avail_out);
-            
-            if (ret == lzma_ret.LZMA_STREAM_END)
-            {
-                size_t read_from_block = length - m_lzma.m_stream.avail_in;
-                startMsg();
-                
-                m_lzma.m_stream.next_in = input + read_from_block;
-                m_lzma.m_stream.avail_in = length - read_from_block;
-                
-                input += read_from_block;
-                length -= read_from_block;
-            }
-        }
-    }
-
-    /*
-    * Start Decompressing with Lzma
-    */
-    override void startMsg()
-    {
-        clear();
-        m_lzma = new Lzma_Stream;
-        
-        lzma_ret ret = lzma_stream_decoder(m_lzma.m_stream, size_t.max, LZMA_TELL_UNSUPPORTED_CHECK | LZMA_CONCATENATED);
-        
-        if (ret == lzma_ret.LZMA_MEM_ERROR)
-            throw new MemoryExhaustion("Couldn't start decompression message");
-        else if (ret != lzma_ret.LZMA_OK)
-            throw new InvalidArgument("Bad setting in lzma_stream_decoder");
-    }
-
-    /*
-    * Finish Decompressing with Lzma
-    */
-    override void endMsg()
-    {
-        if (m_no_writes) return;
-        m_lzma.m_stream.next_in = null;
-        m_lzma.m_stream.avail_in = 0;
-        
-        int ret = lzma_ret.LZMA_OK;
-        
-        while (ret != lzma_ret.LZMA_STREAM_END)
-        {
-            m_lzma.m_stream.next_out = cast(ubyte*)(m_buffer.ptr);
-            m_lzma.m_stream.avail_out = m_buffer.length;
-            ret = lzma_code(m_lzma.m_stream, lzma_action.LZMA_FINISH);
-            
-            if (ret != lzma_ret.LZMA_OK && ret != lzma_ret.LZMA_STREAM_END)
-            {
-                clear();
-                throw new DecodingError("LzmaDecompression: Error finalizing");
-            }
-            
-            send(m_buffer.ptr, m_buffer.length - m_lzma.m_stream.avail_out);
-        }
-        
-        clear();
-    }
-
-
-    this()
-    {
-        m_buffer = SecureVector!ubyte(DEFAULT_BUFFERSIZE);
-        m_lzma = null;
-        m_no_writes = true;
-    }
-
-    ~this() { clear(); }
-
-    // Interface fallthrough
-    override void setNext(Filter* filters, size_t sz) { super.setNext(filters, sz); }
-private:
-    /*
-    * Clean up Decompression Context
-    */
-    void clear()
-    {
-        zeroise(m_buffer);
-        
-        m_no_writes = true;
-        
-        if (m_lzma)
-        {
-            lzma_end(m_lzma.m_stream);
-            destroy(m_lzma);
-            m_lzma = null;
-        }
-    }
-
-    SecureVector!ubyte m_buffer;
-    Lzma_Stream m_lzma;
-    bool m_no_writes;
-}
-
-/*
-* Allocation Information for Lzma
-*/
-class Lzma_Alloc_Info
-{
-public:
-    HashMapRef!(void*, size_t) current_allocs;
-}
-
-
-/**
-* Wrapper Type for lzma_stream
-*/
-class Lzma_Stream
-{
-public:
-    /**
-    * Underlying m_stream
-    */
-    lzma_stream* m_stream;
-
-    /**
-    * Constructor
-    */
-    this()
-    {
-        m_stream = new lzma_stream;
-        m_stream.allocator = new lzma_allocator;
-        m_stream.allocator.alloc = &lzma_malloc;
-        m_stream.allocator.free = &lzma_free;
-        m_stream.allocator.opaque = cast(void*)new Lzma_Alloc_Info;
-    }
-    
-    /**
-    * Destructor
-    */
-    ~this()
-    {
-        Lzma_Alloc_Info* info = cast(Lzma_Alloc_Info*)(m_stream.allocator.opaque);
-        destroy(info);
-        destroy(m_stream.allocator);
-        memset(m_stream, 0, (lzma_stream).sizeof);
-    }
-}
-
-
-private:
-
-/*
-* Allocation Function for Lzma
-*/
-extern(C) void* lzma_malloc(void *opaque, size_t /*nmemb*/, size_t size)
-{
-    Lzma_Alloc_Info* info = cast(Lzma_Alloc_Info*)(opaque);
-    void* ptr = malloc(size);        // It is guaranteed by liblzma doc that nmemb is always set to 1
-    info.current_allocs[ptr] = size;
-    return ptr;
-}
-
-/*
-* Allocation Function for Lzma
-*/
-extern(C) void lzma_free(void *opaque, void *ptr)
-{
-    if (!ptr) return;         // liblzma sometimes does pass zero ptr
-    
-    Lzma_Alloc_Info* info = cast(Lzma_Alloc_Info*)(opaque);
-    size_t len = (cast(const)info.current_allocs).get(ptr);
-    if (!len)
-        throw new InvalidArgument("lzma_free: Got pointer not allocated by us");
-    
-    memset(ptr, 0, len);
-    free(ptr);
-}
 
 extern(C) nothrow @nogc:
 
@@ -398,14 +39,14 @@ struct lzma_options_lzma
     uint dict_size;
     enum LZMA_DICT_SIZE_MIN     =  4096U;
     enum LZMA_DICT_SIZE_DEFAULT =  (1U << 23);
-
+    
     const ubyte *preset_dict;
     uint preset_dict_size;
     uint lc;
     enum LZMA_LCLP_MIN   = 0;
     enum LZMA_LCLP_MAX   = 4;
     enum LZMA_LC_DEFAULT = 3;
-
+    
     uint lp;
     enum LZMA_LP_DEFAULT = 0;
     uint pb;
@@ -481,7 +122,7 @@ template lzma_block_header_size_decode(uint b)
 lzma_ret lzma_block_header_size(lzma_block *block);
 lzma_ret lzma_block_header_encode(const (lzma_block)* block, ubyte* out_);
 lzma_ret lzma_block_header_decode(lzma_block* block,
-                                  lzma_allocator* allocator, const(ubyte)* in_);
+    lzma_allocator* allocator, const(ubyte)* in_);
 lzma_ret lzma_block_compressed_size(
     lzma_block* block, lzma_vli unpadded_size);
 lzma_vli lzma_block_unpadded_size(const lzma_block* block);
@@ -612,7 +253,7 @@ lzma_ret lzma_easy_buffer_encode(
     lzma_allocator *allocator, const(ubyte)* in_, size_t in_size,
     ubyte* out_, size_t *out_pos, size_t out_size);
 lzma_ret lzma_stream_encoder(lzma_stream *strm,
-                             const lzma_filter *filters, lzma_check check);
+    const lzma_filter *filters, lzma_check check);
 lzma_ret lzma_alone_encoder(
     lzma_stream *strm, const lzma_options_lzma *options);
 size_t lzma_stream_buffer_bound(size_t uncompressed_size);
@@ -668,7 +309,7 @@ struct lzma_filter
 lzma_bool lzma_filter_encoder_is_supported(lzma_vli id);
 lzma_bool lzma_filter_decoder_is_supported(lzma_vli id);
 lzma_ret lzma_filters_copy(const lzma_filter*src,
-                           lzma_filter *dest, lzma_allocator *allocator);
+    lzma_filter *dest, lzma_allocator *allocator);
 pure ulong lzma_raw_encoder_memusage(const lzma_filter *filters);
 pure ulong lzma_raw_decoder_memusage(const lzma_filter *filters);
 lzma_ret lzma_raw_encoder(
@@ -682,9 +323,9 @@ lzma_ret lzma_raw_buffer_encode(
     const(ubyte) *in_, size_t in_size, ubyte *out_,
     size_t *out_pos, size_t out_size);
 lzma_ret lzma_raw_buffer_decode(const lzma_filter *filters,
-                                lzma_allocator *allocator,
-                                const(ubyte) *in_, size_t *in_pos, size_t in_size,
-                                ubyte *out_, size_t *out_pos, size_t out_size);
+    lzma_allocator *allocator,
+    const(ubyte) *in_, size_t *in_pos, size_t in_size,
+    ubyte *out_, size_t *out_pos, size_t out_size);
 lzma_ret lzma_properties_size(
     uint *size, const lzma_filter *filter);
 lzma_ret lzma_properties_encode(
@@ -695,7 +336,7 @@ lzma_ret lzma_properties_decode(
 lzma_ret lzma_filter_flags_size(
     uint *size, const lzma_filter *filter);
 lzma_ret lzma_filter_flags_encode(const lzma_filter *filter,
-                                  ubyte *out_, size_t *out_pos, size_t out_size);
+    ubyte *out_, size_t *out_pos, size_t out_size);
 lzma_ret lzma_filter_flags_decode(
     lzma_filter *filter, lzma_allocator *allocator,
     const ubyte *in_, size_t *in_pos, size_t in_size);
@@ -812,19 +453,19 @@ lzma_ret lzma_index_encoder(
 lzma_ret lzma_index_decoder(
     lzma_stream *strm, lzma_index **i, ulong memlimit);
 lzma_ret lzma_index_buffer_encode(const lzma_index *i,
-                                  ubyte *out_, size_t *out_pos, size_t out_size);
+    ubyte *out_, size_t *out_pos, size_t out_size);
 lzma_ret lzma_index_buffer_decode(lzma_index **i,
-                                  ulong *memlimit, lzma_allocator *allocator,
-                                  const ubyte *in_, size_t *in_pos, size_t in_size);
+    ulong *memlimit, lzma_allocator *allocator,
+    const ubyte *in_, size_t *in_pos, size_t in_size);
 struct lzma_index_hash {}
 lzma_index_hash * lzma_index_hash_init(
     lzma_index_hash *index_hash, lzma_allocator *allocator);
 void lzma_index_hash_end(
     lzma_index_hash *index_hash, lzma_allocator *allocator);
 lzma_ret lzma_index_hash_append(lzma_index_hash *index_hash,
-                                lzma_vli unpadded_size, lzma_vli uncompressed_size);
+    lzma_vli unpadded_size, lzma_vli uncompressed_size);
 lzma_ret lzma_index_hash_decode(lzma_index_hash *index_hash,
-                                const ubyte *in_, size_t *in_pos, size_t in_size);
+    const ubyte *in_, size_t *in_pos, size_t in_size);
 pure lzma_vli lzma_index_hash_size(
     const lzma_index_hash *index_hash);
 enum LZMA_STREAM_HEADER_SIZE = 12;
@@ -874,9 +515,9 @@ enum LZMA_VERSION_STABILITY_ALPHA = 0;
 enum LZMA_VERSION_STABILITY_BETA = 1;
 enum LZMA_VERSION_STABILITY_STABLE = 2;
 enum LZMA_VERSION = (LZMA_VERSION_MAJOR * 10000000U 
-                     + LZMA_VERSION_MINOR * 10000U
-                     + LZMA_VERSION_PATCH * 10U
-                     + LZMA_VERSION_STABILITY);
+    + LZMA_VERSION_MINOR * 10000U
+    + LZMA_VERSION_PATCH * 10U
+    + LZMA_VERSION_STABILITY);
 static if (LZMA_VERSION_STABILITY == LZMA_VERSION_STABILITY_ALPHA)
     enum LZMA_VERSION_STABILITY_STRING = "alpha";
 else static if (LZMA_VERSION_STABILITY == LZMA_VERSION_STABILITY_BETA)
@@ -901,8 +542,8 @@ bool lzma_vli_is_valid(lzma_vli vli)
     return vli <= LZMA_VLI_MAX || (vli) == LZMA_VLI_UNKNOWN;
 }
 lzma_ret lzma_vli_encode(lzma_vli vli, size_t *vli_pos,
-                         ubyte* out_, size_t *out_pos, size_t out_size);
+    ubyte* out_, size_t *out_pos, size_t out_size);
 lzma_ret lzma_vli_decode(lzma_vli *vli, size_t *vli_pos,
-                         const(ubyte)* in_, size_t *in_pos, size_t in_size);
+    const(ubyte)* in_, size_t *in_pos, size_t in_size);
 pure uint lzma_vli_size(lzma_vli vli);
 

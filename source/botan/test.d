@@ -109,7 +109,7 @@ size_t runTestsBb(ref File src,
                   bool clear_between_cb,
                   size_t delegate(ref HashMap!(string, string)) cb)
 {
-    if(src.eof || src.error)
+    if (src.eof || src.error)
     {
         logError("Could not open input file for " ~ name_key);
         return 1;
@@ -134,12 +134,12 @@ size_t runTestsBb(ref File src,
         if (line.length == 0)
             continue;
 
-        if(line[0] == '#')
+        if (line[0] == '#')
             continue;
         
-        if(line[0] == '[' && line[$-1] == ']')
+        if (line[0] == '[' && line[$-1] == ']')
         {
-            if(fixed_name != "" && algo_count > 0)
+            if (fixed_name != "" && algo_count > 0)
                 testReport(fixed_name, algo_count, algo_fail);
             
             test_count += algo_count;
@@ -158,17 +158,17 @@ size_t runTestsBb(ref File src,
         
         vars[key] = val;
         
-        if(key == name_key)
+        if (key == name_key)
             fixed_name.length = 0;
         
-        if(key == output_key)
+        if (key == output_key)
         {
             //logTrace(vars[name_key] " ~ " ~ algo_count);
             ++algo_count;
             try
             {
                 const size_t fails = cb(vars);
-                if(fails)
+                if (fails)
                 {
                     logTrace(vars[name_key] ~ " test ", algo_count, " : ", fails, " failure");
                     algo_fail += fails;
@@ -181,7 +181,7 @@ size_t runTestsBb(ref File src,
                 assert(false);
             }
             
-            if(clear_between_cb)
+            if (clear_between_cb)
             {
                 vars.clear();
                 vars[name_key] = fixed_name;
@@ -192,7 +192,7 @@ size_t runTestsBb(ref File src,
     test_count += algo_count;
     test_fails += algo_fail;
     
-    if(fixed_name != "" && (algo_count > 0 || algo_fail > 0))
+    if (fixed_name != "" && (algo_count > 0 || algo_fail > 0))
         testReport(fixed_name, algo_count, algo_fail);
     else
         testReport(name_key, test_count, test_fails);
@@ -208,7 +208,7 @@ size_t runTests(string filename,
 {
     File vec = File(filename, "r");
     
-    if(vec.error || vec.eof)
+    if (vec.error || vec.eof)
     {
         logError("Failure opening " ~ filename);
         return 1;
@@ -227,7 +227,7 @@ size_t runTests(ref File src,
         (ref HashMap!(string, string) vars)
         {
             const string got = cb(vars);
-            if(got != vars[output_key])
+            if (got != vars[output_key])
             {
                 logTrace(name_key ~ ' ' ~ vars[name_key] ~ " got " ~ got ~ " expected " ~ vars[output_key]);
                 return 1;

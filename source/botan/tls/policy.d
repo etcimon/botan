@@ -250,13 +250,39 @@ public:
     */
     bool acceptableProtocolVersion(TLSProtocolVersion _version) const
     {
-        // By default require TLS to minimize surprise
         if (_version.isDatagramProtocol())
-            return false;
+            return (_version >= TLSProtocolVersion.DTLS_V12);
         
-        return (_version > TLSProtocolVersion.SSL_V3);
+        return (_version >= TLSProtocolVersion.TLS_V10);
+    }
+    /**
+     * Returns the more recent protocol version we are willing to
+     * use, for either TLS or DTLS depending on datagram param.
+     * Shouldn't ever need to override this unless you want to allow
+     * a user to disable use of TLS v1.2 (which is *not recommended*)
+     */
+    TLSProtocolVersion latestSupportedVersion(bool datagram) const
+    {
+        if (datagram)
+            return TLSProtocolVersion.latestDtlsVersion();
+        else
+            return TLSProtocolVersion.latestTlsVersion();
     }
 
+    /**
+     * When offering this version, should we send a fallback SCSV?
+     * Default returns true iff version is not the latest version the
+     * policy allows, exists to allow override in case of interop problems.
+     */
+    bool sendFallbackSCSV(in TLSProtocolVersion _version) const
+    {
+        return _version != latestSupportedVersion(_version.isDatagramProtocol());
+    }
+
+    /**
+     * Allows policy to reject any ciphersuites which are undesirable
+     * for whatever reason without having to reimplement ciphersuite_list
+     */
     bool acceptableCiphersuite(in TLSCiphersuite) const
     {
         return true;

@@ -116,22 +116,6 @@ public:
     }
 
     /**
-    * If this version is known, return that. Otherwise return the
-    * best (most recent) version we know of.
-    * Returns: best matching protocol version
-    */
-    TLSProtocolVersion bestKnownMatch() const
-    {
-        if (knownVersion())
-            return this; // known version is its own best match
-        
-        if (isDatagramProtocol())
-            return cast(TLSProtocolVersion) TLSProtocolVersion.DTLS_V12;
-        else
-            return cast(TLSProtocolVersion) TLSProtocolVersion.TLS_V12;
-    }
-
-    /**
     * Returns: true iff this is a DTLS version
     */
     bool isDatagramProtocol() const

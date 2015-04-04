@@ -69,7 +69,7 @@ size_t macTest(string algo, string key_hex, string in_hex, string out_hex)
     size_t fails = 0;
 
     atomicOp!"+="(total_tests, 1);
-    if(providers.empty)
+    if (providers.empty)
     {
         logTrace("Unknown algo " ~ algo);
         ++fails;
@@ -80,7 +80,7 @@ size_t macTest(string algo, string key_hex, string in_hex, string out_hex)
         atomicOp!"+="(total_tests, 1);
         auto proto = af.prototypeMac(algo, provider);
         
-        if(!proto)
+        if (!proto)
         {
             logError("Unable to get " ~ algo ~ " from " ~ provider);
             ++fails;
@@ -95,7 +95,7 @@ size_t macTest(string algo, string key_hex, string in_hex, string out_hex)
         auto h = mac.finished();
 
         atomicOp!"+="(total_tests, 1);
-        if(h != hexDecodeLocked(out_hex))
+        if (h != hexDecodeLocked(out_hex))
         {
             logError(algo ~ " " ~ provider ~ " got " ~ hexEncode(h) ~ " != " ~ out_hex);
             ++fails;

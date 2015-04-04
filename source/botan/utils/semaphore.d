@@ -28,7 +28,7 @@ public:
     {
         synchronized(m_mutex) {
             --m_value;
-            if(m_value < 0)
+            if (m_value < 0)
             {
                 m_cond.wait();
                 --m_wakeups;
@@ -44,7 +44,7 @@ public:
             
                 ++m_value;
                 
-                if(m_value <= 0)
+                if (m_value <= 0)
                 {
                     ++m_wakeups;
                     m_cond.notify();

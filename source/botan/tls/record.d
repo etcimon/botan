@@ -347,15 +347,15 @@ void writeRecord(ref SecureVector!ubyte output,
 * Decode a TLS record
 * Returns: zero if full message, else number of bytes still needed
 */
-size_t readRecord(ref SecureVector!ubyte readbuf,
-                  const(ubyte)* input, size_t input_sz,
-                  ref size_t consumed,
-                  ref SecureVector!ubyte record,
-                  ref ulong record_sequence,
-                  ref TLSProtocolVersion record_version,
-                  ref RecordType record_type,
-                  ConnectionSequenceNumbers sequence_numbers,
-                  const(ConnectionCipherState) delegate(ushort) const get_cipherstate)
+size_t readTLSRecord(ref SecureVector!ubyte readbuf,
+                     const(ubyte)* input, size_t input_sz,
+                     ref size_t consumed,
+                     ref SecureVector!ubyte record,
+                     ref ulong record_sequence,
+                     ref TLSProtocolVersion record_version,
+                     ref RecordType record_type,
+                     ConnectionSequenceNumbers sequence_numbers,
+                     const(ConnectionCipherState) delegate(ushort) const get_cipherstate)
 {
     consumed = 0;
     if (readbuf.length < TLS_HEADER_SIZE) // header incomplete?
@@ -402,41 +402,24 @@ size_t readRecord(ref SecureVector!ubyte readbuf,
     }
 
     record_version = TLSProtocolVersion(readbuf[1], readbuf[2]);
-    
-    const bool is_dtls = record_version.isDatagramProtocol();
-    
-    if (is_dtls && readbuf.length < DTLS_HEADER_SIZE)
-    {
-        if (size_t needed = fillBufferTo(readbuf, input, input_sz, consumed, DTLS_HEADER_SIZE))
-            return needed;
-        
-        assert(readbuf.length == DTLS_HEADER_SIZE,
-                           "Have an entire header");
-    }
-    
-    const size_t header_size = (is_dtls) ? DTLS_HEADER_SIZE : TLS_HEADER_SIZE;
-    
-    const size_t record_len = make_ushort(readbuf[header_size-2],
-    readbuf[header_size-1]);
+
+    assert(!record_version.isDatagramProtocol(), "Expected TLS");
+
+    const size_t record_len = make_ushort(readbuf[TLS_HEADER_SIZE-2], readbuf[TLS_HEADER_SIZE-1]);
     
     if (record_len > MAX_CIPHERTEXT_SIZE)
         throw new TLSException(TLSAlert.RECORD_OVERFLOW, "Got message that exceeds maximum size");
     
-    if (size_t needed = fillBufferTo(readbuf, input, input_sz, consumed, header_size + record_len))
+    if (size_t needed = fillBufferTo(readbuf, input, input_sz, consumed, TLS_HEADER_SIZE + record_len))
         return needed; // wrong for DTLS?
     
-    assert(cast(size_t)(header_size) + record_len == readbuf.length, "Have the full record");
+    assert(cast(size_t)(TLS_HEADER_SIZE) + record_len == readbuf.length, "Have the full record");
     
     record_type = cast(RecordType)(readbuf[0]);
     
     ushort epoch = 0;
-    
-    if (is_dtls)
-    {
-        record_sequence = loadBigEndian!ulong(&readbuf[3], 0);
-        epoch = (record_sequence >> 48);
-    }
-    else if (sequence_numbers)
+
+    if (sequence_numbers)
     {
         record_sequence = sequence_numbers.nextReadSequence();
         epoch = sequence_numbers.currentReadEpoch();
@@ -448,25 +431,18 @@ size_t readRecord(ref SecureVector!ubyte readbuf,
         epoch = 0;
     }
 
-    if (sequence_numbers && sequence_numbers.alreadySeen(record_sequence)) {
-        readbuf.clear();
-        return 0;
-    }
-    
-    ubyte* record_contents = &readbuf[header_size];
+    ubyte* record_contents = &readbuf[TLS_HEADER_SIZE];
     
     if (epoch == 0) // Unencrypted initial handshake
     {
-        record[] = readbuf.ptr[header_size .. header_size + record_len];
+        record[] = readbuf.ptr[TLS_HEADER_SIZE .. TLS_HEADER_SIZE + record_len];
         readbuf.clear();
         return 0; // got a full record
     }
     
     // Otherwise, decrypt, check MAC, return plaintext
 	auto ccs = get_cipherstate(epoch);
-    ConnectionCipherState cipherstate = cast(ConnectionCipherState) &ccs;
-    
-    // FIXME: DTLS reordering might cause us not to have the cipher state
+    ConnectionCipherState cipherstate = cast(ConnectionCipherState) ccs;
     
     assert(cipherstate, "Have cipherstate for this epoch");
     
@@ -485,6 +461,113 @@ size_t readRecord(ref SecureVector!ubyte readbuf,
     return 0;
 }
 
+size_t readDTLSRecord(ref SecureVector!ubyte readbuf,
+                      const(ubyte)* input, size_t input_sz,
+                      ref size_t consumed,
+                      ref SecureVector!ubyte record,
+                      ref ulong record_sequence,
+                      ref TLSProtocolVersion record_version,
+                      ref RecordType record_type,
+                      ConnectionSequenceNumbers sequence_numbers,
+                      const(ConnectionCipherState) delegate(ushort) const get_cipherstate)
+{
+    consumed = 0;
+    if (readbuf.length < DTLS_HEADER_SIZE) // header incomplete?
+    {
+        if (fillBufferTo(readbuf, input, input_sz, consumed, DTLS_HEADER_SIZE))
+        {
+            readbuf.clear();
+            return 0;
+        }
+
+        assert(readbuf.length == DTLS_HEADER_SIZE, "Have an entire header");
+    }
+
+    record_version = TLSProtocolVersion(readbuf[1], readbuf[2]);
+    
+    assert(record_version.isDatagramProtocol(), "Expected DTLS");
+    
+    const size_t record_len = make_ushort(readbuf[DTLS_HEADER_SIZE-2], readbuf[DTLS_HEADER_SIZE-1]);
+    
+    if (record_len > MAX_CIPHERTEXT_SIZE)
+        throw new TLSException(TLSAlert.RECORD_OVERFLOW, "Got message that exceeds maximum size");
+    
+    if (fillBufferTo(readbuf, input, input_sz, consumed, DTLS_HEADER_SIZE + record_len))
+    {
+        // Truncated packet?
+        readbuf.clear();
+        return 0; // wrong for DTLS?
+    }
+
+    assert(cast(size_t)(DTLS_HEADER_SIZE) + record_len == readbuf.length, "Have the full record");
+    
+    record_type = cast(RecordType)(readbuf[0]);
+    
+    ushort epoch = 0;
+
+    record_sequence = loadBigEndian!ulong(&readbuf[3], 0);
+    epoch = (record_sequence >> 48);
+    
+    if (sequence_numbers && sequence_numbers.alreadySeen(record_sequence)) 
+    {
+        readbuf.clear();
+        return 0;
+    }
+    
+    ubyte* record_contents = &readbuf[DTLS_HEADER_SIZE];
+    
+    if (epoch == 0) // Unencrypted initial handshake
+    {
+        record[] = readbuf.ptr[DTLS_HEADER_SIZE .. DTLS_HEADER_SIZE + record_len];
+        readbuf.clear();
+        return 0; // got a full record
+    }
+    try
+    {
+        // Otherwise, decrypt, check MAC, return plaintext
+        auto ccs = get_cipherstate(epoch);
+        ConnectionCipherState cipherstate = cast(ConnectionCipherState) ccs;
+
+        assert(cipherstate, "Have cipherstate for this epoch");
+        
+        decryptRecord(record,
+                      record_contents,
+                      record_len,
+                      record_sequence,
+                      record_version,
+                      record_type,
+                      cipherstate);
+    } catch (Exception e) {
+        readbuf.clear();
+        record_type = NO_RECORD;
+        return 0;
+    }
+
+    if (sequence_numbers)
+        sequence_numbers.readAccept(record_sequence);
+    
+    readbuf.clear();
+    return 0;
+}
+
+size_t readRecord(ref SecureVector!ubyte readbuf,
+                  const(ubyte)* input, size_t input_sz,
+                  bool is_datagram,
+                  ref size_t consumed,
+                  ref SecureVector!ubyte record,
+                  ref ulong record_sequence,
+                  ref TLSProtocolVersion record_version,
+                  ref RecordType record_type,
+                  ConnectionSequenceNumbers sequence_numbers,
+                  const(ConnectionCipherState) delegate(ushort) const get_cipherstate)
+{
+    if (is_datagram)
+        return readDTLSRecord(readbuf, input, input_sz, consumed, record, record_sequence, record_version,
+                              record_type, sequence_numbers, get_cipherstate);
+    else
+        return readTLSRecord(readbuf, input, input_sz, consumed, record, record_sequence, record_version,
+                             record_type, sequence_numbers, get_cipherstate);
+}
 
 private:
                     

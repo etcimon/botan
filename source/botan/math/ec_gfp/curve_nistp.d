@@ -60,7 +60,7 @@ abstract class CurveGFpNIST : CurveGFpRepr
     */
     override void curveMul(ref BigInt z, const ref BigInt x, const ref BigInt y, ref SecureVector!word ws) const
     {
-        if(x.isZero() || y.isZero())
+        if (x.isZero() || y.isZero())
         {
             z = 0;
             return;
@@ -89,7 +89,7 @@ abstract class CurveGFpNIST : CurveGFpRepr
     */
     override void curveSqr(ref BigInt z, const ref BigInt x, ref SecureVector!word ws) const
     {
-        if(x.isZero())
+        if (x.isZero())
         {
             z = 0;
             return;
@@ -160,10 +160,10 @@ public:
         
         const size_t x_sw = x.sigWords();
         
-        if(x_sw < p_words)
+        if (x_sw < p_words)
             return; // already smaller
         
-        if(ws.length < p_words + 1)
+        if (ws.length < p_words + 1)
             ws.resize(p_words + 1);
         
         clearMem(ws.ptr, ws.length);

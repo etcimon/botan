@@ -12,7 +12,7 @@
 module botan.cert.cvc.test;
 
 import botan.constants;
-static if(BOTAN_TEST && BOTAN_HAS_CARD_VERIFIABLE_CERTIFICATES):
+static if (BOTAN_TEST && BOTAN_HAS_CARD_VERIFIABLE_CERTIFICATES):
 
 import botan.test;
 import botan.rng.auto_rng;

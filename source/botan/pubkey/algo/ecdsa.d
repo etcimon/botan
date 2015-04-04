@@ -764,13 +764,13 @@ size_t eccPointMul(in string group_id,
     
     size_t fails = 0;
     
-    if(p.getAffineX() != X)
+    if (p.getAffineX() != X)
     {
         logError( p.getAffineY().toString() ~ " != " ~ X.toString() ~ "\n");
         ++fails;
     }
     
-    if(p.getAffineY() != Y)
+    if (p.getAffineY() != Y)
     {
         logError( p.getAffineY().toString() ~ " != " ~ Y.toString() ~ "\n");
         ++fails;

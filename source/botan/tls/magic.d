@@ -33,12 +33,11 @@ enum : ConnectionSide { CLIENT = 1, SERVER = 2 }
 alias RecordType = ubyte;
 enum : RecordType {
     NO_RECORD             = 0,
-
     CHANGE_CIPHER_SPEC    = 20,
     ALERT                 = 21,
     HANDSHAKE             = 22,
     APPLICATION_DATA      = 23,
-    HEARTBEAT             = 24,
+    HEARTBEAT             = 24
 }
 
 alias HandshakeType = ubyte;
