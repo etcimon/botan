@@ -267,19 +267,22 @@ CompressorTransform makeDecompressor(in string type)
 
     throw new Exception("Unknown compression type " ~ type);
 }
-/*
-unittest {  
-    logDebug("Testing compression ...");  
 
-    CompressorTransform zlib = makeCompressor("zlib", 10);
-    SecureVector!ubyte buf;
-    SecureVector!ubyte verif;
-    buf ~= "Some message";
-    verif = buf.dup;
-    zlib.finish(buf);
+static if (!SKIP_COMPRESSION_TEST) unittest {  
+    logDebug("Testing compress.d ...");  
+	static if (BOTAN_HAS_ZLIB) {
+	    CompressorTransform zlib = makeCompressor("zlib", 9);
+	    SecureVector!ubyte buf;
+	    SecureVector!ubyte verif;
+	    buf ~= "Some message";
+	    verif = buf.dup;
+		zlib.start();
+	    zlib.finish(buf);
 
-    CompressorTransform dec = makeDecompressor("zlib");
-    dec.finish(buf);
-    assert(buf == verif);
+	    CompressorTransform dec = makeDecompressor("zlib");
+		dec.start();
+		dec.finish(buf);
+	    assert(buf == verif);
+		logDebug("Zlib ... PASSED");
+	}
 }
-*/

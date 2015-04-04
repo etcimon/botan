@@ -265,7 +265,7 @@ public:
         
         int rc = deflateInit2(streamp(), cast(int) level, Z_DEFLATED, wbits, 8, Z_DEFAULT_STRATEGY);
         if (rc != Z_OK)
-            throw new Exception("zlib deflate initialization failed");
+            throw new Exception("zlib deflate initialization failed: " ~ rc.to!string);
     }
     
     ~this()

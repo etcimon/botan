@@ -21,6 +21,7 @@ const SKIP_RFC3394_TEST = false;
 const SKIP_TSS_TEST = false;
 const SKIP_HASH_TEST = false;
 const SKIP_KDF_TEST = false;
+const SKIP_COMPRESSION_TEST = false;
 const SKIP_MAC_TEST = false;
 const SKIP_BIGINT_TEST = false;
 const SKIP_EC_GFP_TEST = false;
