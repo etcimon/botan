@@ -2,8 +2,8 @@
 
 import botan.constants;
 static if (BOTAN_HAS_LZMA):
-
-private:
+import std.conv;
+package:
 
 extern(C) nothrow @nogc:
 
@@ -12,12 +12,9 @@ enum LZMA_FILTER_LZMA2 = 0x21UL;
 
 enum lzma_match_finder
 {
-    LZMA_MF_HC3     = 0x03,
-    
-    LZMA_MF_HC4     = 0x04,
-    
-    LZMA_MF_BT2     = 0x12,
-    
+    LZMA_MF_HC3     = 0x03,    
+    LZMA_MF_HC4     = 0x04,    
+    LZMA_MF_BT2     = 0x12,    
     LZMA_MF_BT3     = 0x13,
     LZMA_MF_BT4     = 0x14
 }
@@ -159,7 +156,8 @@ enum lzma_reserved_enum
 {
     LZMA_RESERVED_ENUM      = 0
 }
-enum lzma_ret
+alias lzma_ret = int;
+enum : lzma_ret
 {
     LZMA_OK                 = 0,
     LZMA_STREAM_END         = 1,
@@ -174,7 +172,8 @@ enum lzma_ret
     LZMA_BUF_ERROR          = 10,
     LZMA_PROG_ERROR         = 11,
 }
-enum lzma_action
+alias lzma_action = int;
+enum : lzma_action
 {
     LZMA_RUN = 0,
     LZMA_SYNC_FLUSH = 1,
@@ -224,7 +223,8 @@ pure ulong lzma_memusage(const lzma_stream *strm);
 pure ulong lzma_memlimit_get(const lzma_stream *strm);
 lzma_ret lzma_memlimit_set(lzma_stream *strm, ulong memlimit);
 
-enum lzma_check
+alias lzma_check = int;
+enum : lzma_check
 {
     LZMA_CHECK_NONE     = 0,
     LZMA_CHECK_CRC32    = 1,

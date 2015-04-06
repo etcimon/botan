@@ -26,12 +26,7 @@ LibraryState globalState()
         /* Lazy initialization. Botan still needs to be deinitialized later
             on or memory might leak.
         */
-        try g_lib_state.initialize();
-        catch (Throwable e){
-            logError(e.toString());
-            foreach(line; e.info) { logError(line); }
-            assert(false);
-        }
+        g_lib_state.initialize();
     }
     return g_lib_state;
 }

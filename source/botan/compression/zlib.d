@@ -321,7 +321,7 @@ public:
         if (rc == Z_MEM_ERROR)
             throw new InvalidMemoryOperationError();
         else if (rc != Z_OK && rc != Z_STREAM_END)
-            throw new Exception("zlib deflate error");
+            throw new Exception("zlib deflate error: " ~ rc.to!string);
         
         return (rc == Z_STREAM_END);
     }

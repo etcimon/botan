@@ -22,39 +22,42 @@ import memutils.unique;
 class CompressionAllocInfo
 {
 public:
-    extern(C) static void* malloc(T)(void* self, T n, T size)
+    extern(C) static void* malloc(T)(void* self, T n, T size) nothrow
     {
         return (cast(CompressionAllocInfo)self).doMalloc(n, size);
     }
     
-    extern(C) static void free(void* self, void* ptr)
+	extern(C) static void free(void* self, void* ptr) nothrow
     {
         (cast(CompressionAllocInfo)self).doFree(ptr);
     }
     
 private:
-    void* doMalloc(size_t n, size_t size)
+    void* doMalloc(size_t n, size_t size) nothrow
     {
         import std.c.stdlib : malloc;
         const size_t total_sz = n * size;
         
         void* ptr = malloc(total_sz);
-        m_current_allocs[ptr] = total_sz;
+        try m_current_allocs[ptr] = total_sz;
+		catch(Exception e) assert(false, e.msg);
         return ptr;
     }
-    void doFree(void* ptr)
+    void doFree(void* ptr) nothrow
     {
         if (ptr)
         {
             import std.c.stdlib : free;
-            auto sz = ptr in m_current_allocs;
-            
+			size_t* sz;
+			try sz = ptr in m_current_allocs;
+			catch (Exception e) assert(false, e.msg);
             if (sz is null)
-                throw new Exception("CompressionAllocInfo.free got pointer not allocated by us");
+                assert(false, "CompressionAllocInfo.free got pointer not allocated by us");
             
             clearMem(ptr, *sz);
             free(ptr);
-            m_current_allocs.remove(ptr);
+            try m_current_allocs.remove(ptr);
+			catch (Exception e) assert(false, e.msg);
         }
     }
     

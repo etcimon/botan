@@ -47,8 +47,8 @@ protected:
     {
         return new LZMACompressionStream(m_level);
     }
-    override void flush(ref SecureVector!ubyte buf, size_t offset) { super.flush(buf, offset); }
-    
+
+
     const size_t m_level;
     // interface fall-through
     override void flush(ref SecureVector!ubyte buf, size_t offset) { super.flush(buf, offset); }
@@ -76,7 +76,7 @@ protected:
     {
         return new LZMADecompressionStream;
     }
-    override void flush(ref SecureVector!ubyte buf, size_t offset) { super.flush(buf, offset); }
+
     // interface fall-through
     override void flush(ref SecureVector!ubyte buf, size_t offset) { super.flush(buf, offset); }
     override string provider() const { return "core"; }
@@ -91,13 +91,13 @@ protected:
     override void clear() { return super.clear(); }
 }
 
-class LZMAStream : ZlibStyleStream!(lzma_stream, ubyte)
+class LZMAStream : ZlibStyleStream!(lzma_stream, ubyte), CompressionStream
 {
 public:
     this()
     {
         auto a = new .lzma_allocator;
-        a.opaque = alloc();
+        a.opaque = cast(void*)alloc();
         a.alloc = &CompressionAllocInfo.malloc!size_t;
         a.free = &CompressionAllocInfo.free;
         streamp().allocator = a;
@@ -124,6 +124,11 @@ public:
     override uint runFlag() const { return LZMA_RUN; }
     override uint flushFlag() const { return LZMA_FULL_FLUSH; }
     override uint finishFlag() const { return LZMA_FINISH; }
+
+	override void nextIn(ubyte* b, size_t len) { super.nextIn(b, len); }    
+	override void nextOut(ubyte* b, size_t len) { super.nextOut(b, len); }    
+	override size_t availIn() const { return super.availIn(); }    
+	override size_t availOut() const { return super.availOut; }
 }
 
 class LZMACompressionStream : LZMAStream
@@ -131,12 +136,12 @@ class LZMACompressionStream : LZMAStream
 public:
     this(size_t level)
     {
-        lzma_ret rc = .lzma_easy_encoder(streamp(), level, LZMA_CHECK_CRC64);
+        lzma_ret rc = .lzma_easy_encoder(streamp(), cast(uint) level, LZMA_CHECK_CRC64);
         
         if (rc == LZMA_MEM_ERROR)
             throw new InvalidMemoryOperationError();
         else if (rc != LZMA_OK)
-            throw new Exception("lzma compress initialization failed");
+            throw new Exception("lzma compress initialization failed: " ~ rc.to!string);
     }
 }
 
@@ -145,7 +150,7 @@ class LZMADecompressionStream : LZMAStream
 public:
     this()
     {
-        lzma_ret rc = .lzma_stream_decoder(streamp(), UINT64_MAX,
+        lzma_ret rc = .lzma_stream_decoder(streamp(), ulong.max,
             LZMA_TELL_UNSUPPORTED_CHECK);
         
         if (rc == LZMA_MEM_ERROR)

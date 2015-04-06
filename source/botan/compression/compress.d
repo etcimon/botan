@@ -231,7 +231,7 @@ CompressorTransform makeCompressor(in string type, size_t level)
     static if (BOTAN_HAS_BZIP2)
     {
         if (type == "bzip2")
-            return new BzipCompression(level);
+            return new Bzip2Compression(level);
     }
     
     static if (BOTAN_HAS_LZMA)
@@ -256,7 +256,7 @@ CompressorTransform makeDecompressor(in string type)
     static if (BOTAN_HAS_BZIP2)
     {
         if (type == "bzip2")
-            return new BzipDecompression;
+            return new Bzip2Decompression;
     }
     
     static if (BOTAN_HAS_LZMA)
@@ -270,19 +270,71 @@ CompressorTransform makeDecompressor(in string type)
 
 static if (!SKIP_COMPRESSION_TEST) unittest {  
     logDebug("Testing compress.d ...");  
-	static if (BOTAN_HAS_ZLIB) {
-	    CompressorTransform zlib = makeCompressor("zlib", 9);
-	    SecureVector!ubyte buf;
-	    SecureVector!ubyte verif;
-	    buf ~= "Some message";
-	    verif = buf.dup;
-		zlib.start();
-	    zlib.finish(buf);
-
-	    CompressorTransform dec = makeDecompressor("zlib");
-		dec.start();
-		dec.finish(buf);
-	    assert(buf == verif);
-		logDebug("Zlib ... PASSED");
+	{
+		static if (BOTAN_HAS_ZLIB) {
+			CompressorTransform comp = makeCompressor("zlib", 9); // level 1-9
+			SecureVector!ubyte buf;
+			SecureVector!ubyte verif;
+			buf ~= "Some message";
+			verif = buf.dup;
+			comp.start();
+			comp.finish(buf);
+			
+			CompressorTransform dec = makeDecompressor("zlib");
+			dec.start();
+			dec.finish(buf);
+			assert(buf == verif);
+			logDebug("Zlib ... PASSED");
+		}
+	}
+	{
+		static if (BOTAN_HAS_ZLIB) {
+			CompressorTransform comp = makeCompressor("deflate", 9); // level 1-9
+			SecureVector!ubyte buf;
+			SecureVector!ubyte verif;
+			buf ~= "Some message";
+			verif = buf.dup;
+			comp.start();
+			comp.finish(buf);
+			
+			CompressorTransform dec = makeDecompressor("deflate");
+			dec.start();
+			dec.finish(buf);
+			assert(buf == verif);
+			logDebug("Deflate ... PASSED");
+		}
+	}
+	{
+		static if (BOTAN_HAS_BZIP2) {
+			CompressorTransform comp = makeCompressor("bzip2", 9); // level 1-9
+			SecureVector!ubyte buf;
+			SecureVector!ubyte verif;
+			buf ~= "Some message";
+			verif = buf.dup;
+			comp.start();
+			comp.finish(buf);
+			
+			CompressorTransform dec = makeDecompressor("bzip2");
+			dec.start();
+			dec.finish(buf);
+			assert(buf == verif);
+			logDebug("Bzip2 ... PASSED");
+		}
+	}
+	{
+		static if (BOTAN_HAS_LZMA) {
+			CompressorTransform comp = makeCompressor("lzma", 9); // level 1-9
+			SecureVector!ubyte buf;
+			SecureVector!ubyte verif;
+			buf ~= "Some message ";
+			verif = buf.dup;
+			comp.start();
+			comp.finish(buf);
+			CompressorTransform dec = makeDecompressor("lzma");
+			dec.start();
+			dec.finish(buf);
+			assert(buf == verif);
+			logDebug("LZMA ... PASSED");
+		}
 	}
 }

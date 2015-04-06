@@ -20,7 +20,7 @@ module botan.compression.bzip2_hd;
 import botan.constants;
 static if (BOTAN_HAS_BZIP2):
 
-private extern(C) nothrow:
+package extern(C) nothrow:
 
 enum BZ_RUN               = 0;
 enum BZ_FLUSH             = 1;
