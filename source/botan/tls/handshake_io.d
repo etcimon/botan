@@ -61,7 +61,9 @@ public:
 package final class StreamHandshakeIO : HandshakeIO
 {
 public:
-    this(void delegate(ubyte, const ref Vector!ubyte) writer) 
+	alias InternalDataWriter = void delegate(ubyte, const ref Vector!ubyte);
+
+	this(InternalDataWriter writer) 
     {
         m_send_hs = writer;
     }
@@ -145,7 +147,7 @@ public:
 
 private:
     Vector!ubyte m_queue;
-    void delegate(ubyte, const ref Vector!ubyte) m_send_hs;
+	InternalDataWriter m_send_hs;
 }
 
 /**
@@ -153,6 +155,7 @@ private:
 */
 package final class DatagramHandshakeIO : HandshakeIO
 {
+	alias InternalDataWriter = void delegate(ushort, ubyte, const ref Vector!ubyte);
 private:
     // 1 second initial timeout, 60 second max - see RFC 6347 sec 4.2.4.1
     const ulong INITIAL_TIMEOUT = 1*1000;
@@ -163,7 +166,7 @@ private:
     }
 
 public:
-    this(ConnectionSequenceNumbers seq, void delegate(ushort, ubyte, const ref Vector!ubyte) writer, ushort mtu) 
+	this(ConnectionSequenceNumbers seq, InternalDataWriter writer, ushort mtu) 
     {
         m_seqs = seq;
         m_flights.length = 1;
@@ -493,7 +496,7 @@ private:
 
     ushort m_in_message_seq = 0;
     ushort m_out_message_seq = 0;
-    void delegate(ushort, ubyte, const ref Vector!ubyte) m_send_hs;
+	InternalDataWriter m_send_hs;
     ushort m_mtu;
 }
 

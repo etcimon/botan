@@ -129,7 +129,7 @@ TLSCredentialsManager createCreds(RandomNumberGenerator rng)
     X509CertOptions ca_opts;
     ca_opts.common_name = "Test CA";
     ca_opts.country = "US";
-    ca_opts.cAKey(1);
+    ca_opts.CAKey(1);
     
     X509Certificate ca_cert = x509self.createSelfSignedCert(ca_opts, ca_key, "SHA-256", rng);
     

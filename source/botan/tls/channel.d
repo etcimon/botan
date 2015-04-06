@@ -35,12 +35,41 @@ import botan.utils.get_byte;
 import memutils.hashmap;
 import std.string : toStringz;
 
+alias DataWriter = void delegate(in ubyte[]);
+alias OnClearData = void delegate(in ubyte[]);
+alias OnAlert = void delegate(in TLSAlert, in ubyte[]);
+alias OnHandshakeComplete = bool delegate(const ref TLSSession);
+
 /**
 * Generic interface for TLS endpoint
 */
 class TLSChannel
 {
 public:
+
+	this(DataWriter output_fn,
+		OnClearData data_cb,
+		OnAlert alert_cb,
+		OnHandshakeComplete handshake_cb,
+		TLSSessionManager session_manager,
+		RandomNumberGenerator rng,
+		bool is_datagram,
+		size_t reserved_io_buffer_size)
+	{
+		m_handshake_cb = handshake_cb;
+		m_data_cb = data_cb;
+		m_alert_cb = alert_cb;
+		m_output_fn = output_fn;
+		m_rng = rng;
+		m_session_manager = session_manager;
+		/* epoch 0 is plaintext, thus null cipher state */
+		//m_write_cipher_states[cast(ushort)0] = ConnectionCipherState.init;
+		//m_read_cipher_states[cast(ushort)0] = ConnectionCipherState.init;
+		
+		m_writebuf.reserve(reserved_io_buffer_size);
+		m_readbuf.reserve(reserved_io_buffer_size);
+	}
+
     /**
     * Inject TLS traffic received from counterparty
     * Returns: a hint as the how many more bytes we need to process the
@@ -455,29 +484,6 @@ public:
             throw new Exception("key_material_export connection not active");
     }
 
-    this(void delegate(in ubyte[]) output_fn,
-         void delegate(in ubyte[]) data_cb,
-         void delegate(in TLSAlert, in ubyte[]) alert_cb,
-         bool delegate(const ref TLSSession) handshake_cb,
-         TLSSessionManager session_manager,
-         RandomNumberGenerator rng,
-         bool is_datagram,
-         size_t reserved_io_buffer_size)
-    {
-        m_handshake_cb = handshake_cb;
-        m_data_cb = data_cb;
-        m_alert_cb = alert_cb;
-        m_output_fn = output_fn;
-        m_rng = rng;
-        m_session_manager = session_manager;
-        /* epoch 0 is plaintext, thus null cipher state */
-        //m_write_cipher_states[cast(ushort)0] = ConnectionCipherState.init;
-        //m_read_cipher_states[cast(ushort)0] = ConnectionCipherState.init;
-        
-        m_writebuf.reserve(reserved_io_buffer_size);
-        m_readbuf.reserve(reserved_io_buffer_size);
-    }
-
     ~this()
     {
         resetState();
@@ -707,7 +713,7 @@ protected:
 
     bool saveSession(const ref TLSSession session) const { return m_handshake_cb(session); }
 
-private:
+package:
 
     size_t maximumFragmentSize() const
     {
@@ -728,7 +734,7 @@ private:
     void sendRecord(ubyte record_type, const ref Vector!ubyte record)
     {
         sendRecordArray(sequenceNumbers().currentWriteEpoch(),
-                          record_type, record.ptr, record.length);
+                        record_type, record.ptr, record.length);
     }
 
     void sendRecordUnderEpoch(ushort epoch, ubyte record_type, const ref Vector!ubyte record)
@@ -840,10 +846,10 @@ private:
     bool m_is_datagram;
 
     /* callbacks */
-    bool delegate(const ref TLSSession) m_handshake_cb;
-    void delegate(in ubyte[]) m_data_cb;
-    void delegate(in TLSAlert, in ubyte[]) m_alert_cb;
-    void delegate(in ubyte[]) m_output_fn;
+    OnHandshakeComplete m_handshake_cb;
+    OnClearData m_data_cb;
+    OnAlert m_alert_cb;
+    DataWriter m_output_fn;
 
     /* external state */
     RandomNumberGenerator m_rng;

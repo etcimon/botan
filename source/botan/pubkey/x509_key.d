@@ -184,7 +184,7 @@ X509CertOptions caOpts()
     opts.dns = "botan.randombit.net";
     opts.email = "testing@globecsys.com";
     
-    opts.cAKey(1);
+    opts.CAKey(1);
     
     return opts;
 }

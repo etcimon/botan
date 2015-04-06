@@ -50,7 +50,7 @@ public:
     *          signatures are also rejected.
     *  ocsp_all = where to use all intermediates
     */
-    this(bool require_rev = false, size_t key_strength = 80, bool ocsp_all = false) 
+    this(bool require_rev = false, size_t key_strength = 80, bool ocsp_all = false, int max_cert_chain_length = 9) 
     {
         m_require_revocation_information = require_rev;
         m_ocsp_all_intermediates = ocsp_all;
@@ -78,13 +78,17 @@ public:
     this(bool require_rev, 
          size_t minimum_key_strength, 
          bool ocsp_all_intermediates, 
-         RBTreeRef!string trusted_hashes) 
+		 RBTreeRef!string trusted_hashes, 
+		 int max_cert_chain_length = 9) 
     {
         m_require_revocation_information = require_rev;
         m_ocsp_all_intermediates = ocsp_all_intermediates;
         m_trusted_hashes.insert((*trusted_hashes)[]);
         m_minimum_key_strength = minimum_key_strength;
     }
+
+	int maxCertChainLength() const { return m_max_cert_chain_length; }
+	void setMaxCertChainLength(int sz) { m_max_cert_chain_length = sz; }
 
     bool requireRevocationInformation() const
     { return m_require_revocation_information; }
@@ -93,16 +97,30 @@ public:
     { return m_ocsp_all_intermediates; }
 
     ref const(RBTree!string) trustedHashes() const
-    { return m_trusted_hashes; }
+    { 
+		if (!m_trusted_hashes.empty)
+			return m_trusted_hashes;
+		return m_def_trusted_hashes;
+	}
 
     size_t minimumKeyStrength() const
     { return m_minimum_key_strength; }
 
 private:
-    bool m_require_revocation_information;
-    bool m_ocsp_all_intermediates;
-    RBTree!string m_trusted_hashes;
-    size_t m_minimum_key_strength;
+    bool m_require_revocation_information = false;
+    bool m_ocsp_all_intermediates = false;
+	int m_max_cert_chain_length = 9;
+	RBTree!string m_trusted_hashes;
+    size_t m_minimum_key_strength = 80;
+
+	static this() {
+		m_def_trusted_hashes.insert("SHA-160");		
+		m_def_trusted_hashes.insert("SHA-224");
+		m_def_trusted_hashes.insert("SHA-256");
+		m_def_trusted_hashes.insert("SHA-384");
+		m_def_trusted_hashes.insert("SHA-512");
+	}
+	static RBTree!string m_def_trusted_hashes;
 }
 
 /**
@@ -266,6 +284,7 @@ PathValidationResult
                        auto const ref PathValidationRestrictions restrictions,
                        const ref Vector!CertificateStore certstores)
 {
+	const size_t max_iterations = restrictions.maxCertChainLength();
     if (end_certs.empty) 
         throw new InvalidArgument("x509PathValidate called with no subjects");
     Vector!X509Certificate cert_path = Vector!X509Certificate();
@@ -273,9 +292,9 @@ PathValidationResult
 
     Unique!CertificateStoreOverlay extra = new CertificateStoreOverlay(end_certs);
     CertificateStore cert_store = cast(CertificateStore)*extra;
-    
+	size_t i;
     // iterate until we reach a root or cannot find the issuer
-    while (!cert_path.back().isSelfSigned())
+    while (!cert_path.back().isSelfSigned() && ++i < max_iterations)
     {
         X509Certificate cert = findIssuingCert(cert_path.back(), cert_store, certstores);
         if (!cert) {
@@ -283,7 +302,8 @@ PathValidationResult
         }
         cert_path.pushBack(cert);
     }
-
+	if (i >= max_iterations)
+		throw new PKCS8Exception("Max iterations reached when attempting to find root certificate");
     auto chain = checkChain(cert_path, restrictions, certstores);
 
     return PathValidationResult(chain, cert_path);

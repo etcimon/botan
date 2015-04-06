@@ -13,7 +13,7 @@ module botan.tls.server;
 import botan.constants;
 static if (BOTAN_HAS_TLS):
 
-import botan.tls.channel;
+public import botan.tls.channel;
 import botan.tls.credentials_manager;
 import botan.tls.handshake_state;
 import botan.tls.messages;
@@ -24,26 +24,39 @@ import memutils.hashmap;
 import botan.utils.types;
 import std.datetime;
 
+alias NextProtocolHandler = string delegate(in Vector!string);
+alias SNIHandler = SNIContextSwitchInfo delegate(string);
+
+struct SNIContextSwitchInfo
+{
+	TLSSessionManager session_manager;
+	TLSCredentialsManager credentials;
+	TLSPolicy policy;
+	NextProtocolHandler next_proto;
+	void* user_data;
+}
+
+
 /**
 * TLS Server
 */
 final class TLSServer : TLSChannel
 {
 public:
-    alias NextProtocolHandler = string delegate(in Vector!string);
 
     /**
     * TLSServer initialization
     */
-    this(void delegate(in ubyte[]) output_fn,
-         void delegate(in ubyte[]) data_cb,
-         void delegate(in TLSAlert, in ubyte[]) alert_cb,
-         bool delegate(const ref TLSSession) handshake_cb,
+    this(DataWriter output_fn,
+         OnClearData data_cb,
+         OnAlert alert_cb,
+         OnHandshakeComplete handshake_cb,
          TLSSessionManager session_manager,
          TLSCredentialsManager creds,
          TLSPolicy policy,
          RandomNumberGenerator rng,
          NextProtocolHandler next_proto = null,
+		 SNIHandler sni_handler = null,
          bool is_datagram = false,
          size_t io_buf_sz = 16*1024) 
     {
@@ -51,6 +64,7 @@ public:
         m_policy = policy;
         m_creds = creds;
         m_choose_next_protocol = next_proto;
+		m_sni_handler = sni_handler;
     }
 
     /**
@@ -58,6 +72,8 @@ public:
     * NPN extension) for this connection, if any
     */
     string nextProtocol() const { return m_next_protocol; }
+
+	void* getUserData() { return m_user_data; }
 
 protected:
     override Vector!X509Certificate getPeerCertChain(in HandshakeState state) const
@@ -117,6 +133,14 @@ protected:
             
             state.clientHello(new ClientHello(contents, type));
             
+			// choose a proper context depending on hostname and register the userdata
+			{
+				const string sni_hostname = state.clientHello().sniHostname();
+				SNIContextSwitchInfo ctx = m_sni_handler(sni_hostname);
+				if (ctx !is SNIContextSwitchInfo.init)
+					switchContext(ctx);
+			}
+
             const TLSProtocolVersion client_version = state.clientHello().Version();
             
             TLSProtocolVersion negotiated_version;
@@ -506,12 +530,23 @@ protected:
         return state;
     }
 
+	void switchContext(SNIContextSwitchInfo info)
+	{
+		m_creds = info.credentials;
+		m_session_manager = info.session_manager;
+		m_policy = info.policy;
+		m_choose_next_protocol = info.next_proto;
+		m_user_data = info.user_data;
+	}
+
 private:
     TLSPolicy m_policy;
     TLSCredentialsManager m_creds;
 
     NextProtocolHandler m_choose_next_protocol;
+	SNIHandler m_sni_handler;
     string m_next_protocol;
+	void* m_user_data;
 }
 
 private:

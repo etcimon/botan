@@ -153,7 +153,7 @@ public:
     * Params:
     *  limit = the path limit to be set in the BasicConstraints extension.
     */
-    void cAKey(size_t limit = 1)
+    void CAKey(size_t limit = 1)
     {
         is_CA = true;
         path_limit = limit;

@@ -22,42 +22,65 @@ import botan.tls.version_;
 import botan.utils.mem_ops;
 import memutils.circularbuffer;
 import memutils.utils;
-
+alias DataReader = ubyte[] delegate(in ubyte[]);
 alias SecureRingBuffer(T) = CircularBuffer!( T, 0, SecureMem);
 
 /**
-* Blocking TLS Client
+* Blocking TLS Channel
 */
-class TLSBlockingClient
+struct TLSBlockingChannel
 {
 public:
-    this(size_t delegate(in ubyte[]) read_fn,
-         void delegate(in ubyte[]) write_fn,
+    @disable this(this);
+    @disable this();
+
+    /// Client constructor
+    this(DataReader read_fn,
+         DataWriter write_fn,
          TLSSessionManager session_manager,
          TLSCredentialsManager creds,
-         in TLSPolicy policy,
+         TLSPolicy policy,
          RandomNumberGenerator rng,
          in TLSServerInformation server_info = TLSServerInformation(),
          in TLSProtocolVersion offer_version = TLSProtocolVersion.latestTlsVersion(),
          Vector!string next_protocols = Vector!string())
     {
+        m_is_client = true;
         m_read_fn = read_fn;
-        m_channel = new TLSClient(write_fn, &dataCb, &alertCb, &handshakeCb, session_manager, creds,
-                                  policy, rng, server_info, offer_version, next_protocols.move);
+        m_impl.client = new TLSClient(write_fn, &dataCb, &alertCb, &handshakeCb, session_manager, creds,
+            policy, rng, server_info, offer_version, next_protocols.move);
+    }
+
+    /// Server constructor
+    this(DataReader read_fn,
+         DataWriter write_fn,
+         TLSSessionManager session_manager,
+         TLSCredentialsManager creds,
+         TLSPolicy policy,
+         RandomNumberGenerator rng,
+         NextProtocolHandler next_proto = null,
+		 SNIHandler sni_handler = null,
+         bool is_datagram = false,
+         size_t io_buf_sz = 16*1024)
+    {
+        m_is_client = false;
+        m_read_fn = read_fn;
+        m_impl.server = new TLSServer(write_fn, &dataCb, &alertCb, &handshakeCb, session_manager, creds,
+			policy, rng, next_proto, sni_handler, is_datagram, io_buf_sz);
     }
 
     /**
-    * Completes full handshake then returns
+    * Blocks until the full handhsake is complete
     */
-    final void doHandshake()
+    void doHandshake()
     {
         Vector!ubyte readbuf = Vector!ubyte(TLS_DEFAULT_BUFFERSIZE);
         
-        while (!m_channel.isClosed() && !m_channel.isActive())
+        while (!channel.isClosed() && !channel.isActive())
         {
             ubyte[] readref = readbuf.ptr[0 .. readbuf.length];
-            const size_t from_socket = m_read_fn(readref);
-            m_channel.receivedData(readbuf.ptr, from_socket);
+            const ubyte[] from_socket = m_read_fn(readref);
+            channel.receivedData(cast(const(ubyte)*)from_socket.ptr, from_socket.length);
         }
     }
 
@@ -65,71 +88,156 @@ public:
     * Number of bytes pending read in the plaintext buffer (bytes
     * readable without blocking)
     */
-    final size_t pending() const { return m_plaintext.length; }
+    size_t pending() const { return m_plaintext.length; }
 
-    /**
-    * Blocking read, will return at least 1 ubyte or 0 on connection close
-    */
-    final size_t read(ubyte* buf, size_t buf_len)
+    /// Reads until the destination ubyte array is full, utilizing internal buffers if necessary
+    void read(ubyte[] dest) 
     {
-        Vector!ubyte readbuf = Vector!ubyte(TLS_DEFAULT_BUFFERSIZE);
-        
-        while (m_plaintext.empty && !m_channel.isClosed())
-        {
-            const size_t from_socket = m_read_fn(readbuf.ptr[0 .. readbuf.length]);
-            m_channel.receivedData(readbuf.ptr, from_socket);
+        ubyte[] remaining = dest;
+        while (remaining.length > 0) {
+            dest = readBuf(remaining);
+            remaining = remaining[dest.length .. $];
         }
-        
-        const size_t returned = std.algorithm.min(buf_len, m_plaintext.length);
-        m_plaintext.read(buf[0 .. returned]);
-
-        assert(returned == 0 && m_channel.isClosed(), "Only return zero if channel is closed");
-        
-        return returned;
     }
 
-    final void write(const(ubyte)* buf, size_t len) { m_channel.send(buf, len); }
-
-    final inout(TLSChannel) underlyingChannel() inout { return m_channel; }
-
-    final void close() { m_channel.close(); }
-
-    final bool isClosed() const { return m_channel.isClosed(); }
-
-    final const(Vector!X509Certificate) peerCertChain() const
-    { return m_channel.peerCertChain(); }
-
-    ~this() {}
-
-protected:
     /**
-     * Can to get the handshake complete notification override
+    * Blocking ( if !pending() ) read, will return at least 1 ubyte or 0 on connection close
+    *  supports replacement of internal read buffer when called until buf.length != returned buffer length
     */
-    abstract bool handshakeComplete(const ref TLSSession) { return true; }
+	ubyte[] readBuf(ubyte[] buf)
+    {
+
+        // we can use our own buffer to optimize the scenarios where the application flushes it instantly
+        if (m_plaintext_offset == 0) {
+            assert(!m_slice);
+            m_plaintext_override = buf;
+            scope(exit) {
+                m_slice = null;
+                m_plaintext_override = null;
+            }
+        }
+
+        Vector!ubyte readbuf = Vector!ubyte(TLS_DEFAULT_BUFFERSIZE);
+        // if there's nothing in the buffers, read some packets and process them
+        while (!m_slice && m_plaintext.empty && m_plaintext_offset == 0 && !channel.isClosed())
+        {
+            const ubyte[] from_socket = m_read_fn(readbuf.ptr[0 .. readbuf.length]);
+            channel.receivedData(cast(const(ubyte)*)from_socket.ptr, from_socket.length);
+        }
+
+        // we *should* have something in the override if plaintext/offset is empty
+        if (m_plaintext.length == 0 && m_plaintext_offset == 0 && m_slice) {
+            buf = m_slice;
+            return buf;
+        }
+
+        assert(!m_slice, "Cannot have both a slice and extensible buffer contents");
+
+        // unless the override was too small or data was already pending
+        const size_t returned = std.algorithm.min(buf.length, m_plaintext.length - m_plaintext_offset);
+        buf[0 .. returned] = m_plaintext[m_plaintext_offset .. m_plaintext_offset + returned];
+
+        // if this function is used correctly, we'll read all the plaintext, until we can clear it
+
+        // if we've read all the plaintext, clear the buffers
+        if (m_plaintext_offset + returned == m_plaintext.length) {
+            m_plaintext.clear();
+            m_plaintext_offset = 0;
+        }
+        else {
+            // otherwise we'll have to increment the offset for the next read call
+            m_plaintext_offset += returned;
+        }
+
+        assert(!channel.isClosed() || ( returned == 0 && channel.isClosed() ), "Only return zero if channel is closed");
+
+        return buf[0 .. returned];
+    }
+
+    void write(in ubyte[] buf) { channel.send(cast(const(ubyte)*)buf.ptr, buf.length); }
+
+    inout(TLSChannel) underlyingChannel() inout { return channel; }
+
+    void close() { channel.close(); }
+
+    bool isClosed() const { return channel.isClosed(); }
+
+    const(Vector!X509Certificate) peerCertChain() const { return channel.peerCertChain(); }
+
+    ~this() { if (m_is_client) m_impl.client.destroy(); else m_impl.server.destroy(); }
 
     /**
-    * Can to get notification of alerts override
+     * get handshake complete notifications
     */
-    abstract void alertNotification(in TLSAlert) {}
+    @property void onHandshakeComplete(OnHandshakeComplete handshake_complete)
+    { m_handshake_complete = handshake_complete; }
+
+    /**
+    * get notification of alerts 
+    */
+    @property void onAlertNotification(OnAlert alert_cb)
+    {
+        m_alert_cb = alert_cb;
+    }
 
 private:
 
-    final bool handshakeCb(const ref TLSSession session)
+    bool handshakeCb(const ref TLSSession session)
     {
-        return this.handshakeComplete(session);
+        return m_handshake_complete(session);
     }
 
-    final void dataCb(in ubyte[] data)
+    void dataCb(in ubyte[] data)
     {
-        m_plaintext.put(data);
+        assert(m_plaintext_offset == 0, "You must read the entire plaintext");
+
+        if (!m_slice && m_plaintext_override && m_slice.length + data.length < m_plaintext_override.length) {
+            m_plaintext_override[m_slice.length .. m_slice.length + data.length] = data[0 .. $];
+            m_slice = m_plaintext_override[0 .. m_slice.length + data.length];
+            return;
+        }
+        else if (m_slice) {
+            // data too large, abandon the override optimization, copy all to the plaintext buffer
+            m_plaintext[] = m_slice;
+            m_plaintext_override = null;
+            m_slice = null;
+        }
+        m_plaintext ~= cast(ubyte[])data;
+
+        // account for case when the vector needs to be circular
+        if (m_plaintext.length > 65536 && m_plaintext_offset > m_plaintext.length/10) {
+            SecureVector!ubyte tmp;
+            tmp[] = m_plaintext[m_plaintext_offset .. $];
+            m_plaintext = tmp;
+        }
+        // also deal with connections using up too much memory
+        // todo: Make this a parameter
+        else if (m_plaintext.length > 1024*256) throw new TLSException(TLSAlert.RECORD_OVERFLOW, "Buffering limit exceeded");
     }
 
-    final void alertCb(in TLSAlert alert, in ubyte[])
+    void alertCb(in TLSAlert alert, in ubyte[] ub)
     {
-        this.alertNotification(alert);
+        m_alert_cb(alert, ub);
     }
 
-    size_t delegate(in ubyte[]) m_read_fn;
-    TLSClient m_channel;
-    SecureRingBuffer!ubyte m_plaintext;
+    class TLSImpl {
+        TLSClient client;
+        TLSServer server;
+    }
+	@property inout(TLSChannel) channel() inout { return (m_is_client ? cast(inout(TLSChannel)) m_impl.client : cast(inout(TLSChannel)) m_impl.server); }
+
+    bool m_is_client;
+    DataReader m_read_fn;
+    TLSImpl m_impl;
+    OnAlert m_alert_cb;
+    OnHandshakeComplete m_handshake_complete;
+
+    // Buffer
+    SecureVector!ubyte m_plaintext;
+    size_t m_plaintext_offset;
+
+    // Buffer optimization
+    ubyte[] m_plaintext_override;
+    ubyte[] m_slice;
 }
+
