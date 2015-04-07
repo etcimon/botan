@@ -42,8 +42,8 @@ public:
     *          TCP/UDP). Zero represents unknown.
     */
     this(in string hostname,
-            in string service,
-            ushort port = 0)
+         in string service,
+         ushort port = 0)
     {
         m_hostname = hostname;
         m_service = service;

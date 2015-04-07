@@ -73,7 +73,7 @@ public:
         }
         catch(Exception e)
         {
-            logTrace("Certificate verification failed - " ~ e.msg ~ " - but will ignore");
+            logError("Certificate verification failed - " ~ e.msg ~ " - but will ignore");
         }
     }
     
@@ -162,37 +162,37 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
     
     Vector!ubyte c2s_q, s2c_q, c2s_data, s2c_data;
     
-    auto handshake_complete = delegate(const ref TLSSession session) {
+    auto handshake_complete = delegate(in TLSSession session) {
         if (session.Version() != offer_version)
-            logTrace("Wrong version negotiated");
+            logError("Wrong version negotiated");
         return true;
     };
     
     auto print_alert = delegate(in TLSAlert alert, in ubyte[])
     {
         if (alert.isValid())
-            logTrace("TLSServer recvd alert " ~ alert.typeString());
+            logError("TLSServer recvd alert " ~ alert.typeString());
     };
     
     auto save_server_data = delegate(in ubyte[] buf) {
-        c2s_data.insert(buf);
+        c2s_data ~= cast(ubyte[])buf;
     };
     
     auto save_client_data = delegate(in ubyte[] buf) {
-        s2c_data.insert(buf);
+        s2c_data ~= cast(ubyte[])buf;
     };
 
     auto next_protocol_chooser = delegate(in Vector!string protos) {
         if (protos.length != 2)
-            logTrace("Bad protocol size");
+            logError("Bad protocol size");
         if (protos[0] != "test/1" || protos[1] != "test/2")
-            logTrace("Bad protocol values");
+            logError("Bad protocol values");
         return "test/3";
     };
 
     Vector!string protocols_offered = ["test/1", "test/2"];
 
-    auto server = new TLSServer((in ubyte[] buf) { s2c_q.insert(buf); },
+    auto server = new TLSServer((in ubyte[] buf) { s2c_q ~= cast(ubyte[]) buf; },
                                 save_server_data,
                                 print_alert,
                                 handshake_complete,
@@ -203,19 +203,18 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
                                 next_protocol_chooser);
     
 
-    auto client = new TLSClient(
-        (in ubyte[] buf) { c2s_q.insert(buf); },
-        save_client_data,
-        print_alert,
-        handshake_complete,
-        client_sessions,
-        creds,
-        policy,
-        rng,
-        TLSServerInformation(),
-        offer_version,
-        protocols_offered.move);
-    
+    auto client = new TLSClient((in ubyte[] buf) { c2s_q ~= cast(ubyte[]) buf; },
+                                save_client_data,
+                                print_alert,
+                                handshake_complete,
+                                client_sessions,
+                                creds,
+                                policy,
+                                rng,
+                                TLSServerInformation(),
+                                offer_version,
+                                protocols_offered.move);
+                            
     while(true)
     {
         if (client.isActive())
@@ -223,7 +222,7 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
         if (server.isActive())
         {
             if (server.nextProtocol() != "test/3")
-                logTrace("Wrong protocol " ~ server.nextProtocol());
+                logError("Wrong protocol " ~ server.nextProtocol());
             server.send("2");
         }
         
@@ -233,21 +232,19 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
         * handshake.
         */
         Vector!ubyte input;
-
-        c2s_q.swap(input);
-        
+        input.swap(c2s_q);
         try
         {
             server.receivedData(input.ptr, input.length);
         }
         catch(Exception e)
         {
-            logTrace("TLSServer error - " ~ e.msg);
+            logError("TLSServer error - " ~ e.msg);
             break;
         }
         
         input.clear();
-        s2c_q.swap(input);
+        input.swap(s2c_q);
         
         try
         {
@@ -255,7 +252,7 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
         }
         catch(Exception e)
         {
-            logTrace("TLSClient error - " ~ e.msg);
+            logError("TLSClient error - " ~ e.msg);
             break;
         }
         
@@ -263,7 +260,7 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
         {
             if (c2s_data[0] != '1')
             {
-                logTrace("Error");
+                logError("Error");
                 return 1;
             }
         }
@@ -272,7 +269,7 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
         {
             if (s2c_data[0] != '2')
             {
-                logTrace("Error");
+                logError("Error");
                 return 1;
             }
         }

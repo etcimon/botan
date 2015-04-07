@@ -51,7 +51,7 @@ public:
     this(void delegate(in ubyte[]) socket_output_fn,
          void delegate(in ubyte[]) proc_cb,
          void delegate(in TLSAlert, in ubyte[]) alert_cb,
-         bool delegate(const ref TLSSession) handshake_cb,
+         bool delegate(in TLSSession) handshake_cb,
          TLSSessionManager session_manager,
          TLSCredentialsManager creds,
          in TLSPolicy policy,
@@ -89,10 +89,10 @@ protected:
     }
 
     void sendClientHello(HandshakeState state_base,
-                           bool force_full_renegotiation,
-                           TLSProtocolVersion _version,
-                           in string srp_identifier = "",
-                           Vector!string next_protocols = Vector!string())
+                         bool force_full_renegotiation,
+                         TLSProtocolVersion _version,
+                         in string srp_identifier = "",
+                         Vector!string next_protocols = Vector!string())
     {
         ClientHandshakeState state = cast(ClientHandshakeState)(state_base);
 
@@ -108,13 +108,13 @@ protected:
                 if (srp_identifier == "" || session_info.srpIdentifier() == srp_identifier)
                 {
                     state.clientHello(new ClientHello(
-                                      state.handshakeIo(),
-                                      state.hash(),
-                                      m_policy,
-                                      rng(),
-                                      secureRenegotiationDataForClientHello().dup,
-                                      session_info,
-                                      next_protocols.move));
+                                          state.handshakeIo(),
+                                          state.hash(),
+                                          m_policy,
+                                          rng(),
+                                          secureRenegotiationDataForClientHello().dup,
+                                          session_info,
+                                          next_protocols.move));
                     
                     state.resume_master_secret = session_info.masterSecret().dup;
                 }
@@ -425,7 +425,7 @@ protected:
             if (session_id.empty && !session_ticket.empty)
                 session_id = makeHelloRandom(rng(), m_policy);
 
-            TLSSession session_info = TLSSession(session_id.dup,
+            auto session_info =   new TLSSession(session_id.dup,
                                                  state.sessionKeys().masterSecret().dup,
                                                  state.serverHello().Version(),
                                                  state.serverHello().ciphersuite(),
@@ -436,7 +436,7 @@ protected:
                                                  session_ticket.move(),
                                                  m_info,
                                                  "");
-            
+			scope(exit) destroy(session_info);
             const bool should_save = saveSession(session_info);
             
             if (!session_id.empty)

@@ -22,8 +22,9 @@ import botan.tls.version_;
 import botan.utils.mem_ops;
 import memutils.circularbuffer;
 import memutils.utils;
+import std.algorithm;
+
 alias DataReader = ubyte[] delegate(in ubyte[]);
-alias SecureRingBuffer(T) = CircularBuffer!( T, 0, SecureMem);
 
 /**
 * Blocking TLS Channel
@@ -73,7 +74,8 @@ public:
     * Blocks until the full handhsake is complete
     */
     void doHandshake()
-    {
+	{
+		assert(!m_slice);
         Vector!ubyte readbuf = Vector!ubyte(TLS_DEFAULT_BUFFERSIZE);
         
         while (!channel.isClosed() && !channel.isActive())
@@ -88,11 +90,18 @@ public:
     * Number of bytes pending read in the plaintext buffer (bytes
     * readable without blocking)
     */
-    size_t pending() const { return m_plaintext.length; }
+	size_t pending() const { assert(!m_slice); return m_plaintext.length - m_plaintext_offset; }
+
+	/// Returns an array of pending data
+	const(ubyte)[] peek() {
+		assert(!m_slice);
+		return m_plaintext.length > 0 ? m_plaintext[m_plaintext_offset .. $] : null;
+	}
 
     /// Reads until the destination ubyte array is full, utilizing internal buffers if necessary
     void read(ubyte[] dest) 
     {
+		assert(!m_slice);
         ubyte[] remaining = dest;
         while (remaining.length > 0) {
             dest = readBuf(remaining);
@@ -106,10 +115,10 @@ public:
     */
 	ubyte[] readBuf(ubyte[] buf)
     {
+		assert(!m_slice);
 
         // we can use our own buffer to optimize the scenarios where the application flushes it instantly
         if (m_plaintext_offset == 0) {
-            assert(!m_slice);
             m_plaintext_override = buf;
             scope(exit) {
                 m_slice = null;
@@ -182,7 +191,7 @@ public:
 
 private:
 
-    bool handshakeCb(const ref TLSSession session)
+    bool handshakeCb(in TLSSession session)
     {
         return m_handshake_complete(session);
     }
@@ -224,6 +233,7 @@ private:
         TLSClient client;
         TLSServer server;
     }
+
 	@property inout(TLSChannel) channel() inout { return (m_is_client ? cast(inout(TLSChannel)) m_impl.client : cast(inout(TLSChannel)) m_impl.server); }
 
     bool m_is_client;

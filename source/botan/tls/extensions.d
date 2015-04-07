@@ -782,11 +782,11 @@ public:
         
         foreach (const ref Extension extn; extensions)
         {
-            if (!extn)
+            if (extn.empty)
                 continue;
             
             const ushort extn_code = extn.type();
-            
+			logDebug("Serialize extension: ", extn_code.to!string);
             const Vector!ubyte extn_val = extn.serialize();
             
             buf.pushBack(get_byte(0, extn_code));
@@ -845,6 +845,7 @@ private:
 
 Extension makeExtension(ref TLSDataReader reader, ushort code, ushort size)
 {
+	logDebug("Make extension: ", code.to!string);
     switch(code)
     {
         case TLSEXT_SERVER_NAME_INDICATION:

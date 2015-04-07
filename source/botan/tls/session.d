@@ -34,7 +34,7 @@ import std.datetime;
 /**
 * Class representing a TLS session state
 */
-struct TLSSession
+class TLSSession
 {
 public:
     /**
@@ -190,7 +190,7 @@ public:
         {
             const auto ber = CryptoBox.decrypt(buf, buf_len, master_key);
             
-            return TLSSession(ber.ptr, ber.length);
+            return new TLSSession(ber.ptr, ber.length);
         }
         catch(Exception e)
         {
@@ -289,10 +289,10 @@ public:
 
     TLSServerInformation serverInfo() const { return m_server_info; }
 
-    @property TLSSession move() {
+   /* @property TLSSession move() {
         return TLSSession(m_identifier.move(), m_master_secret.move(), m_version, m_ciphersuite, m_compression_method, m_connection_side, 
                           m_fragment_size, m_peer_certs.move(), m_session_ticket.move(), m_server_info, m_srp_identifier);
-    }
+    }*/
 
 private:
 

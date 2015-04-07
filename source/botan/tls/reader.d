@@ -151,9 +151,9 @@ private:
             throw decodeError("Size isn't multiple of T");
 
         const size_t num_elems = byte_length / T_size;
-
-        if (num_elems < min_elems || num_elems > max_elems)
-            throw decodeError("Length field outside parameters");
+		logDebug("num elements: ", num_elems.to!string);
+        assert(!(num_elems < min_elems || num_elems > max_elems));
+            //throw decodeError("Length field outside parameters");
 
         return num_elems;
     }

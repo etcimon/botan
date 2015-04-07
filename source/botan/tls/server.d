@@ -130,7 +130,6 @@ protected:
                 sendWarningAlert(TLSAlert.NO_RENEGOTIATION);
                 return;
             }
-            
             state.clientHello(new ClientHello(contents, type));
             
 			// choose a proper context depending on hostname and register the userdata
@@ -203,6 +202,7 @@ protected:
             state.setVersion(negotiated_version);
 
             TLSSession session_info;
+			scope(exit) destroy(session_info);
             const bool resuming = state.allow_session_resumption &&
                                     checkForResume(session_info,
                                                    sessionManager(),
@@ -469,7 +469,7 @@ protected:
                 
                 state.hash().update(state.handshakeIo().format(contents, type));
                 
-                TLSSession session_info = TLSSession(state.serverHello().sessionId().dup,
+                auto session_info =   new TLSSession(state.serverHello().sessionId().dup,
                                                      state.sessionKeys().masterSecret().dup,
                                                      state.serverHello().Version(),
                                                      state.serverHello().ciphersuite(),
@@ -551,7 +551,7 @@ private:
 
 private:
 
-bool checkForResume(ref TLSSession session_info,
+bool checkForResume(TLSSession session_info,
                     TLSSessionManager session_manager,
                     TLSCredentialsManager credentials,
                     in ClientHello clientHello,

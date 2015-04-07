@@ -128,7 +128,7 @@ public:
         destroy(m_db);
     }
 
-    override bool loadFromSessionId(const ref Vector!ubyte session_id, ref TLSSession session)
+    override bool loadFromSessionId(const ref Vector!ubyte session_id, TLSSession session)
     {
         sqlite3_statement stmt = sqlite3_statement(m_db, "select session from tls_sessions where session_id = ?1");
         
@@ -152,7 +152,7 @@ public:
     }
 
     override bool loadFromServerInfo(in TLSServerInformation server,
-                                     ref TLSSession session)
+                                     TLSSession session)
     {
         sqlite3_statement stmt = sqlite3_statement(m_db, "select session from tls_sessions"
                                                        ~ " where hostname = ?1 and hostport = ?2"
@@ -187,7 +187,7 @@ public:
         stmt.spin();
     }
 
-    override void save(const ref TLSSession session)
+    override void save(in TLSSession session)
     {
         sqlite3_statement stmt = sqlite3_statement(m_db, "insert or replace into tls_sessions"
                                ~ " values(?1, ?2, ?3, ?4, ?5)");

@@ -44,7 +44,7 @@ public:
                 or not modified if not found
     * Returns: true if session was modified
     */
-    abstract bool loadFromSessionId(const ref Vector!ubyte session_id, ref TLSSession session);
+    abstract bool loadFromSessionId(const ref Vector!ubyte session_id, TLSSession session);
 
     /**
     * Try to load a saved session (using info about server)
@@ -54,7 +54,7 @@ public:
                 or not modified if not found
     * Returns: true if session was modified
     */
-    abstract bool loadFromServerInfo(in TLSServerInformation info, ref TLSSession session);
+    abstract bool loadFromServerInfo(in TLSServerInformation info, TLSSession session);
 
     /**
     * Remove this session id from the cache, if it exists
@@ -71,7 +71,7 @@ public:
     * Params:
     *  session = to save
     */
-    abstract void save(const ref TLSSession session);
+    abstract void save(in TLSSession session);
 
     /**
     * Return the allowed lifetime of a session; beyond this time,
@@ -89,15 +89,15 @@ public:
 final class TLSSessionManagerNoop : TLSSessionManager
 {
 public:
-    override bool loadFromSessionId(const ref Vector!ubyte, ref TLSSession)
+    override bool loadFromSessionId(const ref Vector!ubyte, TLSSession)
     { return false; }
 
-    override bool loadFromServerInfo(in TLSServerInformation, ref TLSSession)
+    override bool loadFromServerInfo(in TLSServerInformation, TLSSession)
     { return false; }
 
     override void removeEntry(const ref Vector!ubyte) {}
 
-    override void save(const ref TLSSession) {}
+    override void save(in TLSSession) {}
 
     override Duration sessionLifetime() const
     { return Duration.init; }
@@ -125,13 +125,13 @@ public:
         
     }
 
-    override bool loadFromSessionId(const ref Vector!ubyte session_id, ref TLSSession session)
+    override bool loadFromSessionId(const ref Vector!ubyte session_id, TLSSession session)
     {
         
         return loadFromSessionStr(hexEncode(session_id), session);
     }
 
-    override bool loadFromServerInfo(in TLSServerInformation info, ref TLSSession session)
+    override bool loadFromServerInfo(in TLSServerInformation info, TLSSession session)
     {
         
         auto str = m_info_sessions.get(info);
@@ -162,7 +162,7 @@ public:
         }
     }
 
-    override void save(const ref TLSSession session)
+    override void save(in TLSSession session)
     {
         
         // make some space if too many sessions are found
@@ -189,9 +189,8 @@ public:
     { return m_session_lifetime; }
 
 private:
-    bool loadFromSessionStr(in string session_str, ref TLSSession session)
+    bool loadFromSessionStr(in string session_str, TLSSession session)
     {
-        TLSSession sess;
         // assert(lock is held)
 
         auto val = m_sessions.get(session_str, Array!ubyte.init);
@@ -201,7 +200,7 @@ private:
         
         try
         {
-            sess = TLSSession.decrypt(*val, m_session_key);
+            session = TLSSession.decrypt(*val, m_session_key);
         }
         catch (Throwable)
         {
@@ -218,7 +217,6 @@ private:
             return false;
         }
 
-        session = sess.move();
         return true;
     }
 

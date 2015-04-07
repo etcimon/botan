@@ -308,7 +308,7 @@ public:
          in TLSPolicy policy,
          RandomNumberGenerator rng,
          Vector!ubyte reneg_info,
-         const ref TLSSession session,
+         in TLSSession session,
          Vector!string next_protocols)
     { 
         bool reneg_empty = reneg_info.empty;
@@ -393,8 +393,8 @@ protected:
     */
     void deserialize(const ref Vector!ubyte buf)
     {
-        if (buf.length == 0)
-            throw new DecodingError("ClientHello: Packet corrupted");
+		assert(buf.length > 0);
+//            throw new DecodingError("ClientHello: Packet corrupted");
         
         if (buf.length < 41)
             throw new DecodingError("ClientHello: Packet corrupted");

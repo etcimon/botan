@@ -445,7 +445,6 @@ size_t readTLSRecord(ref SecureVector!ubyte readbuf,
     ConnectionCipherState cipherstate = cast(ConnectionCipherState) ccs;
     
     assert(cipherstate, "Have cipherstate for this epoch");
-    
     decryptRecord(record,
                   record_contents,
                   record_len,

@@ -38,7 +38,7 @@ import std.string : toStringz;
 alias DataWriter = void delegate(in ubyte[]);
 alias OnClearData = void delegate(in ubyte[]);
 alias OnAlert = void delegate(in TLSAlert, in ubyte[]);
-alias OnHandshakeComplete = bool delegate(const ref TLSSession);
+alias OnHandshakeComplete = bool delegate(in TLSSession);
 
 /**
 * Generic interface for TLS endpoint
@@ -167,7 +167,7 @@ public:
                                 
                                 if (msg.type == HANDSHAKE_NONE) // no full handshake yet
                                     break;
-                                
+
                                 processHandshakeMsg(activeState(), pending,
                                                     msg.type, msg.data);
                             } else break;
@@ -711,7 +711,7 @@ protected:
 
     TLSSessionManager sessionManager() { return m_session_manager; }
 
-    bool saveSession(const ref TLSSession session) const { return m_handshake_cb(session); }
+    bool saveSession(in TLSSession session) const { return m_handshake_cb(session); }
 
 package:
 
