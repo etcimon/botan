@@ -44,7 +44,7 @@ public:
                 or not modified if not found
     * Returns: true if session was modified
     */
-    abstract bool loadFromSessionId(const ref Vector!ubyte session_id, TLSSession session);
+    abstract bool loadFromSessionId(const ref Vector!ubyte session_id, ref TLSSession session);
 
     /**
     * Try to load a saved session (using info about server)
@@ -54,7 +54,7 @@ public:
                 or not modified if not found
     * Returns: true if session was modified
     */
-    abstract bool loadFromServerInfo(in TLSServerInformation info, TLSSession session);
+    abstract bool loadFromServerInfo(in TLSServerInformation info, ref TLSSession session);
 
     /**
     * Remove this session id from the cache, if it exists
@@ -89,10 +89,10 @@ public:
 final class TLSSessionManagerNoop : TLSSessionManager
 {
 public:
-    override bool loadFromSessionId(const ref Vector!ubyte, TLSSession)
+    override bool loadFromSessionId(const ref Vector!ubyte, ref TLSSession)
     { return false; }
 
-    override bool loadFromServerInfo(in TLSServerInformation, TLSSession)
+    override bool loadFromServerInfo(in TLSServerInformation, ref TLSSession)
     { return false; }
 
     override void removeEntry(const ref Vector!ubyte) {}
@@ -125,13 +125,13 @@ public:
         
     }
 
-    override bool loadFromSessionId(const ref Vector!ubyte session_id, TLSSession session)
+    override bool loadFromSessionId(const ref Vector!ubyte session_id, ref TLSSession session)
     {
         
         return loadFromSessionStr(hexEncode(session_id), session);
     }
 
-    override bool loadFromServerInfo(in TLSServerInformation info, TLSSession session)
+    override bool loadFromServerInfo(in TLSServerInformation info, ref TLSSession session)
     {
         
         auto str = m_info_sessions.get(info);
@@ -166,9 +166,9 @@ public:
     {
         
         // make some space if too many sessions are found
-        if (m_max_sessions != 0)
+        if (m_max_sessions != 0 && m_sessions.length >= m_max_sessions)
         {
-            int to_remove = cast(int)(m_max_sessions - m_sessions.length);
+            int to_remove = cast(int)(m_sessions.length - m_max_sessions);
 
             foreach (sess_id; m_sessions_ordered[0 .. to_remove])
                 m_sessions.remove(sess_id);
@@ -189,7 +189,7 @@ public:
     { return m_session_lifetime; }
 
 private:
-    bool loadFromSessionStr(in string session_str, TLSSession session)
+    bool loadFromSessionStr(in string session_str, ref TLSSession session)
     {
         // assert(lock is held)
 

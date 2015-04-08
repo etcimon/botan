@@ -133,7 +133,7 @@ protected:
             state.clientHello(new ClientHello(contents, type));
             
 			// choose a proper context depending on hostname and register the userdata
-			{
+			if (m_sni_handler) {
 				const string sni_hostname = state.clientHello().sniHostname();
 				SNIContextSwitchInfo ctx = m_sni_handler(sni_hostname);
 				if (ctx !is SNIContextSwitchInfo.init)
@@ -503,12 +503,9 @@ protected:
                         sessionManager().save(session_info);
                 }
                 
-                if (!state.newSessionTicket() &&
-                    state.serverHello().supportsSessionTicket())
+                if (!state.newSessionTicket() && state.serverHello().supportsSessionTicket())
                 {
-                    state.newSessionTicket(
-                        new NewSessionTicket(state.handshakeIo(), state.hash())
-                        );
+                    state.newSessionTicket(new NewSessionTicket(state.handshakeIo(), state.hash()));
                 }
                 
                 state.handshakeIo().send(scoped!ChangeCipherSpec());

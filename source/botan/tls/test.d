@@ -186,7 +186,7 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
         if (protos.length != 2)
             logError("Bad protocol size");
         if (protos[0] != "test/1" || protos[1] != "test/2")
-            logError("Bad protocol values");
+            logError("Bad protocol values: ", protos[]);
         return "test/3";
     };
 
@@ -232,7 +232,8 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
         * handshake.
         */
         Vector!ubyte input;
-        input.swap(c2s_q);
+        input[] = c2s_q;
+		c2s_q.clear();
         try
         {
             server.receivedData(input.ptr, input.length);
@@ -244,7 +245,8 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
         }
         
         input.clear();
-        input.swap(s2c_q);
+		input[] = s2c_q;
+		s2c_q.clear();
         
         try
         {
@@ -285,10 +287,13 @@ class TestPolicy : TLSPolicy
 {
 public:
     override bool acceptableProtocolVersion(TLSProtocolVersion) const { return true; }
+	override bool sendFallbackSCSV(in TLSProtocolVersion) const { return false; }
 }
 
 static if (!SKIP_TLS_TEST) unittest
 {
+	import botan.libstate.global_state;
+	auto state = globalState(); // ensure initialized
     logDebug("Testing tls/test.d ...");
     size_t errors = 0;
     

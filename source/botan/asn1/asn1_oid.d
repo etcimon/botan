@@ -240,10 +240,11 @@ public:
         {
             m_id = parseAsn1Oid(oid_str);
         }
-        catch (Throwable)
+        catch (Throwable e)
         {
-            logError("parseAsn1Oid failure with '" ~ oid_str ~ "'");
-            throw new InvalidOID(oid_str);
+
+            logError("parseAsn1Oid failure with '" ~ oid_str ~ "': " ~ e.msg);
+			throw new InvalidOID(oid_str);
         }
         
         if (m_id.length < 2 || m_id[0] > 2) {

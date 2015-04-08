@@ -209,7 +209,6 @@ Vector!uint parseAsn1Oid(in string oid)
     import std.array : Appender, array;
     Vector!char substring;
     Vector!uint oid_elems;
-    
 
     foreach (char c; oid)
     {

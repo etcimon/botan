@@ -444,6 +444,8 @@ public:
     */
     bool opEquals(in X509Certificate other) const
     {
+		if (*other is null)
+			return false;
         return (m_sig == other.m_sig &&
                 m_sig_algo == other.m_sig_algo &&
                 m_self_signed == other.m_self_signed &&

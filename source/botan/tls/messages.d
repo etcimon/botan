@@ -393,8 +393,8 @@ protected:
     */
     void deserialize(const ref Vector!ubyte buf)
     {
-		assert(buf.length > 0);
-//            throw new DecodingError("ClientHello: Packet corrupted");
+		if (buf.length == 0)
+            throw new DecodingError("ClientHello: Packet corrupted");
         
         if (buf.length < 41)
             throw new DecodingError("ClientHello: Packet corrupted");
@@ -405,7 +405,6 @@ protected:
         const ubyte minor_version = reader.get_byte();
         
         m_version = TLSProtocolVersion(major_version, minor_version);
-        
         m_random = reader.getFixed!ubyte(32);
         
         if (m_version.isDatagramProtocol())
@@ -610,7 +609,7 @@ public:
         m_version = TLSProtocolVersion(major_version, minor_version);
         
         m_random = reader.getFixed!ubyte(32);
-        
+
         m_session_id = reader.getRange!ubyte(1, 0, 32);
         
         m_ciphersuite = reader.get_ushort();
@@ -1086,11 +1085,11 @@ public:
         if (total_size != buf.length - 3)
             throw new DecodingError("Certificate: Message malformed");
         
-        const(ubyte)* certs = &buf[3];
+        const(ubyte)* certs = buf.ptr + 3;
         
         while (true)
         {
-            size_t remaining_bytes = &buf[buf.length] - certs;
+            size_t remaining_bytes = buf.ptr + buf.length - certs;
             if (remaining_bytes <= 0)
                 break;
             if (remaining_bytes < 3)
@@ -1483,12 +1482,11 @@ public:
                 const HandshakeState state) const
     {
         Pair!(string, SignatureFormat) format = state.understandSigFormat(server_key, m_hash_algo, m_sig_algo, false);
-        
+
         PKVerifier verifier = PKVerifier(server_key, format.first, format.second);
         verifier.update(state.clientHello().random());
         verifier.update(state.serverHello().random());
         verifier.update(params());
-        
         return verifier.checkSignature(m_signature);
     }
 

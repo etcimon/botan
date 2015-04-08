@@ -129,14 +129,11 @@ public:
         if (m_queue.length >= 4)
         {
             const size_t length = make_uint(0, m_queue[1], m_queue[2], m_queue[3]);
-            logDebug("Got length: ", length);
-            logDebug("Queued: ", m_queue[]);
             if (m_queue.length >= length + 4)
             {
                 HandshakeType type = cast(HandshakeType)(m_queue[0]);
                 
                 Vector!ubyte contents = Vector!ubyte(m_queue.ptr[4 .. 4 + length]);
-                logDebug("Got contents: ", contents[]);
                 Vector!ubyte ret = Vector!ubyte(m_queue.ptr[4 + length .. m_queue.length]);
                 m_queue = ret;
                 
@@ -515,7 +512,6 @@ void storeBigEndian24(ref ubyte[3] output, size_t val)
     output[0] = get_byte!uint(1, cast(uint) val);
     output[1] = get_byte!uint(2, cast(uint) val);
     output[2] = get_byte!uint(3, cast(uint) val);
-    logDebug("Store be24: ", output);
 }
 
 size_t splitForMtu(size_t mtu, size_t msg_size)

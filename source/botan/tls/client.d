@@ -197,12 +197,12 @@ protected:
                 throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "TLSServer replied with compression method we didn't send");
             }
             
-            auto client_extn = state.clientHello().extensionTypes()[];
-            auto server_extn = state.serverHello().extensionTypes()[];
+            auto client_extn = state.clientHello().extensionTypes();
+            auto server_extn = state.serverHello().extensionTypes();
             
             import std.algorithm : setDifference;
             import std.range : empty, array;
-            auto diff = setDifference(server_extn, client_extn);
+            auto diff = setDifference(server_extn[], client_extn[]);
             if (!diff.empty)
             {
                 throw new TLSException(TLSAlert.HANDSHAKE_FAILURE,
@@ -324,14 +324,13 @@ protected:
             state.setExpectedNext(SERVER_HELLO_DONE);
             
             state.serverKex(new ServerKeyExchange(contents,
-                                                     state.ciphersuite().kexAlgo(),
-                                                     state.ciphersuite().sigAlgo(),
-                                                     state.Version()));
+                                                  state.ciphersuite().kexAlgo(),
+                                                  state.ciphersuite().sigAlgo(),
+                                                  state.Version()));
             
             if (state.ciphersuite().sigAlgo() != "")
             {
                 const PublicKey server_key = state.getServerPublicKey();
-                
                 if (!state.serverKex().verify(server_key, state))
                 {
                     throw new TLSException(TLSAlert.DECRYPT_ERROR, "Bad signature on server key exchange");

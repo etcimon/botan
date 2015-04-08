@@ -87,11 +87,10 @@ public:
 
         Container result = Container(num_elems);
 
-        foreach (size_t i; 0 .. num_elems)
+        static if (T.sizeof > 1) foreach (size_t i; 0 .. num_elems)
             result[i] = loadBigEndian!T(&(*m_buf)[m_offset], i);
-
+		else result[] = (*m_buf)[m_offset .. m_offset + num_elems];
         m_offset += num_elems * T.sizeof;
-
         return result;
     }
 
@@ -151,9 +150,8 @@ private:
             throw decodeError("Size isn't multiple of T");
 
         const size_t num_elems = byte_length / T_size;
-		logDebug("num elements: ", num_elems.to!string);
-        assert(!(num_elems < min_elems || num_elems > max_elems));
-            //throw decodeError("Length field outside parameters");
+        if (num_elems < min_elems || num_elems > max_elems)
+            throw decodeError("Length field outside parameters");
 
         return num_elems;
     }

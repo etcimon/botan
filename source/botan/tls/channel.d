@@ -168,8 +168,7 @@ public:
                                 if (msg.type == HANDSHAKE_NONE) // no full handshake yet
                                     break;
 
-                                processHandshakeMsg(activeState(), pending,
-                                                    msg.type, msg.data);
+                                processHandshakeMsg(activeState(), pending, msg.type, msg.data);
                             } else break;
                         }
                     }

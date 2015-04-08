@@ -78,7 +78,7 @@ public:
     }
 
     /**
-    * Create an EC domain by OID (or throw new if unknown)
+    * Create an EC domain by OID (or throw if unknown)
     * Params:
     *  domain_oid = the OID of the EC domain to create
     */
@@ -130,7 +130,7 @@ public:
                 throw new LookupError("No ECC domain data for " ~ pem_or_oid);
             Vector!ubyte ber = unlock(PEM.decodeCheckLabel(pem, "EC PARAMETERS"));
             BER_decode(ber);
-            m_oid = pem_or_oid;
+            m_oid = OIDS.lookup(pem_or_oid).toString();
         }
     }
 

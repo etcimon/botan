@@ -98,7 +98,7 @@ public:
 
     ref const(RBTree!string) trustedHashes() const
     { 
-		if (!m_trusted_hashes.empty)
+		if (m_trusted_hashes.length > 0)
 			return m_trusted_hashes;
 		return m_def_trusted_hashes;
 	}
@@ -415,11 +415,11 @@ Vector!( RBTreeRef!CertificateStatusCode )
     
     const bool self_signed_ee_cert = (cert_path.length == 1);
     
-    X509Time current_time = X509Time(Clock.currTime());
+    X509Time current_time = X509Time(Clock.currTime(UTC()));
     
     Vector!( Tid ) ocsp_responses;
 
-    Vector!(OCSPResponse) ocsp_data;
+    Vector!(OCSPResponse) ocsp_data = Vector!OCSPResponse(8);
     
     Vector!( RBTreeRef!CertificateStatusCode ) cert_status = Vector!( RBTreeRef!CertificateStatusCode )( cert_path.length );
     
@@ -439,16 +439,16 @@ Vector!( RBTreeRef!CertificateStatusCode )
         
         const X509Certificate issuer = cert_path[at_self_signed_root ? (i) : (i + 1)];
         
-        const CertificateStore trusted = certstores[0]; // fixme
+        const CertificateStore* trusted = certstores.ptr;
         
         if (i == 0 || restrictions.ocspAllIntermediates()) {
 
             ocsp_data.length = i + 1;
 
             version(Have_vibe_d)
-                Tid id_ = runTask(&onlineCheck, cast(shared)Tid.getThis(), cast(shared)i, cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)&trusted);
+                Tid id_ = runTask(&onlineCheck, cast(shared)Tid.getThis(), cast(shared)i, cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)trusted);
             else
-                Tid id_ = spawn(&onlineCheck, cast(shared)thisTid(), cast(shared)i,  cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)&trusted);
+                Tid id_ = spawn(&onlineCheck, cast(shared)thisTid(), cast(shared)i,  cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)trusted);
             ocsp_responses ~= id_;
         }
         // Check all certs for valid time range

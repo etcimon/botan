@@ -40,7 +40,7 @@ enum : HandshakeExtensionType {
     TLSEXT_SRP_IDENTIFIER            = 12,
     TLSEXT_SIGNATURE_ALGORITHMS      = 13,
     TLSEXT_HEARTBEAT_SUPPORT         = 15,
-    TLSEXT_ALPN                         = 16,
+    TLSEXT_ALPN                      = 16,
 
     TLSEXT_SESSION_TICKET            = 35,
 
@@ -786,7 +786,6 @@ public:
                 continue;
             
             const ushort extn_code = extn.type();
-			logDebug("Serialize extension: ", extn_code.to!string);
             const Vector!ubyte extn_val = extn.serialize();
             
             buf.pushBack(get_byte(0, extn_code));
@@ -837,7 +836,7 @@ public:
     this(ref TLSDataReader reader) { deserialize(reader); }
 
 private:
-    HashMapRef!(HandshakeExtensionType, Extension) extensions;
+    HashMap!(HandshakeExtensionType, Extension) extensions;
 }
 
 
@@ -845,7 +844,6 @@ private:
 
 Extension makeExtension(ref TLSDataReader reader, ushort code, ushort size)
 {
-	logDebug("Make extension: ", code.to!string);
     switch(code)
     {
         case TLSEXT_SERVER_NAME_INDICATION:

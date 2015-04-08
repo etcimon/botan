@@ -675,7 +675,7 @@ void decryptRecord(ref SecureVector!ubyte output,
                    RecordType record_type,
                    ConnectionCipherState cipherstate)
 {
-    if (Unique!AEADMode aead = cipherstate.aead())
+    if (AEADMode aead = cipherstate.aead())
     {
         const(SecureVector!ubyte)* nonce = &cipherstate.aeadNonce(record_contents, record_len);
         const size_t nonce_length = cipherstate.implicitNonceBytes();
@@ -703,14 +703,14 @@ void decryptRecord(ref SecureVector!ubyte output,
         bool padding_bad = false;
         size_t pad_size = 0;
         
-        if (Unique!StreamCipher sc = cipherstate.streamCipher())
+        if (StreamCipher sc = cipherstate.streamCipher())
         {
             sc.cipher1(record_contents, record_len);
             // no padding to check or remove
         }
-        else if (Unique!BlockCipher bc = cipherstate.blockCipher())
+        else if (BlockCipher bc = cipherstate.blockCipher())
         {
-            cbcDecryptRecord(record_contents, record_len, cipherstate, *bc);
+            cbcDecryptRecord(record_contents, record_len, cipherstate, bc);
             
             pad_size = tlsPaddingCheck(cipherstate.cipherPaddingSingleByte(),
                                          cipherstate.blockSize(),
