@@ -67,12 +67,6 @@ public:
 		m_sni_handler = sni_handler;
     }
 
-    /**
-    * Return the protocol notification set by the client (using the
-    * NPN extension) for this connection, if any
-    */
-    string nextProtocol() const { return m_next_protocol; }
-
 	void* getUserData() { return m_user_data; }
 
 protected:
@@ -218,10 +212,10 @@ protected:
             }
             catch (Throwable) {}
 
-            m_next_protocol = "";
+            m_application_protocol = "";
 
             if (state.clientHello().supportsAlpn())
-                m_next_protocol = m_choose_next_protocol(state.clientHello().nextProtocols());
+                m_application_protocol = m_choose_next_protocol(state.clientHello().nextProtocols());
 
             if (resuming)
             {
@@ -243,7 +237,7 @@ protected:
                                                   secureRenegotiationDataForServerHello(),
                                                   offer_new_session_ticket,
                                                   state.clientHello().supportsAlpn(),
-                                                  m_next_protocol,
+                                                  m_application_protocol,
                                                   state.clientHello().supportsHeartbeats(),
                                                   rng()));
                 
@@ -324,7 +318,7 @@ protected:
                                         secureRenegotiationDataForServerHello(),
                                         state.clientHello().supportsSessionTicket() && have_session_ticket_key,
                                         state.clientHello().supportsAlpn(),
-                                        m_next_protocol,
+                                        m_application_protocol,
                                         state.clientHello().supportsHeartbeats(),
                                         rng()
                     )
@@ -542,7 +536,6 @@ private:
 
     NextProtocolHandler m_choose_next_protocol;
 	SNIHandler m_sni_handler;
-    string m_next_protocol;
 	void* m_user_data;
 }
 

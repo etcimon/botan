@@ -221,8 +221,8 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
             client.send("1");
         if (server.isActive())
         {
-            if (server.nextProtocol() != "test/3")
-                logError("Wrong protocol " ~ server.nextProtocol());
+            if (server.applicationProtocol() != "test/3")
+                logError("Wrong protocol " ~ server.applicationProtocol());
             server.send("2");
         }
         

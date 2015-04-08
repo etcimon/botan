@@ -106,7 +106,7 @@ string PKTEST(string expr, string msg)
             const bool test_result = ` ~ expr ~ `;
             if (!test_result)
             {
-                logTrace("Test " ~ ` ~ expr ~ ` ~ " failed: ` ~ msg ~ `");
+                logError("Test " ~ ` ~ expr ~ ` ~ " failed: ` ~ msg ~ `");
                 ++fails;
             }
         }

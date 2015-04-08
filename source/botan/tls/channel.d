@@ -483,10 +483,14 @@ public:
             throw new Exception("key_material_export connection not active");
     }
 
+	/// Returns the ALPN chosen in the ServerHello with the ALPN extention
+	const(string) applicationProtocol() const { return m_application_protocol; }
+
     ~this()
     {
         resetState();
     }
+
 protected:
 
     abstract void processHandshakeMsg(in HandshakeState active_state,
@@ -712,7 +716,7 @@ protected:
 
     bool saveSession(in TLSSession session) const { return m_handshake_cb(session); }
 
-package:
+private:
 
     size_t maximumFragmentSize() const
     {
@@ -842,6 +846,7 @@ package:
 
     const(HandshakeState) pendingState() const { return *m_pending_state; }
 
+	package string m_application_protocol;
     bool m_is_datagram;
 
     /* callbacks */
@@ -852,7 +857,7 @@ package:
 
     /* external state */
     RandomNumberGenerator m_rng;
-    TLSSessionManager m_session_manager;
+    package TLSSessionManager m_session_manager; // fixme: package protection for switchContext, use protected: method instead
 
     /* sequence number state */
     Unique!ConnectionSequenceNumbers m_sequence_numbers;

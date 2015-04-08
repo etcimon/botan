@@ -70,8 +70,6 @@ public:
         sendClientHello(state, false, offer_version, srp_identifier, next_protocols.move());
     }
 
-    string applicationProtocol() const { return m_application_protocol; }
-
 protected:
     override Vector!X509Certificate getPeerCertChain(in HandshakeState state) const
     {
@@ -463,7 +461,6 @@ private:
     const TLSPolicy m_policy;
     TLSCredentialsManager m_creds;
     const TLSServerInformation m_info;
-    string m_application_protocol;
 }
 
 
