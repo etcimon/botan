@@ -301,7 +301,7 @@ static if (!SKIP_ELGAMAL_TEST) unittest
     fails += runTestsBb(elgamal_enc, "ElGamal Encryption", "Ciphertext", true,
         (ref HashMap!(string, string) m) {
             return elgamalKat(m["P"], m["G"], m["X"], m["Msg"],
-            m["Padding"], m["Nonce"], m["Ciphertext"]);
+            m.get("Padding", ""), m["Nonce"], m["Ciphertext"]);
         });
     
     testReport("elg", total_tests, fails);
