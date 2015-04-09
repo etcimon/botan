@@ -10,5 +10,6 @@
     "dependencies": {
             "botan": { "version": "~master", "path": "../../" } 
     }, 
-	"subConfigurations": { "botan": "hash" }
+	"subConfigurations": { "botan": "hash" },
+	"versions": ["Skein_512", "Threefish"]
 }
