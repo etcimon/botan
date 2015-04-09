@@ -12,7 +12,7 @@
 module botan.math.bigint.bigint;
 
 import botan.constants;
-static if (BOTAN_HAS_PUBLIC_KEY_CRYPTO):
+mixin("static if (BOTAN_HAS_PUBLIC_KEY_CRYPTO):");
 
 public import botan.math.mp.mp_types;
 public import botan.utils.types;
