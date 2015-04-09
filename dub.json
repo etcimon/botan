@@ -59,7 +59,7 @@
         },
         {
             "name": "hash",
-            "versions": ["Locking_Allocator", "SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24"]
+            "versions": ["Locking_Allocator", "HMAC", "Entropy_Win32", "Entropy_Rdrand", "SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24"]
         }
     ],
     "dependencies": {
