@@ -171,7 +171,7 @@ static if (BOTAN_TEST):
 import botan.test;
 import botan.rng.auto_rng;
 
-static if (!SKIP_BCRYPT_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_BCRYPT_TEST) unittest
 {
     import botan.libstate.libstate;
     globalState();

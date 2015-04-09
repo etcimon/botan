@@ -268,7 +268,7 @@ CompressorTransform makeDecompressor(in string type)
     throw new Exception("Unknown compression type " ~ type);
 }
 
-static if (!SKIP_COMPRESSION_TEST) unittest {  
+static if (BOTAN_HAS_TESTS && !SKIP_COMPRESSION_TEST) unittest {  
     logDebug("Testing compress.d ...");  
 	{
 		static if (BOTAN_HAS_ZLIB) {

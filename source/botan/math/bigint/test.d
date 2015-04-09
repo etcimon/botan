@@ -283,7 +283,7 @@ size_t isPrimeTest(const ref Vector!string args, RandomNumberGenerator rng)
     return 0;
 }
 
-static if (!SKIP_BIGINT_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_BIGINT_TEST) unittest
 {
     import botan.libstate.global_state;
     auto state = globalState(); // ensure initialized

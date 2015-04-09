@@ -14,8 +14,6 @@ module botan.cert.cvc.cvc_self;
 import botan.constants;
 static if (BOTAN_HAS_CARD_VERIFIABLE_CERTIFICATES):
 
-static assert(BOTAN_HAS_ECDSA, "CVC requires ECDSA");
-
 alias cvc_self = botan.cert.cvc.cvc_self;
 
 public import botan.pubkey.algo.ecc_key;

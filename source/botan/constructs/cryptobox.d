@@ -176,7 +176,7 @@ static if (BOTAN_TEST):
 import botan.test;
 import botan.rng.auto_rng;
 
-static if (!SKIP_CRYPTOBOX_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_CRYPTOBOX_TEST) unittest
 {
     logDebug("Testing cryptobox.d ...");
     import botan.libstate.global_state;

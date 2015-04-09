@@ -11,8 +11,6 @@
 module botan.asn1.ber_dec;
 
 import botan.constants;
-static if (BOTAN_HAS_PUBLIC_KEY_CRYPTO):
-
 public import botan.asn1.asn1_oid;
 import botan.filters.data_src;
 import botan.math.bigint.bigint;

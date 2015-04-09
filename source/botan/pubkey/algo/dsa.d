@@ -350,7 +350,7 @@ size_t dsaSigKat(string p,
     return validateSignature(verify, sign, "DSA/" ~ hash, msg, rng, nonce, signature);
 }
 
-static if (!SKIP_DSA_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_DSA_TEST) unittest
 {
     logDebug("Testing dsa.d ...");
     size_t fails;

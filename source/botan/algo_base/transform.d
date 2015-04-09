@@ -225,7 +225,7 @@ SecureVector!ubyte transformTest(string algo,
     return output;
 }
 
-static if (!SKIP_TRANSFORM_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_TRANSFORM_TEST) unittest
 {
     logDebug("Testing transform.d ...");
     File vec = File("../test_data/transform.vec", "r");

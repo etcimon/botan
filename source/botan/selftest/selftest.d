@@ -11,7 +11,7 @@
 module botan.selftest.selftest;
 
 import botan.constants;
-static if (BOTAN_HAS_SELFTESTS):
+static if (BOTAN_HAS_SELFTESTS && BOTAN_HAS_PUBLIC_KEY_CRYPTO):
 
 import botan.algo_factory.algo_factory;
 import botan.algo_base.scan_token;

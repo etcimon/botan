@@ -290,7 +290,7 @@ public:
 	override bool sendFallbackSCSV(in TLSProtocolVersion) const { return false; }
 }
 
-static if (!SKIP_TLS_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
 {
 	import botan.libstate.global_state;
 	auto state = globalState(); // ensure initialized

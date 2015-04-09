@@ -80,7 +80,7 @@ size_t rfc6979Testcase(string q_str,
     return 0;
 }
 
-static if (!SKIP_RFC6979_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_RFC6979_TEST) unittest
 {
     logDebug("Testing rfc6979.d ...");
     

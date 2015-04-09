@@ -138,7 +138,7 @@ public:
                       Duration loop_for) const;
 }
 
-static if (!SKIP_PBKDF_TEST) unittest {
+static if (BOTAN_HAS_TESTS && !SKIP_PBKDF_TEST) unittest {
     logDebug("Testing pbkdf.d ...");
     import botan.test;
     import botan.codec.hex;

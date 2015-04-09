@@ -12,8 +12,6 @@
 module botan.asn1.asn1_obj;
 
 import botan.constants;
-mixin("static if (BOTAN_HAS_PUBLIC_KEY_CRYPTO):");
-
 public import botan.asn1.der_enc;
 public import botan.asn1.ber_dec;
 public import botan.asn1.alg_id;

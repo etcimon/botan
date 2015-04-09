@@ -281,7 +281,7 @@ size_t blockTest(string algo, string key_hex, string in_hex, string out_hex)
     return fails;
 }
 
-static if (!SKIP_BLOCK_TEST) unittest {
+static if (BOTAN_HAS_TESTS && !SKIP_BLOCK_TEST) unittest {
 
 
     logDebug("Testing block_cipher.d ...");

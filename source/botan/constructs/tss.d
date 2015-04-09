@@ -320,7 +320,7 @@ import botan.test;
 import botan.rng.auto_rng;
 import botan.codec.hex;
 
-static if (!SKIP_TSS_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_TSS_TEST) unittest
 {
     logDebug("Testing tss.d ...");
     auto rng = AutoSeededRNG();

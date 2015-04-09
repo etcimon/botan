@@ -48,6 +48,10 @@ const SKIP_RNG_TEST = false;
 const SKIP_STREAM_CIPHER_TEST = false;
 const SKIP_TLS_TEST = false;
 
+version(CanTest)     {    const BOTAN_HAS_TESTS = true;                                                         }
+else                      const BOTAN_HAS_TESTS = false;
+
+
 // This indicates the corresponding Botan (C++) version numbers
 const BOTAN_VERSION_MAJOR = 1;
 const BOTAN_VERSION_MINOR = 11;

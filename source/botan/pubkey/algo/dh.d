@@ -230,7 +230,7 @@ size_t dhSigKat(string p, string g, string x, string y, string kdf, string outle
     return validateKas(kas, "DH/" ~ kdf, otherkey.publicValue(), key, keylen);
 }
 
-static if (!SKIP_DH_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_DH_TEST) unittest
 {
     logDebug("Testing dh.d ...");
     size_t fails = 0;

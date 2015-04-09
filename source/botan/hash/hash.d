@@ -104,7 +104,7 @@ size_t hashTest(string algo, string in_hex, string out_hex)
     return fails;
 }
 
-static if (!SKIP_HASH_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_HASH_TEST) unittest
 {
     logDebug("Testing hash.d ...");
     import botan.libstate.libstate : globalState;

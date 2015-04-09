@@ -190,7 +190,7 @@ size_t keywrapTest(string key_str,
     return fail;
 }
 
-static if (!SKIP_RFC3394_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_RFC3394_TEST) unittest
 {
     logDebug("Testing rfc3394.d ...");
 

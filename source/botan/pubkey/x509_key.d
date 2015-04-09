@@ -237,7 +237,7 @@ uint checkAgainstCopy(const PrivateKey orig, RandomNumberGenerator rng)
     return 0;
 }
 
-static if (!SKIP_X509_KEY_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_X509_KEY_TEST) unittest
 {
     logDebug("Testing x509_key ...");
     auto rng = AutoSeededRNG();

@@ -779,7 +779,7 @@ size_t eccPointMul(in string group_id,
     return fails;
 }
 
-static if (!SKIP_ECDSA_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_ECDSA_TEST) unittest
 {
     logDebug("Testing ecdsa.d ...");
     size_t fails = 0;

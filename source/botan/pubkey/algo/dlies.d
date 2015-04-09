@@ -224,7 +224,7 @@ size_t dliesKat(string p,
     return validateEncryption(e, d, "DLIES", msg, "", ciphertext);
 }
 
-static if (!SKIP_DLIES_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_DLIES_TEST) unittest
 {
     logDebug("Testing dlies.d ...");
     size_t fails = 0;

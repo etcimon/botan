@@ -171,7 +171,7 @@ CertificateStatusCode[] getExpected()
     return expected_results;
 }
 
-static if (!SKIP_X509_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_X509_TEST) unittest
 {
     import botan.libstate.global_state;
     auto state = globalState(); // ensure initialized

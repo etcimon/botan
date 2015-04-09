@@ -350,7 +350,7 @@ size_t rwSigVerify(string e,
     return 0;
 }
 
-static if (!SKIP_RW_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_RW_TEST) unittest
 {
     logDebug("Testing rw.d ...");
     size_t fails = 0;

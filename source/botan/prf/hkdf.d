@@ -156,7 +156,7 @@ size_t hkdfTest(string algo, string ikm, string salt, string info, string okm, s
     return 0;
 }
 
-static if (!SKIP_HKDF_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_HKDF_TEST) unittest
 {
     logDebug("Testing hkdf.d ...");
     File vec = File("../test_data/hkdf.vec", "r");

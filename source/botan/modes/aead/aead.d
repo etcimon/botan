@@ -268,7 +268,7 @@ size_t aeadTest(string algo, string input, string expected, string nonce_hex, st
     return fail;
 }
 
-static if (!SKIP_AEAD_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_AEAD_TEST) unittest
 {
     logDebug("Testing aead.d ...");
     auto test = delegate(string input)

@@ -885,7 +885,7 @@ size_t randomizedTest()
     return fails;
 }
 
-static if (!SKIP_EC_GFP_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_EC_GFP_TEST) unittest
 {
     import botan.libstate.global_state;
     auto state = globalState(); // ensure initialized

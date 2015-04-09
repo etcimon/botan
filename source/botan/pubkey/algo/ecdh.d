@@ -234,7 +234,7 @@ size_t testEcdhDerDerivation(RandomNumberGenerator rng)
     return fails;
 }
 
-static if (!SKIP_ECDH_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_ECDH_TEST) unittest
 {
     logDebug("Testing ecdh.d ...");
     size_t fails = 0;

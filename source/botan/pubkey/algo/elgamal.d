@@ -287,7 +287,7 @@ size_t elgamalKat(string p,
     return validateEncryption(enc, dec, "ElGamal/" ~ padding, msg, nonce, ciphertext);
 }
 
-static if (!SKIP_ELGAMAL_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_ELGAMAL_TEST) unittest
 {
     logDebug("Testing elgamal.d ...");
     size_t fails = 0;

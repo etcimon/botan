@@ -626,7 +626,7 @@ size_t testOcbLong(ref AlgorithmFactory af, size_t keylen, size_t taglen, in str
     return 0;
 }
 
-static if (!SKIP_OCB_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_OCB_TEST) unittest
 {
     import botan.libstate.libstate;
     globalState();

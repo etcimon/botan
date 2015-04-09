@@ -11,7 +11,7 @@
     "configurations": [
         {
             "name": "full_x64",
-            "versions": ["SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24", "PBKDF1", "PBKDF2", "CTR_BE", "HMAC", 
+            "versions": ["CanTest", "SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24", "PBKDF1", "PBKDF2", "CTR_BE", "HMAC", 
             "EMSA1", "EMSA1_BSI", "EMSA_X931", "EMSA_PKCS1", "EMSA_PSSR", "EMSA_RAW", "EME_OAEP", "EME_PKCS1v15", "PBE_PKCSv20", 
             "Self_Tests", "ECB", "CBC", "XTS", "OFB", "CFB", 
             "AEAD_FILTER", "AEAD_CCM", "AEAD_EAX", "AEAD_OCB", "AEAD_GCM", "GCM_CLMUL", "AEAD_SIV", "RFC6979", "RSA", "RW", "DLIES", "DSA", "ECDSA", "ElGamal", "GOST_3410", 
@@ -28,7 +28,7 @@
         },
         {
             "name": "full_x86",
-            "versions": ["Serpent_x86_32", "MD4_x86_32", "MD5_x86_32", "SHA1_x86_32",
+            "versions": ["CanTest", "Serpent_x86_32", "MD4_x86_32", "MD5_x86_32", "SHA1_x86_32",
             "SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24", "PBKDF1", "PBKDF2", "CTR_BE", "HMAC", 
             "EMSA1", "EMSA1_BSI", "EMSA_X931", "EMSA_PKCS1", "EMSA_PSSR", "EMSA_RAW", "EME_OAEP", "EME_PKCS1v15", "PBE_PKCSv20", 
             "Self_Tests", "ECB", "CBC", "XTS", "OFB", "CFB", 
@@ -63,7 +63,7 @@
         }
     ],
     "dependencies": {
-            "memutils": { "version": "~master", "path": "../memutils" } 
+            "memutils": { "version": "~master" } 
     }, 
     "libs-posix": ["dl"],
     "libs-windows": ["advapi32", "user32"],

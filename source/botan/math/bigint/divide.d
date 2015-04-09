@@ -11,8 +11,6 @@
 module botan.math.bigint.divide;
 
 import botan.constants;
-static if (BOTAN_HAS_PUBLIC_KEY_CRYPTO):
-
 import botan.math.bigint.bigint;
 import botan.math.mp.mp_core;
 import botan.constants;

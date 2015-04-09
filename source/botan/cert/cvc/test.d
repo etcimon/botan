@@ -583,7 +583,7 @@ void testCvcChain(RandomNumberGenerator rng)
     mixin( CHECK(` is_cert1.checkSignature(dvca_priv_key) `) );
 }
 
-static if (!SKIP_CVC_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_CVC_TEST) unittest
 {
 
     logDebug("Testing cvc/test.d ...");

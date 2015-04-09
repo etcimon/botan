@@ -12,8 +12,6 @@
 module botan.math.mp.mp_core;
 
 import botan.constants;
-static if (BOTAN_HAS_PUBLIC_KEY_CRYPTO):
-
 public import botan.math.mp.mp_types;
 import botan.utils.exceptn;
 import botan.utils.mem_ops;

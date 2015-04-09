@@ -185,7 +185,7 @@ import botan.test;
 import memutils.hashmap;
 import core.atomic;
 shared(int) g_total_tests;
-static if (!SKIP_KDF_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_KDF_TEST) unittest
 {
     logDebug("Testing kdf.d ...");
     auto test = delegate(string input) {

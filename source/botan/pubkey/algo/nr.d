@@ -323,7 +323,7 @@ size_t nrSigKat(string p, string q, string g, string x,
     return validateSignature(verify, sign, "nr/" ~ hash, msg, rng, nonce, signature);
 }
 
-static if (!SKIP_NR_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_NR_TEST) unittest
 {
     logDebug("Testing nr.d ...");
     size_t fails = 0;

@@ -410,7 +410,7 @@ size_t testPkKeygen(RandomNumberGenerator rng)
     return fails;
 }
 
-static if (!SKIP_RSA_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_RSA_TEST) unittest
 {
     logDebug("Testing rsa.d ...");
     size_t fails = 0;

@@ -359,7 +359,7 @@ size_t gostVerify(string group_id,
     return 0;
 }
 
-static if (!SKIP_GOST_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_GOST_TEST) unittest
 {
     logDebug("Testing gost_3410.d ...");
     size_t fails = 0;

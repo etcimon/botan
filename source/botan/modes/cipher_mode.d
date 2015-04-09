@@ -84,7 +84,7 @@ size_t modeTest(string algo, string pt, string ct, string key_hex, string nonce_
     return fails;
 }
 
-static if (!SKIP_CIPHER_MODE_TEST) unittest {
+static if (BOTAN_HAS_TESTS && !SKIP_CIPHER_MODE_TEST) unittest {
     logDebug("Testing cipher_mode.d ...");
     auto test = delegate(string input)
     {

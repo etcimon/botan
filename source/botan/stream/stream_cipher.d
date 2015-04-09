@@ -138,7 +138,7 @@ size_t streamTest(string algo,
     return fails;
 }
 
-static if (!SKIP_STREAM_CIPHER_TEST) unittest
+static if (BOTAN_HAS_TESTS && !SKIP_STREAM_CIPHER_TEST) unittest
 {
     logDebug("Testing stream_cipher.d ...");
     auto test = delegate(string input)
