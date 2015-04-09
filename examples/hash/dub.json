@@ -1,6 +1,6 @@
 {
-    "name": "sha1",
-    "description": "A Botan test for sha1",
+    "name": "hash",
+    "description": "A Botan test for hashing",
     "license": "MIT",
     "authors": ["Etienne Cimon", "See CREDITS.md for more."],
     "targetName": "botan",
@@ -10,6 +10,6 @@
     "dependencies": {
             "botan": { "version": "~master", "path": "../../" } 
     }, 
-	"subConfigurations": { "botan": "hash" },
-	"versions": ["Skein_512", "Threefish"]
+    "subConfigurations": { "botan": "hash" },
+    "versions": ["Skein_512", "Threefish"]
 }
