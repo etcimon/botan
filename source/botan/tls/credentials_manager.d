@@ -253,8 +253,6 @@ public:
     }
 }
 
-private:
-
 bool certInSomeStore(const ref Vector!CertificateStore trusted_CAs, in X509Certificate trust_root)
 {
     foreach (const ref CertificateStore CAs; trusted_CAs[])

@@ -87,8 +87,8 @@ public:
         m_minimum_key_strength = minimum_key_strength;
     }
 
-	int maxCertChainLength() const { return m_max_cert_chain_length; }
-	void setMaxCertChainLength(int sz) { m_max_cert_chain_length = sz; }
+	@property int maxCertChainLength() const { return m_max_cert_chain_length; }
+	@property void maxCertChainLength(int sz) { m_max_cert_chain_length = sz; }
 
     bool requireRevocationInformation() const
     { return m_require_revocation_information; }

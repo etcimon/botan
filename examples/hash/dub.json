@@ -11,5 +11,5 @@
             "botan": { "version": "~master", "path": "../../" } 
     }, 
     "subConfigurations": { "botan": "hash" },
-    "versions": ["Skein_512", "Threefish"]
+    "versions": ["DisableDebugger", "Skein_512", "Threefish"]
 }

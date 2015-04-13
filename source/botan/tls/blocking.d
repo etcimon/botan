@@ -24,7 +24,7 @@ import memutils.circularbuffer;
 import memutils.utils;
 import std.algorithm;
 
-alias DataReader = ubyte[] delegate(in ubyte[]);
+alias DataReader = ubyte[] delegate(ubyte[]);
 
 /**
 * Blocking TLS Channel
@@ -169,7 +169,7 @@ public:
 
     void close() { channel.close(); }
 
-    bool isClosed() const { return channel.isClosed(); }
+    bool isClosed() const { return !channel || channel.isClosed(); }
 
     const(Vector!X509Certificate) peerCertChain() const { return channel.peerCertChain(); }
 
@@ -234,7 +234,9 @@ private:
         TLSServer server;
     }
 
-	@property inout(TLSChannel) channel() inout { return (m_is_client ? cast(inout(TLSChannel)) m_impl.client : cast(inout(TLSChannel)) m_impl.server); }
+	@property inout(TLSChannel) channel() inout { 
+		return (m_is_client ? cast(inout(TLSChannel)) m_impl.client : cast(inout(TLSChannel)) m_impl.server); 
+	}
 
     bool m_is_client;
     DataReader m_read_fn;
