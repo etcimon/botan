@@ -25,12 +25,12 @@ import std.algorithm;
 import std.datetime;
 import botan.utils.types;
 import memutils.rbtree : RBTreeRef, RBTree;
-version(Have_vibe_d) {
-    import vibe.core.concurrency;
-}
-else {
+//version(Have_vibe_d) {
+//    import vibe.core.concurrency;
+//}
+//else {
     import std.concurrency;
-}
+//}
 import botan.cert.x509.cert_status;
 import botan.cert.x509.x509cert;
 import core.sync.mutex;
@@ -445,9 +445,9 @@ Vector!( RBTreeRef!CertificateStatusCode )
 
             ocsp_data.length = i + 1;
 
-            version(Have_vibe_d)
-                Tid id_ = runTask(&onlineCheck, cast(shared)Tid.getThis(), cast(shared)i, cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)trusted);
-            else
+            //version(Have_vibe_d)
+            //    Tid id_ = runTask(&onlineCheck, cast(shared)Tid.getThis(), cast(shared)i, cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)trusted);
+            //else
                 Tid id_ = spawn(&onlineCheck, cast(shared)thisTid(), cast(shared)i,  cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)trusted);
             ocsp_responses ~= id_;
         }

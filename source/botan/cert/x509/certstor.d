@@ -17,6 +17,8 @@ import botan.cert.x509.x509_crl;
 import botan.utils.types;
 import std.file;
 
+version(X509):
+
 /**
 * Certificate Store Interface
 */

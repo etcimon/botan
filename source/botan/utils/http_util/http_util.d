@@ -19,16 +19,16 @@ import std.stdio;
 import std.conv;
 import std.string;
 import std.array : Appender;
-
+/*
 version (Have_vibe_d) {
     import vibe.core.net;
     import vibe.core.stream;
     import vibe.stream.operations : readAll;
-} else {
+} else {*/
     import std.socket;
     import std.stream;
     import std.socketstream;
-}
+//}
 // import string;
 
 struct HTTPResponse
@@ -239,14 +239,14 @@ HTTPResponse POST_sync(ALLOC)(in string url, in string content_type,
 string httpTransact(in string hostname, in string message)
 {
 
-    version (Have_vibe_d) {
+/*    version (Have_vibe_d) {
 
         TCPConnection stream = connectTCP(hostname, 80);
         scope(exit) stream.close();
         stream.write(message);
         stream.finished();
         return stream.readAll();
-    } else {
+    } else {*/
         Socket socket = new TcpSocket(new InternetAddress(hostname, 80));
         scope(exit) socket.close();
         SocketStream stream = new SocketStream(socket);
@@ -262,5 +262,5 @@ string httpTransact(in string hostname, in string message)
             in_buf ~= line;
         }
         return in_buf.data;
-    }
+ //   }
 }

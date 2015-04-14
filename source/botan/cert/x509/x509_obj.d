@@ -25,6 +25,8 @@ import std.algorithm;
 import botan.utils.types;
 import botan.utils.types;
 
+version(X509):
+
 /**
 * This class represents abstract X.509 signed objects as
 * in the X.500 SIGNED macro

@@ -10,8 +10,9 @@
     "workingDirectory": "build",
     "configurations": [
         {
-            "name": "full_x64",
-            "versions": ["CanTest", "SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24", "PBKDF1", "PBKDF2", "CTR_BE", "HMAC", 
+            "name": "full",
+
+            "versions-x86_64": ["CanTest", "SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24", "PBKDF1", "PBKDF2", "CTR_BE", "HMAC", 
             "EMSA1", "EMSA1_BSI", "EMSA_X931", "EMSA_PKCS1", "EMSA_PSSR", "EMSA_RAW", "EME_OAEP", "EME_PKCS1v15", "PBE_PKCSv20", 
             "Self_Tests", "ECB", "CBC", "XTS", "OFB", "CFB", 
             "AEAD_FILTER", "AEAD_CCM", "AEAD_EAX", "AEAD_OCB", "AEAD_GCM", "GCM_CLMUL", "AEAD_SIV", "RFC6979", "RSA", "RW", "DLIES", "DSA", "ECDSA", "ElGamal", "GOST_3410", 
@@ -24,11 +25,9 @@
             "Entropy_HRTimer", "Entropy_Rdrand", "Entropy_DevRand", "Entropy_EGD", "Entropy_UnixProc", "Entropy_CAPI", 
             "Entropy_Win32", "Entropy_ProcWalk", "X931_RNG", "HMAC_DRBG", "KDF1", "KDF2", "SSL_V3_PRF", "TLS_V10_PRF", "TLS_V12_PRF", "X942_PRF",
             "TLS", "X509", "PUBKEY", "FPE_FE1", "RFC3394", "PassHash9", "BCrypt", "SRP6", "TSS", "CryptoBox", 
-            "CryptoBox_PSK", "ZLib"]
-        },
-        {
-            "name": "full_x86",
-            "versions": ["CanTest", "Serpent_x86_32", "MD4_x86_32", "MD5_x86_32", "SHA1_x86_32",
+            "CryptoBox_PSK", "ZLib"],
+
+            "versions-x86": ["CanTest", "Serpent_x86_32", "MD4_x86_32", "MD5_x86_32", "SHA1_x86_32",
             "SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24", "PBKDF1", "PBKDF2", "CTR_BE", "HMAC", 
             "EMSA1", "EMSA1_BSI", "EMSA_X931", "EMSA_PKCS1", "EMSA_PSSR", "EMSA_RAW", "EME_OAEP", "EME_PKCS1v15", "PBE_PKCSv20", 
             "Self_Tests", "ECB", "CBC", "XTS", "OFB", "CFB", 
@@ -44,7 +43,7 @@
             "TLS", "X509", "PUBKEY", "FPE_FE1", "RFC3394", "PassHash9", "BCrypt", "SRP6", "TSS", "CryptoBox", "CryptoBox_PSK"]
         }, 
         {
-            "name": "full_win32",
+            "name": "32mscoff",
             "versions": ["CanTest", "Serpent_x86_32", "MD4_x86_32", "MD5_x86_32", "SHA1_x86_32",
             "SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24", "PBKDF1", "PBKDF2", "CTR_BE", "HMAC", 
             "EMSA1", "EMSA1_BSI", "EMSA_X931", "EMSA_PKCS1", "EMSA_PSSR", "EMSA_RAW", "EME_OAEP", "EME_PKCS1v15", "PBE_PKCSv20", 

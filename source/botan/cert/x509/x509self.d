@@ -29,6 +29,8 @@ import botan.utils.parsing;
 import botan.pubkey.pkcs8;
 import std.datetime;
 
+static if (__traits(compiles, { X509Time time; }())):
+
 alias X509CertOptions = RefCounted!X509CertOptionsImpl;
 
 /**

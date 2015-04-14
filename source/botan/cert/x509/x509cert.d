@@ -11,7 +11,7 @@
 module botan.cert.x509.x509cert;
 
 import botan.constants;
-
+version(X509):
 public import botan.utils.datastor.datastor;
 public import botan.pubkey.x509_key;
 public import botan.cert.x509.x509_obj;
@@ -36,6 +36,7 @@ import botan.utils.parsing;
 import botan.utils.types : Vector, RefCounted;
 import std.algorithm;
 import std.array : Appender;
+
 
 alias X509Certificate = RefCounted!X509CertificateImpl;
 

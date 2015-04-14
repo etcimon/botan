@@ -11,7 +11,6 @@
 module botan.asn1.x509_dn;
 
 import botan.constants;
-
 public import botan.asn1.asn1_obj;
 public import botan.asn1.asn1_oid;
 public import botan.asn1.asn1_str;
@@ -24,6 +23,8 @@ import memutils.dictionarylist;
 import botan.asn1.oids;
 import memutils.hashmap;
 import std.array : Appender;
+
+version(X509):
 
 alias X509DN = RefCounted!X509DNImpl;
 

@@ -255,8 +255,8 @@ void checkSignature(ALLOC)(auto const ref Vector!(ubyte, ALLOC) tbs_response,
     checkSignature(tbs_response, sig_algo, signature, result.certPath()[0]);
 }
 
-version(Have_vibe_d) import vibe.core.concurrency : Tid, send;
-else import std.concurrency : Tid, send;
+//version(Have_vibe_d) import vibe.core.concurrency : Tid, send; else 
+import std.concurrency : Tid, send;
 /// Checks the certificate online
 void onlineCheck(shared(Tid) sender,
                  shared(size_t) id,
