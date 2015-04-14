@@ -11,7 +11,6 @@
 module botan.cert.x509.x509cert;
 
 import botan.constants;
-static if (BOTAN_HAS_X509_CERTIFICATES):
 
 public import botan.utils.datastor.datastor;
 public import botan.pubkey.x509_key;

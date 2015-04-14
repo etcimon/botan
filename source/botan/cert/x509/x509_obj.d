@@ -11,8 +11,6 @@
 module botan.cert.x509.x509_obj;
 
 import botan.constants;
-static if (BOTAN_HAS_X509_CERTIFICATES):
-
 import botan.asn1.asn1_obj;
 import botan.filters.pipe;
 import botan.rng.rng;

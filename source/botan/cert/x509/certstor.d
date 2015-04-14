@@ -11,7 +11,6 @@
 module botan.cert.x509.certstor;
 
 import botan.constants;
-static if (BOTAN_HAS_X509_CERTIFICATES):
 
 import botan.cert.x509.x509cert;
 import botan.cert.x509.x509_crl;

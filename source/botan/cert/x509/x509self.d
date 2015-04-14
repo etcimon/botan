@@ -10,7 +10,6 @@
 */
 module botan.cert.x509.x509self;
 import botan.constants;
-static if (BOTAN_HAS_X509_CERTIFICATES):
 
 alias x509self = botan.cert.x509.x509self;
 
