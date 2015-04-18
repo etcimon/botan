@@ -178,6 +178,7 @@ public:
     {
         if (ServerNameIndicator sni = m_extensions.get!ServerNameIndicator())
             return sni.hostName();
+		logDebug("No SNI in extensions");
         return "";
     }
 
@@ -272,6 +273,7 @@ public:
          in string hostname,
          in string srp_identifier) 
     {
+		logDebug("ClientHello with hostname: ", hostname);
         bool reneg_empty = reneg_info.empty;
         m_version = _version;
         m_random = makeHelloRandom(rng, policy);
@@ -345,12 +347,13 @@ public:
         
         hash.update(io.send(this));
     }
-
+	bool deserialized;
     /*
     * Read a counterparty client hello
     */
     this(const ref Vector!ubyte buf, HandshakeType type)
     {
+		deserialized = true;
         if (type == CLIENT_HELLO)
             deserialize(buf);
         else
@@ -363,6 +366,17 @@ protected:
     */
     override Vector!ubyte serialize() const
     {
+
+		logDebug("Ciphersuites: ", ciphersuites()[]);
+		logDebug("Supported ECC curves: ", supportedEccCurves()[]);
+		logDebug("SupportedAlgos: ", supportedAlgos()[]);
+		logDebug("Session ID: ", sessionId[]);
+		logDebug("Random: ", random()[]);
+		logDebug("sni Hostname: ", sniHostname);
+		logDebug("sentFallback SCSV: ", sentFallbackSCSV());
+		logDebug("Secure renegotiation: ", secureRenegotiation());
+		logDebug("NextProtocol: ", nextProtocols[]);
+
         Vector!ubyte buf;
         
         buf.pushBack(m_version.majorVersion());

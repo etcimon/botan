@@ -144,9 +144,8 @@ public:
         super(521, a, b);
     }
 
-    shared static this() {
+    static this() {
         prime = BigInt("0x1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-
     }
 
     override ref const(BigInt) getP() const { return prime; }
@@ -181,6 +180,6 @@ public:
         return 1;
     }
 
-    __gshared BigInt prime; 
+    static BigInt prime; 
 }
 

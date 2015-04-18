@@ -44,7 +44,7 @@ public:
     {
         const size_t cipher_keylen = state.ciphersuite().cipherKeylen();
         const size_t mac_keylen = state.ciphersuite().macKeylen();
-        const size_t cipher_nonce_bytes = state.ciphersuite().explicitNonceBytes();
+        const size_t cipher_nonce_bytes = state.ciphersuite().nonceBytesFromHandshake();
         
         const size_t prf_gen = 2 * (mac_keylen + cipher_keylen + cipher_nonce_bytes);
         

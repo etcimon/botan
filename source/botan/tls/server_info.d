@@ -29,6 +29,7 @@ public:
     */
     this(in string hostname, ushort port = 0)
     {
+		logDebug("Server info with hostname: ", hostname);
         m_hostname = hostname; 
         m_port = port; 
     }

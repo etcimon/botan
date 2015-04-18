@@ -51,8 +51,8 @@ public:
            in TLSCiphersuite suite, auto const ref TLSSessionKeys keys) 
     {
         m_start_time = Clock.currTime();
-        m_implicit_nonce_size = suite.implicitNonceBytes();
-        m_explicit_nonce_size = suite.explicitNonceBytes();
+        m_implicit_nonce_size = suite.nonceBytesFromRecord();
+        m_explicit_nonce_size = suite.nonceBytesFromHandshake();
         m_is_ssl3 = _version == TLSProtocolVersion.SSL_V3;
         SymmetricKey mac_key, cipher_key;
         InitializationVector iv;
@@ -78,9 +78,9 @@ public:
             m_aead = aead;
             m_aead.setKey(cipher_key ~ mac_key);
             
-            assert(iv.length == explicitNonceBytes(), "Matching nonce sizes");
+            assert(iv.length == nonceBytesFromHandshake(), "Matching nonce sizes");
             m_nonce = iv.bitsOf();
-            m_nonce.resize(implicitNonceBytes() + explicitNonceBytes());
+            m_nonce.resize(nonceBytesFromRecord() + nonceBytesFromHandshake());
             return;
         }
         
@@ -124,8 +124,8 @@ public:
 
     ref const(SecureVector!ubyte) aeadNonce(const(ubyte)* record, size_t record_len)
     {
-        assert(record_len >= implicitNonceBytes(), "Record includes nonce");
-        copyMem(&m_nonce[explicitNonceBytes()], record, implicitNonceBytes());
+        assert(record_len >= nonceBytesFromRecord(), "Record includes nonce " ~ record_len.to!string ~ " >= " ~ nonceBytesFromRecord().to!string);
+        copyMem(&m_nonce[nonceBytesFromHandshake()], record, nonceBytesFromRecord());
         return m_nonce;
     }
 
@@ -163,9 +163,9 @@ public:
 
     size_t ivSize() const { return m_iv_size; }
 
-    size_t implicitNonceBytes() const { return m_implicit_nonce_size; }
+    size_t nonceBytesFromRecord() const { return m_implicit_nonce_size; }
 
-    size_t explicitNonceBytes() const { return m_explicit_nonce_size; }
+    size_t nonceBytesFromHandshake() const { return m_explicit_nonce_size; }
 
     bool cipherPaddingSingleByte() const { return m_is_ssl3; }
 
@@ -233,6 +233,8 @@ void writeRecord(ref SecureVector!ubyte output,
         
         output ~= msg[0 .. msg_length];
         
+		logDebug("Output: ", output[]);
+		logDebug("msg: ", msg[0 .. msg_length]);
         return;
     }
     
@@ -241,13 +243,13 @@ void writeRecord(ref SecureVector!ubyte output,
         const size_t ctext_size = aead.outputLength(msg_length);
         
         const(SecureVector!ubyte)* nonce = &cipherstate.aeadNonce(msg_sequence);
-        const size_t implicit_nonce_bytes = cipherstate.implicitNonceBytes(); // FIXME, take from ciphersuite
-        const size_t explicit_nonce_bytes = cipherstate.explicitNonceBytes();
+        const size_t nonce_bytes_from_record = cipherstate.nonceBytesFromRecord(); // FIXME, take from ciphersuite
+        const size_t nonce_bytes_from_handshake = cipherstate.nonceBytesFromHandshake();
         
-        assert(nonce.length == implicit_nonce_bytes + explicit_nonce_bytes, "Expected nonce size");
+        assert(nonce.length == nonce_bytes_from_record + nonce_bytes_from_handshake, "Expected nonce size");
         
         // wrong if start returns something
-        const size_t rec_size = ctext_size + implicit_nonce_bytes;
+        const size_t rec_size = ctext_size + nonce_bytes_from_record;
 
         assert(rec_size <= 0xFFFF, "Ciphertext length fits in field");
         
@@ -256,7 +258,7 @@ void writeRecord(ref SecureVector!ubyte output,
         
         aead.setAssociatedDataVec(cipherstate.formatAd(msg_sequence, msg_type, _version, cast(ushort) msg_length));
         
-        output ~= nonce.ptr[explicit_nonce_bytes .. explicit_nonce_bytes + implicit_nonce_bytes];
+        output ~= nonce.ptr[nonce_bytes_from_handshake .. nonce_bytes_from_handshake + nonce_bytes_from_record];
         assert(aead.start(*nonce).empty, "AEAD doesn't return anything from start");
         
         const size_t offset = output.length;
@@ -293,9 +295,7 @@ void writeRecord(ref SecureVector!ubyte output,
         output.resize(output.length + iv_size);
         rng.randomize(&output[$- iv_size], iv_size);
     }
-    
     output ~= msg[0 .. msg_length];
-    
     output.resize(output.length + mac_size);
     cipherstate.mac().flushInto(&output[output.length - mac_size]);
     
@@ -310,8 +310,7 @@ void writeRecord(ref SecureVector!ubyte output,
     if (buf_size > MAX_CIPHERTEXT_SIZE)
         throw new InternalError("Produced ciphertext larger than protocol allows");
     
-    assert(buf_size + header_size == output.length,
-                 "Output buffer is sized properly");
+    assert(buf_size + header_size == output.length, "Output buffer is sized properly");
     
     if (StreamCipher sc = cipherstate.streamCipher())
     {
@@ -406,12 +405,13 @@ size_t readTLSRecord(ref SecureVector!ubyte readbuf,
     assert(!record_version.isDatagramProtocol(), "Expected TLS");
 
     const size_t record_len = make_ushort(readbuf[TLS_HEADER_SIZE-2], readbuf[TLS_HEADER_SIZE-1]);
-    
+	logDebug("Record: ", record_len, " make_ushort(", readbuf[TLS_HEADER_SIZE-2], ", ", readbuf[TLS_HEADER_SIZE-1], ")"); 
+	logDebug("Readbuf: ", readbuf[]);
     if (record_len > MAX_CIPHERTEXT_SIZE)
         throw new TLSException(TLSAlert.RECORD_OVERFLOW, "Got message that exceeds maximum size");
     
     if (size_t needed = fillBufferTo(readbuf, input, input_sz, consumed, TLS_HEADER_SIZE + record_len))
-        return needed; // wrong for DTLS?
+        return needed;
     
     assert(cast(size_t)(TLS_HEADER_SIZE) + record_len == readbuf.length, "Have the full record");
     
@@ -430,20 +430,21 @@ size_t readTLSRecord(ref SecureVector!ubyte readbuf,
         record_sequence = 0;
         epoch = 0;
     }
-
-    ubyte* record_contents = &readbuf[TLS_HEADER_SIZE];
-    
+	logDebug("contents");
+    ubyte* record_contents = readbuf.ptr + TLS_HEADER_SIZE;
+	
     if (epoch == 0) // Unencrypted initial handshake
     {
+		logDebug("epoch");
         record[] = readbuf.ptr[TLS_HEADER_SIZE .. TLS_HEADER_SIZE + record_len];
         readbuf.clear();
         return 0; // got a full record
     }
-    
+	logDebug("epoch done");
     // Otherwise, decrypt, check MAC, return plaintext
 	auto ccs = get_cipherstate(epoch);
     ConnectionCipherState cipherstate = cast(ConnectionCipherState) ccs;
-    
+	logDebug("Input length: ", input_sz); 
     assert(cipherstate, "Have cipherstate for this epoch");
     decryptRecord(record,
                   record_contents,
@@ -455,7 +456,7 @@ size_t readTLSRecord(ref SecureVector!ubyte readbuf,
     
     if (sequence_numbers)
         sequence_numbers.readAccept(record_sequence);
-    
+			logDebug("clear");
     readbuf.clear();
     return 0;
 }
@@ -678,7 +679,7 @@ void decryptRecord(ref SecureVector!ubyte output,
     if (AEADMode aead = cipherstate.aead())
     {
         const(SecureVector!ubyte)* nonce = &cipherstate.aeadNonce(record_contents, record_len);
-        const size_t nonce_length = cipherstate.implicitNonceBytes();
+        const size_t nonce_length = cipherstate.nonceBytesFromRecord();
         
         assert(record_len > nonce_length, "Have data past the nonce");
         const(ubyte)* msg = &record_contents[nonce_length];

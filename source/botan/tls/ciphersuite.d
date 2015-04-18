@@ -486,9 +486,9 @@ public:
     */
     size_t cipherKeylen() const { return m_cipher_keylen; }
 
-    size_t explicitNonceBytes() const { return m_explicit_nonce_bytes; }
+    size_t nonceBytesFromHandshake() const { return m_nonce_bytes_from_handshake; }
 
-    size_t implicitNonceBytes() const { return m_implicit_nonce_bytes; }
+    size_t nonceBytesFromRecord() const { return m_nonce_bytes_from_record; }
 
     size_t macKeylen() const { return m_mac_keylen; }
 
@@ -585,8 +585,8 @@ private:
          string kex_algo,
          string cipher_algo,
          size_t cipher_keylen,
-         size_t ex_nonce_bytes,
-         size_t imp_nonce_bytes,
+         size_t nonce_bytes_from_handshake,
+         size_t nonce_bytes_from_record,
          string mac_algo,
          size_t mac_keylen,
          string prf_algo = "")
@@ -597,8 +597,8 @@ private:
         m_prf_algo = prf_algo;
         m_cipher_algo = cipher_algo;
         m_cipher_keylen = cipher_keylen;
-        m_explicit_nonce_bytes = ex_nonce_bytes;
-        m_implicit_nonce_bytes = imp_nonce_bytes;
+        m_nonce_bytes_from_handshake = nonce_bytes_from_handshake;
+        m_nonce_bytes_from_record = nonce_bytes_from_record;
         m_mac_algo = mac_algo;
         m_mac_keylen = mac_keylen;
     }
@@ -631,8 +631,8 @@ private:
 
     size_t m_cipher_keylen;
     size_t m_cipher_ivlen;
-    size_t m_explicit_nonce_bytes;
-    size_t m_implicit_nonce_bytes;
+    size_t m_nonce_bytes_from_handshake;
+    size_t m_nonce_bytes_from_record;
     string m_mac_algo;
     size_t m_mac_keylen;
 }

@@ -93,7 +93,6 @@ protected:
                          Vector!string next_protocols = Vector!string())
     {
         ClientHandshakeState state = cast(ClientHandshakeState)(state_base);
-
         if (state.Version().isDatagramProtocol())
             state.setExpectedNext(HELLO_VERIFY_REQUEST); // optional
         state.setExpectedNext(SERVER_HELLO);
@@ -200,7 +199,7 @@ protected:
             
             import std.algorithm : setDifference;
             import std.range : empty, array;
-            auto diff = setDifference(server_extn[], client_extn[]);
+            auto diff = setDifference(server_extn[].sort(), client_extn[].sort());
             if (!diff.empty)
             {
                 throw new TLSException(TLSAlert.HANDSHAKE_FAILURE,
@@ -208,6 +207,9 @@ protected:
             }
             
             state.setVersion(state.serverHello().Version());
+			logDebug("Sent extensions: ", client_extn[]); 
+			logDebug("Got extensions: ", server_extn[]); 
+			logDebug("Got alpn: ", state.serverHello().nextProtocol());
             m_application_protocol = state.serverHello().nextProtocol();
 
             secureRenegotiationCheck(state.serverHello());

@@ -114,7 +114,8 @@ public:
                 
                 if (record.length > max_fragment_size)
                     throw new TLSException(TLSAlert.RECORD_OVERFLOW, "Plaintext record is too large");
-                
+				import std.stdio : writeln;
+				writeln("Got record type: ", record_type);
                 if (record_type == HANDSHAKE || record_type == CHANGE_CIPHER_SPEC)
                 {
                     if (!m_pending_state)
@@ -736,8 +737,7 @@ private:
 
     void sendRecord(ubyte record_type, const ref Vector!ubyte record)
     {
-        sendRecordArray(sequenceNumbers().currentWriteEpoch(),
-                        record_type, record.ptr, record.length);
+        sendRecordArray(sequenceNumbers().currentWriteEpoch(), record_type, record.ptr, record.length);
     }
 
     void sendRecordUnderEpoch(ushort epoch, ubyte record_type, const ref Vector!ubyte record)
@@ -749,7 +749,6 @@ private:
     {
         if (length == 0)
             return;
-        
         /*
         * If using CBC mode without an explicit IV (SSL v3 or TLS v1.0),
         * send a single ubyte of plaintext to randomize the (implicit) IV of

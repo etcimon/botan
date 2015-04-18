@@ -86,7 +86,7 @@ public:
             "AEAD",
             "SHA-384",
             "SHA-256",
-            "SHA-1",
+            // "SHA-1",
             //"MD5",
         ]);
     }
@@ -271,12 +271,12 @@ public:
 
     /**
      * When offering this version, should we send a fallback SCSV?
-     * Default returns true iff version is not the latest version the
+     * Default returns true iff version is the latest version the
      * policy allows, exists to allow override in case of interop problems.
      */
     bool sendFallbackSCSV(in TLSProtocolVersion _version) const
     {
-        return _version != latestSupportedVersion(_version.isDatagramProtocol());
+        return _version == latestSupportedVersion(_version.isDatagramProtocol());
     }
 
     /**

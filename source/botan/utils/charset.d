@@ -39,7 +39,7 @@ string ucs2ToLatin1(in string ucs2)
         throw new DecodingError("UCS-2 string has an odd number of bytes");
     
     Vector!char latin1;
-    latin1.resize(ucs2.length * 2);
+    latin1.reserve(ucs2.length * 2);
 
     for (size_t i = 0; i != ucs2.length; i += 2)
     {
@@ -49,12 +49,12 @@ string ucs2ToLatin1(in string ucs2)
         if (c1 != 0)
             throw new DecodingError("UCS-2 has non-Latin1 characters");
         
-        latin1[i] = cast(char)(c2);
+        latin1 ~= cast(char)(c2);
     }
 
     string ret = latin1.ptr[0 .. latin1.length].idup;
 
-    logDebug(ret);
+    //logDebug(ret);
     
     return ret;
 }
@@ -65,14 +65,14 @@ string ucs2ToLatin1(in string ucs2)
 string utf8ToLatin1(in string utf8)
 {
     Vector!char iso8859;
-    iso8859.resize(utf8.length);
+    iso8859.reserve(utf8.length);
     size_t position = 0;
     while (position != utf8.length)
     {
         const ubyte c1 = cast(ubyte)(utf8[position++]);
         
         if (c1 <= 0x7F)
-            iso8859[position] = cast(char)(c1);
+            iso8859 ~= cast(char)(c1);
         else if (c1 >= 0xC0 && c1 <= 0xC7)
         {
             if (position == utf8.length)
@@ -84,7 +84,7 @@ string utf8ToLatin1(in string utf8)
             if (iso_char <= 0x7F)
                 throw new DecodingError("UTF-8: sequence longer than needed");
             
-            iso8859[position] = cast(char)(iso_char);
+            iso8859 ~= cast(char)(iso_char);
         }
         else
             throw new DecodingError("UTF-8: Unicode chars not in Latin1 used");
@@ -100,17 +100,17 @@ string utf8ToLatin1(in string utf8)
 string latin1ToUtf8(in string iso8859)
 {
     Vector!char utf8;
-    utf8.resize(iso8859.length);
+    utf8.reserve(iso8859.length);
     for (size_t i = 0; i != iso8859.length; ++i)
     {
         const ubyte c = cast(ubyte)(iso8859[i]);
         
         if (c <= 0x7F)
-            utf8[i] = cast(char)(c);
+            utf8 ~= cast(char)(c);
         else
         {
-            utf8[i] = cast(char)((0xC0 | (c >> 6)));
-            utf8[i] = cast(char)((0x80 | (c & 0x3F)));
+            utf8 ~= cast(char)((0xC0 | (c >> 6)));
+            utf8 ~= cast(char)((0x80 | (c & 0x3F)));
         }
     }
     string ret = utf8.ptr[0 .. utf8.length].idup;

@@ -81,6 +81,7 @@ public:
 
     this(in string host_name) 
     {
+		logDebug("SNI loaded with host name: ", host_name);
         m_sni_host_name = host_name;
     }
 
@@ -115,7 +116,7 @@ public:
         }
     }
 
-    string hostName() const { return m_sni_host_name; }
+	string hostName() const { logDebug("Returning host name: ", m_sni_host_name); return m_sni_host_name; }
 
     override Vector!ubyte serialize() const
     {
@@ -335,7 +336,7 @@ public:
                 throw new DecodingError("Bad encoding of ALPN, length field too long");
             
             bytes_remaining -= (p.length + 1);
-            
+			logDebug("Got protocol: ", p); 
             m_protocols.pushBack(p);
         }
     }
@@ -752,10 +753,7 @@ struct TLSExtensions
 public:
     Vector!HandshakeExtensionType extensionTypes() const
     {
-        Vector!HandshakeExtensionType offers;
-        foreach (const ref HandshakeExtensionType t, const ref Extension ext; extensions)
-            offers ~= t;
-        return offers;
+		return m_extensions.types.dup;
     }
 
 
@@ -763,24 +761,25 @@ public:
     {
         HandshakeExtensionType type = T.staticType();
 
-        return cast(T)extensions.get(type, T.init);
+        return cast(T)m_extensions.get(type, T.init);
     }
 
     void add(Extension extn)
     {
         assert(extn);
 
-        auto val = extensions.get(extn.type(), null);
-        if (val)
-            destroy(val);
-        extensions[extn.type()] = extn;
+        auto val = m_extensions.get(extn.type(), null);
+        if (val) {
+			m_extensions.remove(extn.type());
+		}
+        m_extensions.add(extn.type(), extn);
     }
 
     Vector!ubyte serialize() const
     {
         Vector!ubyte buf = Vector!ubyte(2); // 2 bytes for length field
         
-        foreach (const ref Extension extn; extensions)
+        foreach (const ref Extension extn; m_extensions.extensions[])
         {
             if (extn.empty)
                 continue;
@@ -822,7 +821,7 @@ public:
             {
                 const ushort extension_code = reader.get_ushort();
                 const ushort extension_size = reader.get_ushort();
-                
+				logDebug("Got extension: ", extension_code); 
                 Extension extn = makeExtension(reader, extension_code, extension_size);
                 
                 if (extn)
@@ -836,9 +835,54 @@ public:
     this(ref TLSDataReader reader) { deserialize(reader); }
 
 private:
-    HashMap!(HandshakeExtensionType, Extension) extensions;
+	HandshakeExtensions m_extensions;
 }
 
+private struct HandshakeExtensions {
+private:
+	Vector!HandshakeExtensionType types;
+	Vector!Extension extensions;
+
+	Extension get(HandshakeExtensionType type, Extension dflt) const {
+		size_t i;
+		foreach (HandshakeExtensionType t; types[]) {
+			if (t == type)
+				return cast() extensions[i];
+			i++;
+		}
+		return dflt;
+	}
+
+	void add(HandshakeExtensionType type, Extension ext)
+	{
+		types ~= type;
+		extensions ~= ext;
+	}
+
+	void remove(HandshakeExtensionType type) {
+		size_t i;
+		foreach (HandshakeExtensionType t; types[]) {
+			if (t == type) {
+				Vector!HandshakeExtensionType tmp_types;
+				tmp_types.reserve(types.length - 1);
+				tmp_types ~= types[0 .. i];
+				Vector!Extension tmp_extensions;
+				tmp_extensions.reserve(extensions.length - 1);
+				tmp_extensions ~= extensions[0 .. i];
+				if (i != types.length - 1) {
+					tmp_types ~= types[i+1 .. types.length];
+					tmp_extensions ~= extensions[i+1 .. extensions.length];
+				}
+				types[] = tmp_types[];
+				extensions[] = tmp_extensions[];
+				return;
+			}
+			i++;
+		}
+		logError("Could not find a TLS extension we wanted to remove...");
+	}
+
+}
 
 private:
 
