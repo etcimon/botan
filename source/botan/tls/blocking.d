@@ -104,18 +104,22 @@ public:
 	/// Returns an array of pending data
 	const(ubyte)[] peek() {
 		assert(!m_slice);
-		return m_plaintext.length > 0 ? m_plaintext.peekDst : null;
+		return m_plaintext.length > 0 ? m_plaintext.peek : null;
 	}
 
     /// Reads until the destination ubyte array is full, utilizing internal buffers if necessary
     void read(ubyte[] dest) 
     {
+		ubyte[] destlog = dest;
 		assert(!m_slice);
+		logDebug("remaining length: ", dest.length);
         ubyte[] remaining = dest;
         while (remaining.length > 0 && !isClosed()) {
             dest = readBuf(remaining);
             remaining = remaining[dest.length .. $];
+			logDebug("remaining length: ", remaining.length);
         }
+		logDebug("finished with: ", cast(string) destlog);
     }
 
     /**
@@ -128,7 +132,7 @@ public:
 
 		if (m_plaintext.length != 0) {
 			size_t len = min(m_plaintext.length, buf.length);
-			m_plaintext.read(buf);
+			m_plaintext.read(buf[0 .. len]);
 			return buf[0 .. len];
 		}
 		else {
@@ -145,7 +149,9 @@ public:
         {
             const ubyte[] from_socket = m_read_fn(m_readbuf.ptr[0 .. m_readbuf.length]);
             channel.receivedData(cast(const(ubyte)*)from_socket.ptr, from_socket.length);
-        }	
+        }
+
+		if (buf.length == 0) return null;
 
         // we *should* have something in the override if plaintext/offset is empty
         if (m_plaintext.length == 0 && m_slice) {
@@ -158,11 +164,15 @@ public:
 
         // unless the override was too small or data was already pending
         const size_t returned = std.algorithm.min(buf.length, m_plaintext.length);
+		if (returned == 0) {
+			logDebug("Destroyed return object");
+			channel.destroy();
+			return null;
+		}
 		m_plaintext.read(buf[0 .. returned]);
 
         
-        assert(!channel.isClosed() || ( returned == 0 && channel.isClosed() ), "Only return zero if channel is closed");
-		logDebug("Read m_plaintext: ", buf[0 .. returned]);
+		logDebug("Returning data");
         return buf[0 .. returned];
     }
 
@@ -176,7 +186,7 @@ public:
 
     const(Vector!X509Certificate) peerCertChain() const { return channel.peerCertChain(); }
 
-    ~this() { if (m_is_client) m_impl.client.destroy(); else m_impl.server.destroy(); }
+    ~this() { channel.destroy(); }
 
     /**
      * get handshake complete notifications
@@ -204,8 +214,7 @@ private:
 
     void dataCb(in ubyte[] data)
     {
-		logDebug("Got data: ", data); 
-
+		logDebug("Plaintext: ", cast(ubyte[])data);
         if (m_plaintext.length == 0 && m_plaintext_override && m_slice.length + data.length < m_plaintext_override.length) {
             m_plaintext_override[m_slice.length .. m_slice.length + data.length] = data[0 .. $];
             m_slice = m_plaintext_override[0 .. m_slice.length + data.length];
@@ -215,13 +224,14 @@ private:
         else if (m_slice) {
             // data too large, abandon the override optimization, copy all to the plaintext buffer
             m_plaintext.capacity = 4096;
-			m_plaintext.peekDst[0 .. m_slice.length] = m_slice[0 .. $];
-			m_plaintext.putN(m_slice.length);
+			m_plaintext.put(m_slice);
             m_plaintext_override = null;
             m_slice = null;
         }
-		if (m_plaintext.freeSpace < data.length)
+		if (m_plaintext.freeSpace < data.length) {
+			logDebug("Growing m_plaintext from: ", m_plaintext.capacity, " to ", 4096 + m_plaintext.length + m_plaintext.freeSpace);
 			m_plaintext.capacity = 4096 + m_plaintext.length + m_plaintext.freeSpace;
+		}
 		m_plaintext.put(data);
     }
 
