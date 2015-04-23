@@ -487,6 +487,14 @@ public:
 	/// Returns the ALPN chosen in the ServerHello with the ALPN extention
 	const(string) applicationProtocol() const { return m_application_protocol; }
 
+	/// Returns the current session ID
+	const(ubyte[]) sessionId() const {
+		if (auto active = activeState()) {
+			return active.serverHello().sessionId()[];
+		}
+		return null;
+	}
+
     ~this()
     {
         resetState();

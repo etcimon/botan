@@ -33,7 +33,7 @@ public:
     {
         while (length >= m_buffer.length - m_position)
         {
-            xorBuf(output, input, &m_buffer[m_position], m_buffer.length - m_position);
+            xorBuf(output, input, m_buffer.ptr + m_position, m_buffer.length - m_position);
             length -= (m_buffer.length - m_position);
             input += (m_buffer.length - m_position);
             output += (m_buffer.length - m_position);

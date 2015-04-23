@@ -81,7 +81,7 @@ public:
 
     this(in string host_name) 
     {
-		logDebug("SNI loaded with host name: ", host_name);
+		//logDebug("SNI loaded with host name: ", host_name);
         m_sni_host_name = host_name;
     }
 
@@ -116,7 +116,7 @@ public:
         }
     }
 
-	string hostName() const { logDebug("Returning host name: ", m_sni_host_name); return m_sni_host_name; }
+	string hostName() const { return m_sni_host_name; }
 
     override Vector!ubyte serialize() const
     {
@@ -336,7 +336,7 @@ public:
                 throw new DecodingError("Bad encoding of ALPN, length field too long");
             
             bytes_remaining -= (p.length + 1);
-			logDebug("Got protocol: ", p); 
+			//logDebug("Got protocol: ", p); 
             m_protocols.pushBack(p);
         }
     }
@@ -821,7 +821,7 @@ public:
             {
                 const ushort extension_code = reader.get_ushort();
                 const ushort extension_size = reader.get_ushort();
-				logDebug("Got extension: ", extension_code); 
+				//logDebug("Got extension: ", extension_code); 
                 Extension extn = makeExtension(reader, extension_code, extension_size);
                 
                 if (extn)

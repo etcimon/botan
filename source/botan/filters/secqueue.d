@@ -167,7 +167,7 @@ public:
         SecureQueueNode temp = input.m_head;
         while (temp)
         {
-            write(&temp.m_buffer[temp.m_start], temp.m_end - temp.m_start);
+            write(temp.m_buffer.ptr + temp.m_start, temp.m_end - temp.m_start);
             temp = temp.m_next;
         }
     }
@@ -222,7 +222,7 @@ public:
     size_t write(const(ubyte)* input, size_t length)
     {
         size_t copied = std.algorithm.min(length, m_buffer.length - m_end);
-        copyMem(&m_buffer[m_end], input, copied);
+        copyMem(m_buffer.ptr + m_end, input, copied);
         m_end += copied;
         return copied;
     }
@@ -230,7 +230,7 @@ public:
     size_t read(ubyte* output, size_t length)
     {
         size_t copied = std.algorithm.min(length, m_end - m_start);
-        copyMem(output, &m_buffer[m_start], copied);
+        copyMem(output, m_buffer.ptr + m_start, copied);
         m_start += copied;
         return copied;
     }
@@ -240,7 +240,7 @@ public:
         const size_t left = m_end - m_start;
         if (offset >= left) return 0;
         size_t copied = std.algorithm.min(length, left - offset);
-        copyMem(output, &m_buffer[m_start + offset], copied);
+        copyMem(output, m_buffer.ptr + m_start + offset, copied);
         return copied;
     }
     

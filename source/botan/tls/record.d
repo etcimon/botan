@@ -233,8 +233,6 @@ void writeRecord(ref SecureVector!ubyte output,
         
         output ~= msg[0 .. msg_length];
         
-		logDebug("Output: ", output[]);
-		logDebug("msg: ", msg[0 .. msg_length]);
         return;
     }
     
@@ -405,8 +403,6 @@ size_t readTLSRecord(ref SecureVector!ubyte readbuf,
     assert(!record_version.isDatagramProtocol(), "Expected TLS");
 
     const size_t record_len = make_ushort(readbuf[TLS_HEADER_SIZE-2], readbuf[TLS_HEADER_SIZE-1]);
-	logDebug("Record: ", record_len, " make_ushort(", readbuf[TLS_HEADER_SIZE-2], ", ", readbuf[TLS_HEADER_SIZE-1], ")"); 
-	logDebug("Readbuf: ", readbuf[]);
     if (record_len > MAX_CIPHERTEXT_SIZE)
         throw new TLSException(TLSAlert.RECORD_OVERFLOW, "Got message that exceeds maximum size");
     
@@ -430,22 +426,20 @@ size_t readTLSRecord(ref SecureVector!ubyte readbuf,
         record_sequence = 0;
         epoch = 0;
     }
-	logDebug("contents");
+
     ubyte* record_contents = readbuf.ptr + TLS_HEADER_SIZE;
 	
     if (epoch == 0) // Unencrypted initial handshake
     {
-		logDebug("epoch");
         record[] = readbuf.ptr[TLS_HEADER_SIZE .. TLS_HEADER_SIZE + record_len];
         readbuf.clear();
         return 0; // got a full record
     }
-	logDebug("epoch done");
     // Otherwise, decrypt, check MAC, return plaintext
 	auto ccs = get_cipherstate(epoch);
     ConnectionCipherState cipherstate = cast(ConnectionCipherState) ccs;
-	logDebug("Input length: ", input_sz); 
-    assert(cipherstate, "Have cipherstate for this epoch");
+
+	assert(cipherstate, "Have cipherstate for this epoch");
     decryptRecord(record,
                   record_contents,
                   record_len,
@@ -456,7 +450,6 @@ size_t readTLSRecord(ref SecureVector!ubyte readbuf,
     
     if (sequence_numbers)
         sequence_numbers.readAccept(record_sequence);
-			logDebug("clear");
     readbuf.clear();
     return 0;
 }

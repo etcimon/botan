@@ -178,7 +178,6 @@ public:
     {
         if (ServerNameIndicator sni = m_extensions.get!ServerNameIndicator())
             return sni.hostName();
-		logDebug("No SNI in extensions");
         return "";
     }
 

@@ -78,7 +78,7 @@ public:
             
             while (rdn.moreItems())
             {
-                OID oid = OID();
+                OID oid;
                 ASN1String str = ASN1String();
                 
                 rdn.startCons(ASN1Tag.SEQUENCE)
@@ -149,7 +149,7 @@ public:
     /*
     * Add an attribute to a X509DN
     */
-    void addAttribute(in OID oid, in string str)
+    void addAttribute(const ref OID oid, in string str)
     {
         if (str == "")
             return;
@@ -163,7 +163,8 @@ public:
         }
         m_dn_info.getValuesAt(oid, &search_func);
         if (!exists) {
-            m_dn_info.insert(oid, ASN1String(str.idup));
+			auto asn1_str = ASN1String(str.idup);
+            m_dn_info.insert(oid, asn1_str);
             m_dn_bits.clear();
         }
     }
@@ -214,8 +215,10 @@ public:
     */
     this(in DictionaryListRef!(string, string) args)
     {
-        foreach (const ref string key, const ref string val; args)
-            addAttribute(OIDS.lookup(key), val);
+        foreach (const ref string key, const ref string val; args) {
+			OID oid = OIDS.lookup(key);
+            addAttribute(oid, val);
+		}
     }
 
     /*
@@ -223,17 +226,15 @@ public:
     */
     bool opEquals(in X509DN dn2) const
     {
-        auto attr1 = getAttributes();
-        auto attr2 = dn2.getAttributes();
-        size_t i;
-        foreach (oid, str; *attr1) {
+        size_t i;        
+		foreach (const ref OID oid, const ref ASN1String str; m_dn_info) {
             i++;
             bool found;
             size_t j;
-            foreach (oid2, val; *attr2) {
+			foreach (const ref OID oid2, const ref ASN1String val; dn2.m_dn_info) {
                 j++;
                 if (j != i) continue;
-                if (x500NameCmp(val, str)) 
+                if (x500NameCmp(val.value(), str.value())) 
                     found = true;
 
                 break;
@@ -301,7 +302,7 @@ public:
     }
 
 private:
-    DictionaryListRef!(OID, ASN1String) m_dn_info;
+    DictionaryList!(OID, ASN1String) m_dn_info;
     Vector!ubyte m_dn_bits;
 }
 

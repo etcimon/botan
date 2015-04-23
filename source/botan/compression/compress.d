@@ -99,8 +99,8 @@ protected:
         if (m_buffer.length < buf.length + offset)
             m_buffer.resize(buf.length + offset);
         
-        m_stream.nextIn(&buf[offset], buf.length - offset);
-        m_stream.nextOut(&m_buffer[offset], m_buffer.length - offset);
+        m_stream.nextIn(buf.ptr + offset, buf.length - offset);
+        m_stream.nextOut(m_buffer.ptr + offset, m_buffer.length - offset);
         
         while(true)
         {
@@ -119,7 +119,7 @@ protected:
             }
         }
         
-        copyMem(&m_buffer[0], &buf[0], offset);
+        copyMem(m_buffer.ptr + 0, buf.ptr + 0, offset);
         buf.swap(m_buffer);
     }
 
@@ -171,8 +171,8 @@ protected:
         if (m_buffer.length < buf.length + offset)
             m_buffer.resize(buf.length + offset);
         
-        m_stream.nextIn(&buf[offset], buf.length - offset);
-        m_stream.nextOut(&m_buffer[offset], m_buffer.length - offset);
+        m_stream.nextIn(buf.ptr + offset, buf.length - offset);
+        m_stream.nextOut(m_buffer.ptr + offset, m_buffer.length - offset);
         
         while(true)
         {
@@ -190,7 +190,7 @@ protected:
                 // More data follows: try to process as a following stream
                 const size_t read = (buf.length - offset) - m_stream.availIn();
                 start();
-                m_stream.nextIn(&buf[offset + read], buf.length - offset - read);
+                m_stream.nextIn(buf.ptr + offset + read, buf.length - offset - read);
             }
             
             if (m_stream.availOut() == 0)

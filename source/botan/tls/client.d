@@ -207,9 +207,6 @@ protected:
             }
             
             state.setVersion(state.serverHello().Version());
-			logDebug("Sent extensions: ", client_extn[]); 
-			logDebug("Got extensions: ", server_extn[]); 
-			logDebug("Got alpn: ", state.serverHello().nextProtocol());
             m_application_protocol = state.serverHello().nextProtocol();
 
             secureRenegotiationCheck(state.serverHello());

@@ -112,14 +112,14 @@ public:
     {
 		ubyte[] destlog = dest;
 		assert(!m_slice);
-		logDebug("remaining length: ", dest.length);
+		//logDebug("remaining length: ", dest.length);
         ubyte[] remaining = dest;
         while (remaining.length > 0 && !isClosed()) {
             dest = readBuf(remaining);
             remaining = remaining[dest.length .. $];
-			logDebug("remaining length: ", remaining.length);
+			//logDebug("remaining length: ", remaining.length);
         }
-		logDebug("finished with: ", cast(string) destlog);
+		//logDebug("finished with: ", cast(string) destlog);
     }
 
     /**
@@ -156,7 +156,7 @@ public:
         // we *should* have something in the override if plaintext/offset is empty
         if (m_plaintext.length == 0 && m_slice) {
             buf = m_slice;
-			logDebug("Read m_slice: ", buf); 
+			//logDebug("Read m_slice: ", buf); 
             return buf;
         }
 
@@ -165,18 +165,18 @@ public:
         // unless the override was too small or data was already pending
         const size_t returned = std.algorithm.min(buf.length, m_plaintext.length);
 		if (returned == 0) {
-			logDebug("Destroyed return object");
+			//logDebug("Destroyed return object");
 			channel.destroy();
 			return null;
 		}
 		m_plaintext.read(buf[0 .. returned]);
 
         
-		logDebug("Returning data");
+		//logDebug("Returning data");
         return buf[0 .. returned];
     }
 
-	void write(in ubyte[] buf) { logDebug("Write: ", buf);  channel.send(cast(const(ubyte)*)buf.ptr, buf.length); }
+	void write(in ubyte[] buf) { channel.send(cast(const(ubyte)*)buf.ptr, buf.length); }
 
     inout(TLSChannel) underlyingChannel() inout { return channel; }
 
@@ -206,7 +206,7 @@ private:
 
     bool handshakeCb(in TLSSession session)
     {
-		logDebug("Handshake Complete");  
+		//logDebug("Handshake Complete");  
 		if (m_handshake_complete)
 	        return m_handshake_complete(session);
 		return true;
@@ -214,7 +214,7 @@ private:
 
     void dataCb(in ubyte[] data)
     {
-		logDebug("Plaintext: ", cast(ubyte[])data);
+		//logDebug("Plaintext: ", cast(ubyte[])data);
         if (m_plaintext.length == 0 && m_plaintext_override && m_slice.length + data.length < m_plaintext_override.length) {
             m_plaintext_override[m_slice.length .. m_slice.length + data.length] = data[0 .. $];
             m_slice = m_plaintext_override[0 .. m_slice.length + data.length];
@@ -223,14 +223,14 @@ private:
         }
         else if (m_slice) {
             // data too large, abandon the override optimization, copy all to the plaintext buffer
-            m_plaintext.capacity = 4096;
+			m_plaintext.capacity = 8192;
 			m_plaintext.put(m_slice);
             m_plaintext_override = null;
             m_slice = null;
         }
 		if (m_plaintext.freeSpace < data.length) {
-			logDebug("Growing m_plaintext from: ", m_plaintext.capacity, " to ", 4096 + m_plaintext.length + m_plaintext.freeSpace);
-			m_plaintext.capacity = 4096 + m_plaintext.length + m_plaintext.freeSpace;
+			//logDebug("Growing m_plaintext from: ", m_plaintext.capacity, " to ", 8192 + m_plaintext.length + m_plaintext.freeSpace);
+			m_plaintext.capacity = 8192 + m_plaintext.length + m_plaintext.freeSpace;
 		}
 		m_plaintext.put(data);
     }

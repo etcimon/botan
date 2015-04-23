@@ -99,7 +99,7 @@ ECDSASignature decodeConcatenation(const ref Vector!ubyte concat)
     const size_t rs_len = concat.length / 2;
     
     BigInt r = BigInt.decode(concat.ptr, rs_len);
-    BigInt s = BigInt.decode(&concat[rs_len], rs_len);
+    BigInt s = BigInt.decode(concat.ptr + rs_len, rs_len);
     
     return new ECDSASignature(r, s);
 }
