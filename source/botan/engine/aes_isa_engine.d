@@ -39,7 +39,6 @@ public:
                 if (request.algoName == "AES-256")
                     return new AES256NI;
             }
-            else { logDebug("AES-NI not supported"); }
         }
         return null;
     }

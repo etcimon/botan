@@ -35,8 +35,8 @@ public:
         
         foreach (prov_type; m_prov_types[])
         {
-            auto csp = scoped!CSPHandle(prov_type);
-            
+            auto csp = new CSPHandle(prov_type);
+			scope(exit) csp.destroy();
             
             if (size_t got = csp.genRandom(m_buf.ptr, m_buf.length))
             {
@@ -77,10 +77,9 @@ final class CSPHandle
 public:
     this(ulong capi_provider)
     {
-        m_valid = false;
         DWORD prov_type = cast(DWORD)capi_provider;
         
-        if (CryptAcquireContext(&m_handle, null, null, prov_type, CRYPT_VERIFYCONTEXT))
+        if (CryptAcquireContext(&m_handle, null, null, prov_type, cast(DWORD) CRYPT_VERIFYCONTEXT))
             m_valid = true;
     }
     
