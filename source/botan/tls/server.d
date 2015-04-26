@@ -541,7 +541,7 @@ private:
 
 private:
 
-bool checkForResume(TLSSession session_info,
+bool checkForResume(ref TLSSession session_info,
                     TLSSessionManager session_manager,
                     TLSCredentialsManager credentials,
                     in ClientHello clientHello,
@@ -577,6 +577,9 @@ bool checkForResume(TLSSession session_info,
         }
     }
     
+	if (!session_info) 
+		return false;
+
     // wrong version
     if (clientHello.Version() != session_info.Version())
         return false;

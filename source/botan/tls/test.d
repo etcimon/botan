@@ -240,7 +240,7 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
         }
         catch(Exception e)
         {
-            logError("TLSServer error - " ~ e.msg);
+            logError("TLSServer error - " ~ e.toString());
             break;
         }
         
@@ -254,7 +254,7 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
         }
         catch(Exception e)
         {
-            logError("TLSClient error - " ~ e.msg);
+			logError("TLSClient error - " ~ e.toString());
             break;
         }
         

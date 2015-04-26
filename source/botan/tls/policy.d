@@ -48,15 +48,15 @@ public:
             "AES-128/CCM",
             "AES-256/CCM-8",
             "AES-128/CCM-8",
-            //"Camellia-256/GCM",
-            //"Camellia-128/GCM",
+            "Camellia-256/GCM",
+            "Camellia-128/GCM",
             "AES-256",
             "AES-128",
-            //"Camellia-256",
-            //"Camellia-128",
-            //"SEED"
-            //"3DES",
-            //"RC4",
+            "Camellia-256",
+            "Camellia-128",
+            "SEED"
+            "3DES",
+            "RC4",
         ]);
     }
 
@@ -71,8 +71,8 @@ public:
             "SHA-384",
             "SHA-256",
             "SHA-224",
-            //"SHA-1",
-            //"MD5",
+            "SHA-1",
+            "MD5",
         ]);
     }
 
@@ -86,8 +86,8 @@ public:
             "AEAD",
             "SHA-384",
             "SHA-256",
-            // "SHA-1",
-            //"MD5",
+            "SHA-1",
+            "MD5",
         ]);
     }
 
@@ -99,7 +99,7 @@ public:
     Vector!string allowedKeyExchangeMethods() const
     {
         return Vector!string([
-            "SRP_SHA",
+            //"SRP_SHA",
             //"ECDHE_PSK",
             //"DHE_PSK",
             //"PSK",
@@ -138,11 +138,11 @@ public:
             "secp256k1",
             "secp224r1",
             "secp224k1",
-            //"secp192r1",
-            //"secp192k1",
-            //"secp160r2",
-            //"secp160r1",
-            //"secp160k1",
+            "secp192r1",
+            "secp192k1",
+            "secp160r2",
+            "secp160r1",
+            "secp160k1",
         ]);
     }
 

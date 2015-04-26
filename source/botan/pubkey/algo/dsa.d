@@ -156,6 +156,8 @@ public:
         BigInt i = BigInt(msg, msg_len);
         BigInt r = 0, s = 0;
         Tid tid;
+
+
         while (r == 0 || s == 0)
         {
             BigInt k;
@@ -163,31 +165,35 @@ public:
                 k.randomize(rng, m_q.bits());
             while (k >= *m_q);
 
-            BigInt res;
+			import core.sync.mutex, core.sync.condition;
+			Mutex mutex = ThreadMem.alloc!Mutex();
+			Condition condition = ThreadMem.alloc!Condition(mutex);
+			scope(exit) {
+				ThreadMem.free(mutex); ThreadMem.free(condition);
+			}
 
-            tid = spawn((shared(Tid) tid, shared(ModularReducer*)mod_q, shared(const BigInt*) g, shared(const BigInt*) p, shared(BigInt*) k2, shared(BigInt*) res2)
+            BigInt res;
+			res.reserve(8192);
+
+            tid = spawn((shared(Condition) cnd, shared(ModularReducer*)mod_q, shared(const BigInt*) g, shared(const BigInt*) p, shared(BigInt*) k2, shared(BigInt*) res2)
                 { 
                     import botan.libstate.libstate : modexpInit;
                     modexpInit(); // enable quick path for powermod
-
                     BigInt* ret = cast(BigInt*) res2;
                     {
                         Unique!FixedBasePowerModImpl powermod_g_p = new FixedBasePowerModImpl(*cast(const BigInt*)g, *cast(const BigInt*)p);
-                        *ret = (cast(ModularReducer*)mod_q).reduce((*powermod_g_p)(*cast(BigInt*)k2));
-                        send(cast(Tid) tid, cast(shared)Thread.getThis());
+						BigInt _res = (cast(ModularReducer*)mod_q).reduce((*powermod_g_p)(*cast(BigInt*)k2));
+                        ret.load(_res);
+						(cast()cnd).notifyAll();
                     }
-                    bool done = receiveOnly!bool();
-                    destroy(*ret);
-                }, cast(shared(Tid))thisTid(), cast(shared)&m_mod_q, cast(shared)m_g, cast(shared)m_p, cast(shared)&k, cast(shared)&res
-                );
+                }, cast(shared)condition, cast(shared)&m_mod_q, cast(shared)m_g, cast(shared)m_p, cast(shared)&k, cast(shared)&res
+            );
 
             s = inverseMod(k, *m_q);
-            Thread thr = cast(Thread)receiveOnly!(shared(Thread))();
+			synchronized(mutex) condition.wait(5.seconds);
             r = res.dup(); // ensure no remote pointers
             auto s_arg = mulAdd(*m_x, r, i);
-            send(cast(Tid)tid, true);
             s = m_mod_q.multiply(s, s_arg);
-            thr.join();
             tid = Tid.init;
         }
         
@@ -242,7 +248,6 @@ public:
     {
         import core.memory : GC;
         GC.disable();
-        import std.concurrency : spawn, receiveOnly, send, thisTid;
         const BigInt* q = &m_mod_q.getModulus();
         
         if (sig_len != 2*q.bytes() || msg_len > q.bytes())
@@ -257,8 +262,14 @@ public:
         s = inverseMod(s, *q);
 
         BigInt s_i;
-
-        Tid tid = spawn((shared(Tid) tid, shared(ModularReducer*) mod_q, shared(const BigInt*)g2, shared(const BigInt*)p2, shared(BigInt*) s2, shared(BigInt*) i2, shared(BigInt*) s_i2) 
+		s_i.reserve(8192);
+		import core.sync.mutex, core.sync.condition;
+		Mutex mutex = ThreadMem.alloc!Mutex();
+		Condition condition = ThreadMem.alloc!Condition(mutex);
+		scope(exit) {
+			ThreadMem.free(mutex); ThreadMem.free(condition);
+		}
+        Tid tid = spawn((shared(Condition) cnd, shared(ModularReducer*) mod_q, shared(const BigInt*)g2, shared(const BigInt*)p2, shared(BigInt*) s2, shared(BigInt*) i2, shared(BigInt*) s_i2) 
             { 
                 import botan.libstate.libstate : modexpInit, globalState;
                 modexpInit(); // enable quick path for powermod
@@ -267,20 +278,17 @@ public:
                 {
                     Unique!FixedBasePowerModImpl powermod_g_p = new FixedBasePowerModImpl(*cast(const BigInt*)g2, *cast(const BigInt*)p2);
                     auto mult = (*cast(ModularReducer*)mod_q).multiply(*cast(BigInt*)s2, *cast(BigInt*)i2);
-                    *ret = (*powermod_g_p)(mult);
-                    send(cast(Tid) tid, cast(shared)Thread.getThis()); 
+					BigInt _res = (*powermod_g_p)(mult);
+                    ret.load(_res);
+					(cast()cnd).notifyAll();
                 }
-                auto done = receiveOnly!bool();
-                destroy(*ret);
             }
-            , cast(shared)thisTid(), cast(shared)&m_mod_q, cast(shared)m_g, cast(shared)m_p, cast(shared)&s, cast(shared)&i, cast(shared)&s_i);
+			, cast(shared)condition, cast(shared)&m_mod_q, cast(shared)m_g, cast(shared)m_p, cast(shared)&s, cast(shared)&i, cast(shared)&s_i);
         auto mult = m_mod_q.multiply(s, r);
         BigInt s_r = (*m_powermod_y_p)(mult.move);
-        Thread thr = cast(Thread)receiveOnly!(shared(Thread))();
+		synchronized(mutex) condition.wait(5.seconds);
         s = m_mod_p.multiply(s_i, s_r);
-        send(cast(Tid)tid, true); // trigger destroy s_i
         auto r2 = m_mod_q.reduce(s.move);
-        thr.join();
         GC.enable();
         return (r2 == r);
     }

@@ -232,32 +232,34 @@ public:
         
         if (c.isZero() || c >= *q || d >= *q)
             throw new InvalidArgument("NR verification: Invalid signature");
-        import std.concurrency : spawn, receiveOnly, send, thisTid;
+
+		import core.sync.mutex, core.sync.condition;
+		Mutex mutex = ThreadMem.alloc!Mutex();
+		Condition condition = ThreadMem.alloc!Condition(mutex);
+		scope(exit) {
+			ThreadMem.free(mutex); ThreadMem.free(condition);
+		}
 
         BigInt res;
+		res.reserve(8192);
         auto tid = spawn(
-            (shared(Tid) tid, shared(const BigInt*) y, shared(const BigInt*) p, shared(BigInt*) c2, shared(BigInt*) res2) 
+            (shared(Mutex) mtx, shared(Condition) cnd, shared(const BigInt*) y, shared(const BigInt*) p, shared(BigInt*) c2, shared(BigInt*) res2) 
             { 
                 import botan.libstate.libstate : modexpInit;
                 modexpInit(); // enable quick path for powermod
                 BigInt* ret = cast(BigInt*) res2;
                 {
                     Unique!FixedBasePowerModImpl powermod_y_p = new FixedBasePowerModImpl(*cast(const BigInt*)y, *cast(const BigInt*)p);
-                    *ret = (*powermod_y_p)(*cast(BigInt*)c2);
-                    send(cast(Tid) tid, cast(shared)Thread.getThis());
+                    ret.load( (*powermod_y_p)(*cast(BigInt*)c2) );
+					(cast()cnd).notifyAll();
                 }
-                auto done = receiveOnly!bool;
-                destroy(*ret);
             }, 
-            cast(shared)thisTid, cast(shared)m_y, cast(shared)m_p, cast(shared)&c, cast(shared)&res 
+            cast(shared) mutex, cast(shared) condition, cast(shared)m_y, cast(shared)m_p, cast(shared)&c, cast(shared)&res 
             );
         BigInt g_d = (*m_powermod_g_p)(d);
-        Thread thr = cast(Thread)receiveOnly!(shared(Thread))();
+		synchronized(mutex) condition.wait(5.seconds);
         BigInt i = m_mod_p.multiply(g_d, res);
-
-        send(cast(Tid)tid, true);
         auto ret = BigInt.encodeLocked(m_mod_q.reduce(c - i));
-        thr.join();
         GC.enable();
         return ret;
     }

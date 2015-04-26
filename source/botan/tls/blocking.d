@@ -87,7 +87,7 @@ public:
 	{
 		assert(!m_slice);
         
-        while (!channel.isClosed() && !channel.isActive())
+        while (!m_closed && !channel.isActive())
         {
             ubyte[] readref = m_readbuf.ptr[0 .. m_readbuf.length];
             const ubyte[] from_socket = m_read_fn(readref);
@@ -114,7 +114,7 @@ public:
 		assert(!m_slice);
 		//logDebug("remaining length: ", dest.length);
         ubyte[] remaining = dest;
-        while (remaining.length > 0 && !isClosed()) {
+        while (remaining.length > 0) {
             dest = readBuf(remaining);
             remaining = remaining[dest.length .. $];
 			//logDebug("remaining length: ", remaining.length);
@@ -145,7 +145,7 @@ public:
 		}
     
         // if there's nothing in the buffers, read some packets and process them
-        while (!m_slice && m_plaintext.empty && !channel.isClosed())
+        while (!m_slice && m_plaintext.empty && !m_closed)
         {
             const ubyte[] from_socket = m_read_fn(m_readbuf.ptr[0 .. m_readbuf.length]);
             channel.receivedData(cast(const(ubyte)*)from_socket.ptr, from_socket.length);
@@ -180,9 +180,9 @@ public:
 
     inout(TLSChannel) underlyingChannel() inout { return channel; }
 
-    void close() { channel.close(); }
+	void close() { m_closed = true; channel.close(); }
 
-    bool isClosed() const { return !channel || channel.isClosed(); }
+    bool isClosed() const { return m_closed; }
 
     const(Vector!X509Certificate) peerCertChain() const { return channel.peerCertChain(); }
 
@@ -238,6 +238,8 @@ private:
     void alertCb(in TLSAlert alert, in ubyte[] ub)
     {
 		logDebug("Alert: ", alert.typeString(), " :", ub);  
+		if (alert.isFatal)
+			m_closed = true;
 		if (m_alert_cb)
 	        m_alert_cb(alert, ub); 
     }
@@ -252,6 +254,7 @@ private:
 	}
 
     bool m_is_client;
+	bool m_closed;
     DataReader m_read_fn;
     TLSImpl m_impl;
     OnAlert m_alert_cb;

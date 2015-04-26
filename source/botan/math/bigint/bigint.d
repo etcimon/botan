@@ -108,6 +108,12 @@ public:
         return this;
     }
 
+	/// Copy constructor
+	void load()(auto ref BigInt other) {
+		m_reg[] = other.m_reg[];
+		m_signedness = other.m_signedness;
+	}
+
     /**
     * Create BigInt from a string. If the string starts with 0x the
     * rest of the string will be interpreted as hexadecimal digits.
@@ -198,12 +204,16 @@ public:
         swap(m_signedness, sign);
     }
 
+	void reserve(size_t n) {
+		m_reg.reserve(n);
+	}
+
     /**
     * Move assignment
     */
     void opAssign()(auto ref BigInt other)
     {
-        this.swap(other);
+		this.swap(other);
     }
 
     /**
@@ -219,7 +229,7 @@ public:
     void swap()(auto ref BigInt other)
     {
         if (other.m_reg.length > 0) {
-            m_reg.swap(other.m_reg);
+			m_reg.swap(other.m_reg);
         }
         else {
             m_reg.reserve(1);

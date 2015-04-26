@@ -188,8 +188,14 @@ public:
         i = m_blinder.blind(i);
 
         BigInt j1;
-
-        auto tid = spawn((shared Tid tid, shared(const BigInt*) d1, shared(const BigInt*) p, shared(BigInt*) i2, shared(BigInt*) j1_2) 
+		j1.reserve(8192);
+		import core.sync.mutex, core.sync.condition;
+		Mutex mutex = ThreadMem.alloc!Mutex();
+		Condition condition = ThreadMem.alloc!Condition(mutex);
+		scope(exit) {
+			ThreadMem.free(mutex); ThreadMem.free(condition);
+		}
+        auto tid = spawn((shared(Mutex) mtx, shared(Condition) cnd, shared(const BigInt*) d1, shared(const BigInt*) p, shared(BigInt*) i2, shared(BigInt*) j1_2) 
             {
                 import botan.libstate.libstate : modexpInit;
                 modexpInit(); // enable quick path for powermod
@@ -197,26 +203,21 @@ public:
 
                 {
                     Unique!FixedExponentPowerModImpl powermod_d1_p = new FixedExponentPowerModImpl(*cast(const BigInt*)d1, *cast(const BigInt*)p);
-                    *ret = (*powermod_d1_p)(*cast(BigInt*)i2);
-                    send(cast(Tid) tid, cast(shared)Thread.getThis());
+                    ret.load( (*powermod_d1_p)(*cast(BigInt*)i2) );
+					(cast()cnd).notify();
                 }
-                auto done = receiveOnly!bool; // can destroy j1
-                destroy(*ret);
             }, 
-            cast(shared)thisTid(), cast(shared)m_d1, cast(shared)m_p, cast(shared)&i, cast(shared)&j1
+            cast(shared)mutex, cast(shared)condition, cast(shared)m_d1, cast(shared)m_p, cast(shared)&i, cast(shared)&j1
             );
         const BigInt j2 = (*m_powermod_d2_q)(i);
-        Thread thr = cast(Thread)receiveOnly!(shared(Thread))();
+		synchronized(mutex) condition.wait(5.seconds);
         BigInt j3 = m_mod_p.reduce(subMul(j1, j2, *m_c));
-        send(cast(Tid)tid, true);
-        BigInt r = m_blinder.unblind(mulAdd(j3, *m_q, j2));
-        
+        BigInt r = m_blinder.unblind(mulAdd(j3, *m_q, j2));        
         BigInt cmp2 = *m_n - r;
         BigInt min_val = r.move();
         if (cmp2 < min_val)
             min_val = cmp2.move();
         auto ret = BigInt.encode1363(min_val, m_n.bytes());
-        thr.join();
         GC.enable();
         return ret;
     }
