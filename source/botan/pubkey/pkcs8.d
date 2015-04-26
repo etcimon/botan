@@ -244,13 +244,13 @@ SecureVector!ubyte PKCS8_decode(DataSource source, SingleShotPassphrase get_pass
     auto pbe_alg_id = AlgorithmIdentifier();
     SecureVector!ubyte key_data, key;
     bool is_encrypted = true;
-    
     try {
         if (maybeBER(source) && !PEM.matches(source))
             key_data = PKCS8_extract(source, pbe_alg_id);
         else
         {
             string label;
+			import std.algorithm : endsWith;
             key_data = PEM.decode(source, label);
             if (label == "PRIVATE KEY") {
                 //logTrace("Detected private key");
@@ -261,8 +261,11 @@ SecureVector!ubyte PKCS8_decode(DataSource source, SingleShotPassphrase get_pass
                 auto key_source = DataSourceMemory(key_data);
                 key_data = PKCS8_extract(cast(DataSource)key_source, pbe_alg_id);
             }
+			else if (label == "RSA PRIVATE KEY") {
+				throw new PKCS8Exception("Unsupported format: PKCS#1 RSA Private Key file");
+			}
             else
-                throw new PKCS8Exception("Unknown PEM label " ~ label);
+                throw new PKCS8Exception("Unsupported PKCS#/Private Key format, you must convert your certificate to PKCS#8");
         }
         
         if (key_data.empty)
@@ -291,14 +294,13 @@ SecureVector!ubyte PKCS8_decode(DataSource source, SingleShotPassphrase get_pass
                 
                 if (pass.first == false)
                     break;
-                
-                //logTrace("PKCS8 get pkcs8 alg id");
+
                 Pipe decryptor = Pipe(getPbe(pbe_alg_id.oid, pbe_alg_id.parameters, pass.second));
                 
                 decryptor.processMsg(key_data);
                 key = decryptor.readAll();
             }
-            
+
             BERDecoder(key)
                     .startCons(ASN1Tag.SEQUENCE)
                     .decodeAndCheck!size_t(0, "Unknown PKCS #8 version number")
@@ -306,11 +308,11 @@ SecureVector!ubyte PKCS8_decode(DataSource source, SingleShotPassphrase get_pass
                     .decode(key, ASN1Tag.OCTET_STRING)
                     .discardRemaining()
                     .endCons();
-            
             break;
         }
-        catch(DecodingError)
+        catch(DecodingError e)
         {
+			//logError("Decoding error: ", e.toString());
             ++tries;
         }
     }

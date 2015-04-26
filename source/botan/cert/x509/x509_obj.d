@@ -272,9 +272,9 @@ private:
             {
                 string got_label;
                 auto ber = DataSourceMemory(PEM.decode(input, got_label));
-                if (m_PEM_labels_allowed[].canFind(got_label))
-                    throw new DecodingError("Invalid PEM label: " ~ got_label);
-                
+                if (!m_PEM_labels_allowed[].canFind(got_label)) {
+                    throw new DecodingError("Invalid PEM Certificate format " ~ got_label ~ ", please convert it to a PEM or BER X.509 object format. Possible labels: " ~ m_PEM_labels_allowed[].to!string);
+				}
                 auto dec = BERDecoder(cast(DataSource)ber);
                 decodeFrom(dec);
             }
