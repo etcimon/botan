@@ -47,11 +47,11 @@ protected:
     {
         m_count += length;
         
-        if (m_position)
+        if (m_position > 0)
         {
             bufferInsert(m_buffer, m_position, input, length);
             
-            if (m_position + length >= m_buffer.length)
+            if (m_position <= m_buffer.length && m_position + length >= m_buffer.length)
             {
                 compressN(m_buffer.ptr, 1);
                 input += (m_buffer.length - m_position);
