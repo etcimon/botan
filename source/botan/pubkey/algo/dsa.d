@@ -23,6 +23,7 @@ import botan.pubkey.algo.keypair;
 import std.concurrency;
 import core.thread;
 import memutils.helpers : Embed;
+import std.algorithm : max;
 
 struct DSAOptions {
     enum algoName = "DSA";
@@ -167,31 +168,35 @@ public:
 
 			import core.sync.mutex, core.sync.condition;
 			Mutex mutex = ThreadMem.alloc!Mutex();
+			Mutex mutex2 = ThreadMem.alloc!Mutex();
 			Condition condition = ThreadMem.alloc!Condition(mutex);
 			scope(exit) {
-				ThreadMem.free(mutex); ThreadMem.free(condition);
+				ThreadMem.free(mutex); ThreadMem.free(mutex2); ThreadMem.free(condition);
 			}
 
             BigInt res;
-			res.reserve(8192);
+			res.reserve(max(m_g.bytes() + m_g.bytes() % 128, m_x.bytes() + m_x.bytes % 128));
 
-            tid = spawn((shared(Condition) cnd, shared(ModularReducer*)mod_q, shared(const BigInt*) g, shared(const BigInt*) p, shared(BigInt*) k2, shared(BigInt*) res2)
+            tid = spawn((shared(Mutex) mtx, shared(Condition) cnd, shared(ModularReducer*)mod_q, shared(const BigInt*) g, shared(const BigInt*) p, shared(BigInt*) k2, shared(BigInt*) res2)
                 { 
-                    import botan.libstate.libstate : modexpInit;
-                    modexpInit(); // enable quick path for powermod
-                    BigInt* ret = cast(BigInt*) res2;
-                    {
-                        Unique!FixedBasePowerModImpl powermod_g_p = new FixedBasePowerModImpl(*cast(const BigInt*)g, *cast(const BigInt*)p);
-						BigInt _res = (cast(ModularReducer*)mod_q).reduce((*powermod_g_p)(*cast(BigInt*)k2));
-                        ret.load(_res);
-						(cast()cnd).notifyAll();
-                    }
-                }, cast(shared)condition, cast(shared)&m_mod_q, cast(shared)m_g, cast(shared)m_p, cast(shared)&k, cast(shared)&res
+					try {
+	                    import botan.libstate.libstate : modexpInit;
+	                    modexpInit(); // enable quick path for powermod
+	                    BigInt* ret = cast(BigInt*) res2;
+	                    {
+	                        Unique!FixedBasePowerModImpl powermod_g_p = new FixedBasePowerModImpl(*cast(const BigInt*)g, *cast(const BigInt*)p);
+							BigInt _res = (cast(ModularReducer*)mod_q).reduce((*powermod_g_p)(*cast(BigInt*)k2));
+	                        synchronized(cast()mtx) ret.load(_res);
+	                    }
+					}
+					catch (Throwable e) { logDebug("Error: ", e.toString()); }
+					(cast()cnd).notifyAll();
+				}, cast(shared) mutex2, cast(shared)condition, cast(shared)&m_mod_q, cast(shared)m_g, cast(shared)m_p, cast(shared)&k, cast(shared)&res
             );
 
             s = inverseMod(k, *m_q);
 			synchronized(mutex) condition.wait(5.seconds);
-            r = res.dup(); // ensure no remote pointers
+            synchronized(mutex2) r = res.dup(); // ensure no remote pointers
             auto s_arg = mulAdd(*m_x, r, i);
             s = m_mod_q.multiply(s, s_arg);
             tid = Tid.init;
@@ -262,32 +267,37 @@ public:
         s = inverseMod(s, *q);
 
         BigInt s_i;
-		s_i.reserve(8192);
+		s_i.reserve(max(m_g.bytes() + m_g.bytes() % 128, m_y.bytes() + m_y.bytes() % 128));
 		import core.sync.mutex, core.sync.condition;
 		Mutex mutex = ThreadMem.alloc!Mutex();
+		Mutex mutex2 = ThreadMem.alloc!Mutex();
 		Condition condition = ThreadMem.alloc!Condition(mutex);
 		scope(exit) {
-			ThreadMem.free(mutex); ThreadMem.free(condition);
+			ThreadMem.free(mutex); ThreadMem.free(mutex2); ThreadMem.free(condition);
 		}
-        Tid tid = spawn((shared(Condition) cnd, shared(ModularReducer*) mod_q, shared(const BigInt*)g2, shared(const BigInt*)p2, shared(BigInt*) s2, shared(BigInt*) i2, shared(BigInt*) s_i2) 
+		Tid tid = spawn((shared(Mutex) mtx, shared(Condition) cnd, shared(ModularReducer*) mod_q, shared(const BigInt*)g2, shared(const BigInt*)p2, shared(BigInt*) s2, shared(BigInt*) i2, shared(BigInt*) s_i2) 
             { 
-                import botan.libstate.libstate : modexpInit, globalState;
-                modexpInit(); // enable quick path for powermod
-                globalState();
-                BigInt* ret = cast(BigInt*) s_i2;
-                {
-                    Unique!FixedBasePowerModImpl powermod_g_p = new FixedBasePowerModImpl(*cast(const BigInt*)g2, *cast(const BigInt*)p2);
-                    auto mult = (*cast(ModularReducer*)mod_q).multiply(*cast(BigInt*)s2, *cast(BigInt*)i2);
-					BigInt _res = (*powermod_g_p)(mult);
-                    ret.load(_res);
-					(cast()cnd).notifyAll();
-                }
-            }
-			, cast(shared)condition, cast(shared)&m_mod_q, cast(shared)m_g, cast(shared)m_p, cast(shared)&s, cast(shared)&i, cast(shared)&s_i);
+                try {
+					import botan.libstate.libstate : modexpInit, globalState;
+	                modexpInit(); // enable quick path for powermod
+	                globalState();
+	                BigInt* ret = cast(BigInt*) s_i2;
+	                {
+	                    Unique!FixedBasePowerModImpl powermod_g_p = new FixedBasePowerModImpl(*cast(const BigInt*)g2, *cast(const BigInt*)p2);
+	                    auto mult = (*cast(ModularReducer*)mod_q).multiply(*cast(BigInt*)s2, *cast(BigInt*)i2);
+						BigInt _res = (*powermod_g_p)(mult);
+	                    synchronized(cast()mtx) ret.load(_res);
+	                }
+				} catch (Throwable e) {
+					logDebug("Got error: ", e.toString);
+				}
+				(cast()cnd).notifyAll();
+			}
+			, cast(shared) mutex2, cast(shared)condition, cast(shared)&m_mod_q, cast(shared)m_g, cast(shared)m_p, cast(shared)&s, cast(shared)&i, cast(shared)&s_i);
         auto mult = m_mod_q.multiply(s, r);
         BigInt s_r = (*m_powermod_y_p)(mult.move);
 		synchronized(mutex) condition.wait(5.seconds);
-        s = m_mod_p.multiply(s_i, s_r);
+        synchronized(mutex2) s = m_mod_p.multiply(s_i, s_r);
         auto r2 = m_mod_q.reduce(s.move);
         GC.enable();
         return (r2 == r);

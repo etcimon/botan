@@ -114,8 +114,6 @@ public:
                 
                 if (record.length > max_fragment_size)
                     throw new TLSException(TLSAlert.RECORD_OVERFLOW, "Plaintext record is too large");
-				import std.stdio : writeln;
-				writeln("Got record type: ", record_type);
                 if (record_type == HANDSHAKE || record_type == CHANGE_CIPHER_SPEC)
                 {
                     if (!m_pending_state)

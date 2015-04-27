@@ -24,6 +24,7 @@ import botan.rng.rng;
 import std.concurrency;
 import core.thread;
 import memutils.helpers : Embed;
+import std.algorithm : max;
 
 struct NROptions {
     enum algoName = "NR";
@@ -235,30 +236,35 @@ public:
 
 		import core.sync.mutex, core.sync.condition;
 		Mutex mutex = ThreadMem.alloc!Mutex();
+		Mutex mutex2 = ThreadMem.alloc!Mutex();
 		Condition condition = ThreadMem.alloc!Condition(mutex);
 		scope(exit) {
-			ThreadMem.free(mutex); ThreadMem.free(condition);
+			ThreadMem.free(mutex); ThreadMem.free(mutex2); ThreadMem.free(condition);
 		}
 
         BigInt res;
-		res.reserve(8192);
+		res.reserve(max(m_q.bytes() + m_q.bytes() % 128, m_y.bytes() + m_y.bytes() % 128));
         auto tid = spawn(
             (shared(Mutex) mtx, shared(Condition) cnd, shared(const BigInt*) y, shared(const BigInt*) p, shared(BigInt*) c2, shared(BigInt*) res2) 
             { 
+				try {
                 import botan.libstate.libstate : modexpInit;
                 modexpInit(); // enable quick path for powermod
                 BigInt* ret = cast(BigInt*) res2;
                 {
                     Unique!FixedBasePowerModImpl powermod_y_p = new FixedBasePowerModImpl(*cast(const BigInt*)y, *cast(const BigInt*)p);
-                    ret.load( (*powermod_y_p)(*cast(BigInt*)c2) );
-					(cast()cnd).notifyAll();
+					synchronized(cast()mtx) ret.load( (*powermod_y_p)(*cast(BigInt*)c2) );
                 }
-            }, 
-            cast(shared) mutex, cast(shared) condition, cast(shared)m_y, cast(shared)m_p, cast(shared)&c, cast(shared)&res 
+				} catch (Throwable e) { logDebug("Error: ", e.toString()); }
+
+				(cast()cnd).notifyAll();
+			}, 
+            cast(shared) mutex2, cast(shared) condition, cast(shared)m_y, cast(shared)m_p, cast(shared)&c, cast(shared)&res 
             );
         BigInt g_d = (*m_powermod_g_p)(d);
-		synchronized(mutex) condition.wait(5.seconds);
-        BigInt i = m_mod_p.multiply(g_d, res);
+		synchronized(mutex) condition.wait();
+		BigInt i;
+		synchronized(mutex2) i = m_mod_p.multiply(g_d, res);
         auto ret = BigInt.encodeLocked(m_mod_q.reduce(c - i));
         GC.enable();
         return ret;

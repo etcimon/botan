@@ -237,7 +237,7 @@ private:
 
     void alertCb(in TLSAlert alert, in ubyte[] ub)
     {
-		logDebug("Alert: ", alert.typeString(), " :", ub);  
+		//logDebug("Alert: ", alert.typeString(), " :", ub);  
 		if (alert.isFatal)
 			m_closed = true;
 		if (m_alert_cb)

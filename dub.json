@@ -22,7 +22,7 @@
             "SHA2_64", "Skein_512", "Tiger", "Whirlpool", "ParallelHash", "Comb4P", "CBC_MAC", "CMAC", "SSL3_MAC", 
             "ANSI_X919_MAC", "RC4", "ChaCha", "Salsa20", "AES_NI", "AES_SSSE3", "Serpent_SIMD",  "SIMD_Scalar", "SIMD_SSE2",
             "Noekeon_SIMD", "XTEA_SIMD", "IDEA_SSE2", "SHA1_SSE2", "Engine_ASM", "Engine_AES_ISA", "Engine_SIMD",
-            "Entropy_HRTimer", "Entropy_Rdrand", "Entropy_DevRand", "Entropy_EGD", "Entropy_UnixProc", "Entropy_CAPI", 
+            "Entropy_HRTimer", "Entropy_Rdrand", "Entropy_DevRand", "Entropy_EGD", "Entropy_UnixProc",
             "Entropy_Win32", "Entropy_ProcWalk", "X931_RNG", "HMAC_DRBG", "KDF1", "KDF2", "SSL_V3_PRF", "TLS_V10_PRF", "TLS_V12_PRF", "X942_PRF",
             "TLS", "X509", "PUBKEY", "FPE_FE1", "RFC3394", "PassHash9", "BCrypt", "SRP6", "TSS", "CryptoBox", 
             "CryptoBox_PSK", "ZLib"],
@@ -38,7 +38,7 @@
             "SHA2_64", "Skein_512", "Tiger", "Whirlpool", "ParallelHash", "Comb4P", "CBC_MAC", "CMAC", "SSL3_MAC", 
             "ANSI_X919_MAC", "RC4", "ChaCha", "Salsa20", "Serpent_SIMD",  "SIMD_Scalar",
             "Noekeon_SIMD", "XTEA_SIMD", "Engine_ASM", "Engine_AES_ISA",
-            "Entropy_HRTimer", "Entropy_Rdrand", "Entropy_DevRand", "Entropy_EGD", "Entropy_UnixProc", "Entropy_CAPI", 
+            "Entropy_HRTimer", "Entropy_Rdrand", "Entropy_DevRand", "Entropy_EGD", "Entropy_UnixProc",
             "Entropy_Win32", "Entropy_ProcWalk", "X931_RNG", "HMAC_DRBG", "KDF1", "KDF2", "SSL_V3_PRF", "TLS_V10_PRF", "TLS_V12_PRF", "X942_PRF",
             "TLS", "X509", "PUBKEY", "FPE_FE1", "RFC3394", "PassHash9", "BCrypt", "SRP6", "TSS", "CryptoBox", "CryptoBox_PSK"],
 

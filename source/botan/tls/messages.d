@@ -272,7 +272,7 @@ public:
          in string hostname,
          in string srp_identifier) 
     {
-		logDebug("ClientHello with hostname: ", hostname);
+		//logDebug("ClientHello with hostname: ", hostname);
         bool reneg_empty = reneg_info.empty;
         m_version = _version;
         m_random = makeHelloRandom(rng, policy);
@@ -366,7 +366,7 @@ protected:
     override Vector!ubyte serialize() const
     {
 
-		logDebug("Ciphersuites: ", ciphersuites()[]);
+		/*logDebug("Ciphersuites: ", ciphersuites()[]);
 		logDebug("Supported ECC curves: ", supportedEccCurves()[]);
 		logDebug("SupportedAlgos: ", supportedAlgos()[]);
 		logDebug("Session ID: ", sessionId[]);
@@ -375,7 +375,7 @@ protected:
 		logDebug("sentFallback SCSV: ", sentFallbackSCSV());
 		logDebug("Secure renegotiation: ", secureRenegotiation());
 		logDebug("NextProtocol: ", nextProtocols[]);
-
+		*/
         Vector!ubyte buf;
         
         buf.pushBack(m_version.majorVersion());

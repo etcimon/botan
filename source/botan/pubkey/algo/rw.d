@@ -188,30 +188,34 @@ public:
         i = m_blinder.blind(i);
 
         BigInt j1;
-		j1.reserve(8192);
+		j1.reserve(max(m_e.bytes() + m_e.bytes() % 128, m_q.bytes() + m_q.bytes() % 128, m_n.bytes() + m_n.bytes() % 128));
 		import core.sync.mutex, core.sync.condition;
 		Mutex mutex = ThreadMem.alloc!Mutex();
+		Mutex mutex2 = ThreadMem.alloc!Mutex();
 		Condition condition = ThreadMem.alloc!Condition(mutex);
 		scope(exit) {
-			ThreadMem.free(mutex); ThreadMem.free(condition);
+			ThreadMem.free(mutex); ThreadMem.free(mutex2); ThreadMem.free(condition);
 		}
         auto tid = spawn((shared(Mutex) mtx, shared(Condition) cnd, shared(const BigInt*) d1, shared(const BigInt*) p, shared(BigInt*) i2, shared(BigInt*) j1_2) 
             {
-                import botan.libstate.libstate : modexpInit;
-                modexpInit(); // enable quick path for powermod
-                BigInt* ret = cast(BigInt*)j1_2;
+				try {
+	                import botan.libstate.libstate : modexpInit;
+	                modexpInit(); // enable quick path for powermod
+	                BigInt* ret = cast(BigInt*)j1_2;
 
-                {
-                    Unique!FixedExponentPowerModImpl powermod_d1_p = new FixedExponentPowerModImpl(*cast(const BigInt*)d1, *cast(const BigInt*)p);
-                    ret.load( (*powermod_d1_p)(*cast(BigInt*)i2) );
-					(cast()cnd).notify();
-                }
+	                {
+	                    Unique!FixedExponentPowerModImpl powermod_d1_p = new FixedExponentPowerModImpl(*cast(const BigInt*)d1, *cast(const BigInt*)p);
+						synchronized(cast()mtx) ret.load( (*powermod_d1_p)(*cast(BigInt*)i2) );
+	                }
+				} catch (Throwable e) { logDebug("Error: ", e.toString()); }
+				(cast()cnd).notify();
             }, 
-            cast(shared)mutex, cast(shared)condition, cast(shared)m_d1, cast(shared)m_p, cast(shared)&i, cast(shared)&j1
+            cast(shared)mutex2, cast(shared)condition, cast(shared)m_d1, cast(shared)m_p, cast(shared)&i, cast(shared)&j1
             );
         const BigInt j2 = (*m_powermod_d2_q)(i);
 		synchronized(mutex) condition.wait(5.seconds);
-        BigInt j3 = m_mod_p.reduce(subMul(j1, j2, *m_c));
+		BigInt j3;
+		synchronized(mutex2) j3 = m_mod_p.reduce(subMul(j1, j2, *m_c));
         BigInt r = m_blinder.unblind(mulAdd(j3, *m_q, j2));        
         BigInt cmp2 = *m_n - r;
         BigInt min_val = r.move();
