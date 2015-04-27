@@ -141,11 +141,10 @@ class CurveGFpP521 : CurveGFpNIST
 public:
     this()(auto const ref BigInt a, auto const ref BigInt b)
     {
-        super(521, a, b);
-    }
+		if (prime is BigInt.init)
+			prime = BigInt("0x1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 
-    static this() {
-        prime = BigInt("0x1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+        super(521, a, b);
     }
 
     override ref const(BigInt) getP() const { return prime; }
@@ -180,6 +179,6 @@ public:
         return 1;
     }
 
-    static BigInt prime; 
+    __gshared BigInt prime; 
 }
 
