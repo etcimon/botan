@@ -247,6 +247,11 @@ public:
         auto tid = spawn(
             (shared(Mutex) mtx, shared(Condition) cnd, shared(const BigInt*) y, shared(const BigInt*) p, shared(BigInt*) c2, shared(BigInt*) res2) 
             { 
+				scope(exit) {
+					(cast()cnd).notifyAll();
+					import core.thread : Thread;
+					Thread.sleep(50.usecs);
+				}
 				try {
                 import botan.libstate.libstate : modexpInit;
                 modexpInit(); // enable quick path for powermod
@@ -257,7 +262,6 @@ public:
                 }
 				} catch (Throwable e) { logDebug("Error: ", e.toString()); }
 
-				(cast()cnd).notifyAll();
 			}, 
             cast(shared) mutex2, cast(shared) condition, cast(shared)m_y, cast(shared)m_p, cast(shared)&c, cast(shared)&res 
             );

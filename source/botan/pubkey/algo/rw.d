@@ -197,7 +197,12 @@ public:
 			ThreadMem.free(mutex); ThreadMem.free(mutex2); ThreadMem.free(condition);
 		}
         auto tid = spawn((shared(Mutex) mtx, shared(Condition) cnd, shared(const BigInt*) d1, shared(const BigInt*) p, shared(BigInt*) i2, shared(BigInt*) j1_2) 
-            {
+			{
+				scope(exit) {
+					(cast()cnd).notifyAll();
+					import core.thread : Thread;
+					Thread.sleep(50.usecs);
+				}
 				try {
 	                import botan.libstate.libstate : modexpInit;
 	                modexpInit(); // enable quick path for powermod
@@ -208,7 +213,6 @@ public:
 						synchronized(cast()mtx) ret.load( (*powermod_d1_p)(*cast(BigInt*)i2) );
 	                }
 				} catch (Throwable e) { logDebug("Error: ", e.toString()); }
-				(cast()cnd).notify();
             }, 
             cast(shared)mutex2, cast(shared)condition, cast(shared)m_d1, cast(shared)m_p, cast(shared)&i, cast(shared)&j1
             );

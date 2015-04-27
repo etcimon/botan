@@ -178,7 +178,12 @@ public:
 			res.reserve(max(m_g.bytes() + m_g.bytes() % 128, m_x.bytes() + m_x.bytes % 128));
 
             tid = spawn((shared(Mutex) mtx, shared(Condition) cnd, shared(ModularReducer*)mod_q, shared(const BigInt*) g, shared(const BigInt*) p, shared(BigInt*) k2, shared(BigInt*) res2)
-                { 
+				{ 	
+					scope(exit) {
+						(cast()cnd).notifyAll();
+						import core.thread : Thread;
+						Thread.sleep(50.usecs);
+					}
 					try {
 	                    import botan.libstate.libstate : modexpInit;
 	                    modexpInit(); // enable quick path for powermod
@@ -190,7 +195,6 @@ public:
 	                    }
 					}
 					catch (Throwable e) { logDebug("Error: ", e.toString()); }
-					(cast()cnd).notifyAll();
 				}, cast(shared) mutex2, cast(shared)condition, cast(shared)&m_mod_q, cast(shared)m_g, cast(shared)m_p, cast(shared)&k, cast(shared)&res
             );
 
@@ -276,8 +280,13 @@ public:
 			ThreadMem.free(mutex); ThreadMem.free(mutex2); ThreadMem.free(condition);
 		}
 		Tid tid = spawn((shared(Mutex) mtx, shared(Condition) cnd, shared(ModularReducer*) mod_q, shared(const BigInt*)g2, shared(const BigInt*)p2, shared(BigInt*) s2, shared(BigInt*) i2, shared(BigInt*) s_i2) 
-            { 
-                try {
+			{ 	
+				scope(exit) {
+					(cast()cnd).notifyAll();
+					import core.thread : Thread;
+					Thread.sleep(50.usecs);
+				}
+				try {
 					import botan.libstate.libstate : modexpInit, globalState;
 	                modexpInit(); // enable quick path for powermod
 	                globalState();
@@ -291,7 +300,6 @@ public:
 				} catch (Throwable e) {
 					logDebug("Got error: ", e.toString);
 				}
-				(cast()cnd).notifyAll();
 			}
 			, cast(shared) mutex2, cast(shared)condition, cast(shared)&m_mod_q, cast(shared)m_g, cast(shared)m_p, cast(shared)&s, cast(shared)&i, cast(shared)&s_i);
         auto mult = m_mod_q.multiply(s, r);
