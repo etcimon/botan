@@ -232,6 +232,11 @@ private:
 		j1.reserve(max(m_q.bytes() + m_q.bytes() % 128, m_n.bytes() + m_n.bytes() % 128));
         auto tid = spawn((shared(Mutex) mtx, shared(Condition) cnd, shared(const BigInt*) d1, shared(const BigInt*) p, shared(const BigInt*) m2, shared(BigInt*) j1_2)
             { 
+				scope(exit) {
+					(cast()cnd).notifyAll();
+					import core.thread : Thread;
+					Thread.sleep(50.usecs);
+				}
 				try {
 	                import botan.libstate.libstate : modexpInit;
 					modexpInit(); // enable quick path for powermod
@@ -242,7 +247,6 @@ private:
 						synchronized(cast()mtx) ret.load(_res);
 	            	}
 				} catch (Throwable e) { logDebug("Error: ", e.toString()); }
-				(cast()cnd).notify();
 			}, 
             cast(shared)mutex2, cast(shared)condition, cast(shared)m_d1, cast(shared)m_p, cast(shared)&m, cast(shared)&j1);
         
