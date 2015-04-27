@@ -222,8 +222,9 @@ public:
     override SecureVector!ubyte verifyMr(const(ubyte)* msg, size_t msg_len)
     {
         import core.memory : GC;
-        // DMD 2.067: This fails horribly here on windows so we disable the GC for other OS too just in case
-        GC.disable();
+		GC.disable();
+		scope(exit)
+			GC.enable();
         const BigInt* q = &m_mod_q.getModulus(); // TODO: why not use m_q?
         if (msg_len != 2*q.bytes())
             throw new InvalidArgument("NR verification: Invalid signature");
@@ -271,9 +272,7 @@ public:
 		thr.join();
 		BigInt i;
 		synchronized(mutex) i = m_mod_p.multiply(g_d, res);
-        auto ret = BigInt.encodeLocked(m_mod_q.reduce(c - i));
-        GC.enable();
-        return ret;
+        return BigInt.encodeLocked(m_mod_q.reduce(c - i));
     }
 private:
     const BigInt* m_q;

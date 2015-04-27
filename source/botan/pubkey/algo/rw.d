@@ -168,8 +168,10 @@ public:
     override SecureVector!ubyte sign(const(ubyte)* msg, size_t msg_len, RandomNumberGenerator rng)
     {
         import core.memory : GC;
+		GC.disable();
+		scope(exit)
+			GC.enable();
 		import core.thread;
-        GC.disable();
         rng.addEntropy(msg, msg_len);
 
         if (!m_blinder.initialized()) { // initialize here because we need rng
@@ -230,7 +232,6 @@ public:
         if (cmp2 < min_val)
             min_val = cmp2.move();
         auto ret = BigInt.encode1363(min_val, m_n.bytes());
-        GC.enable();
         return ret;
     }
 private:

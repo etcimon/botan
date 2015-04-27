@@ -215,6 +215,9 @@ private:
     BigInt privateOp()(auto const ref BigInt m) const
     {
         import core.memory : GC;
+		GC.disable();
+		scope(exit)
+			GC.enable();
 		import core.sync.condition;
 		import core.sync.mutex;
 		import core.atomic;
@@ -223,7 +226,6 @@ private:
 		scope(exit) {
 			ThreadMem.free(mutex);
 		}
-        GC.disable();
         if (m >= *m_n)
             throw new InvalidArgument("RSA private op - input is too large");
         BigInt j1;
@@ -256,7 +258,6 @@ private:
 		thr.join();
 		BigInt j3;
 		synchronized(mutex) j3 = m_mod_p.reduce(subMul(j1, j2, *m_c));
-		GC.enable();
         return mulAdd(j3, *m_q, j2);
     }
 

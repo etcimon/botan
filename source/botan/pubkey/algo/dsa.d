@@ -150,7 +150,9 @@ public:
     override SecureVector!ubyte sign(const(ubyte)* msg, size_t msg_len, RandomNumberGenerator rng)
     {    
         import core.memory : GC;
-        GC.disable();
+		GC.disable();
+		scope(exit)
+			GC.enable();
         import std.concurrency : spawn, receiveOnly, thisTid, send;
         rng.addEntropy(msg, msg_len);
         
@@ -172,7 +174,7 @@ public:
 
             BigInt res;
 			//logDebug("Expected: ", max(m_g.bytes() + m_g.bytes() % 128, m_x.bytes() + m_x.bytes % 128));
-			res.reserve(max(m_g.bytes() + m_g.bytes() % 128, m_x.bytes() + m_x.bytes % 128));
+			res.reserve(4096);
 
 			struct Handler {
 				shared(Mutex) mtx;
@@ -210,7 +212,6 @@ public:
         SecureVector!ubyte output = SecureVector!ubyte(2*m_q.bytes());
         r.binaryEncode(&output[output.length / 2 - r.bytes()]);
         s.binaryEncode(&output[output.length - s.bytes()]);
-        GC.enable();
         return output.move;
     }
 private:
@@ -257,7 +258,9 @@ public:
     override bool verify(const(ubyte)* msg, size_t msg_len, const(ubyte)* sig, size_t sig_len)
     {
         import core.memory : GC;
-        GC.disable();
+		GC.disable();
+		scope(exit)
+			GC.enable();
         const BigInt* q = &m_mod_q.getModulus();
         
         if (sig_len != 2*q.bytes() || msg_len > q.bytes())
@@ -313,7 +316,6 @@ public:
 		thr.join();
         synchronized(mutex) s = m_mod_p.multiply(s_i, s_r);
         auto r2 = m_mod_q.reduce(s.move);
-        GC.enable();
         return (r2 == r);
     }
 
