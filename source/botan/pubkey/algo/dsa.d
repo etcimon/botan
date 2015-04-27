@@ -171,6 +171,7 @@ public:
 			}
 
             BigInt res;
+			//logDebug("Expected: ", max(m_g.bytes() + m_g.bytes() % 128, m_x.bytes() + m_x.bytes % 128));
 			res.reserve(max(m_g.bytes() + m_g.bytes() % 128, m_x.bytes() + m_x.bytes % 128));
 
 			struct Handler {
@@ -188,6 +189,7 @@ public:
 						{
 							Unique!FixedBasePowerModImpl powermod_g_p = new FixedBasePowerModImpl(*cast(const BigInt*)g, *cast(const BigInt*)p);
 							BigInt _res = (cast(ModularReducer*)mod_q).reduce((*powermod_g_p)(*cast(BigInt*)k2));
+							//logDebug("Got: ", _res.bytes());
 							synchronized(cast()mtx) ret.load(_res);
 						}
 					}
@@ -200,8 +202,8 @@ public:
 			thr.start();
             s = inverseMod(k, *m_q);
 			thr.join();
-			BigInt s_arg;
-			synchronized(mutex) s_arg = mulAdd(*m_x, r, i);
+			synchronized(mutex) r = res.dup;
+			BigInt s_arg = mulAdd(*m_x, r, i);
             s = m_mod_q.multiply(s, s_arg);
         }
         

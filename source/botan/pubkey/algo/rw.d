@@ -210,7 +210,8 @@ public:
 					
 					{
 						Unique!FixedExponentPowerModImpl powermod_d1_p = new FixedExponentPowerModImpl(*cast(const BigInt*)d1, *cast(const BigInt*)p);
-						synchronized(cast()mtx) ret.load( (*powermod_d1_p)(*cast(BigInt*)i2) );
+						BigInt _res = (*powermod_d1_p)(*cast(BigInt*)i2);
+						synchronized(cast()mtx) ret.load( _res );
 					}
 				} catch (Throwable e) { logDebug("Error: ", e.toString()); }
 			}
