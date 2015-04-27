@@ -236,39 +236,41 @@ public:
 
 		import core.sync.mutex, core.sync.condition;
 		Mutex mutex = ThreadMem.alloc!Mutex();
-		Mutex mutex2 = ThreadMem.alloc!Mutex();
-		Condition condition = ThreadMem.alloc!Condition(mutex);
 		scope(exit) {
-			ThreadMem.free(mutex); ThreadMem.free(mutex2); ThreadMem.free(condition);
+			ThreadMem.free(mutex);
 		}
 
         BigInt res;
 		res.reserve(max(m_q.bytes() + m_q.bytes() % 128, m_y.bytes() + m_y.bytes() % 128));
-        auto tid = spawn(
-            (shared(Mutex) mtx, shared(Condition) cnd, shared(const BigInt*) y, shared(const BigInt*) p, shared(BigInt*) c2, shared(BigInt*) res2) 
-            { 
-				scope(exit) {
-					(cast()cnd).notifyAll();
-					import core.thread : Thread;
-					Thread.sleep(50.usecs);
-				}
+
+		struct Handler {
+			shared(Mutex) mtx;
+			shared(const BigInt*) y;
+			shared(const BigInt*) p;
+			shared(BigInt*) c2;
+			shared(BigInt*) res2; 
+			void run() { 
 				try {
-                import botan.libstate.libstate : modexpInit;
-                modexpInit(); // enable quick path for powermod
-                BigInt* ret = cast(BigInt*) res2;
-                {
-                    Unique!FixedBasePowerModImpl powermod_y_p = new FixedBasePowerModImpl(*cast(const BigInt*)y, *cast(const BigInt*)p);
-					synchronized(cast()mtx) ret.load( (*powermod_y_p)(*cast(BigInt*)c2) );
-                }
+					import botan.libstate.libstate : modexpInit;
+					modexpInit(); // enable quick path for powermod
+					BigInt* ret = cast(BigInt*) res2;
+					{
+						Unique!FixedBasePowerModImpl powermod_y_p = new FixedBasePowerModImpl(*cast(const BigInt*)y, *cast(const BigInt*)p);
+						synchronized(cast()mtx) ret.load( (*powermod_y_p)(*cast(BigInt*)c2) );
+					}
 				} catch (Throwable e) { logDebug("Error: ", e.toString()); }
 
-			}, 
-            cast(shared) mutex2, cast(shared) condition, cast(shared)m_y, cast(shared)m_p, cast(shared)&c, cast(shared)&res 
-            );
+			}
+		}
+			
+		auto handler = Handler(cast(shared) mutex, cast(shared)m_y, cast(shared)m_p, cast(shared)&c, cast(shared)&res);
+
+		Unique!Thread thr = new Thread(&handler.run);
+		thr.start();
         BigInt g_d = (*m_powermod_g_p)(d);
-		synchronized(mutex) condition.wait();
+		thr.join();
 		BigInt i;
-		synchronized(mutex2) i = m_mod_p.multiply(g_d, res);
+		synchronized(mutex) i = m_mod_p.multiply(g_d, res);
         auto ret = BigInt.encodeLocked(m_mod_q.reduce(c - i));
         GC.enable();
         return ret;

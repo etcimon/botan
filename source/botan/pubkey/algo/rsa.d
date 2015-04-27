@@ -220,40 +220,42 @@ private:
 		import core.atomic;
 		import memutils.utils : ThreadMem;
 		Mutex mutex = ThreadMem.alloc!Mutex();
-		Mutex mutex2 = ThreadMem.alloc!Mutex();
-		Condition condition = ThreadMem.alloc!Condition(mutex);
 		scope(exit) {
-			ThreadMem.free(mutex); ThreadMem.free(mutex2); ThreadMem.free(condition);
+			ThreadMem.free(mutex);
 		}
         GC.disable();
         if (m >= *m_n)
             throw new InvalidArgument("RSA private op - input is too large");
         BigInt j1;
 		j1.reserve(max(m_q.bytes() + m_q.bytes() % 128, m_n.bytes() + m_n.bytes() % 128));
-        auto tid = spawn((shared(Mutex) mtx, shared(Condition) cnd, shared(const BigInt*) d1, shared(const BigInt*) p, shared(const BigInt*) m2, shared(BigInt*) j1_2)
-            { 
-				scope(exit) {
-					(cast()cnd).notifyAll();
-					import core.thread : Thread;
-					Thread.sleep(50.usecs);
-				}
+
+		struct Handler {
+			shared(Mutex) mtx;
+			shared(const BigInt*) d1;
+			shared(const BigInt*) p;
+			shared(const BigInt*) m2;
+			shared(BigInt*) j1_2;
+			void run() { 
 				try {
-	                import botan.libstate.libstate : modexpInit;
+					import botan.libstate.libstate : modexpInit;
 					modexpInit(); // enable quick path for powermod
-	            	BigInt* ret = cast(BigInt*) j1_2;
-	            	{
-		                auto powermod_d1_p = FixedExponentPowerMod(*cast(const BigInt*)d1, *cast(const BigInt*)p);
+					BigInt* ret = cast(BigInt*) j1_2;
+					{
+						auto powermod_d1_p = FixedExponentPowerMod(*cast(const BigInt*)d1, *cast(const BigInt*)p);
 						BigInt _res = (*powermod_d1_p)( *cast(const BigInt*) m2);
 						synchronized(cast()mtx) ret.load(_res);
-	            	}
+					}
 				} catch (Throwable e) { logDebug("Error: ", e.toString()); }
-			}, 
-            cast(shared)mutex2, cast(shared)condition, cast(shared)m_d1, cast(shared)m_p, cast(shared)&m, cast(shared)&j1);
-        
+			}
+		}
+		
+		auto handler = Handler(cast(shared)mutex, cast(shared)m_d1, cast(shared)m_p, cast(shared)&m, cast(shared)&j1);
+		Unique!Thread thr = new Thread(&handler.run);
+		thr.start();
         BigInt j2 = (cast(FixedExponentPowerModImpl)*m_powermod_d2_q)(m);
-		synchronized(mutex) condition.wait();
+		thr.join();
 		BigInt j3;
-		synchronized(mutex2) j3 = m_mod_p.reduce(subMul(j1, j2, *m_c));
+		synchronized(mutex) j3 = m_mod_p.reduce(subMul(j1, j2, *m_c));
 		GC.enable();
         return mulAdd(j3, *m_q, j2);
     }
