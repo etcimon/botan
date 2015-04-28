@@ -46,27 +46,28 @@ protected:
     override final void addData(const(ubyte)* input, size_t length)
     {
         m_count += length;
-        
         if (m_position > 0)
         {
             bufferInsert(m_buffer, m_position, input, length);
             
-            if (m_position <= m_buffer.length && m_position + length >= m_buffer.length)
+            if (m_position + length >= m_buffer.length)
             {
-                compressN(m_buffer.ptr, 1);
                 input += (m_buffer.length - m_position);
                 length -= (m_buffer.length - m_position);
                 m_position = 0;
+				compressN(m_buffer.ptr, 1);
             }
         }
+		import std.exception : enforce;
+		enforce(length < size_t.max/2, "Integer overflow");
         
         const size_t full_blocks = length / m_buffer.length;
         const size_t remaining    = length % m_buffer.length;
         
-        if (full_blocks)
+        if (full_blocks) {
             compressN(input, full_blocks);
-        
-        bufferInsert(m_buffer, m_position, input + full_blocks * m_buffer.length, remaining);
+		}
+		bufferInsert(m_buffer, m_position, input + full_blocks * m_buffer.length, remaining);
         m_position += remaining;
     }
 
@@ -76,9 +77,11 @@ protected:
     */
     override final void finalResult(ubyte* output)
     {
+		if (m_buffer.length <= m_position) return;
         m_buffer[m_position] = (m_BIG_BIT_ENDIAN ? 0x80 : 0x01);
-        foreach (size_t i; (m_position+1) .. m_buffer.length)
-            m_buffer[i] = 0;
+		if (m_buffer.length > m_position + 1)
+	        foreach (size_t i; (m_position+1) .. m_buffer.length)
+	            m_buffer[i] = 0;
         
         if (m_position >= m_buffer.length - m_COUNT_SIZE)
         {

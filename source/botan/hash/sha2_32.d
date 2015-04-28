@@ -63,7 +63,10 @@ protected:
     */
     override void compressN(const(ubyte)* input, size_t blocks)
     {
-        compress(m_digest, input, blocks);
+		assert(m_digest.length == 8);
+		uint[8] digest = m_digest.ptr[0 .. 8];
+		compress(digest, input, blocks);
+		m_digest[] = digest.ptr[0 .. 8];
     }
 
     /*
@@ -119,7 +122,10 @@ protected:
     */
     override void compressN(const(ubyte)* input, size_t blocks)
     {
-        compress(m_digest, input, blocks);
+		assert(m_digest.length == 8);
+		uint[8] digest = m_digest.ptr[0 .. 8];
+		compress(digest, input, blocks);
+		m_digest[] = digest.ptr[0 .. 8];
     }
 
     /*
@@ -184,7 +190,7 @@ string SHA2_32_F(alias _A, alias _B, alias _C, alias _D, alias _E, alias _F, ali
 /*
 * SHA-224 / SHA-256 compression function
 */
-void compress(ref SecureVector!uint digest,
+void compress(ref uint[8] digest,
               const(ubyte)* input, size_t blocks) pure
 {
     uint A = digest[0], B = digest[1], C = digest[2],

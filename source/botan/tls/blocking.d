@@ -145,10 +145,15 @@ public:
 		}
     
         // if there's nothing in the buffers, read some packets and process them
-        while (!m_slice && m_plaintext.empty && !m_closed)
+        while (!m_slice && m_plaintext.empty && !isClosed)
         {
-            const ubyte[] from_socket = m_read_fn(m_readbuf.ptr[0 .. m_readbuf.length]);
-            channel.receivedData(cast(const(ubyte)*)from_socket.ptr, from_socket.length);
+			ubyte[] slice;
+			if (m_readbuf.length > 0) {
+				slice = m_readbuf.ptr[0 .. m_readbuf.length];
+			}
+			else break;
+			const ubyte[] from_socket = m_read_fn(slice);
+			channel.receivedData(cast(const(ubyte)*)from_socket.ptr, from_socket.length);
         }
 
 		if (buf.length == 0) return null;
@@ -182,11 +187,11 @@ public:
 
 	void close() { m_closed = true; channel.close(); }
 
-    bool isClosed() const { return m_closed; }
+	bool isClosed() const { return m_closed || m_impl.client is null; }
 
     const(Vector!X509Certificate) peerCertChain() const { return channel.peerCertChain(); }
 
-    ~this() { channel.destroy(); }
+	~this() { channel.destroy(); }
 
     /**
      * get handshake complete notifications
