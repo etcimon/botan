@@ -1,0 +1,13 @@
+Cannot proceed with current build: DMD64 is required.
+This is due to the fact that compiling with --arch=x86_64 on Windows will use too much memory.
+
+You can build your copy of DMD64 using the following steps: 
+- Download VisualStudio 2013 Community Edition
+- Download the DMD 2.067 source OR clone from GitHub repository.
+- Start VS 2013.
+- Open solution dmd_msc_vs10.sln (in folser src)
+- Right click solution dmd_msc_vs10 and select Properties.
+- Change Configuration to Release and Platform to x64.
+- Right click solution dmd_msc_vs10 and select Rebuild.
+- Result is 64bit dmd_msc.exe in folder.
+- Copy dmd_msc.exe to dmd.exe in your bin folder
