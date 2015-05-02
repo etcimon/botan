@@ -7,7 +7,9 @@ Botan is a D library intended for native crypto and TLS.
 
 It is a translation of the C++ library [Botan](http://botan.randombit.net/), although the code is now in D and uses the [memutils](https://github.com/etcimon/memutils) library as a replacement for the C++ STL.
 
-Current Version: v1.11.10, commit ref# [455bd2557cbb1343e59eefd97cb449f06a702c28](https://github.com/randombit/botan/commit/455bd2557cbb1343e59eefd97cb449f06a702c28)
+Current Version: v1.11.10, commit ref# [3e55885d20c1a579df13be3470491e5c378a2688](https://github.com/randombit/botan/commit/43e55885d20c1a579df13be3470491e5c378a2688)
+
+A TLS client/server with ALPN, SNI and HTTP/2 has been added to the [http2-botan vibe.d branch](https://github.com/etcimon/vibe.d/tree/http2-botan) on my fork.
 
 Getting Started
 ---------------
