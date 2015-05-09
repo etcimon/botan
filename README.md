@@ -14,7 +14,7 @@ A TLS client/server with ALPN, SNI and HTTP/2 has been added to the [http2-botan
 Getting Started
 ---------------
 
-Botan has been tested on Windows x86, Windows x64, OSX x64, Linux x86, Linux x64 with DMD v2.067.
+Botan has been tested on Windows x86, Windows x64, OSX x64, Linux x86, Linux x64 with DMD v2.067, v2.067.1, v2.068.
 
 For development, you should use the [Mono-D](http://wiki.dlang.org/Mono-D) IDE, as it has been specifically crafted to handle the high amount of symbols.
 
@@ -22,7 +22,7 @@ For development, you should use the [Mono-D](http://wiki.dlang.org/Mono-D) IDE, 
 
 - Install [dub](http://code.dlang.org/download) v0.9.22+
 
-- Compile Botan tests using `dub test --arch=x86_64` for x64, or `dub test --config=full_x86` for x86.
+- Compile Botan tests using `dub test --arch=x86_64` for x64, or `dub test --arch=x86` for x86. On Windows 64 bit, you will need to compile DMD64 using the Microsoft Visual Studio solution (.sln) in the DMD src/ folder. On Windows 32bit (--arch=x86), you will need to use the microsoft linker (mscoff): `dub test --config=32mscoff`, and DMD 2.068 (currently git master).
 
 Learning
 --------
