@@ -603,7 +603,7 @@ private:
         m_coord_y = (*y).dup;
         m_coord_z = (*z).dup;
     }
-
+public:
     // relational operators
     int opCmp(const ref PointGFp rhs) const
     {
