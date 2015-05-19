@@ -19,7 +19,7 @@ import botan.utils.parsing;
 import std.array;
 import botan.utils.types;
 
-alias OID = RefCounted!OIDImpl;
+alias OID = RefCounted!(OIDImpl);
 
 /**
 * This class represents ASN.1 object identifiers.
@@ -241,7 +241,7 @@ public:
         catch (Throwable e)
         {
 
-            logError("parseAsn1Oid failure with '" ~ oid_str ~ "': " ~ e.msg);
+            logError("parseAsn1Oid failure with '" ~ oid_str ~ "': " ~ e.toString());
 			throw new InvalidOID(oid_str);
         }
         

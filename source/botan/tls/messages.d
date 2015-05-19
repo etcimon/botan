@@ -774,9 +774,14 @@ public:
             }
             else if (kex_algo == "SRP_SHA")
             {
-                SRP6ServerSession srp = cast(SRP6ServerSession) state.serverKex().serverSrpParams();
-                
-                m_pre_master = srp.step2(BigInt.decode(reader.getRange!ubyte(2, 0, 65535))).bitsOf();
+				static if (BOTAN_HAS_SRP6) {
+	                SRP6ServerSession srp = cast(SRP6ServerSession) state.serverKex().serverSrpParams();
+	                
+	                m_pre_master = srp.step2(BigInt.decode(reader.getRange!ubyte(2, 0, 65535))).bitsOf();
+				}
+				else {
+					throw new InternalError("ClientKeyExchange: Unknown kex type " ~ kex_algo);
+				}
             }
             else if (kex_algo == "DH" || kex_algo == "DHE_PSK" ||
                      kex_algo == "ECDH" || kex_algo == "ECDHE_PSK")
@@ -975,27 +980,31 @@ public:
             }
             else if (kex_algo == "SRP_SHA")
             {
-                const BigInt N = BigInt.decode(reader.getRange!ubyte(2, 1, 65535));
-                const BigInt g = BigInt.decode(reader.getRange!ubyte(2, 1, 65535));
-                Vector!ubyte salt = reader.getRange!ubyte(1, 1, 255);
-                const BigInt B = BigInt.decode(reader.getRange!ubyte(2, 1, 65535));
-                
-                const string srp_group = srp6GroupIdentifier(N, g);
-                
-                const string srp_identifier = creds.srpIdentifier("tls-client", hostname);
-                
-                const string srp_password = creds.srpPassword("tls-client", hostname, srp_identifier);
-                
-                SRP6KeyPair srp_vals = srp6ClientAgree(srp_identifier,
-                                                                       srp_password,
-                                                                       srp_group,
-                                                                       "SHA-1",
-                                                                       salt,
-                                                                       B,
-                                                                       rng);
-                
-                appendTlsLengthValue(m_key_material, BigInt.encode(srp_vals.privkey), 2);
-                m_pre_master = srp_vals.pubkey.bitsOf();
+				static if (BOTAN_HAS_SRP6) {
+	                const BigInt N = BigInt.decode(reader.getRange!ubyte(2, 1, 65535));
+	                const BigInt g = BigInt.decode(reader.getRange!ubyte(2, 1, 65535));
+	                Vector!ubyte salt = reader.getRange!ubyte(1, 1, 255);
+	                const BigInt B = BigInt.decode(reader.getRange!ubyte(2, 1, 65535));
+	                
+	                const string srp_group = srp6GroupIdentifier(N, g);
+	                
+	                const string srp_identifier = creds.srpIdentifier("tls-client", hostname);
+	                
+	                const string srp_password = creds.srpPassword("tls-client", hostname, srp_identifier);
+	                
+	                SRP6KeyPair srp_vals = srp6ClientAgree(srp_identifier,
+	                                                                       srp_password,
+	                                                                       srp_group,
+	                                                                       "SHA-1",
+	                                                                       salt,
+	                                                                       B,
+	                                                                       rng);
+	                
+	                appendTlsLengthValue(m_key_material, BigInt.encode(srp_vals.privkey), 2);
+	                m_pre_master = srp_vals.pubkey.bitsOf();
+				} else {
+					throw new InternalError("ClientKeyExchange: Unknown kex " ~ kex_algo);
+				}
             }
             else
             {
@@ -1510,12 +1519,14 @@ public:
         return *m_kex_key;
     }
 
-    // Only valid for SRP negotiation
-    const(SRP6ServerSession) serverSrpParams() const
-    {
-        assert(m_srp_params, "SRP6ServerSession cannot be null");
-        return *m_srp_params;
-    }
+	static if (BOTAN_HAS_SRP6) {
+	    // Only valid for SRP negotiation
+	    const(SRP6ServerSession) serverSrpParams() const
+	    {
+	        assert(m_srp_params, "SRP6ServerSession cannot be null");
+	        return *m_srp_params;
+	    }
+	}
 
     /**
     * Deserialize a TLSServer Key Exchange message
@@ -1526,7 +1537,8 @@ public:
          TLSProtocolVersion _version) 
     {
         m_kex_key.free();
-        m_srp_params.free();
+		static if (BOTAN_HAS_SRP6)
+	        m_srp_params.free();
         if (buf.length < 6)
             throw new DecodingError("ServerKeyExchange: Packet corrupted");
         
@@ -1670,30 +1682,34 @@ public:
         }
         else if (kex_algo == "SRP_SHA")
         {
-            const string srp_identifier = state.clientHello().srpIdentifier();
-            
-            string group_id;
-            BigInt v;
-            Vector!ubyte salt;
-            
-            const bool found = creds.srpVerifier("tls-server", hostname,
-                                                  srp_identifier,
-                                                  group_id, v, salt,
-                                                  policy.hideUnknownUsers());
-            
-            if (!found)
-                throw new TLSException(TLSAlert.UNKNOWN_PSK_IDENTITY, "Unknown SRP user " ~ srp_identifier);
-            
-            m_srp_params = new SRP6ServerSession;
-            
-            const BigInt* B = &m_srp_params.step1(v, group_id, "SHA-1", rng);
-            
-            DLGroup group = DLGroup(group_id);
+			static if (BOTAN_HAS_SRP6) {
+	            const string srp_identifier = state.clientHello().srpIdentifier();
+	            
+	            string group_id;
+	            BigInt v;
+	            Vector!ubyte salt;
+	            
+	            const bool found = creds.srpVerifier("tls-server", hostname,
+	                                                  srp_identifier,
+	                                                  group_id, v, salt,
+	                                                  policy.hideUnknownUsers());
+	            
+	            if (!found)
+	                throw new TLSException(TLSAlert.UNKNOWN_PSK_IDENTITY, "Unknown SRP user " ~ srp_identifier);
+	            
+	            m_srp_params = new SRP6ServerSession;
+	            
+	            const BigInt* B = &m_srp_params.step1(v, group_id, "SHA-1", rng);
+	            
+	            DLGroup group = DLGroup(group_id);
 
-            appendTlsLengthValue(m_params, BigInt.encode(group.getP()), 2);
-            appendTlsLengthValue(m_params, BigInt.encode(group.getG()), 2);
-            appendTlsLengthValue(m_params, salt, 1);
-            appendTlsLengthValue(m_params, BigInt.encode(*B), 2);
+	            appendTlsLengthValue(m_params, BigInt.encode(group.getP()), 2);
+	            appendTlsLengthValue(m_params, BigInt.encode(group.getG()), 2);
+	            appendTlsLengthValue(m_params, salt, 1);
+	            appendTlsLengthValue(m_params, BigInt.encode(*B), 2);
+			} else {
+				throw new InternalError("ServerKeyExchange: Unknown kex type " ~ kex_algo);
+			}
         }
         else if (kex_algo != "PSK")
             throw new InternalError("ServerKeyExchange: Unknown kex type " ~ kex_algo);
@@ -1741,7 +1757,8 @@ protected:
 private:
 
     Unique!PrivateKey m_kex_key;
-    Unique!SRP6ServerSession m_srp_params;
+	static if (BOTAN_HAS_SRP6)
+	    Unique!SRP6ServerSession m_srp_params;
 
     Vector!ubyte m_params;
 

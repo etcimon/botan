@@ -29,7 +29,10 @@ import botan.libstate.libstate;
 const(BlockCipher) retrieveBlockCipher(in string algo_spec)
 {
     AlgorithmFactory af = globalState().algorithmFactory();
-    return af.prototypeBlockCipher(algo_spec);
+    auto ret = af.prototypeBlockCipher(algo_spec);
+	if (!ret)
+		throw new AlgorithmNotFound(algo_spec);
+	return ret;
 }
 
 /**
@@ -42,7 +45,10 @@ const(BlockCipher) retrieveBlockCipher(in string algo_spec)
 const(StreamCipher) retrieveStreamCipher(in string algo_spec)
 {
     AlgorithmFactory af = globalState().algorithmFactory();
-    return af.prototypeStreamCipher(algo_spec);
+    auto ret = af.prototypeStreamCipher(algo_spec);
+	if (!ret)
+		throw new AlgorithmNotFound(algo_spec);
+	return ret;
 }
 
 /**
@@ -55,7 +61,10 @@ const(StreamCipher) retrieveStreamCipher(in string algo_spec)
 const(HashFunction) retrieveHash(in string algo_spec)
 {
     AlgorithmFactory af = globalState().algorithmFactory();
-    return af.prototypeHashFunction(algo_spec);
+    auto ret = af.prototypeHashFunction(algo_spec);
+	if (!ret)
+		throw new AlgorithmNotFound(algo_spec);
+	return ret;
 }
 
 /**
@@ -68,7 +77,10 @@ const(HashFunction) retrieveHash(in string algo_spec)
 const(MessageAuthenticationCode) retrieveMac(in string algo_spec)
 {
     AlgorithmFactory af = globalState().algorithmFactory();
-    return af.prototypeMac(algo_spec);
+    auto ret = af.prototypeMac(algo_spec);
+	if (!ret)
+		throw new AlgorithmNotFound(algo_spec);
+	return ret;
 }
 
 /**
@@ -102,6 +114,8 @@ PBKDF getPbkdf(in string algo_spec)
 KeyedFilter getCipher(in string algo_spec, in SymmetricKey key, in InitializationVector iv, CipherDir direction)
 {
     KeyedFilter cipher = getCipher(algo_spec, direction);
+	if (!cipher)
+		throw new AlgorithmNotFound(algo_spec);
     cipher.setKey(key);
     
     if (iv.length)
@@ -122,7 +136,10 @@ KeyedFilter getCipher(in string algo_spec, in SymmetricKey key, in Initializatio
 */
 KeyedFilter getCipher(in string algo_spec, in SymmetricKey key, CipherDir direction)
 {
-    return getCipher(algo_spec, key, InitializationVector(), direction);
+	auto ret = getCipher(algo_spec, key, InitializationVector(), direction);
+	if (!ret)
+		throw new AlgorithmNotFound(algo_spec);
+	return ret;
 }
 
 
@@ -166,5 +183,24 @@ bool haveAlgorithm(in string name)
         return true;
     if (af.prototypeMac(name))
         return true;
+	if (af.prototypePbkdf(name))
+		return true;
     return false;
+}
+
+string algorithmType(in string name) 
+{
+	AlgorithmFactory af = globalState().algorithmFactory();
+	
+	if (af.prototypeBlockCipher(name))
+		return "Block";
+	if (af.prototypeStreamCipher(name))
+		return "Stream";
+	if (af.prototypeHashFunction(name))
+		return "Hash";
+	if (af.prototypeMac(name))
+		return "MAC";
+	if (af.prototypePbkdf(name))
+		return "PBKDF";
+	throw new InvalidAlgorithmName(name);
 }

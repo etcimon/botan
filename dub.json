@@ -41,7 +41,7 @@
             "Entropy_HRTimer", "Entropy_Rdrand", "Entropy_DevRand", "Entropy_EGD", "Entropy_UnixProc",
             "Entropy_Win32", "Entropy_ProcWalk", "X931_RNG", "HMAC_DRBG", "KDF1", "KDF2", "SSL_V3_PRF", "TLS_V10_PRF", "TLS_V12_PRF", "X942_PRF",
             "TLS", "X509", "PUBKEY", "FPE_FE1", "RFC3394", "PassHash9", "BCrypt", "SRP6", "TSS", "CryptoBox", "CryptoBox_PSK"],
-	    "versions-windows-x86": ["FailureOMF"]
+	    	"versions-windows-x86": ["FailureOMF"]
         }, 
         {
             "name": "32mscoff",
@@ -61,7 +61,7 @@
             "TLS", "X509", "PUBKEY", "FPE_FE1", "RFC3394", "PassHash9", "BCrypt", "SRP6", "TSS", "CryptoBox", "CryptoBox_PSK"],
             "dflags-windows-x86": ["-m32mscoff"],
 			"subConfigurations": { "memutils": "32mscoff" }
-        }, 
+        },
         {
             "name": "lite",
             "versions": ["Locking_Allocator", "SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24", "PBKDF1", "PBKDF2", "CTR_BE", "HMAC", 
@@ -81,7 +81,7 @@
         }
     ],
     "dependencies": {
-            "memutils": { "version": "~>0.3.5" } 
+            "memutils": { "version": "~>0.3.6" } 
     }, 
     "libs-posix": ["dl"],
     "libs-windows": ["advapi32", "user32"],
