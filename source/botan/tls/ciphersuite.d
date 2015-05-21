@@ -348,7 +348,8 @@ public:
     */
     static TLSCiphersuite byName(in string name)
     {
-        foreach (const ref TLSCiphersuite suite; allKnownCiphersuites()[])
+		auto all_ciphersuites = allKnownCiphersuites();
+		foreach (const ref TLSCiphersuite suite; all_ciphersuites[])
         {
             if (suite.toString() == name)
                 return suite;

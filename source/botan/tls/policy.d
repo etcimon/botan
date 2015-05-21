@@ -308,8 +308,8 @@ public:
         CiphersuitePreferenceOrdering order = CiphersuitePreferenceOrdering(ciphers, macs, kex, sigs);
         
         Vector!(TLSCiphersuite) ciphersuites;
-        
-        foreach (const ref TLSCiphersuite suite; TLSCiphersuite.allKnownCiphersuites()[])
+		auto cipher_suites = TLSCiphersuite.allKnownCiphersuites();
+		foreach (const ref TLSCiphersuite suite; cipher_suites[])
         {
             if (!acceptableCiphersuite(suite))
                 continue;
@@ -346,7 +346,8 @@ public:
         if (ciphersuites.length == 0)
             throw new LogicError("TLSPolicy does not allow any available cipher suite");
         Vector!ushort ciphersuite_codes;
-        foreach (TLSCiphersuite i; ciphersuites[].uniq.array.sort!((a,b){ return order.compare(a, b); }).array.to!(TLSCiphersuite[]))
+		auto ciphersuites_ordered = ciphersuites[].uniq.array.sort!((a,b){ return order.compare(a, b); }).array.to!(TLSCiphersuite[]);
+		foreach (TLSCiphersuite i; ciphersuites_ordered)
             ciphersuite_codes.pushBack(i.ciphersuiteCode());
         return ciphersuite_codes;
     }
