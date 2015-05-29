@@ -256,36 +256,38 @@ void checkSignature(ALLOC)(auto const ref Vector!(ubyte, ALLOC) tbs_response,
 }
 
 //version(Have_vibe_d) import vibe.core.concurrency : Tid, send; else 
-import std.concurrency : Tid, send;
+import std.concurrency : Mutex;
 /// Checks the certificate online
-void onlineCheck(shared(Tid) sender,
-                 shared(size_t) id,
-                 shared(OCSPResponse*) resp,
-                 shared(const(X509Certificate)*) issuer,
-                 shared(const(X509Certificate)*) subject,
-                 shared(const(CertificateStore)*) trusted_roots)
-{
-    /// TODO: Test OCSP with correct BER Decoding
-    logTrace("Checking OCSP online");
-    const string responder_url = (*cast(X509Certificate*)issuer).ocspResponder();
-    logTrace("Responder url: ", responder_url.length);
+struct OnlineCheck {
+	shared(Mutex) mtx;
+	shared(size_t) id;
+	shared(OCSPResponse*) resp;
+	shared(const(X509Certificate)*) issuer;
+	shared(const(X509Certificate)*) subject;
+	shared(const(CertificateStore)*) trusted_roots;
 
-    if (responder_url.length == 0) {
-        logTrace("Aborting OCSP for ID#", id.to!string);
-        *cast(OCSPResponse*)resp = OCSPResponse.init;
-        send(cast(Tid)sender, cast(size_t)id);
-        return;
-    }
+	void run() {
+	    /// TODO: Test OCSP with correct BER Decoding
+	    logTrace("Checking OCSP online");
+	    const string responder_url = (*cast(X509Certificate*)issuer).ocspResponder();
+	    logTrace("Responder url: ", responder_url.length);
 
-    OCSPRequest req = OCSPRequest(*cast(X509Certificate*)issuer, *cast(X509Certificate*)subject);
-    
-    logTrace("POST_sync");
-    HTTPResponse res = POST_sync(responder_url, "application/ocsp-request", req.BER_encode());
-    
-    res.throwUnlessOk();
-    
-    // Check the MIME type?
-    *cast(OCSPResponse*)resp = OCSPResponse(*(cast(CertificateStore*)trusted_roots), res._body());
-    
-    send(cast(Tid)sender, cast(size_t)id);
+	    if (responder_url.length == 0) {
+	        logTrace("Aborting OCSP for ID#", id.to!string);
+	        synchronized(mtx)
+				*cast(OCSPResponse*)resp = OCSPResponse.init;
+	        return;
+	    }
+
+	    OCSPRequest req = OCSPRequest(*cast(X509Certificate*)issuer, *cast(X509Certificate*)subject);
+	    
+	    logTrace("POST_sync");
+	    HTTPResponse res = POST_sync(responder_url, "application/ocsp-request", req.BER_encode());
+	    
+	    res.throwUnlessOk();
+	    
+	    // Check the MIME type?
+		synchronized(mtx)
+	    	*cast(OCSPResponse*)resp = OCSPResponse(*(cast(CertificateStore*)trusted_roots), res._body());
+	}
 }

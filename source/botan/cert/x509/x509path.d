@@ -29,7 +29,7 @@ import memutils.rbtree : RBTreeRef, RBTree;
 //    import vibe.core.concurrency;
 //}
 //else {
-    import std.concurrency;
+    import core.thread;
 //}
 import botan.cert.x509.cert_status;
 import botan.cert.x509.x509cert;
@@ -417,7 +417,7 @@ Vector!( RBTreeRef!CertificateStatusCode )
     
     X509Time current_time = X509Time(Clock.currTime(UTC()));
     
-    Vector!( Tid ) ocsp_responses;
+    Vector!( Thread ) ocsp_responses;
 
     Vector!(OCSPResponse) ocsp_data = Vector!OCSPResponse(8);
     
@@ -448,8 +448,10 @@ Vector!( RBTreeRef!CertificateStatusCode )
             //version(Have_vibe_d)
             //    Tid id_ = runTask(&onlineCheck, cast(shared)Tid.getThis(), cast(shared)i, cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)trusted);
             //else
-                Tid id_ = spawn(&onlineCheck, cast(shared)thisTid(), cast(shared)i,  cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)trusted);
-            ocsp_responses ~= id_;
+            OnlineCheck oc = OnlineCheck( cast(shared)new Mutex, cast(shared)i,  cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)trusted );
+			Thread thr = new Thread(&oc.run);
+			thr.start();
+			ocsp_responses ~= thr;
         }
         // Check all certs for valid time range
         if (current_time < X509Time(subject.startTime()))
@@ -497,11 +499,9 @@ Vector!( RBTreeRef!CertificateStatusCode )
         {
             try
             {
-
-                OCSPResponse ocsp;
-                size_t id = receiveOnly!(size_t)();
-                logTrace("Got response for ID#", id.to!string);
-                ocsp = ocsp_data[id];
+				ocsp_responses[i].join();
+				OCSPResponse ocsp = ocsp_data[i];
+                logTrace("Got response for ID#", i.to!string);
                 if (ocsp.empty)
                     throw new Exception("OSCP.responder is undefined");
                 auto ocsp_status = ocsp.statusFor(ca, subject);
