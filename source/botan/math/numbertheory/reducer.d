@@ -117,7 +117,8 @@ public:
         m_modulus = mod.dup;
         m_mod_words = m_modulus.sigWords();
         m_modulus_2 = .square(m_modulus);
-        m_mu = BigInt.powerOf2(2 * MP_WORD_BITS * m_mod_words) / m_modulus;
+		auto po2 = BigInt.powerOf2(2 * MP_WORD_BITS * m_mod_words);
+        m_mu = po2 / m_modulus;
     }
 
     @property ModularReducer dup() const {

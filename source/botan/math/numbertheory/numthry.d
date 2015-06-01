@@ -131,7 +131,9 @@ BigInt gcd()(auto const ref BigInt a, auto const ref BigInt b)
 */
 BigInt lcm()(auto const ref BigInt a, auto const ref BigInt b)
 {
-    return ((a * b) / gcd(a, b));
+	auto a_b = (a * b);
+	auto gcd_a_b = gcd(a, b);
+    return a_b/gcd_a_b;
 }
 
 
@@ -556,8 +558,10 @@ BigInt randomPrime()(RandomNumberGenerator rng,
                 if (sieve[j] == 0)
                     passes_sieve = false;
             }
-            
-            if (!passes_sieve || gcd(p - 1, coprime) != 1)
+			auto one = BigInt(1);
+			auto p_1 = p - one;
+			auto gcd_coprime = gcd(p_1, coprime);
+            if (!passes_sieve || gcd_coprime != one)
                 continue;
             if (isPrime(p, rng, 64, true))
                 return p.move;
@@ -567,7 +571,7 @@ BigInt randomPrime()(RandomNumberGenerator rng,
 
 /// ditto
 BigInt randomPrime()(RandomNumberGenerator rng,
-    size_t bits, const BigInt coprime = 1,
+    size_t bits, const BigInt coprime = BigInt(1),
     size_t equiv = 1, size_t modulo = 2)
 {
     return randomPrime(rng, bits, coprime, equiv, modulo);
@@ -732,8 +736,8 @@ BigInt inverseModOddModulus(const ref BigInt n, const ref BigInt mod)
 {
     BigInt u = mod.dup;
     BigInt v = n.dup;
-    BigInt B = 0;
-    BigInt D = 1;
+    BigInt B = BigInt(0);
+    BigInt D = BigInt(1);
     
     while (u.isNonzero())
     {

@@ -87,7 +87,7 @@ public:
     /*
     * ElGamalPrivateKey Constructor
     */
-    this(RandomNumberGenerator rng, DLGroup grp, BigInt x_arg = 0)
+    this(RandomNumberGenerator rng, DLGroup grp, BigInt x_arg = BigInt(0))
     {    
         bool x_arg_0;
         if (x_arg == 0) {

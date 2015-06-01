@@ -92,8 +92,8 @@ public:
 
     this(RandomNumberGenerator rng,
          BigInt p, BigInt q,
-         BigInt e, BigInt d = 0,
-         BigInt n = 0)
+         BigInt e, BigInt d = BigInt(0),
+         BigInt n = BigInt(0))
     {
         m_priv = new IFSchemePrivateKey(Options(), rng, p.move(), q.move(), e.move(), d.move(), n.move());
     }

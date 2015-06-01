@@ -157,7 +157,7 @@ public:
         rng.addEntropy(msg, msg_len);
         
         BigInt i = BigInt(msg, msg_len);
-        BigInt r = 0, s = 0;
+        BigInt r = BigInt(0), s = BigInt(0);
 
         while (r == 0 || s == 0)
         {

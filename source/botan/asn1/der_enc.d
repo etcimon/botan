@@ -323,8 +323,10 @@ public:
     {
         //logTrace("AddObject: ", m_type_tag);
         SecureVector!ubyte buffer;
-        buffer ~= encodeTag(m_type_tag, m_class_tag)[];
-        buffer ~= encodeLength(length)[];
+		auto enc_tag = encodeTag(m_type_tag, m_class_tag);
+		auto enc_len = encodeLength(length);
+        buffer ~= enc_tag[];
+        buffer ~= enc_len[];
         buffer ~= rep[0 .. length];
         //logTrace("Finish Add object");
 
@@ -385,8 +387,10 @@ private:
             }
             
             SecureVector!ubyte result;
-            result ~= encodeTag(m_type_tag, real_class_tag)[];
-            result ~= encodeLength(m_contents.length)[];
+			auto enc_tag = encodeTag(m_type_tag, real_class_tag);
+			auto enc_len = encodeLength(m_contents.length);
+            result ~= enc_tag[];
+			result ~= enc_len[];
             result ~= m_contents[];
             m_contents.clear();
             

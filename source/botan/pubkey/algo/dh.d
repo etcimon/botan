@@ -98,7 +98,7 @@ public:
     *  grp = the group to be used in the key
     *  x_arg = the key's secret value (or if zero, generate a new key)
     */
-    this(RandomNumberGenerator rng, DLGroup grp, BigInt x_arg = 0)
+    this(RandomNumberGenerator rng, DLGroup grp, BigInt x_arg = BigInt(0))
     {
         
         const BigInt* p = &grp.getP();

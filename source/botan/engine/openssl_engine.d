@@ -313,7 +313,7 @@ public:
     /*
     * OSSL_BN Constructor
     */
-    this(const ref BigInt input = 0)
+    this(const ref BigInt input = BigInt(0))
     {
         m_bn = BN_new();
         SecureVector!ubyte encoding = BigInt.encodeLocked(input);

@@ -194,7 +194,8 @@ public:
 
     final bool checkKeyImpl(RandomNumberGenerator rng, bool strong) const 
     {        
-        if (m_n < 35 || m_n.isEven() || m_e < 2 || m_d < 2 || m_p < 3 || m_q < 3 || m_p*m_q != m_n)
+		auto p_q = m_p*m_q;
+        if (m_n < 35 || m_n.isEven() || m_e < 2 || m_d < 2 || m_p < 3 || m_q < 3 || p_q != m_n)
             return false;
         
         if (m_d1 != m_d % (m_p - 1) || m_d2 != m_d % (m_q - 1) || m_c != inverseMod(m_q, m_p))

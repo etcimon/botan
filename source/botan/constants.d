@@ -55,7 +55,7 @@ else                      const BOTAN_HAS_TESTS = false;
 // This indicates the corresponding Botan (C++) version numbers
 const BOTAN_VERSION_MAJOR = 1;
 const BOTAN_VERSION_MINOR = 11;
-const BOTAN_VERSION_PATCH = 10;
+const BOTAN_VERSION_PATCH = 11;
 const BOTAN_VERSION_DATESTAMP = 20150403;
 const BOTAN_VERSION_RELEASE_TYPE = "unreleased";
 const BOTAN_VERSION_VC_REVISION = "git:1518c30f1c90c2d0e5e06731e3dffe21353b34db";

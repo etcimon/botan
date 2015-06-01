@@ -231,7 +231,8 @@ public:
         
         BigInt r = BigInt.powerOf2(m_mod_words * BOTAN_MP_WORD_BITS);
         m_R_mod = r % m_modulus;
-        m_R2_mod = (m_R_mod * m_R_mod) % m_modulus;
+		auto r_mod_temp = (m_R_mod * m_R_mod);
+        m_R2_mod = r_mod_temp % m_modulus;
     }
 private:
     this() { }

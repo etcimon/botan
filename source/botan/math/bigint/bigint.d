@@ -970,12 +970,13 @@ public:
     */
     static BigInt randomInteger()(RandomNumberGenerator rng, auto const ref BigInt min, auto const ref BigInt max)
     {
-        BigInt range = -min + max;
+		auto inv_min = -min;
+        BigInt range = inv_min + max;
 
         if (range <= 0)
             throw new InvalidArgument("randomInteger: invalid min/max values");
-        
-        return (min + (BigInt(rng, range.bits() + 2) % range));
+		auto tmp = BigInt(rng, range.bits() + 2);
+        return (min + (tmp % range));
     }
 
     /**

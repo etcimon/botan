@@ -91,8 +91,9 @@ void divide()(auto const ref BigInt x, auto const ref BigInt y_arg, ref BigInt q
             {
                 q_words[j-t-1] -= 1;
             }
-            
-            r -= (y * q_words[j-t-1]) << (MP_WORD_BITS * (j-t-1));
+			auto y_1 = (y * q_words[j-t-1]);
+			auto j_t_1 = (j-t-1);
+            r -= y_1 << (MP_WORD_BITS * j_t_1);
             
             if (r.isNegative())
             {

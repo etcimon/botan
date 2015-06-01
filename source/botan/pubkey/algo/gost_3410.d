@@ -148,7 +148,7 @@ public:
     *  domain = parameters to used for this key
     *  x = the private key; if zero, a new random key is generated
     */
-    this(RandomNumberGenerator rng, const ref ECGroup domain, BigInt x = 0)
+    this(RandomNumberGenerator rng, const ref ECGroup domain, BigInt x = BigInt(0))
     {
         m_priv = new ECPrivateKey(Options(), rng, domain, x);
     }

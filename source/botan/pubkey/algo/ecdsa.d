@@ -107,7 +107,7 @@ public:
     *  domain = parameters to used for this key
     *  x = the private key (if zero, generate a ney random key)
     */
-    this()(RandomNumberGenerator rng, auto const ref ECGroup domain, BigInt x = 0)
+    this()(RandomNumberGenerator rng, auto const ref ECGroup domain, BigInt x = BigInt(0))
     {
         m_priv = new ECPrivateKey(Options(), rng, domain, x);
     }
@@ -151,7 +151,7 @@ public:
         
         BigInt m = BigInt(msg, msg_len);
         
-        BigInt r = 0, s = 0;
+        BigInt r = BigInt(0), s = BigInt(0);
         
         while (r == 0 || s == 0)
         {

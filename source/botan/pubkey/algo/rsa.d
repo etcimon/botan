@@ -109,7 +109,7 @@ public:
     *  n = if specified, this must be n = p * q. Leave it as 0
     * if you wish to the constructor to calculate it.
     */
-    this(RandomNumberGenerator rng, BigInt p, BigInt q, BigInt e, BigInt d = 0, BigInt n = 0)
+    this(RandomNumberGenerator rng, BigInt p, BigInt q, BigInt e, BigInt d = BigInt(0), BigInt n = BigInt(0))
     {
         m_priv = new IFSchemePrivateKey(Options(), rng, p.move(), q.move(), e.move(), d.move(), n.move());
     }
@@ -136,8 +136,10 @@ public:
             q = randomPrime(rng, bits - p.bits(), e);
             n = p * q;
         } while (n.bits() != bits);
-        
-        d = inverseMod(e, lcm(p - 1, q - 1));
+		auto one = BigInt(1);
+		auto p_1 = p - one;
+		auto q_1 = q - one;
+        d = inverseMod(e, lcm(p_1, q_1));
 
         m_priv = new IFSchemePrivateKey(Options(), rng, p.move(), q.move(), e.move(), d.move(), n.move());
         genCheck(rng);
