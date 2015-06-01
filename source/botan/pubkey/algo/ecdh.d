@@ -120,8 +120,8 @@ public:
     override SecureVector!ubyte agree(const(ubyte)* w, size_t w_len)
     {
         PointGFp point = OS2ECP(w, w_len, *m_curve);
-        
-        PointGFp S = (point * (*m_cofactor)) * m_l_times_priv;
+		auto tmp = point * (*m_cofactor);
+        PointGFp S = tmp * m_l_times_priv;
 
         assert(S.onTheCurve(), "ECDH agreed value was on the curve");
         
