@@ -39,12 +39,12 @@ enum : X509Encoding { RAW_BER, PEM_ }
 */
 Vector!ubyte BER_encode(in PublicKey key)
 {
-    return DEREncoder()
+    auto der_enc = DEREncoder()
             .startCons(ASN1Tag.SEQUENCE)
             .encode(key.algorithmIdentifier())
-            .encode(key.x509SubjectPublicKey(), ASN1Tag.BIT_STRING)
-            .endCons()
-            .getContentsUnlocked();
+			.encode(key.x509SubjectPublicKey(), ASN1Tag.BIT_STRING);
+	der_enc.endCons();
+    return der_enc.getContentsUnlocked();
 }
 
 /**

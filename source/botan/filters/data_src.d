@@ -19,9 +19,9 @@ import botan.utils.exceptn;
 import botan.utils.mem_ops;
 import std.algorithm;
 
-alias DataSource = RefCounted!DataSourceImpl;
-alias DataSourceMemory = RefCounted!DataSourceMemoryImpl;
-alias DataSourceStream = RefCounted!DataSourceStreamImpl;
+alias DataSource = RefCounted!(DataSourceImpl, AppMem);
+alias DataSourceMemory = RefCounted!(DataSourceMemoryImpl, AppMem);
+alias DataSourceStream = RefCounted!(DataSourceStreamImpl, AppMem);
 
 /**
 * This class represents an abstract data source object.

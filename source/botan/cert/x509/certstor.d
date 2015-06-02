@@ -82,8 +82,10 @@ public:
     override Vector!X509DN allSubjects() const
     {
         Vector!X509DN subjects;
-        foreach (ref cert; m_certs[])
-            subjects.pushBack(cert.subjectDn().dup);
+        foreach (ref cert; m_certs[]) {
+			auto subj_dn = cert.subjectDn();
+            subjects.pushBack(subj_dn.dup);
+		}
         return subjects;
     }
 

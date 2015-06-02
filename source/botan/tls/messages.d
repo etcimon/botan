@@ -804,8 +804,8 @@ public:
                         client_pubkey = reader.getRange!ubyte(2, 0, 65535);
                     else
                         client_pubkey = reader.getRange!ubyte(1, 0, 255);
-                    
-                    SecureVector!ubyte shared_secret = ka.deriveKey(0, client_pubkey).bitsOf();
+					auto derived_key = ka.deriveKey(0, client_pubkey);
+					SecureVector!ubyte shared_secret = derived_key.bitsOf();
                     
                     if (ka_key.algoName == "DH")
                         shared_secret = stripLeadingZeros(shared_secret);

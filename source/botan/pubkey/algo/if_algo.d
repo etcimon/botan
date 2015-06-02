@@ -79,12 +79,12 @@ public:
 
     final Vector!ubyte x509SubjectPublicKey() const
     {
-        return DEREncoder()
+        auto der_enc = DEREncoder()
                 .startCons(ASN1Tag.SEQUENCE)
                 .encode(m_n)
-                .encode(m_e)
-                .endCons()
-                .getContentsUnlocked();
+				.encode(m_e);
+		der_enc.endCons();
+		return der_enc.getContentsUnlocked();
     }
 
     /**

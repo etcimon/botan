@@ -271,15 +271,15 @@ protected:
     */
     Vector!ubyte encodeInner() const
     {
-        return DEREncoder()
+        auto der_enc = DEREncoder()
                 .startCons(ASN1Tag.SEQUENCE)
                 .encodeIf (m_is_ca,
                             DEREncoder()
                                 .encode(m_is_ca)
                                 .encodeOptional(m_path_limit, NO_CERT_PATH_LIMIT)
                             )
-                .endCons()
-                .getContentsUnlocked();
+				.endCons();
+		return der_enc.getContentsUnlocked();
     }
 
     /*
