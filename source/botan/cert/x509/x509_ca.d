@@ -309,7 +309,8 @@ PKSigner chooseSigFormat(in PrivateKey key,
     padding ~= '(' ~ proto_hash.name ~ ')';
     
     sig_algo.oid = OIDS.lookup(algo_name ~ "/" ~ padding.data);
-    sig_algo.parameters = key.algorithmIdentifier().parameters;
+	auto algo_id = key.algorithmIdentifier();
+    sig_algo.parameters = algo_id.parameters;
     //logTrace("chooseSigFormat Sig algo: ", sig_algo.toString());
     return PKSigner(key, padding.data, format);
 }

@@ -43,3 +43,10 @@ class TLSUnexpectedMessage : TLSException
         super(TLSAlert.UNEXPECTED_MESSAGE, err);
     }
 }
+
+class TLSClosedException : Exception
+{
+	this(in string err_msg = "Connection was closed") {
+		super(err_msg);
+	}
+}

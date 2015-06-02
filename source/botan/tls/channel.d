@@ -279,7 +279,7 @@ public:
     void send(const(ubyte)* buf, size_t buf_size)
     {
         if (!isActive())
-            throw new Exception("Data cannot be sent on inactive TLS connection");
+            throw new TLSClosedException("Data cannot be sent on inactive TLS connection");
         
         sendRecordArray(sequenceNumbers().currentWriteEpoch(), APPLICATION_DATA, buf, buf_size);
     }

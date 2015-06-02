@@ -28,7 +28,7 @@ import std.conv : to;
 import botan.utils.types;
 
 /**
-* TLS TLSPolicy Base Class
+* TLSPolicy Base Class
 * Inherit and overload as desired to suit local policy concerns
 */
 class TLSPolicy
