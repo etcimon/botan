@@ -62,13 +62,16 @@ public:
          size_t reserved_io_buffer_size = 16*1024)
     { 
         super(socket_output_fn, proc_cb, alert_cb, handshake_cb, session_manager, rng, offer_version.isDatagramProtocol(), reserved_io_buffer_size);
-        m_policy = policy;
+		scope(failure) resetState();
+		m_policy = policy;
         m_creds = creds;
         m_info = server_info;
         const string srp_identifier = m_creds.srpIdentifier("tls-client", m_info.hostname());
         HandshakeState state = createHandshakeState(offer_version);
         sendClientHello(state, false, offer_version, srp_identifier, next_protocols.move());
     }
+
+	~this() { resetState(); }
 
 protected:
     override Vector!X509Certificate getPeerCertChain(in HandshakeState state) const

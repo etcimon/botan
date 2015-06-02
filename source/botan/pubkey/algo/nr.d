@@ -221,10 +221,6 @@ public:
 
     override SecureVector!ubyte verifyMr(const(ubyte)* msg, size_t msg_len)
     {
-        import core.memory : GC;
-		GC.disable();
-		scope(exit)
-			GC.enable();
         const BigInt* q = &m_mod_q.getModulus(); // TODO: why not use m_q?
         if (msg_len != 2*q.bytes())
             throw new InvalidArgument("NR verification: Invalid signature");

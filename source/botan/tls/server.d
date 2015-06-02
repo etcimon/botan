@@ -61,12 +61,13 @@ public:
          size_t io_buf_sz = 16*1024) 
     {
         super(output_fn, data_cb, alert_cb, handshake_cb, session_manager, rng, is_datagram, io_buf_sz);
-        m_policy = policy;
+		m_policy = policy;
         m_creds = creds;
         m_choose_next_protocol = next_proto;
 		m_sni_handler = sni_handler;
     }
 
+	~this() { resetState(); }
 	void* getUserData() { return m_user_data; }
 
 protected:

@@ -830,11 +830,12 @@ private:
         return state;
     }
 
-    void resetState()
+    protected void resetState()
     {
         m_active_state.free();
         m_pending_state.free();
-        m_readbuf.clear();
+        m_readbuf.destroy();
+		m_writebuf.destroy();
         foreach (const ref k, const ref v; m_write_cipher_states)
         {
             v.destroy();

@@ -53,6 +53,7 @@ public:
 		m_alert_cb = alert_cb;
 		m_handshake_complete = hs_cb;
 		m_readbuf = Vector!ubyte(TLS_DEFAULT_BUFFERSIZE);
+		scope(failure) m_readbuf.destroy();
         m_impl.client = new TLSClient(write_fn, &dataCb, &alertCb, &handshakeCb, session_manager, creds,
             policy, rng, server_info, offer_version, next_protocols.move);
     }
@@ -76,6 +77,7 @@ public:
 		m_alert_cb = alert_cb;
 		m_handshake_complete = hs_cb;
 		m_readbuf = Vector!ubyte(TLS_DEFAULT_BUFFERSIZE);
+		scope(failure) m_readbuf.destroy();
         m_impl.server = new TLSServer(write_fn, &dataCb, &alertCb, &handshakeCb, session_manager, creds,
 			policy, rng, next_proto, sni_handler, is_datagram, io_buf_sz);
     }
@@ -171,7 +173,6 @@ public:
         const size_t returned = std.algorithm.min(buf.length, m_plaintext.length);
 		if (returned == 0) {
 			//logDebug("Destroyed return object");
-			channel.destroy();
 			return null;
 		}
 		m_plaintext.read(buf[0 .. returned]);
@@ -191,7 +192,12 @@ public:
 
     const(Vector!X509Certificate) peerCertChain() const { return channel.peerCertChain(); }
 
-	~this() { channel.destroy(); }
+	~this()
+	{
+		if (m_is_client)
+			m_impl.client.destroy(); 
+		else m_impl.server.destroy();
+	}
 
     /**
      * get handshake complete notifications
