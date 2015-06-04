@@ -411,7 +411,8 @@ Vector!( RBTreeRef!CertificateStatusCode )
                const ref PathValidationRestrictions restrictions,
                const ref Vector!CertificateStore certstores)
 {
-    const RBTree!string* trusted_hashes = &restrictions.trustedHashes();
+	import core.memory : GC; GC.disable(); scope(exit) GC.enable();
+	const RBTree!string* trusted_hashes = &restrictions.trustedHashes();
     
     const bool self_signed_ee_cert = (cert_path.length == 1);
     
