@@ -62,7 +62,6 @@ public:
          size_t reserved_io_buffer_size = 16*1024)
     { 
         super(socket_output_fn, proc_cb, alert_cb, handshake_cb, session_manager, rng, offer_version.isDatagramProtocol(), reserved_io_buffer_size);
-		scope(failure) resetState();
 		m_policy = policy;
         m_creds = creds;
         m_info = server_info;
@@ -71,9 +70,7 @@ public:
         sendClientHello(state, false, offer_version, srp_identifier, next_protocols.move());
     }
 
-	~this() { resetState(); }
-
-protected:
+	protected:
     override Vector!X509Certificate getPeerCertChain(in HandshakeState state) const
     {
         if (state.serverCerts())

@@ -194,6 +194,7 @@ public:
 
 	~this()
 	{
+		if (!m_impl.client) return;
 		if (m_is_client)
 			m_impl.client.destroy(); 
 		else m_impl.server.destroy();

@@ -962,12 +962,14 @@ public:
                 auto counterparty_key = ECDHPublicKey(group, OS2ECP(ecdh_key, group.getCurve()));
                 
                 auto priv_key = ECDHPrivateKey(rng, group);
-                
-                auto ka = scoped!PKKeyAgreement(priv_key, "Raw");
-                
-                SecureVector!ubyte ecdh_secret =
-                    ka.deriveKey(0, counterparty_key.publicValue()).bitsOf();
-                
+				SecureVector!ubyte ecdh_secret;
+				{
+					auto ka = scoped!PKKeyAgreement(priv_key, "Raw");
+					auto public_value = counterparty_key.publicValue();
+					auto derived_key = ka.deriveKey(0, public_value);
+					ecdh_secret = derived_key.bitsOf();
+				}
+
                 if (kex_algo == "ECDH")
                     m_pre_master = ecdh_secret.move();
                 else

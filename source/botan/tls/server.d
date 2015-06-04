@@ -67,7 +67,6 @@ public:
 		m_sni_handler = sni_handler;
     }
 
-	~this() { resetState(); }
 	void* getUserData() { return m_user_data; }
 
 protected:
