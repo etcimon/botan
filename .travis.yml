@@ -1,7 +1,8 @@
 language: d
 
 d:
-  - dmd-2.067.0-rc1
+  - dmd-2.067.1
+  - dmd-2.067.0
   
 script:
   - dub test
