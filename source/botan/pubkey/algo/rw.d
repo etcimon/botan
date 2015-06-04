@@ -167,7 +167,7 @@ public:
 
     override SecureVector!ubyte sign(const(ubyte)* msg, size_t msg_len, RandomNumberGenerator rng)
     {
-		import core.memory : GC; GC.disable(); scope(exit) GC.enable();
+		//import core.memory : GC; GC.disable(); scope(exit) GC.enable();
 		import core.thread;
         rng.addEntropy(msg, msg_len);
 

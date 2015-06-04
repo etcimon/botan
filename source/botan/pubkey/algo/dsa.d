@@ -149,7 +149,7 @@ public:
 
     override SecureVector!ubyte sign(const(ubyte)* msg, size_t msg_len, RandomNumberGenerator rng)
     {    
-		import core.memory : GC; GC.disable(); scope(exit) GC.enable();
+		//import core.memory : GC; GC.disable(); scope(exit) GC.enable();
         rng.addEntropy(msg, msg_len);
         
         BigInt i = BigInt(msg, msg_len);
@@ -253,7 +253,7 @@ public:
     override SecureVector!ubyte verifyMr(const(ubyte)*, size_t) { throw new InvalidState("Message recovery not supported"); }
     override bool verify(const(ubyte)* msg, size_t msg_len, const(ubyte)* sig, size_t sig_len)
     {
-		import core.memory : GC; GC.disable(); scope(exit) GC.enable();
+		//import core.memory : GC; GC.disable(); scope(exit) GC.enable();
         const BigInt* q = &m_mod_q.getModulus();
         
         if (sig_len != 2*q.bytes() || msg_len > q.bytes())

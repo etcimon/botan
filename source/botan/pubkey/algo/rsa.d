@@ -216,7 +216,7 @@ public:
 private:
     BigInt privateOp()(auto const ref BigInt m) const
     {
-		import core.memory : GC; GC.disable(); scope(exit) GC.enable();
+		//import core.memory : GC; GC.disable(); scope(exit) GC.enable();
 		import core.sync.condition;
 		import core.sync.mutex;
 		import core.atomic;
