@@ -183,10 +183,10 @@ static if (BOTAN_HAS_TESTS && !SKIP_CRYPTOBOX_TEST) unittest
     auto state = globalState(); // ensure initialized
     size_t fails = 0;
     
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
     __gshared immutable ubyte[3] msg = [ 0xAA, 0xBB, 0xCC ];
-    string ciphertext = CryptoBox.encrypt(msg.ptr, msg.length, "secret password", rng);
+    string ciphertext = CryptoBox.encrypt(msg.ptr, msg.length, "secret password", *rng);
     
     try
     {

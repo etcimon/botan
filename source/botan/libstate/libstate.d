@@ -77,6 +77,11 @@ public:
         gs_entropy_src_mutex = new Mutex;
     }
 
+	~this() {
+		if (m_algorithm_factory)
+			m_algorithm_factory.destroy(); 
+	}
+
     void initialize()
     {
         logTrace("LibraryState.initialize()");
@@ -150,7 +155,7 @@ public:
         if (!m_algorithm_factory)
             throw new InvalidState("Uninitialized in algorithmFactory");
         // logTrace("Algorithm factory: ", cast(void*)*m_algorithm_factory);
-        return *m_algorithm_factory;
+        return m_algorithm_factory;
     }
 
     /**
@@ -224,7 +229,7 @@ private:
         return sources.move();
     }
 
-    Unique!AlgorithmFactory m_algorithm_factory;
+    AlgorithmFactory m_algorithm_factory;
     bool m_initialized;
 }
 

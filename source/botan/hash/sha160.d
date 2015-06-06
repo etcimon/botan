@@ -50,7 +50,7 @@ public:
     {
         super(64, true, true);
         m_digest.length = 5;
-        m_W = 80;
+        m_W.length = 80;
         clear();
     }
 protected:
@@ -65,7 +65,7 @@ protected:
     {
         super(64, true, true);
         m_digest.length = 5;
-        m_W = W_size;
+        m_W.length = W_size;
         clear();
     }
 

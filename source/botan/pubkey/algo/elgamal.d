@@ -57,6 +57,7 @@ public:
 
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
+		m_owned = true;
         m_pub = new DLSchemePublicKey(Options(), alg_id, key_bits);
     }
     /*
@@ -64,14 +65,16 @@ public:
     */
     this(DLGroup grp, BigInt y1)
     {
+		m_owned = true;
         m_pub = new DLSchemePublicKey(Options(), grp.move, y1.move);
     }
 
     this(PublicKey pkey) { m_pub = cast(DLSchemePublicKey) pkey; }
     this(PrivateKey pkey) { m_pub = cast(DLSchemePublicKey) pkey; }
 
-    mixin Embed!m_pub;
+    mixin Embed!(m_pub, m_owned);
 
+	bool m_owned;
     DLSchemePublicKey m_pub;
 }
 
@@ -96,6 +99,7 @@ public:
         }
         BigInt y1 = powerMod(grp.getG(), x_arg, grp.getP());
         
+		m_owned = true;
         m_priv = new DLSchemePrivateKey(Options(), grp.move, y1.move, x_arg.move);
 
         if (x_arg_0)
@@ -109,6 +113,7 @@ public:
          const ref SecureVector!ubyte key_bits,
          RandomNumberGenerator rng) 
     {
+		m_owned = true;
         m_priv = new DLSchemePrivateKey(Options(), alg_id, key_bits);
 
         m_priv.setY(powerMod(m_priv.groupG(), m_priv.m_x, m_priv.groupP()));
@@ -117,8 +122,9 @@ public:
 
     this(PrivateKey pkey) { m_priv = cast(DLSchemePrivateKey) pkey; }
 
-    mixin Embed!m_priv;
+    mixin Embed!(m_priv, m_owned);
 
+	bool m_owned;
     DLSchemePrivateKey m_priv;
 }
 
@@ -267,14 +273,14 @@ size_t elgamalKat(string p,
                    string ciphertext)
 {
     atomicOp!"+="(total_tests, 1);
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
     BigInt p_bn = BigInt(p);
     BigInt g_bn = BigInt(g);
     BigInt x_bn = BigInt(x);
     
     DLGroup group = DLGroup(p_bn, g_bn);
-    auto privkey = ElGamalPrivateKey(rng, group.move(), x_bn.move());
+    auto privkey = ElGamalPrivateKey(*rng, group.move(), x_bn.move());
     
     auto pubkey = ElGamalPublicKey(privkey);
     
@@ -292,9 +298,9 @@ static if (BOTAN_HAS_TESTS && !SKIP_ELGAMAL_TEST) unittest
     logDebug("Testing elgamal.d ...");
     size_t fails = 0;
     
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
-    fails += testPkKeygen(rng);
+    fails += testPkKeygen(*rng);
     
     File elgamal_enc = File("../test_data/pubkey/elgamal.vec", "r");
     

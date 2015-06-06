@@ -240,40 +240,40 @@ uint checkAgainstCopy(const PrivateKey orig, RandomNumberGenerator rng)
 static if (BOTAN_HAS_TESTS && !SKIP_X509_KEY_TEST) unittest
 {
     logDebug("Testing x509_key ...");
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     const string hash_fn = "SHA-256";
     
     size_t fails = 0;
     
     /* Create the CA's key and self-signed cert */
-    auto ca_key = RSAPrivateKey(rng, 2048);
-    X509Certificate ca_cert = x509self.createSelfSignedCert(caOpts(), *ca_key, hash_fn, rng);
+    auto ca_key = RSAPrivateKey(*rng, 2048);
+    X509Certificate ca_cert = x509self.createSelfSignedCert(caOpts(), *ca_key, hash_fn, *rng);
 
     /* Create user #1's key and cert request */
     auto dl_group = DLGroup("dsa/botan/2048");
-    auto user1_key = DSAPrivateKey(rng, dl_group.move);
+    auto user1_key = DSAPrivateKey(*rng, dl_group.move);
     
     auto opts1 = reqOpts1();
-    PKCS10Request user1_req = x509self.createCertReq(opts1, *user1_key, "SHA-1", rng);
+    PKCS10Request user1_req = x509self.createCertReq(opts1, *user1_key, "SHA-1", *rng);
     
     /* Create user #2's key and cert request */
     static if (BOTAN_HAS_ECDSA) {
         ECGroup ecc_domain = ECGroup(OID("1.2.840.10045.3.1.7"));
-        auto user2_key = ECDSAPrivateKey(rng, ecc_domain);
+        auto user2_key = ECDSAPrivateKey(*rng, ecc_domain);
     } else static if (BOTAN_HAS_RSA) {
-        auto user2_key = RSAPrivateKey(rng, 1536);
+        auto user2_key = RSAPrivateKey(*rng, 1536);
     } else static assert(false, "Must have ECSA or RSA for X509!");
     
-    PKCS10Request user2_req = x509self.createCertReq(reqOpts2(), *user2_key, hash_fn, rng);
+    PKCS10Request user2_req = x509self.createCertReq(reqOpts2(), *user2_key, hash_fn, *rng);
     
     /* Create the CA object */
     X509CA ca = X509CA(ca_cert, *ca_key, hash_fn);
     
     /* Sign the requests to create the certs */
-    X509Certificate user1_cert = ca.signRequest(user1_req, rng, X509Time("2008-01-01"), X509Time("2100-01-01"));
+    X509Certificate user1_cert = ca.signRequest(user1_req, *rng, X509Time("2008-01-01"), X509Time("2100-01-01"));
     
-    X509Certificate user2_cert = ca.signRequest(user2_req, rng, X509Time("2008-01-01"), X509Time("2100-01-01"));
-    X509CRL crl1 = ca.newCRL(rng);
+    X509Certificate user2_cert = ca.signRequest(user2_req, *rng, X509Time("2008-01-01"), X509Time("2100-01-01"));
+    X509CRL crl1 = ca.newCRL(*rng);
     
     /* Verify the certs */
     Unique!CertificateStoreInMemory store = new CertificateStoreInMemory();
@@ -304,7 +304,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_X509_KEY_TEST) unittest
     revoked.pushBack(crl_entry1);
     revoked.pushBack(crl_entry2);
     
-    X509CRL crl2 = ca.updateCRL(crl1, revoked, rng);
+    X509CRL crl2 = ca.updateCRL(crl1, revoked, *rng);
     
     store.addCrl(crl2);
     
@@ -325,7 +325,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_X509_KEY_TEST) unittest
     auto crl_entry = CRLEntry(user1_cert, REMOVE_FROM_CRL);
     revoked.clear();
     revoked.pushBack(crl_entry);
-    X509CRL crl3 = ca.updateCRL(crl2, revoked, rng);
+    X509CRL crl3 = ca.updateCRL(crl2, revoked, *rng);
     
     store.addCrl(crl3);
     
@@ -338,8 +338,8 @@ static if (BOTAN_HAS_TESTS && !SKIP_X509_KEY_TEST) unittest
         ++fails;
     }
     
-    checkAgainstCopy(*ca_key, rng);
-    checkAgainstCopy(*user1_key, rng);
-    checkAgainstCopy(*user2_key, rng);
+    checkAgainstCopy(*ca_key, *rng);
+    checkAgainstCopy(*user1_key, *rng);
+    checkAgainstCopy(*user2_key, *rng);
     testReport("X509_key", 5, fails);
 }

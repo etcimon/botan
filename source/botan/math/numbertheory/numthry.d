@@ -466,14 +466,15 @@ bool isPrime()(auto const ref BigInt n, RandomNumberGenerator rng, size_t prob =
     const size_t test_iterations = mrTestIterations(n.bits(), prob, is_random);
     const BigInt n_minus_1 = n - 1;
     const size_t s = lowZeroBits(n_minus_1);
-    FixedExponentPowerMod pow_mod = FixedExponentPowerMod(n_minus_1 >> s, n);
+    FixedExponentPowerModImpl pow_mod = ThreadMem.alloc!FixedExponentPowerModImpl(n_minus_1 >> s, n);
+	scope(exit) ThreadMem.free(pow_mod);
     ModularReducer reducer = ModularReducer(n);
     
     foreach (size_t i; 0 .. test_iterations)
     {
         auto bi = BigInt(2);
         const BigInt a = BigInt.randomInteger(rng, bi, n_minus_1);
-        BigInt y = (*pow_mod)(a);
+        BigInt y = pow_mod(a);
         if (mrWitness(y, reducer, n_minus_1, s))
             return false;
     }

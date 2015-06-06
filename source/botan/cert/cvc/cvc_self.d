@@ -62,7 +62,7 @@ EAC11CVC createSelfSignedCert(in PrivateKey key,
                               RandomNumberGenerator rng)
 {
     // NOTE: we ignore the value of opt.chr
-    ECDSAPrivateKey priv_key = ECDSAPrivateKey(key);
+    auto priv_key = ECDSAPrivateKey(key);
     
     if (!priv_key)
         throw new InvalidArgument("CVC_EAC.createSelfSignedCert(): unsupported key type");
@@ -246,7 +246,7 @@ EAC11CVC linkCvca(in EAC11CVC signer,
     string padding_and_hash = paddingAndHashFromOid(sig_algo.oid);
     PKSigner pk_signer = PKSigner(priv_key, padding_and_hash);
     Unique!PublicKey pk = signee.subjectPublicKey();
-    ECDSAPublicKey subj_pk = cast(ECDSAPublicKey)(*pk);
+    auto subj_pk = ECDSAPublicKey(*pk);
     subj_pk.setParameterEncoding(EC_DOMPAR_ENC_EXPLICIT);
     
     Vector!ubyte enc_public_key = eac11Encoding(priv_key, sig_algo.oid);
@@ -273,7 +273,7 @@ EAC11CVC linkCvca(in EAC11CVC signer,
 EAC11Req createCVCReqImplicitca(PrivateKey prkey, in ASN1Chr chr,
                                 in string hash_alg, RandomNumberGenerator rng)
 {
-    ECDSAPrivateKey priv_key = cast(ECDSAPrivateKey) prkey;
+    auto priv_key = ECDSAPrivateKey(prkey);
     if (!priv_key)
     {
         throw new InvalidArgument("CVC_EAC.createSelfSignedCert(): unsupported key type");
@@ -310,7 +310,7 @@ EAC11CVC signRequest(in EAC11CVC signer_cert,
                         uint ca_is_validity_months,
                         RandomNumberGenerator rng)
 {
-    const ECDSAPrivateKey  priv_key = cast(const ECDSAPrivateKey) key;
+    const ECDSAPrivateKey priv_key = cast(const ECDSAPrivateKey) key;
     if (!priv_key)
     {
         throw new InvalidArgument("CVC_EAC.createSelfSignedCert(): unsupported key type");
@@ -327,7 +327,7 @@ EAC11CVC signRequest(in EAC11CVC signer_cert,
     string padding_and_hash = paddingAndHashFromOid(signee.signatureAlgorithm().oid);
     PKSigner pk_signer = PKSigner(priv_key, padding_and_hash);
     Unique!PublicKey pk = signee.subjectPublicKey();
-    ECDSAPublicKey subj_pk = cast(ECDSAPublicKey) *pk;
+    auto subj_pk = ECDSAPublicKey(*pk);
     // Unique!PublicKey signer_pk = signer_cert.subjectPublicKey();
     
     // for the case that the domain parameters are not set...

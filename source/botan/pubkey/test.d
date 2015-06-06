@@ -142,13 +142,13 @@ size_t validateEncryption(PKEncryptor e, PKDecryptor d,
     
     if (algo.canFind("/Raw") == -1)
     {
-        auto arng = AutoSeededRNG();
+		Unique!AutoSeededRNG arng = new AutoSeededRNG;
         
         for(size_t i = 0; i != ctext.length; ++i)
         {
             Vector!ubyte bad_ctext = ctext.dup;
             
-            bad_ctext[i] ^= nonzeroByte(arng);
+            bad_ctext[i] ^= nonzeroByte(*arng);
             
             assert(bad_ctext != ctext, "Made them different");
             

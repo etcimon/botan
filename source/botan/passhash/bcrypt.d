@@ -192,12 +192,12 @@ static if (BOTAN_HAS_TESTS && !SKIP_BCRYPT_TEST) unittest
         fails++;
     }
     
-    auto rng = AutoSeededRNG();
+    Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
     for(ushort level = 1; level != 5; ++level)
     {
         const string input = "some test passphrase 123";
-        const string gen_hash = generateBcrypt(input, rng, level);
+        const string gen_hash = generateBcrypt(input, *rng, level);
         
         if (!checkBcrypt(input, gen_hash))
         {

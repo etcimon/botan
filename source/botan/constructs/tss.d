@@ -323,7 +323,7 @@ import botan.codec.hex;
 static if (BOTAN_HAS_TESTS && !SKIP_TSS_TEST) unittest
 {
     logDebug("Testing tss.d ...");
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
     size_t fails = 0;
     
@@ -333,7 +333,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_TSS_TEST) unittest
     
     const SecureVector!ubyte S = hexDecodeLocked("7465737400");
     logTrace("Split TSS: ", S[]);
-    Vector!RTSS shares = RTSS.split(cast(ubyte)2, cast(ubyte)4, cast(const(ubyte)*)&S[0], S.length, id, rng);
+    Vector!RTSS shares = RTSS.split(cast(ubyte)2, cast(ubyte)4, cast(const(ubyte)*)&S[0], S.length, id, *rng);
     logTrace("Reconstruct TSS");
     auto back = RTSS.reconstruct(shares);
     

@@ -37,6 +37,7 @@ public:
 
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits) 
     { 
+		m_owned = true;
         m_pub = new ECPublicKey(Options(), alg_id, key_bits);
     }
 
@@ -49,14 +50,16 @@ public:
     */
     this()(auto const ref ECGroup dom_par, auto const ref PointGFp public_point) 
     {
+		m_owned = true;
         m_pub = new ECPublicKey(Options(), dom_par, public_point);
     }
 
     this(PrivateKey pkey) { m_pub = cast(ECPublicKey) pkey; }
     this(PublicKey pkey) { m_pub = cast(ECPublicKey) pkey; }
 
-    mixin Embed!m_pub;
+    mixin Embed!(m_pub, m_owned);
 
+	bool m_owned;
     ECPublicKey m_pub;
 }
 
@@ -71,6 +74,7 @@ public:
 
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits) 
     {
+		m_owned = true;
         m_priv = new ECPrivateKey(Options(), alg_id, key_bits);
     }
 
@@ -83,6 +87,7 @@ public:
     */
     this(RandomNumberGenerator rng, const ref ECGroup domain, BigInt x = BigInt(0)) 
     {
+		m_owned = true;
         m_priv = new ECPrivateKey(Options(), rng, domain, x);
     }
 
@@ -90,8 +95,9 @@ public:
 
     this(PrivateKey pkey) { m_priv = cast(ECPrivateKey) pkey; }
 
-    mixin Embed!m_priv;
+    mixin Embed!(m_priv, m_owned);
 
+	bool m_owned;
     ECPrivateKey m_priv;
 
 }
@@ -150,9 +156,9 @@ size_t testEcdhNormalDerivation(RandomNumberGenerator rng)
     ECGroup dom_pars = ECGroup(OID("1.3.132.0.8"));
 
 
-    ECDHPrivateKey private_a = ECDHPrivateKey(rng, dom_pars);
+    auto private_a = ECDHPrivateKey(rng, dom_pars);
     
-    ECDHPrivateKey private_b = ECDHPrivateKey(rng, dom_pars); //public_a.getCurve()
+    auto private_b = ECDHPrivateKey(rng, dom_pars); //public_a.getCurve()
     
     auto ka = scoped!PKKeyAgreement(private_a, "KDF2(SHA-1)");
     auto kb = scoped!PKKeyAgreement(private_b, "KDF2(SHA-1)");
@@ -186,8 +192,8 @@ size_t testEcdhSomeDp(RandomNumberGenerator rng)
         OID oid = OID(oid_str);
         ECGroup dom_pars = ECGroup(oid);
         
-        ECDHPrivateKey private_a = ECDHPrivateKey(rng, dom_pars);
-        ECDHPrivateKey private_b = ECDHPrivateKey(rng, dom_pars);
+        auto private_a = ECDHPrivateKey(rng, dom_pars);
+        auto private_b = ECDHPrivateKey(rng, dom_pars);
         
         auto ka = scoped!PKKeyAgreement(private_a, "KDF2(SHA-1)");
         auto kb = scoped!PKKeyAgreement(private_b, "KDF2(SHA-1)");
@@ -239,11 +245,11 @@ static if (BOTAN_HAS_TESTS && !SKIP_ECDH_TEST) unittest
     logDebug("Testing ecdh.d ...");
     size_t fails = 0;
     
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
-    fails += testEcdhNormalDerivation(rng);
-    fails += testEcdhSomeDp(rng);
-    fails += testEcdhDerDerivation(rng);
+    fails += testEcdhNormalDerivation(*rng);
+    fails += testEcdhSomeDp(*rng);
+    fails += testEcdhDerDerivation(*rng);
     
     testReport("ECDH", total_tests, fails);
 }

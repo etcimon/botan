@@ -269,7 +269,8 @@ struct OnlineCheck {
 	void run() {
 	    /// TODO: Test OCSP with correct BER Decoding
 	    logTrace("Checking OCSP online");
-	    const string responder_url = (*cast(X509Certificate*)issuer).ocspResponder();
+		string responder_url;
+		synchronized(mtx) responder_url = (*cast(X509Certificate*)issuer).ocspResponder();
 	    logTrace("Responder url: ", responder_url.length);
 
 	    if (responder_url.length == 0) {

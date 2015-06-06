@@ -59,11 +59,13 @@ public:
     */
     this(in ECGroup dom_par, in PointGFp public_point) 
     {
+		m_owned = true;
         m_pub = new ECPublicKey(Options(), dom_par, public_point);
     }
 
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
+		m_owned = true;
         m_pub = new ECPublicKey(Options(), alg_id, key_bits);
     }
 
@@ -75,8 +77,9 @@ public:
         m_pub = cast(ECPublicKey) pkey;
     }
 
-    mixin Embed!m_pub;
+    mixin Embed!(m_pub, m_owned);
 
+	bool m_owned;
     ECPublicKey m_pub;
 }
 
@@ -97,6 +100,7 @@ public:
     */
     this(const ref AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
+		m_owned = true;
         m_priv = new ECPrivateKey(Options(), alg_id, key_bits);
     }
 
@@ -109,6 +113,7 @@ public:
     */
     this()(RandomNumberGenerator rng, auto const ref ECGroup domain, BigInt x = BigInt(0))
     {
+		m_owned = true;
         m_priv = new ECPrivateKey(Options(), rng, domain, x);
     }
 
@@ -116,8 +121,9 @@ public:
         m_priv = cast(ECPrivateKey)pkey;
     }
 
-    mixin Embed!m_priv;
+    mixin Embed!(m_priv, m_owned);
 
+	bool m_owned;
     ECPrivateKey m_priv;
 }
 
@@ -480,7 +486,7 @@ size_t testCreatePkcs8(RandomNumberGenerator rng)
 
     try
     {
-        RSAPrivateKey rsa_key = RSAPrivateKey(rng, 1024);
+        auto rsa_key = RSAPrivateKey(rng, 1024);
 
         //RSAPrivateKey rsa_key2(1024);
         //cout " ~\nequal: " ~  (rsa_key == rsa_key2));
@@ -517,10 +523,10 @@ size_t testCreateAndVerify(RandomNumberGenerator rng)
     priv_key.write( pkcs8.PEM_encode(key) );
     
     Unique!PKCS8PrivateKey loaded_key = pkcs8.loadKey("../test_data/ecc/wo_dompar_private.pkcs8.pem", rng);
-    ECDSAPrivateKey loaded_ec_key = ECDSAPrivateKey(*loaded_key);
+    auto loaded_ec_key = ECDSAPrivateKey(*loaded_key);
     mixin( CHECK_MESSAGE( `loaded_ec_key`, "the loaded key could not be converted into an ECDSAPrivateKey" ) );
     Unique!PKCS8PrivateKey loaded_key_1 = pkcs8.loadKey("../test_data/ecc/rsa_private.pkcs8.pem", rng);
-    ECDSAPrivateKey loaded_rsa_key = ECDSAPrivateKey(*loaded_key_1);
+    auto loaded_rsa_key = ECDSAPrivateKey(*loaded_key_1);
     mixin( CHECK_MESSAGE( `!loaded_rsa_key`, "the loaded key is ECDSAPrivateKey -> shouldn't be, is a RSA-Key" ) );
     
     //calc a curve which is not in the registry
@@ -553,7 +559,7 @@ size_t testCreateAndVerify(RandomNumberGenerator rng)
     auto key_data_src = DataSourceMemory(key_odd_oid_str);
     Unique!PKCS8PrivateKey loaded_key2 = pkcs8.loadKey(cast(DataSource)key_data_src, rng);
     
-    if (!ECDSAPrivateKey(*loaded_key))
+    if (!*ECDSAPrivateKey(*loaded_key))
     {
         logError("Failed to reload an ECDSA key with unusual parameter set");
         ++fails;
@@ -636,7 +642,7 @@ size_t testReadPkcs8(RandomNumberGenerator rng)
     try
     {
         Unique!PKCS8PrivateKey loaded_key = pkcs8.loadKey("../test_data/ecc/wo_dompar_private.pkcs8.pem", rng);
-        ECDSAPrivateKey ecdsa = ECDSAPrivateKey(*loaded_key);
+        auto ecdsa = ECDSAPrivateKey(*loaded_key);
         mixin( CHECK_MESSAGE( `ecdsa`, "the loaded key could not be converted into an ECDSAPrivateKey" ) );
         
         PKSigner signer = PKSigner(ecdsa, "EMSA1(SHA-1)");
@@ -657,7 +663,7 @@ size_t testReadPkcs8(RandomNumberGenerator rng)
     {
         Unique!PKCS8PrivateKey loaded_key_nodp = pkcs8.loadKey("../test_data/ecc/nodompar_private.pkcs8.pem", rng);
         // anew in each test with unregistered domain-parameters
-        ECDSAPrivateKey ecdsa_nodp = ECDSAPrivateKey(*loaded_key_nodp);
+        auto ecdsa_nodp = ECDSAPrivateKey(*loaded_key_nodp);
         mixin( CHECK_MESSAGE( `ecdsa_nodp`, "the loaded key could not be converted into an ECDSAPrivateKey" ) );
         
         PKSigner signer = PKSigner(ecdsa_nodp, "EMSA1(SHA-1)");
@@ -695,7 +701,7 @@ size_t testEccKeyWithRfc5915Extensions(RandomNumberGenerator rng)
     {
         Unique!PKCS8PrivateKey pkcs8 = pkcs8.loadKey("../test_data/ecc/ecc_private_with_rfc5915_ext.pem", rng);
         
-        if (!ECDSAPrivateKey(*pkcs8))
+        if (!*ECDSAPrivateKey(*pkcs8))
         {
             logError("Loaded RFC 5915 key, but got something other than an ECDSA key");
             ++fails;
@@ -734,7 +740,7 @@ size_t ecdsaSigKat(string group_id,
                    string signature)
 {
     atomicOp!"+="(total_tests, 1);
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
     ECGroup group = ECGroup(OIDS.lookup(group_id));
     auto bx =  BigInt(x);
@@ -784,7 +790,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_ECDSA_TEST) unittest
     logDebug("Testing ecdsa.d ...");
     size_t fails = 0;
     
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
     static if (BOTAN_HAS_X509_CERTIFICATES) {
         fails += testDecodeEcdsaX509();
@@ -792,20 +798,20 @@ static if (BOTAN_HAS_TESTS && !SKIP_ECDSA_TEST) unittest
         fails += testDecodeVerLinkSHA1();
     }
 
-    fails += testCurveRegistry(rng);
-    fails += testHashLargerThanN(rng);
-    fails += testSignThenVer(rng);
-    fails += testEcSign(rng);
+    fails += testCurveRegistry(*rng);
+    fails += testHashLargerThanN(*rng);
+    fails += testSignThenVer(*rng);
+    fails += testEcSign(*rng);
 
     static if (BOTAN_HAS_RSA) {
-        fails += testCreatePkcs8(rng);
-        fails += testCreateAndVerify(rng);
+        fails += testCreatePkcs8(*rng);
+        fails += testCreateAndVerify(*rng);
     }
 
-    fails += testReadPkcs8(rng);
-    fails += testEccKeyWithRfc5915Extensions(rng);
+    fails += testReadPkcs8(*rng);
+    fails += testEccKeyWithRfc5915Extensions(*rng);
 
-    fails += testPkKeygen(rng);
+    fails += testPkKeygen(*rng);
 
     File ecdsa_sig = File("../test_data/pubkey/ecdsa.vec", "r");
 

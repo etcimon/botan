@@ -304,7 +304,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_BIGINT_TEST) unittest
     bool first = true;
     size_t counter = 0;
     
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
     while(!test_data.eof)
     {
@@ -363,7 +363,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_BIGINT_TEST) unittest
         else if (algorithm.canFind("Division"))
             new_errors = checkDiv(substr);
         else if (algorithm.canFind("Modulo"))
-            new_errors = checkMod(substr, rng);
+            new_errors = checkMod(substr, *rng);
         else if (algorithm.canFind("LeftShift"))
             new_errors = checkShl(substr);
         else if (algorithm.canFind("RightShift"))
@@ -371,7 +371,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_BIGINT_TEST) unittest
         else if (algorithm.canFind("ModExp"))
             new_errors = checkPowmod(substr);
         else if (algorithm.canFind("PrimeTest"))
-            new_errors = isPrimeTest(substr, rng);
+            new_errors = isPrimeTest(substr, *rng);
         else
             logError("Unknown MPI test " ~ algorithm);
         

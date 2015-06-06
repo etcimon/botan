@@ -61,6 +61,7 @@ public:
 
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits) 
     {
+		m_owned = true;
         m_pub = new IFSchemePublicKey(Options(), alg_id, key_bits);
     }
 
@@ -71,14 +72,16 @@ public:
     */
     this(BigInt n, BigInt e)
     {
+		m_owned = true;
         m_pub = new IFSchemePublicKey(Options(), n.move(), e.move());
     }
 
     this(PrivateKey pkey) { m_pub = cast(IFSchemePublicKey) pkey; }
     this(PublicKey pkey) { m_pub = cast(IFSchemePublicKey) pkey; }
 
-    mixin Embed!m_pub;
+    mixin Embed!(m_pub, m_owned);
 
+	bool m_owned;
     IFSchemePublicKey m_pub;
 }
 
@@ -93,6 +96,7 @@ public:
 
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits, RandomNumberGenerator rng) 
     {
+		m_owned = true;
         m_priv = new IFSchemePrivateKey(Options(), rng, alg_id, key_bits);
     }
 
@@ -111,6 +115,7 @@ public:
     */
     this(RandomNumberGenerator rng, BigInt p, BigInt q, BigInt e, BigInt d = BigInt(0), BigInt n = BigInt(0))
     {
+		m_owned = true;
         m_priv = new IFSchemePrivateKey(Options(), rng, p.move(), q.move(), e.move(), d.move(), n.move());
     }
 
@@ -141,14 +146,16 @@ public:
 		auto q_1 = q - one;
         d = inverseMod(e, lcm(p_1, q_1));
 
+		m_owned = true;
         m_priv = new IFSchemePrivateKey(Options(), rng, p.move(), q.move(), e.move(), d.move(), n.move());
         genCheck(rng);
     }
 
     this(PrivateKey pkey) { m_priv = cast(IFSchemePrivateKey) pkey; }
 
-    mixin Embed!m_priv;
+    mixin Embed!(m_priv, m_owned);
 
+	bool m_owned;
     IFSchemePrivateKey m_priv;
 }
 
@@ -242,8 +249,10 @@ private:
 					modexpInit(); // enable quick path for powermod
 					BigInt* ret = cast(BigInt*) j1_2;
 					{
-						auto powermod_d1_p = FixedExponentPowerMod(*cast(const BigInt*)d1, *cast(const BigInt*)p);
-						BigInt _res = (*powermod_d1_p)( *cast(const BigInt*) m2);
+						import memutils.utils;
+						FixedExponentPowerModImpl powermod_d1_p = ThreadMem.alloc!FixedExponentPowerModImpl(*cast(const BigInt*)d1, *cast(const BigInt*)p);
+						scope(exit) ThreadMem.free(powermod_d1_p);
+						BigInt _res = powermod_d1_p( *cast(const BigInt*) m2);
 						synchronized(cast()mtx) ret.load(_res);
 					}
 				} catch (Throwable e) { logDebug("Error: ", e.toString()); }
@@ -346,9 +355,9 @@ size_t rsaesKat(string e,
                 string output)
 {
     atomicOp!"+="(total_tests, 1);
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
-    auto privkey = RSAPrivateKey(rng, BigInt(p), BigInt(q), BigInt(e));
+    auto privkey = RSAPrivateKey(*rng, BigInt(p), BigInt(q), BigInt(e));
     
     auto pubkey = RSAPublicKey(privkey);
     
@@ -370,9 +379,9 @@ size_t rsaSigKat(string e,
                    string output)
 {
     atomicOp!"+="(total_tests, 1);
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
-    auto privkey = RSAPrivateKey(rng, BigInt(p), BigInt(q), BigInt(e));
+    auto privkey = RSAPrivateKey(*rng, BigInt(p), BigInt(q), BigInt(e));
     
     auto pubkey = RSAPublicKey(privkey);
     
@@ -382,7 +391,7 @@ size_t rsaSigKat(string e,
     PKVerifier verify = PKVerifier(pubkey, padding);
     PKSigner sign = PKSigner(privkey, padding);
     
-    return validateSignature(verify, sign, "RSA/" ~ padding, msg, rng, nonce, output);
+    return validateSignature(verify, sign, "RSA/" ~ padding, msg, *rng, nonce, output);
 }
 
 size_t rsaSigVerify(string e,
@@ -392,7 +401,6 @@ size_t rsaSigVerify(string e,
                     string signature)
 {
     atomicOp!"+="(total_tests, 1);
-    auto rng = AutoSeededRNG();
     
     BigInt e_bn = BigInt(e);
     BigInt n_bn = BigInt(n);
@@ -432,14 +440,14 @@ static if (BOTAN_HAS_TESTS && !SKIP_RSA_TEST) unittest
     logDebug("Testing rsa.d ...");
     size_t fails = 0;
     
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
 
     
     File rsa_enc = File("../test_data/pubkey/rsaes.vec", "r");
     File rsa_sig = File("../test_data/pubkey/rsa_sig.vec", "r");
     File rsa_verify = File("../test_data/pubkey/rsa_verify.vec", "r");
     
-    fails += testPkKeygen(rng);
+    fails += testPkKeygen(*rng);
 
     fails += runTestsBb(rsa_enc, "RSA Encryption", "Ciphertext", true,
         (ref HashMap!(string, string) m)

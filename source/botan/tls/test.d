@@ -79,7 +79,7 @@ public:
     
     override PrivateKey privateKeyFor(in X509Certificate, in string, in string)
     {
-        return m_key;
+        return *m_key;
     }
 
     // Interface fallthrough
@@ -118,13 +118,13 @@ public:
 
 public:
     X509Certificate m_server_cert, m_ca_cert;
-    PrivateKey m_key;
+    Unique!PrivateKey m_key;
     Vector!CertificateStore m_stores;
 }
 
 TLSCredentialsManager createCreds(RandomNumberGenerator rng)
 {
-    PrivateKey ca_key = RSAPrivateKey(rng, 1024);
+    auto ca_key = RSAPrivateKey(rng, 1024).release();
     
     X509CertOptions ca_opts;
     ca_opts.common_name = "Test CA";
@@ -133,7 +133,7 @@ TLSCredentialsManager createCreds(RandomNumberGenerator rng)
     
     X509Certificate ca_cert = x509self.createSelfSignedCert(ca_opts, ca_key, "SHA-256", rng);
     
-    PrivateKey server_key = RSAPrivateKey(rng, 1024);
+    auto server_key = RSAPrivateKey(rng, 1024).release();
     
     X509CertOptions server_opts;
     server_opts.common_name = "localhost";
@@ -149,7 +149,7 @@ TLSCredentialsManager createCreds(RandomNumberGenerator rng)
     
     X509Certificate server_cert = ca.signRequest(req, rng, start_time, end_time);
     
-    return new TLSCredentialsManagerTest(server_cert, ca_cert, server_key);
+	return new TLSCredentialsManagerTest(server_cert, ca_cert, server_key);
 }
 
 size_t basicTestHandshake(RandomNumberGenerator rng,
@@ -192,7 +192,7 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
 
     Vector!string protocols_offered = ["test/1", "test/2"];
 
-    auto server = new TLSServer((in ubyte[] buf) { s2c_q ~= cast(ubyte[]) buf; },
+    Unique!TLSServer server = new TLSServer((in ubyte[] buf) { s2c_q ~= cast(ubyte[]) buf; },
                                 save_server_data,
                                 print_alert,
                                 handshake_complete,
@@ -203,7 +203,7 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
                                 next_protocol_chooser);
     
 
-    auto client = new TLSClient((in ubyte[] buf) { c2s_q ~= cast(ubyte[]) buf; },
+    Unique!TLSClient client = new TLSClient((in ubyte[] buf) { c2s_q ~= cast(ubyte[]) buf; },
                                 save_client_data,
                                 print_alert,
                                 handshake_complete,
@@ -297,14 +297,14 @@ static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
     logDebug("Testing tls/test.d ...");
     size_t errors = 0;
     
-    TestPolicy default_policy = new TestPolicy;
-    auto rng = AutoSeededRNG();
-    TLSCredentialsManager basic_creds = createCreds(rng);
+    Unique!TestPolicy default_policy = new TestPolicy;
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
+    Unique!TLSCredentialsManager basic_creds = createCreds(*rng);
     
-    errors += basicTestHandshake(rng, TLSProtocolVersion(TLSProtocolVersion.SSL_V3), basic_creds, default_policy);
-    errors += basicTestHandshake(rng, TLSProtocolVersion(TLSProtocolVersion.TLS_V10), basic_creds, default_policy);
-    errors += basicTestHandshake(rng, TLSProtocolVersion(TLSProtocolVersion.TLS_V11), basic_creds, default_policy);
-    errors += basicTestHandshake(rng, TLSProtocolVersion(TLSProtocolVersion.TLS_V12), basic_creds, default_policy);
+    errors += basicTestHandshake(*rng, TLSProtocolVersion(TLSProtocolVersion.SSL_V3), *basic_creds, *default_policy);
+    errors += basicTestHandshake(*rng, TLSProtocolVersion(TLSProtocolVersion.TLS_V10), *basic_creds, *default_policy);
+    errors += basicTestHandshake(*rng, TLSProtocolVersion(TLSProtocolVersion.TLS_V11), *basic_creds, *default_policy);
+    errors += basicTestHandshake(*rng, TLSProtocolVersion(TLSProtocolVersion.TLS_V12), *basic_creds, *default_policy);
     
     testReport("TLS", 4, errors);
 

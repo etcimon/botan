@@ -228,13 +228,7 @@ public:
     */
     void swap()(auto ref BigInt other)
     {
-        if (other.m_reg.length > 0) {
-			m_reg.swap(other.m_reg);
-        }
-        else {
-            m_reg.reserve(1);
-            m_reg[] = [cast(word)0];
-        }
+		m_reg.swap(other.m_reg);
 
         .swap(m_signedness, other.m_signedness);
     }

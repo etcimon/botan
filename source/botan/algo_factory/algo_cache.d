@@ -120,8 +120,7 @@ public:
 
         if (m_algorithms[algo.name].get(provider) is null) {
             m_algorithms[algo.name][provider] = algo;
-        }
-
+		} else algo.destroy();
     }
 
 

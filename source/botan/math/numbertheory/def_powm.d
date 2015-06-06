@@ -89,6 +89,12 @@ public:
         m_window_bits = 0;
     }
 
+	~this() {
+		foreach (ref RefCounted!BigInt bi; m_g[]) {
+			(*bi).destroy();
+		}
+	}
+
 private:
     this() { }
     ModularReducer m_reducer;
@@ -234,6 +240,13 @@ public:
 		auto r_mod_temp = (m_R_mod * m_R_mod);
         m_R2_mod = r_mod_temp % m_modulus;
     }
+
+	~this() {
+		foreach (ref RefCounted!BigInt bi; m_g[]) {
+			(*bi).destroy();
+		}
+	}
+
 private:
     this() { }
     BigInt m_exp, m_modulus, m_R_mod, m_R2_mod;

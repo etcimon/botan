@@ -752,10 +752,10 @@ size_t testPointSwap()
     
     ECGroup dom_pars = ECGroup(OID("1.3.132.0.8"));
     
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
-    PointGFp a = createRandomPoint(rng, dom_pars.getCurve());
-    PointGFp b = createRandomPoint(rng, dom_pars.getCurve());
+    PointGFp a = createRandomPoint(*rng, dom_pars.getCurve());
+    PointGFp b = createRandomPoint(*rng, dom_pars.getCurve());
     b *= BigInt(20);
     
     PointGFp c = a.dup;
@@ -775,13 +775,13 @@ size_t testMultSecMass()
 {
     size_t fails = 0;
     
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
     ECGroup dom_pars = ECGroup(OID("1.3.132.0.8"));
     for(int i = 0; i<50; i++)
     {
-        PointGFp a = createRandomPoint(rng, dom_pars.getCurve());
-        BigInt scal = BigInt(rng, 40);
+        PointGFp a = createRandomPoint(*rng, dom_pars.getCurve());
+        BigInt scal = BigInt(*rng, 40);
         PointGFp b = a * scal;
         PointGFp c = a.dup;
         
@@ -837,7 +837,7 @@ size_t randomizedTest(RandomNumberGenerator rng, const ref ECGroup group)
 
 size_t randomizedTest()
 {
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     size_t fails = 0;
     
     const string[] groups = [
@@ -879,7 +879,7 @@ size_t randomizedTest()
         mixin( CHECK(`inf.isZero()`) );
         
         for(size_t i = 0; i != 32; ++i)
-            fails += randomizedTest(rng, group);
+            fails += randomizedTest(*rng, group);
     }
     
     return fails;

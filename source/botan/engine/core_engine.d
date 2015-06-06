@@ -422,8 +422,9 @@ public:
         }
         
         static if (BOTAN_HAS_SHA1) {
-            if (request.algoName == "SHA-160")
+            if (request.algoName == "SHA-160") 
                 return new SHA160;
+
         }
         
         static if (BOTAN_HAS_SHA2_32) {

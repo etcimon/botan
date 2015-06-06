@@ -93,7 +93,7 @@ public:
         
         while (m_buffers.length && !m_buffers[0])
         {
-            m_buffers = Array!SecureQueue(m_buffers[1 .. $]);
+            m_buffers = Vector!SecureQueue(m_buffers[1 .. $]);
             m_offset = m_offset + Pipe.message_id(1);
         }
     }
@@ -125,6 +125,6 @@ private:
         return m_buffers[msg - m_offset];
     }
 
-    Array!SecureQueue m_buffers;
+    Vector!SecureQueue m_buffers;
     Pipe.message_id m_offset;
 }

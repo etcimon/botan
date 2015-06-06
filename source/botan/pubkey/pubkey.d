@@ -259,9 +259,6 @@ public:
 
         RandomNumberGenerator rng = globalState().globalRng();
         
-        m_op = null;
-        m_verify_op = null;
-
         foreach (Engine engine; af.engines[]) {
             if (!m_op)
                 m_op = engine.getSignatureOp(key, rng);
@@ -270,7 +267,7 @@ public:
             if (m_op && (m_verify_op || prot == DISABLE_FAULT_PROTECTION))
                 break;
         }
-        
+		scope(failure) { m_op.free(); m_verify_op.free(); }
         
         if (!m_op || (!m_verify_op && prot == ENABLE_FAULT_PROTECTION))
             throw new LookupError("Signing with " ~ key.algoName ~ " not supported");
@@ -478,7 +475,7 @@ public:
             if (m_op)
                 break;
         }
-        
+		scope(failure) m_op.free();
         if (!m_op)
             throw new LookupError("Verification with " ~ key.algoName ~ " not supported");
         m_emsa = getEmsa(emsa_name);

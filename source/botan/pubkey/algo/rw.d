@@ -58,19 +58,22 @@ public:
 
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
+		m_owned = true;
         m_pub = new IFSchemePublicKey(Options(), alg_id, key_bits);
     }
 
     this(BigInt mod, BigInt exponent)
     {
+		m_owned = true;
         m_pub = new IFSchemePublicKey(Options(), mod.move(), exponent.move());
     }
 
     this(PrivateKey pkey) { m_pub = cast(IFSchemePublicKey) pkey; }
     this(PublicKey pkey) { m_pub = cast(IFSchemePublicKey) pkey; }
 
-    mixin Embed!m_pub;
+    mixin Embed!(m_pub, m_owned);
 
+	bool m_owned;
     IFSchemePublicKey m_pub;
 }
 
@@ -87,6 +90,7 @@ public:
          const ref SecureVector!ubyte key_bits,
          RandomNumberGenerator rng) 
     {
+		m_owned = true;
         m_priv = new IFSchemePrivateKey(Options(), rng, alg_id, key_bits);
     }
 
@@ -95,6 +99,7 @@ public:
          BigInt e, BigInt d = BigInt(0),
          BigInt n = BigInt(0))
     {
+		m_owned = true;
         m_priv = new IFSchemePrivateKey(Options(), rng, p.move(), q.move(), e.move(), d.move(), n.move());
     }
 
@@ -122,15 +127,16 @@ public:
         
         d = inverseMod(e, lcm(p - 1, q - 1) >> 1);
 
+		m_owned = true;
         m_priv = new IFSchemePrivateKey(Options(), rng, p.move(), q.move(), e.move(), d.move(), n.move());
 
         genCheck(rng);
     }
 
-    mixin Embed!m_priv;
+    mixin Embed!(m_priv, m_owned);
 
     this(PrivateKey pkey) { m_priv = cast(IFSchemePrivateKey) pkey; }
-
+	bool m_owned;
     IFSchemePrivateKey m_priv;
 }
 
@@ -208,8 +214,10 @@ public:
 					BigInt* ret = cast(BigInt*)j1_2;
 					
 					{
-						Unique!FixedExponentPowerModImpl powermod_d1_p = new FixedExponentPowerModImpl(*cast(const BigInt*)d1, *cast(const BigInt*)p);
-						BigInt _res = (*powermod_d1_p)(*cast(BigInt*)i2);
+						import memutils.utils;
+						FixedExponentPowerModImpl powermod_d1_p = ThreadMem.alloc!FixedExponentPowerModImpl(*cast(const BigInt*)d1, *cast(const BigInt*)p);
+						scope(exit) ThreadMem.free(powermod_d1_p);
+						BigInt _res = powermod_d1_p(*cast(BigInt*)i2);
 						synchronized(cast()mtx) ret.load( _res );
 					}
 				} catch (Throwable e) { logDebug("Error: ", e.toString()); }
@@ -329,16 +337,16 @@ size_t rwSigKat(string e,
                   string signature)
 {
     atomicOp!"+="(total_tests, 1);
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
-    auto privkey = RWPrivateKey(rng, BigInt(p), BigInt(q), BigInt(e));
+    auto privkey = RWPrivateKey(*rng, BigInt(p), BigInt(q), BigInt(e));
     
     auto pubkey = RWPublicKey(privkey);
     
     PKVerifier verify = PKVerifier(pubkey, padding);
     PKSigner sign = PKSigner(privkey, padding);
     
-    return validateSignature(verify, sign, "RW/" ~ padding, msg, rng, signature);
+    return validateSignature(verify, sign, "RW/" ~ padding, msg, *rng, signature);
 }
 
 size_t rwSigVerify(string e,
@@ -347,8 +355,7 @@ size_t rwSigVerify(string e,
                      string signature)
 {
     atomicOp!"+="(total_tests, 1);
-    auto rng = AutoSeededRNG();
-    
+
     BigInt e_bn = BigInt(e);
     BigInt n_bn = BigInt(n);
     
@@ -366,9 +373,9 @@ static if (BOTAN_HAS_TESTS && !SKIP_RW_TEST) unittest
     logDebug("Testing rw.d ...");
     size_t fails = 0;
     
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
-    fails += testPkKeygen(rng);
+    fails += testPkKeygen(*rng);
     
     File rw_sig = File("../test_data/pubkey/rw_sig.vec", "r");
     File rw_verify = File("../test_data/pubkey/rw_verify.vec", "r");

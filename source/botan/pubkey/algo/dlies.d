@@ -189,7 +189,7 @@ size_t dliesKat(string p,
                 string ciphertext)
 {
     atomicOp!"+="(total_tests, 1);
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
     BigInt p_bn = BigInt(p);
     BigInt g_bn = BigInt(g);
@@ -203,8 +203,8 @@ size_t dliesKat(string p,
 
     DLGroup domain = DLGroup(p_bn, g_bn);
     
-    auto from = DHPrivateKey(rng, domain.dup, x1_bn.move());
-    auto to = DHPrivateKey(rng, domain.dup, x2_bn.move());
+    auto from = DHPrivateKey(*rng, domain.dup, x1_bn.move());
+    auto to = DHPrivateKey(*rng, domain.dup, x2_bn.move());
     
     const string opt_str = "KDF2(SHA-1)/HMAC(SHA-1)/16";
 

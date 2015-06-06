@@ -86,7 +86,7 @@ void testEncGenSelfsigned(RandomNumberGenerator rng)
     
     // creating a non sense selfsigned cert w/o dom pars
     ECGroup dom_pars = ECGroup(OID("1.3.36.3.3.2.8.1.1.11"));
-    ECDSAPrivateKey key = ECDSAPrivateKey(rng, dom_pars);
+    auto key = ECDSAPrivateKey(rng, dom_pars);
     key.setParameterEncoding(EC_DOMPAR_ENC_IMPLICITCA);
     EAC11CVC cert = createSelfSignedCert(key, opts, rng);
     {
@@ -587,30 +587,30 @@ static if (BOTAN_HAS_TESTS && !SKIP_CVC_TEST) unittest
 {
 
     logDebug("Testing cvc/test.d ...");
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
     logTrace("testEncGenSelfsigned");
-    testEncGenSelfsigned(rng);
+    testEncGenSelfsigned(*rng);
     logTrace("testEncGenReq");
-    testEncGenReq(rng);
+    testEncGenReq(*rng);
     logTrace("testCvcReqExt");
-    testCvcReqExt(rng);
+    testCvcReqExt(*rng);
     logTrace("testCvcAdoExt");
-    testCvcAdoExt(rng);
+    testCvcAdoExt(*rng);
     logTrace("testCvcAdoCreation");
-    testCvcAdoCreation(rng);
+    testCvcAdoCreation(*rng);
     logTrace("testCvcAdoComparison");
-    testCvcAdoComparison(rng);
+    testCvcAdoComparison(*rng);
     logTrace("testEacTime");
-    testEacTime(rng);
+    testEacTime(*rng);
     logTrace("testVerCvca");
-    testVerCvca(rng);
+    testVerCvca(*rng);
     logTrace("testCopyAndAssignment");
-    testCopyAndAssignment(rng);
+    testCopyAndAssignment(*rng);
     logTrace("testEacStrIllegalValues");
-    testEacStrIllegalValues(rng);
+    testEacStrIllegalValues(*rng);
     logTrace("testTmpEacStrEnc");
-    testTmpEacStrEnc(rng);
+    testTmpEacStrEnc(*rng);
     logTrace("testCvcChain");
-    testCvcChain(rng);
+    testCvcChain(*rng);
 }

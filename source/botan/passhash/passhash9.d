@@ -182,11 +182,11 @@ static if (BOTAN_HAS_TESTS && !SKIP_PASSHASH9_TEST) unittest
         fails++;
     }
     
-    auto rng = AutoSeededRNG();
-    
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
+
     for(ubyte alg_id = 0; alg_id <= 4; ++alg_id)
     {
-        string gen_hash = generatePasshash9(input, rng, 2, alg_id);
+        string gen_hash = generatePasshash9(input, *rng, 2, alg_id);
         
         ++ran;
         if (!checkPasshash9(input, gen_hash))

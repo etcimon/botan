@@ -1643,12 +1643,12 @@ public:
         
         if (kex_algo == "DH" || kex_algo == "DHE_PSK")
         {
-            DHPrivateKey dh = DHPrivateKey(rng, policy.dhGroup());
+            auto dh = DHPrivateKey(rng, policy.dhGroup());
 
             appendTlsLengthValue(m_params, BigInt.encode(dh.getDomain().getP()), 2);
             appendTlsLengthValue(m_params, BigInt.encode(dh.getDomain().getG()), 2);
             appendTlsLengthValue(m_params, dh.publicValue(), 2);
-            m_kex_key = dh;
+            m_kex_key = dh.release();
         }
         else if (kex_algo == "ECDH" || kex_algo == "ECDHE_PSK")
         {
@@ -1664,7 +1664,7 @@ public:
 
             ECGroup ec_group = ECGroup(curve_name);
             
-            ECDHPrivateKey ecdh = ECDHPrivateKey(rng, ec_group);
+            auto ecdh = ECDHPrivateKey(rng, ec_group);
             
             const string ecdh_domain_oid = ecdh.domain().getOid();
             const string domain = OIDS.lookup(OID(ecdh_domain_oid));
@@ -1680,7 +1680,7 @@ public:
             
             appendTlsLengthValue(m_params, ecdh.publicValue(), 1);
             
-            m_kex_key = ecdh;
+            m_kex_key = ecdh.release();
         }
         else if (kex_algo == "SRP_SHA")
         {

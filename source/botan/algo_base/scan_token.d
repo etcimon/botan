@@ -222,12 +222,14 @@ public:
     }
 
     
-    static string derefAlias(string input)
+    static string derefAlias(string input, bool keep = false)
     {
         auto name = s_alias_map.get(input, null);
         if (name)
             return name;
-        else
+        else if (keep)
+			return input;
+		else
             return input.idup;
     }
 

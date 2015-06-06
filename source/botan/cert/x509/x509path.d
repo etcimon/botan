@@ -120,6 +120,10 @@ private:
 		m_def_trusted_hashes.insert("SHA-384");
 		m_def_trusted_hashes.insert("SHA-512");
 	}
+	static ~this() {
+		m_def_trusted_hashes.clear();
+		m_def_trusted_hashes.destroy();
+	}
 	static RBTree!string m_def_trusted_hashes;
 }
 

@@ -58,6 +58,7 @@ public:
 
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits) 
     {
+		m_owned = true;
         m_pub = new DLSchemePublicKey(Options(), alg_id, key_bits);
     }
 
@@ -66,14 +67,16 @@ public:
     */
     this(DLGroup grp, BigInt y1)
     {
+		m_owned = true;
         m_pub = new DLSchemePublicKey(Options(), grp.move, y1.move);
     }
 
     this(PublicKey pkey) { m_pub = cast(DLSchemePublicKey) pkey; }
     this(PrivateKey pkey) { m_pub = cast(DLSchemePublicKey) pkey; }
 
-    mixin Embed!m_pub;
+    mixin Embed!(m_pub, m_owned);
 
+	bool m_owned;
     DLSchemePublicKey m_pub;
 }
 
@@ -99,6 +102,7 @@ public:
         }
         BigInt y1 = powerMod(grp.getG(), x_arg, grp.getP());
 
+		m_owned = true;
         m_priv = new DLSchemePrivateKey(Options(), grp.move, y1.move, x_arg.move);
 
         if (x_arg_0)
@@ -109,6 +113,7 @@ public:
 
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits, RandomNumberGenerator rng)
     { 
+		m_owned = true;
         m_priv = new DLSchemePrivateKey(Options(), alg_id, key_bits);
        
         m_priv.setY(powerMod(m_priv.groupG(), m_priv.m_x, m_priv.groupP()));
@@ -116,8 +121,9 @@ public:
         m_priv.loadCheck(rng);
     }
 
-    mixin Embed!m_priv;
+    mixin Embed!(m_priv, m_owned);
 
+	bool m_owned;
     DLSchemePrivateKey m_priv;
 
 }
@@ -253,8 +259,10 @@ public:
 					modexpInit(); // enable quick path for powermod
 					BigInt* ret = cast(BigInt*) res2;
 					{
-						Unique!FixedBasePowerModImpl powermod_y_p = new FixedBasePowerModImpl(*cast(const BigInt*)y, *cast(const BigInt*)p);
-						synchronized(cast()mtx) ret.load( (*powermod_y_p)(*cast(BigInt*)c2) );
+						import memutils.utils;
+						FixedBasePowerModImpl powermod_y_p = ThreadMem.alloc!FixedBasePowerModImpl(*cast(const BigInt*)y, *cast(const BigInt*)p);
+						scope(exit) ThreadMem.free(powermod_y_p);
+						synchronized(cast()mtx) ret.load( powermod_y_p(*cast(BigInt*)c2) );
 					}
 				} catch (Throwable e) { logDebug("Error: ", e.toString()); }
 
@@ -313,7 +321,7 @@ size_t nrSigKat(string p, string q, string g, string x,
 {
     //logTrace("msg: ", msg);
     atomicOp!"+="(total_tests, 1);
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
     BigInt p_bn = BigInt(p);
     BigInt q_bn = BigInt(q);
@@ -322,7 +330,7 @@ size_t nrSigKat(string p, string q, string g, string x,
     
     DLGroup group = DLGroup(p_bn, q_bn, g_bn);
 
-    auto privkey = NRPrivateKey(rng, group.move(), x_bn.move());
+    auto privkey = NRPrivateKey(*rng, group.move(), x_bn.move());
     auto pubkey = NRPublicKey(privkey);
     
     const string padding = "EMSA1(" ~ hash ~ ")";
@@ -330,7 +338,7 @@ size_t nrSigKat(string p, string q, string g, string x,
     PKVerifier verify = PKVerifier(pubkey, padding);
     PKSigner sign = PKSigner(privkey, padding);
     
-    return validateSignature(verify, sign, "nr/" ~ hash, msg, rng, nonce, signature);
+    return validateSignature(verify, sign, "nr/" ~ hash, msg, *rng, nonce, signature);
 }
 
 static if (BOTAN_HAS_TESTS && !SKIP_NR_TEST) unittest
@@ -338,7 +346,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_NR_TEST) unittest
     logDebug("Testing nr.d ...");
     size_t fails = 0;
     
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
     File nr_sig = File("../test_data/pubkey/nr.vec", "r");
     
@@ -347,7 +355,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_NR_TEST) unittest
             return nrSigKat(m["P"], m["Q"], m["G"], m["X"], m["Hash"], m["Msg"], m["Nonce"], m["Signature"]);
         });
 
-    fails += testPkKeygen(rng);
+    fails += testPkKeygen(*rng);
     
     testReport("nr", total_tests, fails);
 }

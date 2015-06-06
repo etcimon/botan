@@ -40,6 +40,7 @@ public:
 
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
+		m_owned = true;
         m_pub = new DLSchemePublicKey(Options(), alg_id, key_bits);
     }
 
@@ -52,14 +53,16 @@ public:
     */
     this(DLGroup grp, BigInt y1)
     {
+		m_owned = true;
         m_pub = new DLSchemePublicKey(Options(), grp.move, y1.move);
     }
 
     this(PublicKey pkey) { m_pub = cast(DLSchemePublicKey) pkey; }
     this(PrivateKey pkey) { m_pub = cast(DLSchemePublicKey) pkey; }
 
-    mixin Embed!m_pub;
+    mixin Embed!(m_pub, m_owned);
 
+	bool m_owned;
     DLSchemePublicKey m_pub;
 }
 
@@ -84,6 +87,7 @@ public:
            RandomNumberGenerator rng) 
     {
 
+		m_owned = true;
         m_priv = new DLSchemePrivateKey(Options(), alg_id, key_bits);
         if (m_priv.getY() == 0)
             m_priv.setY(powerMod(m_priv.groupG(), m_priv.getX(), m_priv.groupP()));
@@ -110,6 +114,7 @@ public:
         }
         BigInt y1 = powerMod(grp.getG(), x_arg, *p);
         
+		m_owned = true;
         m_priv = new DLSchemePrivateKey(Options(), grp.move, y1.move, x_arg.move);
 
         if (x_arg_0)
@@ -118,11 +123,10 @@ public:
             m_priv.loadCheck(rng);
     }
 
-    this()(RandomNumberGenerator rng, auto const ref DLGroup grp) { auto bi = BigInt(0); this(rng, grp, bi.move()); }
     this(PrivateKey pkey) { m_priv = cast(DLSchemePrivateKey) pkey; }
 
-    mixin Embed!m_priv;
-
+    mixin Embed!(m_priv, m_owned);
+	bool m_owned;
     DLSchemePrivateKey m_priv;
 
 
@@ -195,7 +199,7 @@ size_t testPkKeygen(RandomNumberGenerator rng)
     foreach (dh; dh_list) {
         atomicOp!"+="(total_tests, 1);
         logDebug("1) Load private key");
-        DHPrivateKey key = DHPrivateKey(rng, DLGroup(dh));
+		auto key = DHPrivateKey(rng, DLGroup(dh));
         logDebug("2) Check private key");
         key.checkKey(rng, true);
         logDebug("3) Validate");
@@ -208,14 +212,14 @@ size_t testPkKeygen(RandomNumberGenerator rng)
 size_t dhSigKat(string p, string g, string x, string y, string kdf, string outlen, string key)
 {
     atomicOp!"+="(total_tests, 1);
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
     BigInt p_bn = BigInt(p);
     BigInt g_bn = BigInt(g);
     BigInt x_bn = BigInt(x);
     BigInt y_bn = BigInt(y);
     auto domain = DLGroup(p_bn, g_bn);
-    auto mykey = DHPrivateKey(rng, domain.dup, x_bn.move());
+    auto mykey = DHPrivateKey(*rng, domain.dup, x_bn.move());
     auto otherkey = DHPublicKey(domain.move, y_bn.move());
     
     if (kdf == "")
@@ -231,11 +235,14 @@ size_t dhSigKat(string p, string g, string x, string y, string kdf, string outle
 }
 
 static if (BOTAN_HAS_TESTS && !SKIP_DH_TEST) unittest
-{
+{import std.datetime;
+	import core.thread : Thread;
+	Thread.sleep(5.seconds);
+
     logDebug("Testing dh.d ...");
     size_t fails = 0;
 
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
 
 
     File dh_sig = File("../test_data/pubkey/dh.vec", "r");
@@ -244,7 +251,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_DH_TEST) unittest
         (ref HashMap!(string, string) m) {
             return dhSigKat(m["P"], m["G"], m["X"], m["Y"], m.get("KDF"), m.get("OutLen"), m["K"]);
         });
-    fails += testPkKeygen(rng);
+    fails += testPkKeygen(*rng);
 
     testReport("DH", total_tests, fails);
 

@@ -34,6 +34,7 @@ public:
             destroy(engine);
         }
         m_engines.clear();
+		m_engines.destroy();
 
     }
 

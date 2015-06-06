@@ -47,7 +47,7 @@ public:
     this() 
     { 
         super(64, false, true);
-        m_M = 16;
+        m_M.length = 16;
         m_digest.length = 4;
         clear();
     }

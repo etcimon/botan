@@ -13,8 +13,7 @@ module botan.rng.auto_rng;
 public import botan.rng.rng;
 import botan.utils.types;
 
-alias AutoSeededRNG = RefCounted!AutoSeededRNGImpl;
-final class AutoSeededRNGImpl : RandomNumberGenerator
+final class AutoSeededRNG : RandomNumberGenerator
 {
 public:
     override void randomize(ubyte* output, size_t len)
@@ -30,6 +29,8 @@ public:
 
     override void addEntropy(const(ubyte)* input, size_t len)
     { m_rng.addEntropy(input, len); }
+
+	override SecureVector!ubyte randomVec(size_t bytes) { return super.randomVec(bytes); }
 
     this()
     {

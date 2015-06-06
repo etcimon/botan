@@ -14,6 +14,11 @@ import botan.libstate.libstate;
 /// Thread-Local, no locks needed.
 private LibraryState g_lib_state;
 
+static ~this() { 
+	if (g_lib_state)
+		g_lib_state.destroy(); 
+}
+
 /**
 * Access the global library state
 * Returns: reference to the global library state
@@ -71,9 +76,4 @@ bool setGlobalStateUnlessSet(LibraryState new_state)
 bool globalStateExists()
 {
     return (g_lib_state !is LibraryState.init);
-}
-
-static ~this() {
-    import core.thread : thread_isMainThread;
-    if (g_lib_state) destroy(g_lib_state); 
 }

@@ -83,6 +83,7 @@ public:
     */
     this(const ref ECGroup dom_par, const ref PointGFp public_point) 
     {
+		m_owned = true;
         m_pub = new ECPublicKey(Options(), dom_par, public_point);
     }
 
@@ -114,6 +115,7 @@ public:
         BigInt y = BigInt(&bits[part_size], part_size);
         
         PointGFp public_point = PointGFp(domain_params.getCurve(), x, y);
+		m_owned = true;
         m_pub = new ECPublicKey(Options(), domain_params, public_point);
         assert(public_point.onTheCurve(), "Loaded GOST 34.10 public key is on the curve");
     }
@@ -122,8 +124,9 @@ public:
 
     this(PrivateKey pkey) { m_pub = cast(ECPublicKey) pkey; }
 
-    mixin Embed!m_pub;
+    mixin Embed!(m_pub, m_owned);
 
+	bool m_owned;
     ECPublicKey m_pub;
 }
 
@@ -138,6 +141,7 @@ public:
 
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
+		m_owned = true;
         m_priv = new ECPrivateKey(Options(), alg_id, key_bits);
     }
 
@@ -150,13 +154,15 @@ public:
     */
     this(RandomNumberGenerator rng, const ref ECGroup domain, BigInt x = BigInt(0))
     {
+		m_owned = true;
         m_priv = new ECPrivateKey(Options(), rng, domain, x);
     }
 
     this(PrivateKey pkey) { m_priv = cast(ECPrivateKey) pkey; }
 
-    mixin Embed!m_priv;
+    mixin Embed!(m_priv, m_owned);
 
+	bool m_owned;
     ECPrivateKey m_priv;
 }
 
@@ -341,7 +347,6 @@ size_t gostVerify(string group_id,
                    string signature)
 {
     atomicOp!"+="(total_tests, 1);
-    auto rng = AutoSeededRNG();
     
     ECGroup group = ECGroup(OIDS.lookup(group_id));
     auto x_dec = hexDecode(x);
@@ -364,9 +369,9 @@ static if (BOTAN_HAS_TESTS && !SKIP_GOST_TEST) unittest
     logDebug("Testing gost_3410.d ...");
     size_t fails = 0;
 
-    auto rng = AutoSeededRNG();
+	Unique!AutoSeededRNG rng = new AutoSeededRNG;
 
-    fails += testPkKeygen(rng);
+    fails += testPkKeygen(*rng);
 
     File ecdsa_sig = File("../test_data/pubkey/gost_3410.vec", "r");
     
