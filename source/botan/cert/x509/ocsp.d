@@ -210,7 +210,7 @@ void checkSignature(ALLOC)(auto const ref Vector!(ubyte, ALLOC) tbs_response,
                                const ref Vector!ubyte signature,
                                const X509Certificate cert)
 {
-    const PublicKey pub_key = cert.subjectPublicKey();
+    Unique!PublicKey pub_key = cert.subjectPublicKey();
     
     const Vector!string sig_info = splitter(OIDS.lookup(sig_algo.oid), '/');
     

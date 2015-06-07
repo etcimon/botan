@@ -46,7 +46,7 @@ size_t validateSaveAndLoad(const PrivateKey priv_key, RandomNumberGenerator rng)
     try
     {
         DataSourceMemory input_pub = DataSourceMemory(pub_pem);
-        PublicKey restored_pub = x509_key.loadKey(cast(DataSource)input_pub);
+        Unique!PublicKey restored_pub = x509_key.loadKey(cast(DataSource)input_pub);
         
         if (!restored_pub)
         {
