@@ -507,7 +507,7 @@ Vector!( RBTreeRef!CertificateStatusCode )
 				ocsp_responses[i].join();
 				OCSPResponse ocsp = ocsp_data[i];
                 logTrace("Got response for ID#", i.to!string);
-                if (ocsp.empty)
+                if (!ocsp || ocsp.empty)
                     throw new Exception("OSCP.responder is undefined");
                 auto ocsp_status = ocsp.statusFor(ca, subject);
                 

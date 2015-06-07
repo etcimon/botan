@@ -34,6 +34,8 @@ import std.algorithm : splitter;
 import core.sync.mutex;
 import botan.utils.mem_ops;
 
+alias OCSPResponse = RefCounted!OCSPResponseImpl;
+
 struct OCSPRequest
 {
 public:
@@ -79,7 +81,7 @@ private:
     X509Certificate m_issuer, m_subject;
 }
 
-struct OCSPResponse
+class OCSPResponseImpl
 {
 public:
     this(in CertificateStore trusted_roots,
@@ -177,7 +179,7 @@ public:
         return m_responses.length == 0;
     }
 private:
-    Array!( SingleResponse ) m_responses;
+    Vector!( SingleResponse ) m_responses;
 }
 
 
@@ -220,7 +222,7 @@ void checkSignature(ALLOC)(auto const ref Vector!(ubyte, ALLOC) tbs_response,
     string padding = sig_info[1];
     SignatureFormat format = (pub_key.messageParts() >= 2) ? DER_SEQUENCE : IEEE_1363;
     
-    PKVerifier verifier = PKVerifier(pub_key, padding, format);
+    PKVerifier verifier = PKVerifier(*pub_key, padding, format);
     if (!verifier.verifyMessage(putInSequence(tbs_response), signature))
         throw new Exception("Signature on OCSP response does not verify");
 }

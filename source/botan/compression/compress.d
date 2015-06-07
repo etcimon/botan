@@ -272,7 +272,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_COMPRESSION_TEST) unittest {
     logDebug("Testing compress.d ...");  
 	{
 		static if (BOTAN_HAS_ZLIB) {
-			CompressorTransform comp = makeCompressor("zlib", 9); // level 1-9
+			Unique!CompressorTransform comp = makeCompressor("zlib", 9); // level 1-9
 			SecureVector!ubyte buf;
 			SecureVector!ubyte verif;
 			buf ~= "Some message";
@@ -280,7 +280,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_COMPRESSION_TEST) unittest {
 			comp.start();
 			comp.finish(buf);
 			
-			CompressorTransform dec = makeDecompressor("zlib");
+			Unique!CompressorTransform dec = makeDecompressor("zlib");
 			dec.start();
 			dec.finish(buf);
 			assert(buf == verif);
@@ -289,7 +289,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_COMPRESSION_TEST) unittest {
 	}
 	{
 		static if (BOTAN_HAS_ZLIB) {
-			CompressorTransform comp = makeCompressor("deflate", 9); // level 1-9
+			Unique!CompressorTransform comp = makeCompressor("deflate", 9); // level 1-9
 			SecureVector!ubyte buf;
 			SecureVector!ubyte verif;
 			buf ~= "Some message";
@@ -297,7 +297,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_COMPRESSION_TEST) unittest {
 			comp.start();
 			comp.finish(buf);
 			
-			CompressorTransform dec = makeDecompressor("deflate");
+			Unique!CompressorTransform dec = makeDecompressor("deflate");
 			dec.start();
 			dec.finish(buf);
 			assert(buf == verif);
@@ -306,7 +306,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_COMPRESSION_TEST) unittest {
 	}
 	{
 		static if (BOTAN_HAS_BZIP2) {
-			CompressorTransform comp = makeCompressor("bzip2", 9); // level 1-9
+			Unique!CompressorTransform comp = makeCompressor("bzip2", 9); // level 1-9
 			SecureVector!ubyte buf;
 			SecureVector!ubyte verif;
 			buf ~= "Some message";
@@ -314,7 +314,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_COMPRESSION_TEST) unittest {
 			comp.start();
 			comp.finish(buf);
 			
-			CompressorTransform dec = makeDecompressor("bzip2");
+			Unique!CompressorTransform dec = makeDecompressor("bzip2");
 			dec.start();
 			dec.finish(buf);
 			assert(buf == verif);
@@ -323,14 +323,14 @@ static if (BOTAN_HAS_TESTS && !SKIP_COMPRESSION_TEST) unittest {
 	}
 	{
 		static if (BOTAN_HAS_LZMA) {
-			CompressorTransform comp = makeCompressor("lzma", 9); // level 1-9
+			Unique!CompressorTransform comp = makeCompressor("lzma", 9); // level 1-9
 			SecureVector!ubyte buf;
 			SecureVector!ubyte verif;
 			buf ~= "Some message ";
 			verif = buf.dup;
 			comp.start();
 			comp.finish(buf);
-			CompressorTransform dec = makeDecompressor("lzma");
+			Unique!CompressorTransform dec = makeDecompressor("lzma");
 			dec.start();
 			dec.finish(buf);
 			assert(buf == verif);

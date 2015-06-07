@@ -347,12 +347,12 @@ public:
     void addOid2str(in OID oid, in string str)
     {
         if (m_oid2str.get(oid) == string.init) 
-            m_oid2str[oid] = str;
+            m_oid2str ~= OID2STR(oid.dup, str);
     }
 
     string lookup(in OID oid)
     {
-        auto str = m_oid2str.get(oid, string.init);
+        auto str = m_oid2str.get(oid);
         //scope(exit) logTrace("OID lookup found: ", str);
         if (str)
             return str;
@@ -383,7 +383,20 @@ public:
     
 private:
     HashMap!(string, OID) m_str2oid;
-    HashMap!(OID, string) m_oid2str;
+    Vector!(OID2STR) m_oid2str;
+}
+
+string get(ref Vector!OID2STR vec, const ref OID oid) {
+	foreach (ref OID2STR oids; vec[]) {
+		if (oids.oid == oid)
+			return oids.str;
+	}
+	return string.init;
+}
+
+struct OID2STR {
+	OID oid;
+	string str;
 }
 
 ref OIDMap globalOidMap()
@@ -391,4 +404,8 @@ ref OIDMap globalOidMap()
     static OIDMap map;
 
     return map;
+}
+
+static ~this() {
+	globalOidMap().destroy();
 }

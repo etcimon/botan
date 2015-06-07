@@ -55,16 +55,15 @@ public:
     */
     const(T) get(string algo_spec, string requested_provider) const
     {
-        HashMapRef!(string, T) algo = findAlgorithm(algo_spec);
-
+        auto algo_providers = findAlgorithm(algo_spec);
         // logTrace("Searching ", algo_spec, " in algo length: ", m_algorithms.length);
-        if (algo.length == 0) // algo not found at all (no providers)
+        if (algo_providers.length == 0) // algo not found at all (no providers)
             return null;
         
         // If a provider is requested specifically, return it or fail entirely
         if (requested_provider != "")
         {
-            return algo.get(requested_provider);
+            return get(algo_providers, requested_provider).instance;
         }
 
         T prototype = null;
@@ -72,18 +71,18 @@ public:
         size_t prototype_prov_weight = 0;
         
         const string pref_provider = m_pref_providers.get(algo_spec);
+        auto prov_match = get(algo_providers, pref_provider);
+        if (prov_match.instance)
+            return prov_match.instance;
 
-        if (algo.get(pref_provider))
-            return algo.get(pref_provider);
-
-        foreach(const ref string provider, const ref T instance; algo) 
+        foreach(ref CachedAlgorithm ca; *algo_providers) 
         {
-            const ubyte prov_weight = staticProviderWeight(provider);
+            const ubyte prov_weight = staticProviderWeight(ca.provider);
             
             if (prototype is null || prov_weight > prototype_prov_weight)
             {
-                prototype = cast(T)instance;
-                prototype_provider = provider;
+                prototype = cast(T)(ca.instance);
+                prototype_provider = ca.provider;
                 prototype_prov_weight = prov_weight;
             }
         }
@@ -109,18 +108,28 @@ public:
             logError("Tried adding null algorithm");
             return;
         }
-                
+
+        // Add alias if not exists
         if (algo.name != requested_name && m_aliases.get(requested_name) == null)
         {
             m_aliases[requested_name] = algo.name;
         }
-        if (!m_algorithms.get(algo.name)) {
-            m_algorithms[algo.name] = HashMapRef!(string, T)();
-        }
 
-        if (m_algorithms[algo.name].get(provider) is null) {
-            m_algorithms[algo.name][provider] = algo;
-		} else algo.destroy();
+        // default init
+        {
+	        Algorithm algo_cache = get(m_algorithms, algo.name);
+	        if (algo_cache == Algorithm.init) 
+	        { 
+	        	m_algorithms ~= Algorithm(algo.name, Array!CachedAlgorithm());
+	        }
+	    }
+	    // add if not exists
+	    {
+	        Algorithm algo_cache = get(m_algorithms, algo.name);
+	        if (get(algo_cache.providers, provider).instance is null) {
+	        	algo_cache.providers ~= CachedAlgorithm(provider, algo);
+			} else algo.destroy();
+		}
     }
 
 
@@ -149,13 +158,15 @@ public:
     {
         Vector!string providers;
         string algo = m_aliases.get(algo_name);
-        if (m_algorithms.get(algo).length == 0)
+        if (get(m_algorithms, algo).providers.length == 0)
             algo = algo_name;
-        if (m_algorithms.get(algo).length == 0) {
+        if (get(m_algorithms, algo).providers.length == 0) {
             return Vector!string();
         }
-        foreach(const ref string provider, const ref T instance; *(m_algorithms[algo])) {
-            providers.pushBack(provider);
+
+        auto arr = get(m_algorithms, algo).providers;
+        foreach(ref CachedAlgorithm ca; *arr) {
+            providers.pushBack(ca.provider);
         }
         return providers.move();
     }
@@ -165,14 +176,15 @@ public:
     */
     void clearCache()
     {
-        foreach (const ref string provider, ref HashMapRef!(string, T) algorithms; m_algorithms)
+        foreach (ref Algorithm algo; m_algorithms)
         {
-            foreach (const ref string name, ref T instance; algorithms) {
-                if (instance) destroy(instance);
+        	auto providers = algo.providers;
+            foreach (ref CachedAlgorithm ca; *providers) {
+                if (ca.instance) destroy(ca.instance);
             }
         }
 
-        m_algorithms.clear();
+        m_algorithms.destroy();
     }
 
     ~this() { clearCache(); }
@@ -182,30 +194,56 @@ private:
     * Look for an algorithm implementation in the cache, also checking aliases
     * Assumes object lock is held
     */
-    HashMapRef!(string, T) findAlgorithm(in string algo_spec) const
+    Array!CachedAlgorithm findAlgorithm(in string algo_spec) const
     {
-        HashMapRef!(string, T) algo = m_algorithms.get(algo_spec);
+        Algorithm algo = get(m_algorithms, algo_spec);
         // Not found? Check if a known alias
-        if (!algo)
+        if (algo == Algorithm.init)
         {
-
             string _alias = m_aliases.get(algo_spec);
 
             if (_alias) {
-                return m_algorithms.get(_alias);
+                return get(m_algorithms, _alias).providers;
             }
             else {
-                return HashMapRef!(string, T)();
+                return Array!CachedAlgorithm();
             }
         }
-        return algo;
+        return algo.providers;
     }
 
     HashMap!(string, string) m_aliases;
     HashMap!(string, string) m_pref_providers;
 
-             // algo_name     //provider // instance
-    HashMap!(string, HashMapRef!(string, T)) m_algorithms;
+    Vector!Algorithm m_algorithms;
+
+private:
+    struct Algorithm {
+    	string name;
+    	Array!CachedAlgorithm providers;
+    }
+
+	struct CachedAlgorithm {
+		string provider;
+		T instance;
+	}
+
+	CachedAlgorithm get(Array!CachedAlgorithm arr, string provider) const {
+		foreach (ref CachedAlgorithm ca; *arr) {
+			if (provider == ca.provider)
+				return ca;
+		}
+		return CachedAlgorithm.init;
+	}
+
+	Algorithm get(inout ref Vector!Algorithm arr, inout string name) const {
+		foreach (ref Algorithm algo; arr) {
+			if (name == algo.name)
+				return algo;
+		}
+		return Algorithm.init;
+	}
+
 }
 
 shared(int) threads;
