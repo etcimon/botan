@@ -271,7 +271,7 @@ int jacobi()(auto const ref BigInt a, auto const ref BigInt n)
 */
 BigInt powerMod()(auto const ref BigInt base, auto const ref BigInt exp, auto const ref BigInt mod)
 {
-    auto pow_mod = scoped!PowerMod(mod);
+	auto pow_mod = scoped!PowerMod(mod);
 
     /*
     * Calling setBase before setExponent means we end up using a

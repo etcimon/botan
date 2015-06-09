@@ -328,7 +328,7 @@ public:
     }
 }
 
-struct OIDMap
+class OIDMap
 {
 public:
     void addOid(in OID oid, in string str)
@@ -386,6 +386,8 @@ private:
     Vector!(OID2STR) m_oid2str;
 }
 
+private:
+
 string get(ref Vector!OID2STR vec, const ref OID oid) {
 	foreach (ref OID2STR oids; vec[]) {
 		if (oids.oid == oid)
@@ -399,13 +401,25 @@ struct OID2STR {
 	string str;
 }
 
-ref OIDMap globalOidMap()
+OIDMap globalOidMap(bool free = false)
 {
     static OIDMap map;
-
+	if (free && map) {
+		if (map.m_str2oid.length > 0) {
+			map.m_str2oid.clear();
+			map.m_str2oid.destroy();
+		}
+		if (map.m_oid2str.length > 0) {
+			map.m_oid2str.clear();
+			map.m_oid2str.destroy();
+		}
+		map = null;
+		return null;
+	}
+	else if (!map) map = new OIDMap;
     return map;
 }
 
 static ~this() {
-	globalOidMap().destroy();
+	globalOidMap(true);
 }

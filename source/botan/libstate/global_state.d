@@ -11,12 +11,21 @@
 module botan.libstate.global_state;
 import botan.constants;
 import botan.libstate.libstate;
+import core.thread : Thread;
 /// Thread-Local, no locks needed.
 private LibraryState g_lib_state;
 
 static ~this() { 
 	if (g_lib_state)
 		g_lib_state.destroy(); 
+
+	if (Thread.getThis() != gs_ctor) return;
+	if (gs_global_prng)
+		gs_global_prng.destroy();
+	if (gs_sources.length > 0) {
+		gs_sources.clear();
+		gs_sources.destroy();
+	}
 }
 
 /**

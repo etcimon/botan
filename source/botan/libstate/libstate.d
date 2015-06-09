@@ -133,8 +133,10 @@ public:
             if (gs_sources.length == 0)
                 gs_sources = entropySources();
 
-            if (!gs_global_prng)
+            if (!gs_global_prng) {
+				gs_ctor = Thread.getThis();
                 gs_global_prng = new SerializedRNG();
+			}
         }
         logTrace("Done serialized RNG");
         static if (BOTAN_HAS_SELFTESTS) {        
@@ -233,6 +235,7 @@ private:
     bool m_initialized;
 }
 
+__gshared Thread gs_ctor;
 __gshared SerializedRNG gs_global_prng;
 __gshared Mutex gs_entropy_src_mutex;
 __gshared Vector!( EntropySource ) gs_sources;

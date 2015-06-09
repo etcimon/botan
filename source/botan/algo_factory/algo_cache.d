@@ -118,7 +118,7 @@ public:
         // default init
         {
 	        Algorithm algo_cache = get(m_algorithms, algo.name);
-	        if (algo_cache == Algorithm.init) 
+	        if (!algo_cache.name) 
 	        { 
 	        	m_algorithms ~= Algorithm(algo.name, Array!CachedAlgorithm());
 	        }
@@ -158,13 +158,19 @@ public:
     {
         Vector!string providers;
         string algo = m_aliases.get(algo_name);
-        if (get(m_algorithms, algo).providers.length == 0)
-            algo = algo_name;
-        if (get(m_algorithms, algo).providers.length == 0) {
-            return Vector!string();
-        }
-
-        auto arr = get(m_algorithms, algo).providers;
+		Algorithm algo_cache;
+		{
+			algo_cache = get(m_algorithms, algo);
+	        if (algo_cache.providers.length == 0)
+	            algo = algo_name;
+		}
+		{
+			algo_cache = get(m_algorithms, algo);
+	        if (get(m_algorithms, algo).providers.length == 0) {
+	            return Vector!string();
+	        }
+		}
+		auto arr = algo_cache.providers;
         foreach(ref CachedAlgorithm ca; *arr) {
             providers.pushBack(ca.provider);
         }
@@ -198,7 +204,7 @@ private:
     {
         Algorithm algo = get(m_algorithms, algo_spec);
         // Not found? Check if a known alias
-        if (algo == Algorithm.init)
+        if (!algo.name)
         {
             string _alias = m_aliases.get(algo_spec);
 

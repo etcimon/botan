@@ -22,6 +22,7 @@ public import botan.tls.session_manager;
 public import botan.tls.version_;
 public import botan.tls.exceptn;
 public import botan.rng.rng;
+import core.thread : Thread;
 import botan.tls.handshake_state;
 import botan.tls.messages;
 import botan.tls.heartbeats;
@@ -56,6 +57,7 @@ public:
 		bool is_datagram,
 		size_t reserved_io_buffer_size)
 	{
+		m_owner = Thread.getThis();
 		m_handshake_cb = handshake_cb;
 		m_data_cb = data_cb;
 		m_alert_cb = alert_cb;
@@ -495,6 +497,8 @@ public:
 
     ~this()
     {
+		// fixme: Defer destruction
+		if (m_owner != Thread.getThis()) return;
         resetState();
     }
 
@@ -852,6 +856,7 @@ private:
 
     const(HandshakeState) pendingState() const { return *m_pending_state; }
 
+	Thread m_owner;
 	package string m_application_protocol;
     bool m_is_datagram;
 

@@ -18,6 +18,7 @@ import botan.rng.rng;
 import botan.algo_base.symkey;
 import botan.pubkey.algo.dl_group;
 import botan.libstate.libstate;
+import botan.libstate.global_state;
 import botan.math.numbertheory.numthry;
 import botan.utils.types;
 
