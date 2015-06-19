@@ -89,7 +89,7 @@ public:
 	{
 		assert(!m_slice);
         
-        while (!m_closed && !channel.isActive())
+        while (!m_closed && channel !is null && !channel.isActive())
         {
             ubyte[] readref = m_readbuf.ptr[0 .. m_readbuf.length];
             const ubyte[] from_socket = m_read_fn(readref);
@@ -182,15 +182,15 @@ public:
         return buf[0 .. returned];
     }
 
-	void write(in ubyte[] buf) { channel.send(cast(const(ubyte)*)buf.ptr, buf.length); }
+	void write(in ubyte[] buf) { enforce(channel); channel.send(cast(const(ubyte)*)buf.ptr, buf.length); }
 
     inout(TLSChannel) underlyingChannel() inout { return channel; }
 
-	void close() { m_closed = true; channel.close(); }
+	void close() { enforce(channel); m_closed = true; channel.close(); }
 
 	bool isClosed() const { return m_closed || m_impl.client is null; }
 
-    const(Vector!X509Certificate) peerCertChain() const { return channel.peerCertChain(); }
+	const(Vector!X509Certificate) peerCertChain() const { enforce(channel); return channel.peerCertChain(); }
 
 	~this()
 	{
