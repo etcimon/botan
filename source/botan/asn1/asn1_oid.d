@@ -112,7 +112,8 @@ public:
     */
     override string toString() const
     {
-        return toVector()[].idup;
+		auto ret = toVector();
+		return ret[].idup;
     }
 
     Vector!char toVector() const {

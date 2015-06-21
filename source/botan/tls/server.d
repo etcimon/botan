@@ -637,7 +637,10 @@ ushort chooseCiphersuite(in TLSPolicy policy,
        
     if (!our_choice)
         pref_list[] = *client_suites;
-    
+	debug {
+		string dbg_msg;
+		string dbg_sig;
+	}
     foreach (suite_id; pref_list[])
     {
         if (!valueExists(*client_suites, suite_id))
@@ -649,8 +652,13 @@ ushort chooseCiphersuite(in TLSPolicy policy,
             continue;
         
         if (suite.sigAlgo() != "" && cert_chains.get(suite.sigAlgo(), Array!X509Certificate(0)) == Array!X509Certificate(0))
+		{
+			debug  {
+				dbg_msg = "Server Certificate type did not match a type that was accepted from policy: ";
+				dbg_sig = suite.sigAlgo;
+			}
             continue;
-        
+		}
         /*
         The client may offer SRP cipher suites in the hello message but
         omit the SRP extension.  If the server would like to select an
@@ -665,7 +673,7 @@ ushort chooseCiphersuite(in TLSPolicy policy,
         
         return suite_id;
     }
-    
+	debug logDebug(dbg_msg, dbg_sig);
     throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "Can't agree on a ciphersuite with client");
 }
 

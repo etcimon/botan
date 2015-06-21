@@ -20,7 +20,7 @@
             "KASUMI", "LION", "MARS", "MISTY1", "NOEKEON", "RC2", "RC5", "RC6", "SAFER", "SEED", "Serpent", "TEA", "Twofish", "Threefish", 
             "XTEA", "Adler32",  "CRC32", "GOST_3411", "HAS_160", "Keccak", "MD2",  "RIPEMD_128", "RIPEMD_160", "SHA1_x86_64",
             "SHA2_64", "Skein_512", "Tiger", "Whirlpool", "ParallelHash", "Comb4P", "CBC_MAC", "CMAC", "SSL3_MAC", 
-            "ANSI_X919_MAC", "RC4", "ChaCha", "Salsa20", "AES_NI", "AES_SSSE3", "Serpent_SIMD",  "SIMD_Scalar", "SIMD_SSE2",
+            "ANSI_X919_MAC", "RC4", "ChaCha", "Salsa20", "AES_NI", "SIMD_SSE2", "AES_SSSE3", "Serpent_SIMD",  "SIMD_Scalar",
             "Noekeon_SIMD", "XTEA_SIMD", "IDEA_SSE2", "SHA1_SSE2", "Engine_ASM", "Engine_AES_ISA", "Engine_SIMD",
             "Entropy_HRTimer", "Entropy_Rdrand", "Entropy_DevRand", "Entropy_EGD", "Entropy_UnixProc",
             "Entropy_Win32", "Entropy_ProcWalk", "X931_RNG", "HMAC_DRBG", "KDF1", "KDF2", "SSL_V3_PRF", "TLS_V10_PRF", "TLS_V12_PRF", "X942_PRF",

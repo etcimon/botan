@@ -344,7 +344,7 @@ version(ChaCha)          {    const BOTAN_HAS_CHACHA = true;                    
 else                          const BOTAN_HAS_CHACHA = false;
 version(Salsa20)         {    const BOTAN_HAS_SALSA20 = true;                                                             }
 else                          const BOTAN_HAS_SALSA20 = false;
-version(AES_SSSE3)       {    const BOTAN_HAS_AES_SSSE3 = true;           static assert(BOTAN_HAS_SIMD);                  }
+version(AES_SSSE3)       {    debug const BOTAN_HAS_AES_SSSE3 = true;     static assert(BOTAN_HAS_SIMD);                  }
 else                          const BOTAN_HAS_AES_SSSE3 = false;
 version(Serpent_SIMD)    {    const BOTAN_HAS_SERPENT_SIMD = true;        static assert(BOTAN_HAS_SIMD_OPS);              }
 else                          const BOTAN_HAS_SERPENT_SIMD = false;
@@ -455,6 +455,9 @@ version(OPENSSL_NO_IDEA) {    const BOTAN_HAS_OPENSSL_NO_IDEA = true;           
 else                          const BOTAN_HAS_OPENSSL_NO_IDEA = false;
 version(OPENSSL_NO_SEED) {    const BOTAN_HAS_OPENSSL_NO_SEED = true;                                                     }
 else                          const BOTAN_HAS_OPENSSL_NO_SEED = false;
+
+// workaround for DMD bug in release
+static if (!__traits(compiles, BOTAN_HAS_AES_SSSE3)) const BOTAN_HAS_AES_SSSE3 = false;
 
 enum { // LogLevel
     Trace,
