@@ -424,6 +424,10 @@ Vector!( RBTreeRef!CertificateStatusCode )
     
     Vector!( Thread ) ocsp_responses;
 
+	scope(exit) foreach (Thread thr; ocsp_responses[]) {
+		ThreadMem.free(thr);
+	}
+
     Vector!(OCSPResponse) ocsp_data = Vector!OCSPResponse(8);
     
     Vector!( RBTreeRef!CertificateStatusCode ) cert_status = Vector!( RBTreeRef!CertificateStatusCode )( cert_path.length );
@@ -454,7 +458,7 @@ Vector!( RBTreeRef!CertificateStatusCode )
             //    Tid id_ = runTask(&onlineCheck, cast(shared)Tid.getThis(), cast(shared)i, cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)trusted);
             //else
             OnlineCheck oc = OnlineCheck( cast(shared)new Mutex, cast(shared)i,  cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)trusted );
-			Thread thr = new Thread(&oc.run);
+			Thread thr = ThreadMem.alloc!Thread(&oc.run);
 			thr.start();
 			ocsp_responses ~= thr;
         }

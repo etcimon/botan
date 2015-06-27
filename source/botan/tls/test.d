@@ -124,14 +124,14 @@ public:
 
 TLSCredentialsManager createCreds(RandomNumberGenerator rng)
 {
-    auto ca_key = RSAPrivateKey(rng, 1024).release();
+    auto ca_key = RSAPrivateKey(rng, 1024);
     
     X509CertOptions ca_opts;
     ca_opts.common_name = "Test CA";
     ca_opts.country = "US";
     ca_opts.CAKey(1);
     
-    X509Certificate ca_cert = x509self.createSelfSignedCert(ca_opts, ca_key, "SHA-256", rng);
+    X509Certificate ca_cert = x509self.createSelfSignedCert(ca_opts, *ca_key, "SHA-256", rng);
     
     auto server_key = RSAPrivateKey(rng, 1024).release();
     
@@ -141,7 +141,7 @@ TLSCredentialsManager createCreds(RandomNumberGenerator rng)
     
     PKCS10Request req = x509self.createCertReq(server_opts, server_key, "SHA-256", rng);
     
-    X509CA ca = X509CA(ca_cert, ca_key, "SHA-256");
+    X509CA ca = X509CA(ca_cert, *ca_key, "SHA-256");
     
     auto now = Clock.currTime(UTC());
     X509Time start_time = X509Time(now);
@@ -292,6 +292,8 @@ public:
 
 static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
 {
+	import core.memory : GC;
+	GC.collect();
 	import botan.libstate.global_state;
 	auto state = globalState(); // ensure initialized
     logDebug("Testing tls/test.d ...");
