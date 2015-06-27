@@ -12,7 +12,7 @@ module botan.pubkey.algo.keypair;
 
 import botan.constants;
 static if (BOTAN_HAS_PUBLIC_KEY_CRYPTO):
-
+import botan.rng.rng;
 public import botan.pubkey.pk_keys;
 public import botan.pubkey.pubkey;
 import botan.utils.types;

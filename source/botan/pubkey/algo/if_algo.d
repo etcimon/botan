@@ -13,6 +13,7 @@ module botan.pubkey.algo.if_algo;
 import botan.constants;
 static if (BOTAN_HAS_PUBLIC_KEY_CRYPTO):
 
+import botan.rng.rng;
 public import botan.pubkey.pubkey;
 import botan.math.bigint.bigint;
 import botan.pubkey.x509_key;
