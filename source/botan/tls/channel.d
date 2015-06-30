@@ -497,8 +497,9 @@ public:
 
     ~this()
     {
-		// fixme: Defer destruction
-		if (m_owner != Thread.getThis()) return;
+
+		version(TLSGC) if (m_owner != Thread.getThis()) return;
+
         resetState();
     }
 

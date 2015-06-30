@@ -81,7 +81,7 @@
         }
     ],
     "dependencies": {
-            "memutils": { "version": "~>0.3.8" } 
+            "memutils": { "version": "~>0.4.0" } 
     }, 
     "libs-posix": ["dl"],
     "libs-windows": ["advapi32", "user32"],
