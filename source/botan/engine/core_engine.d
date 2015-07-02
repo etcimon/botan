@@ -100,6 +100,7 @@ static if (BOTAN_HAS_PARALLEL_HASH)   import botan.hash.par_hash;
 static if (BOTAN_HAS_COMB4P)          import botan.hash.comb4p;
 
 /// MAC
+static if (BOTAN_HAS_POLY1305)        import botan.mac.poly1305;
 static if (BOTAN_HAS_CBC_MAC)         import botan.mac.cbc_mac;
 static if (BOTAN_HAS_CMAC)            import botan.mac.cmac;
 static if (BOTAN_HAS_HMAC)            import botan.mac.hmac;
@@ -502,10 +503,6 @@ public:
     override MessageAuthenticationCode findMac(in SCANToken request, AlgorithmFactory af) const
     {
         //logTrace("FindMac Core");
-        static if (BOTAN_HAS_CBC_MAC) {
-            if (request.algoName == "CBC-MAC" && request.argCount() == 1)
-                return new CBCMAC(af.makeBlockCipher(request.arg(0)));
-        }
         
         static if (BOTAN_HAS_CMAC) {
             if (request.algoName == "CMAC" && request.argCount() == 1)
@@ -518,6 +515,17 @@ public:
             }
         }
         
+		static if (BOTAN_HAS_POLY1305) {
+			if (request.algoName == "POLY1305") {
+				return new Poly1305;
+			}
+		}
+
+		static if (BOTAN_HAS_CBC_MAC) {
+			if (request.algoName == "CBC-MAC" && request.argCount() == 1)
+				return new CBCMAC(af.makeBlockCipher(request.arg(0)));
+		}
+
         static if (BOTAN_HAS_SSL3_MAC) {
             if (request.algoName == "SSL3-MAC" && request.argCount() == 1)
                 return new SSL3MAC(af.makeHashFunction(request.arg(0)));

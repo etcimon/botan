@@ -272,7 +272,13 @@ struct OnlineCheck {
 	    /// TODO: Test OCSP with correct BER Decoding
 	    logTrace("Checking OCSP online");
 		string responder_url;
-		synchronized(mtx) responder_url = (*cast(X509Certificate*)issuer).ocspResponder();
+		synchronized(mtx) {
+			if (!issuer) {
+				*cast(OCSPResponse*)resp = OCSPResponse.init;
+				return;
+			}
+			responder_url = (*cast(X509Certificate*)issuer).ocspResponder();
+		}
 	    logTrace("Responder url: ", responder_url.length);
 
 	    if (responder_url.length == 0) {

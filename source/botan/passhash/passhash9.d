@@ -54,20 +54,16 @@ string generatePasshash9(in string pass,
     
     const size_t kdf_iterations = WORK_FACTOR_SCALE * work_factor;
     
-    SecureVector!ubyte pbkdf2_output = kdf.deriveKey(PASSHASH9_PBKDF_OUTPUT_LEN,
-                                                     pass, salt.ptr, salt.length,
-                                                     kdf_iterations).bitsOf();
-    
-    Pipe pipe = Pipe(new Base64Encoder);
-    pipe.startMsg();
-    pipe.write(alg_id);
-    pipe.write(get_byte(0, work_factor));
-    pipe.write(get_byte(1, work_factor));
-    pipe.write(salt);
-    pipe.write(pbkdf2_output);
-    pipe.endMsg();
-    
-    return MAGIC_PREFIX ~ pipe.toString();
+    SecureVector!ubyte blob;
+    blob.push_back(alg_id);
+    blob.push_back(get_byte(0, work_factor));
+    blob.push_back(get_byte(1, work_factor));
+    blob += salt;
+    blob += kdf.derive_key(PASSHASH9_PBKDF_OUTPUT_LEN,
+	                       pass,
+	                       salt.ptr, salt.length,
+	                       kdf_iterations).bitsOf();
+    return MAGIC_PREFIX ~ base64Encode(blob);
 }
 
 
@@ -90,14 +86,8 @@ bool checkPasshash9(in string password, in string hash)
         if (hash[i] != MAGIC_PREFIX[i])
             return false;
     
-    Pipe pipe = Pipe(new Base64Decoder);
-    pipe.startMsg();
-    // logTrace("Write: ", hash.toStringz[MAGIC_PREFIX.length .. MAGIC_PREFIX.length + hash.length + 1]);
-    pipe.write(hash[MAGIC_PREFIX.length .. $]);
-    pipe.endMsg();
-    
-    SecureVector!ubyte bin = pipe.readAll();
-    
+	SecureVector!ubyte bin = base64Decode(hash.ptr + MAGIC_PREFIX.length, hash.length - MAGIC_PREFIX.length);
+        
     if (bin.length != BINARY_LENGTH)
         return false;
     
@@ -122,10 +112,10 @@ bool checkPasshash9(in string password, in string hash)
     auto kdf = scoped!PKCS5_PBKDF2(pbkdf_prf); // takes ownership of pointer
     
     SecureVector!ubyte cmp = kdf.deriveKey(PASSHASH9_PBKDF_OUTPUT_LEN, password,
-                                           &bin[ALGID_BYTES + WORKFACTOR_BYTES], SALT_BYTES,
+                                           bin.ptr + ALGID_BYTES + WORKFACTOR_BYTES, SALT_BYTES,
                                            kdf_iterations).bitsOf();
     
-    return sameMem(cmp.ptr, &bin[ALGID_BYTES + WORKFACTOR_BYTES + SALT_BYTES], PASSHASH9_PBKDF_OUTPUT_LEN);
+    return sameMem(cmp.ptr, bin.ptr + ALGID_BYTES + WORKFACTOR_BYTES + SALT_BYTES, PASSHASH9_PBKDF_OUTPUT_LEN);
 }
 
 private:

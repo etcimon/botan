@@ -144,8 +144,14 @@ public:
         addOidstr("2.16.840.1.101.3.4.1.42", "AES-256/CBC");
         addOidstr("1.2.410.200004.1.4", "SEED/CBC"); // RFC 4010
         addOidstr("1.3.6.1.4.1.25258.3.1", "Serpent/CBC");
-        
-        /* Hash Functions */
+		add_oidstr("1.3.6.1.4.1.25258.3.2", "Threefish-512/CBC");
+		add_oidstr("1.3.6.1.4.1.25258.3.3", "Twofish/CBC");
+		add_oidstr("2.16.840.1.101.3.4.1.6", "AES-128/GCM");
+		add_oidstr("2.16.840.1.101.3.4.1.26", "AES-192/GCM");
+		add_oidstr("2.16.840.1.101.3.4.1.46", "AES-256/GCM");
+		add_oidstr("1.3.6.1.4.1.25258.3.101", "Serpent/GCM");
+		add_oidstr("1.3.6.1.4.1.25258.3.102", "Twofish/GCM");
+		/* Hash Functions */
         addOidstr("1.2.840.113549.2.5", "MD5");
         addOidstr("1.3.6.1.4.1.11591.12.2", "Tiger(24,3)");
         

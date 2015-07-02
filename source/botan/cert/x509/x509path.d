@@ -450,17 +450,23 @@ Vector!( RBTreeRef!CertificateStatusCode )
         
         const CertificateStore* trusted = certstores.ptr;
         
+		Mutex mtx = new Mutex;
+
         if (i == 0 || restrictions.ocspAllIntermediates()) {
 
-            ocsp_data.length = i + 1;
+			if (certstores.length > 1) {
 
-            //version(Have_vibe_d)
-            //    Tid id_ = runTask(&onlineCheck, cast(shared)Tid.getThis(), cast(shared)i, cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)trusted);
-            //else
-            OnlineCheck oc = OnlineCheck( cast(shared)new Mutex, cast(shared)i,  cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)trusted );
-			Thread thr = ThreadMem.alloc!Thread(&oc.run);
-			thr.start();
-			ocsp_responses ~= thr;
+	            //version(Have_vibe_d)
+	            //    Tid id_ = runTask(&onlineCheck, cast(shared)Tid.getThis(), cast(shared)i, cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)trusted);
+	            //else
+				synchronized(mtx) {
+					ocsp_data.length = i + 1;
+		            OnlineCheck oc = OnlineCheck( cast(shared)mtx, cast(shared)i,  cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)trusted );
+					Thread thr = ThreadMem.alloc!Thread(&oc.run);
+					thr.start();
+					ocsp_responses ~= thr;
+				}
+			}
         }
         // Check all certs for valid time range
         if (current_time < X509Time(subject.startTime()))
@@ -509,6 +515,7 @@ Vector!( RBTreeRef!CertificateStatusCode )
             try
             {
 				ocsp_responses[i].join();
+				if (ocsp_data.length <= i) continue;
 				OCSPResponse ocsp = ocsp_data[i];
                 logTrace("Got response for ID#", i.to!string);
                 if (!ocsp || ocsp.empty)

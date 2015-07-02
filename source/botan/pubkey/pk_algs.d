@@ -27,6 +27,7 @@ static if (BOTAN_HAS_NYBERG_RUEPPEL)       import botan.pubkey.algo.nr;
 static if (BOTAN_HAS_RW)                   import botan.pubkey.algo.rw;
 static if (BOTAN_HAS_ELGAMAL)              import botan.pubkey.algo.elgamal;
 static if (BOTAN_HAS_ECDH)                 import botan.pubkey.algo.ecdh;
+static if (BOTAN_HAS_CURVE22519)           import botan.pubkey.algo.curve22519;
 
 PublicKey makePublicKey(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
 {
@@ -78,6 +79,11 @@ PublicKey makePublicKey(in AlgorithmIdentifier alg_id, const ref SecureVector!ub
         if (alg_name == "ECDH")
 			return ECDHPublicKey(alg_id, key_bits).release();
     }
+
+	static if (BOTAN_HAS_CURVE22519) {
+		if (alg_name == "Curve22519")
+			return Curve22519PublicKey(alg_id, key_bits).release();
+	}
     
     return null;
 }
@@ -135,6 +141,11 @@ PrivateKey makePrivateKey(const ref AlgorithmIdentifier alg_id,
         if (alg_name == "ECDH")
 			return ECDHPrivateKey(alg_id, key_bits).release();
     }
+	
+	static if (BOTAN_HAS_CURVE22519) {
+		if (alg_name == "Curve22519")
+			return Curve22519PrivateKey(alg_id, key_bits).release();
+	}
     
     return null;
 }

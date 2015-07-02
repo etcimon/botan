@@ -29,6 +29,8 @@ import botan.codec.pem;
 import botan.pubkey.pk_algs;
 import botan.utils.types;
 import botan.pbe.pbe;
+import std.range : empty;
+import botan.algo_base.scan_token;
 
 /**
 * PKCS #8 General Exception
@@ -90,24 +92,17 @@ Vector!ubyte BER_encode(in PrivateKey key,
                         Duration dur = 300.msecs,
                         in string pbe_algo = "")
 {
-    //logTrace("PKCS8 PEM encode with password");
-    const string DEFAULT_PBE = "PBE-PKCS5v20(SHA-1,AES-256/CBC)";
-    
-    PBE pbe = getPbe(((pbe_algo != "") ? pbe_algo : DEFAULT_PBE), pass, dur, rng);
-    
-    AlgorithmIdentifier pbe_algid = AlgorithmIdentifier(pbe.getOid(), pbe.encodeParams());
-    
-    Pipe key_encrytor = Pipe(pbe);
-    auto ber = BER_encode(key);
-    key_encrytor.processMsg(ber);
-    auto enc = DEREncoder().startCons(ASN1Tag.SEQUENCE);
-    enc.encode(pbe_algid);
-    //logTrace("Encoded algid: ", pbe_algid.toString());
-    enc.encode(key_encrytor.readAll(), ASN1Tag.OCTET_STRING)
-        .endCons();
-    auto contents = enc.getContentsUnlocked();
-    //logTrace("Contents: ", contents[]);
-    return contents.move();
+	const auto pbe_params = choosePbeParams(pbe_algo, key.algo_name());
+	
+	const Pair!(AlgorithmIdentifier, Vector!ubyte) pbe_info =
+		pbes2Encrypt(pkcs8.BER_encode(key), pass, msec, pbe_params.first, pbe_params.second, rng);
+	
+	return DER_Encoder()
+		    .startCons(SEQUENCE)
+			.encode(pbe_info.first)
+			.encode(pbe_info.second, OCTET_STRING)
+			.endCons()
+			.getContentsUnlocked();
 }
 
 /**
@@ -146,7 +141,7 @@ string PEM_encode(in PrivateKey key,
 */
 PrivateKey loadKey(DataSource source,
                    RandomNumberGenerator rng,
-                   SingleShotPassphrase get_pass)
+                   string delegate() get_pass)
 {
      auto alg_id = AlgorithmIdentifier();
     SecureVector!ubyte pkcs8_key = PKCS8_decode(source, get_pass, alg_id);
@@ -169,7 +164,7 @@ PrivateKey loadKey(DataSource source,
                    RandomNumberGenerator rng,
                    in string pass = "")
 {
-    return loadKey(source, rng, SingleShotPassphrase(pass));
+	return loadKey(source, rng, { return pass; });
 }
 
 /**
@@ -182,7 +177,7 @@ PrivateKey loadKey(DataSource source,
 */
 PrivateKey loadKey(in string filename,
                    RandomNumberGenerator rng,
-                   SingleShotPassphrase get_pass)
+                   string delegate() get_pass)
 {
     auto source = DataSourceStream(filename, true);
     return loadKey(cast(DataSource)source, rng, get_pass);
@@ -200,7 +195,7 @@ PrivateKey loadKey(in string filename,
                    RandomNumberGenerator rng,
                    in string pass = "")
 {
-    return loadKey(filename, rng, SingleShotPassphrase(pass));
+	return loadKey(filename, rng, { return pass; });
 }
 
 
@@ -239,7 +234,7 @@ SecureVector!ubyte PKCS8_extract(DataSource source,
 /*
 * PEM decode and/or decrypt a private key
 */
-SecureVector!ubyte PKCS8_decode(DataSource source, SingleShotPassphrase get_pass, ref AlgorithmIdentifier pk_alg_id)
+SecureVector!ubyte PKCS8_decode(DataSource source, in string delegate() get_pass, ref AlgorithmIdentifier pk_alg_id)
 {
     auto pbe_alg_id = AlgorithmIdentifier();
     SecureVector!ubyte key_data, key;
@@ -290,18 +285,14 @@ SecureVector!ubyte PKCS8_decode(DataSource source, SingleShotPassphrase get_pass
             
             if (is_encrypted)
             {
-                Pair!(bool, string) pass = get_pass();
-                
-                if (pass.first == false)
-                    break;
 
-                Pipe decryptor = Pipe(getPbe(pbe_alg_id.oid, pbe_alg_id.parameters, pass.second));
+				if(OIDS.lookup(pbe_alg_id.oid) != "PBE-PKCS5v20")
+				    throw new Exception("Unknown PBE type " ~ pbe_alg_id.oid.toString());
                 
-                decryptor.processMsg(key_data);
-                key = decryptor.readAll();
-            }
-
-            BERDecoder(key)
+				key = pbes2Decrypt(key_data, get_pass(), pbe_alg_id.parameters);
+			}
+			
+			BERDecoder(key)
                     .startCons(ASN1Tag.SEQUENCE)
                     .decodeAndCheck!size_t(0, "Unknown PKCS #8 version number")
                     .decode(pk_alg_id)
@@ -322,28 +313,20 @@ SecureVector!ubyte PKCS8_decode(DataSource source, SingleShotPassphrase get_pass
     return key.move;
 }
 
-
-private struct SingleShotPassphrase
+private Pair!(string, string)
+	choosePbeParams(const string pbe_algo, const string key_algo)
 {
-public:
-    this(in string pass) 
-    {
-        passphrase = pass;
-        first = true;
-    }
-    
-    Pair!(bool, string) opCall()
-    {
-        if (first)
-        {
-            first = false;
-            return makePair(true, passphrase);
-        }
-        else
-            return makePair(false, "");
-    }
-    
-private:
-    string passphrase;
-    bool first;
+	if(pbe_algo == "")
+	{
+		// Defaults:
+		if(key_algo == "Curve25519" || key_algo == "McEliece")
+			return makePair("AES-256/GCM", "SHA-512");
+		else // for everything else (RSA, DSA, ECDSA, GOST, ...)
+			return makePair("AES-256/CBC", "SHA-256");
+	}
+	
+	SCANToken request = SCANToken(pbe_algo);
+	if(request.algoName() != "PBE-PKCS5v20" || request.argCount() != 2)
+		throw new Exception("Unsupported PBE " ~ pbe_algo);
+	return makePair(request.arg(1), request.arg(0));
 }

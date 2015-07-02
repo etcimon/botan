@@ -19,10 +19,12 @@ Botan (http://botan.randombit.net/) is distributed under these terms:
                 2007 Manuel Hartl
                 2007 Christoph Ludwig
                 2007 Patrick Sona
+				2008 Google Inc.
                 2010 Olivier de Gaalon
                 2012 Vojtech Kral
                 2012-2014 Markus Wanner
                 2013 Joel Low
+                2014 Andrew Moon
                 2014-2015 Etienne Cimon
   All rights reserved.
 

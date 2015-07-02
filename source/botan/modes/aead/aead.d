@@ -10,7 +10,7 @@
 */
 module botan.modes.aead.aead;
 import botan.constants;
-static if (BOTAN_HAS_AEAD_CCM || BOTAN_HAS_AEAD_EAX || BOTAN_HAS_AEAD_GCM || BOTAN_HAS_AEAD_SIV || BOTAN_HAS_AEAD_OCB):
+static if (BOTAN_HAS_AEAD_CCM || BOTAN_HAS_AEAD_EAX || BOTAN_HAS_AEAD_GCM || BOTAN_HAS_AEAD_SIV || BOTAN_HAS_AEAD_OCB || BOTAN_HAS_AEAD_CHACHA20_POLY1305):
 
 import botan.modes.cipher_mode;
 import botan.block.block_cipher;
@@ -21,6 +21,7 @@ static if (BOTAN_HAS_AEAD_EAX) import botan.modes.aead.eax;
 static if (BOTAN_HAS_AEAD_GCM) import botan.modes.aead.gcm;
 static if (BOTAN_HAS_AEAD_SIV) import botan.modes.aead.siv;
 static if (BOTAN_HAS_AEAD_OCB) import botan.modes.aead.ocb;
+static if (BOTAN_HAS_AEAD_CHACHA20_POLY1305) import botan.modes.aead.chacha20poly1305;
 
 /**
 * Interface for AEAD (Authenticated Encryption with Associated Data)
@@ -71,6 +72,16 @@ public:
 */
 AEADMode getAead(in string algo_spec, CipherDir direction)
 {
+	
+	static if (BOTAN_HAS_AEAD_CHACHA20_POLY1305) {
+		if (algo_spec == "ChaCha20Poly1305")
+		{
+			if (direction == ENCRYPTION)
+				return new ChaCha20Poly1305Encryption;
+			else
+				return new ChaCha20Poly1305Decryption;
+		}
+	}
     AlgorithmFactory af = globalState().algorithmFactory();
     
     const Vector!string algo_parts = algo_spec.splitter('/');
