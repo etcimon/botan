@@ -10,10 +10,17 @@
 */
 module botan.pubkey.algo.curve22519;
 
+import botan.constants;
+
+static if (BOTAN_HAS_CURVE22519):
 import botan.pubkey.pk_keys;
+import botan.rng.rng;
+import botan.pubkey.pk_ops;
 import botan.pubkey.algo.curve22519_donna;
 import memutils.helpers;
 import botan.utils.types;
+import botan.utils.mem_ops;
+import botan.utils.loadstor;
 
 /**
 * This class represents Curve22519 Public Keys.
@@ -42,10 +49,10 @@ public:
 struct Curve22519PrivateKey
 {
 public:
-	this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits) 
+	this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits, RandomNumberGenerator rng) 
 	{
 		m_owned = true;
-		m_pub = new Curve22519PrivateKeyImpl(alg_id, key_bits);
+		m_priv = new Curve22519PrivateKeyImpl(alg_id, key_bits, rng);
 	}
 	
 	this(PrivateKey pkey) { m_priv = cast(Curve22519PrivateKeyImpl) pkey; }
@@ -74,9 +81,9 @@ public:
 	
 	final override size_t maxInputBits() const { return 256; }
 	
-	final override size_t messagePartSize() const { return super.messagePartSize(); }
+	final override size_t messagePartSize() const { return 0; }
 	
-	final override size_t messageParts() const { return super.messageParts(); }
+	final override size_t messageParts() const { return 1; }
 	
 	final override AlgorithmIdentifier algorithmIdentifier() const
 	{
@@ -92,14 +99,14 @@ public:
 				.getContentsUnlocked();
 	}
 	
-	override Vector!ubyte publicValue() const { return unlock(m_public); }
+	Vector!ubyte publicValue() const { return unlock(m_public); }
 	
 	override bool checkKey(RandomNumberGenerator rng, bool b) const { return true; }
 	
-	override size_t estimatedStrength() const { return return 128; }
+	override size_t estimatedStrength() const { return 128; }
 	
 protected:
-	
+	this() { }
 	SecureVector!ubyte m_public;
 }
 
@@ -112,14 +119,16 @@ public:
 	/**
     * ECPrivateKey constructor
     */
-	this(T)(RandomNumberGenerator rng) 
+	this(RandomNumberGenerator rng) 
 	{		
+		super();
 		m_private = rng.randomVec(32);
 		m_public = curve25519Basepoint(m_private);
 	}
 	
-	this(const ref AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits) 
+	this(const ref AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits, RandomNumberGenerator rng) 
 	{
+		super();
 		BERDecoder(key_bits)
 			    .startCons(ASN1Tag.SEQUENCE)
 				.decode(m_public, ASN1Tag.OCTET_STRING)
@@ -130,7 +139,7 @@ public:
 		sizeCheck(m_public.length, "public key");
 		sizeCheck(m_private.length, "private key");
 		
-		load_check(rng);
+		loadCheck(rng);
 		
 	}
 	
@@ -146,7 +155,7 @@ public:
 				.encode(m_public, ASN1Tag.OCTET_STRING)
 				.encode(m_private, ASN1Tag.OCTET_STRING)
 				.endCons()
-				.get_contents();
+				.getContents();
 	}
 	
 	override AlgorithmIdentifier pkcs8AlgorithmIdentifier() const { return super.algorithmIdentifier(); }
@@ -181,7 +190,7 @@ public:
 		return m_key.agree(w, w_len);
 	}
 private:
-	const Curve25519PrivateKeyImpl m_key;
+	const Curve22519PrivateKeyImpl m_key;
 }
 
 
@@ -205,8 +214,8 @@ SecureVector!ubyte curve25519(const ref SecureVector!ubyte secret,
 
 SecureVector!ubyte curve25519Basepoint(const ref SecureVector!ubyte secret)
 {
-	const(ubyte)[32] basepoint; basepoint[0] = 9;
-	return curve25519(secret, basepoint.ptr);
+	ubyte[32] basepoint; basepoint[0] = 9;
+	return curve25519(secret, cast(const(ubyte)*)basepoint.ptr);
 }
 
 static if (BOTAN_TEST):

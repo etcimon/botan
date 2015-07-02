@@ -128,6 +128,8 @@ public:
                 return TLSCiphersuite(0x00C4, "RSA", "DH", "Camellia-256", 32, 16, 0, "SHA-256", 32);
             case 0xC07D: // DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384
                 return TLSCiphersuite(0xC07D, "RSA", "DH", "Camellia-256/GCM", 32, 4, 8, "AEAD", 0, "SHA-384");
+			case 0xCC15: // DHE_RSA_WITH_CHACHA20_POLY1305_SHA256
+				return TLSCiphersuite(0xCC15, "RSA", "DH", "ChaCha20Poly1305", 32, 0, 0, "AEAD", 0, "SHA-256");
             case 0x009A: // DHE_RSA_WITH_SEED_CBC_SHA
                 return TLSCiphersuite(0x009A, "RSA", "DH", "SEED", 16, 16, 0, "SHA-1", 20);
             case 0x001B: // DH_anon_WITH_3DES_EDE_CBC_SHA
@@ -190,6 +192,8 @@ public:
                 return TLSCiphersuite(0xC073, "ECDSA", "ECDH", "Camellia-256", 32, 16, 0, "SHA-384", 48);
             case 0xC087: // ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384
                 return TLSCiphersuite(0xC087, "ECDSA", "ECDH", "Camellia-256/GCM", 32, 4, 8, "AEAD", 0, "SHA-384");
+			case 0xCC14: // ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
+				return TLSCiphersuite(0xCC14, "ECDSA", "ECDH", "ChaCha20Poly1305", 32, 0, 0, "AEAD", 0, "SHA-256");
             case 0xC007: // ECDHE_ECDSA_WITH_RC4_128_SHA
                 return TLSCiphersuite(0xC007, "ECDSA", "ECDH", "RC4", 16, 0, 0, "SHA-1", 20);
             case 0xC034: // ECDHE_PSK_WITH_3DES_EDE_CBC_SHA
@@ -230,6 +234,8 @@ public:
                 return TLSCiphersuite(0xC077, "RSA", "ECDH", "Camellia-256", 32, 16, 0, "SHA-384", 48);
             case 0xC08B: // ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384
                 return TLSCiphersuite(0xC08B, "RSA", "ECDH", "Camellia-256/GCM", 32, 4, 8, "AEAD", 0, "SHA-384");
+			case 0xCC13: // ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
+				return TLSCiphersuite(0xCC13, "RSA", "ECDH", "ChaCha20Poly1305", 32, 0, 0, "AEAD", 0, "SHA-256");
             case 0xC011: // ECDHE_RSA_WITH_RC4_128_SHA
                 return TLSCiphersuite(0xC011, "RSA", "ECDH", "RC4", 16, 0, 0, "SHA-1", 20);
             case 0xC017: // ECDH_anon_WITH_3DES_EDE_CBC_SHA
@@ -409,6 +415,10 @@ public:
         {
             output ~= "RC4_128_";
         }
+		else if(cipherAlgo() == "ChaCha20Poly1305")
+		{
+			output ~= "CHACHA20_POLY1305_";
+		}
         else
         {
             if (cipherAlgo() == "3DES")
@@ -508,27 +518,35 @@ public:
         
         if (macAlgo() == "AEAD")
         {
-            auto cipher_and_mode = splitter(cipherAlgo(), '/');
-            assert(cipher_and_mode.length == 2, "Expected format for AEAD algo");
-            if (!af.prototypeBlockCipher(cipher_and_mode[0]))
-                return false;
-            
-            const auto mode = cipher_and_mode[1];
-            
-            static if (!BOTAN_HAS_AEAD_CCM) {
-                if (mode == "CCM" || mode == "CCM-8")
-                    return false;
-            }
-            
-            static if (!BOTAN_HAS_AEAD_GCM) {
-                if (mode == "GCM")
-                    return false;
-            }
-            
-            static if (!BOTAN_HAS_AEAD_OCB) {
-                if (mode == "OCB")
-                    return false;
-            }
+			if (cipherAlgo() == "ChaCha20Poly1305")
+			{
+				static if (!BOTAN_HAS_AEAD_CHACHA20_POLY1305) {
+					return false;
+				}
+			} 
+			else {
+	            auto cipher_and_mode = splitter(cipherAlgo(), '/');
+	            assert(cipher_and_mode.length == 2, "Expected format for AEAD algo");
+	            if (!af.prototypeBlockCipher(cipher_and_mode[0]))
+	                return false;
+	            
+	            const auto mode = cipher_and_mode[1];
+	            
+	            static if (!BOTAN_HAS_AEAD_CCM) {
+	                if (mode == "CCM" || mode == "CCM-8")
+	                    return false;
+	            }
+	            
+	            static if (!BOTAN_HAS_AEAD_GCM) {
+	                if (mode == "GCM")
+	                    return false;
+	            }
+	            
+	            static if (!BOTAN_HAS_AEAD_OCB) {
+	                if (mode == "OCB")
+	                    return false;
+	            }
+			}
         }
         else
         {

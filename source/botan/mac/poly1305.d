@@ -12,10 +12,14 @@
 */
 module botan.mac.poly1305;
 
+import botan.constants;
 static if (BOTAN_HAS_POLY1305):
 import botan.mac.mac;
 import botan.utils.mul128;
 import botan.utils.donna128;
+import botan.utils.types;
+import botan.utils.mem_ops;
+import botan.utils.loadstor;
 
 /**
 * DJB's Poly1305
@@ -56,7 +60,7 @@ public:
 		return KeyLengthSpecification(32);
 	}
 	
-private:
+protected:
 	override void addData(const(ubyte)* input, size_t length) {
 		assert(m_poly.length == 8, "Initialized");
 		
@@ -134,11 +138,11 @@ void poly1305_init(ulong* X, const ubyte* key)
 	X[5] = 0;
 	
 	/* save pad for later */
-	X[6] = loadLittleEndian!ulong(key.ptr, 2);
-	X[7] = loadLittleEndian!ulong(key.ptr, 3);
+	X[6] = loadLittleEndian!ulong(key, 2);
+	X[7] = loadLittleEndian!ulong(key, 3);
 }
 
-void poly1305_blocks(ulong* X, const ubyte* m, size_t blocks, bool is_final = false)
+void poly1305_blocks(ulong* X, const(ubyte)* m, size_t blocks, bool is_final = false)
 {
 	alias uint128_t = donna128;
 	
@@ -171,10 +175,10 @@ void poly1305_blocks(ulong* X, const ubyte* m, size_t blocks, bool is_final = fa
 		uint128_t d2 = uint128_t(h0) * r2 + uint128_t(h1) * r1 + uint128_t(h2) * r0;
 		
 		/* (partial) h %= p */
-		ulong        c = carry_shift(d0, 44); h0 = d0 & 0xfffffffffff;
+		        ulong c = carry_shift(d0, 44); h0 = d0 & 0xfffffffffff;
 		d1 += c;      c = carry_shift(d1, 44); h1 = d1 & 0xfffffffffff;
 		d2 += c;      c = carry_shift(d2, 42); h2 = d2 & 0x3ffffffffff;
-		h0  += c * 5; c = carry_shift(h0, 44); h0 = h0 & 0xfffffffffff;
+		h0  += c * 5; c = carry_shift(uint128_t(h0), 44); h0 = h0 & 0xfffffffffff;
 		h1  += c;
 		
 		m += 16;
@@ -231,5 +235,5 @@ void poly1305_finish(ulong* X, ubyte* mac)
 	storeLittleEndian(mac, h0, h1);
 	
 	/* zero out the state */
-	clearMem(X.ptr, X.length);
+	clearMem(X, 8);
 }

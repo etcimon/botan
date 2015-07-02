@@ -20,15 +20,18 @@ public import botan.pubkey.pubkey;
 import botan.pubkey.x509_key;
 import std.datetime;
 import botan.filters.pipe;
-import botan.pbe.factory;
 import botan.asn1.der_enc;
 import botan.asn1.ber_dec;
 import botan.asn1.alg_id;
 import botan.asn1.oids;
+import botan.pbkdf.pbkdf;
+import botan.stream.stream_cipher;
+
+import botan.libstate.libstate;
 import botan.codec.pem;
 import botan.pubkey.pk_algs;
 import botan.utils.types;
-import botan.pbe.pbe;
+import botan.constructs.pbes2;
 import std.range : empty;
 import botan.algo_base.scan_token;
 
@@ -92,15 +95,15 @@ Vector!ubyte BER_encode(in PrivateKey key,
                         Duration dur = 300.msecs,
                         in string pbe_algo = "")
 {
-	const auto pbe_params = choosePbeParams(pbe_algo, key.algo_name());
+	const auto pbe_params = choosePbeParams(pbe_algo, key.algoName());
 	
-	const Pair!(AlgorithmIdentifier, Vector!ubyte) pbe_info =
-		pbes2Encrypt(pkcs8.BER_encode(key), pass, msec, pbe_params.first, pbe_params.second, rng);
+	const Pair!(AlgorithmIdentifier, Array!ubyte) pbe_info =
+		pbes2Encrypt(*pkcs8.BER_encode(key), pass, dur, pbe_params.first, pbe_params.second, rng);
 	
-	return DER_Encoder()
-		    .startCons(SEQUENCE)
+	return DEREncoder()
+		    .startCons(ASN1Tag.SEQUENCE)
 			.encode(pbe_info.first)
-			.encode(pbe_info.second, OCTET_STRING)
+			.encode(*(pbe_info.second), ASN1Tag.OCTET_STRING)
 			.endCons()
 			.getContentsUnlocked();
 }

@@ -747,11 +747,9 @@ size_t ecdsaSigKat(string group_id,
     auto ecdsa = ECDSAPrivateKey(*rng, group, bx.move());
     
     const string padding = "EMSA1(" ~ hash ~ ")";
-    
     PKVerifier verify = PKVerifier(*ecdsa, padding);
     PKSigner sign = PKSigner(*ecdsa, padding);
-    
-    return validateSignature(verify, sign, "DSA/" ~ hash, msg, *rng, nonce, signature);
+    return validateSignature(verify, sign, "ECDSA/" ~ group_id ~ "/" ~ hash, msg, *rng, nonce, signature);
 }
 
 size_t eccPointMul(in string group_id,
@@ -817,7 +815,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_ECDSA_TEST) unittest
 
     fails += runTestsBb(ecdsa_sig, "ECDSA Signature", "Signature", true,
         (ref HashMap!(string, string) m) {
-            return ecdsaSigKat(m["Group"], m["X"], m["Hash"], m["Msg"], m["Nonce"], m["Signature"]);
+            return ecdsaSigKat(m.get("Group"), m.get("X"), m.get("Hash"), m.get("Msg"), m.get("Nonce"), m.get("Signature"));
         });
 
     File ecc_mul = File("../test_data/pubkey/ecc.vec", "r");

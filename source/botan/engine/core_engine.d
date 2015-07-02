@@ -516,7 +516,7 @@ public:
         }
         
 		static if (BOTAN_HAS_POLY1305) {
-			if (request.algoName == "POLY1305") {
+			if (request.algoName == "Poly1305") {
 				return new Poly1305;
 			}
 		}

@@ -42,6 +42,7 @@ public:
     Vector!string allowedCiphers() const
     {
         return Vector!string([
+			"ChaCha20Poly1305",
             "AES-256/GCM",
             "AES-128/GCM",
             "AES-256/CCM",

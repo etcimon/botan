@@ -31,6 +31,7 @@ void hexEncode(char* output,
                 size_t input_length,
                 bool uppercase = true)
 {
+	if (input_length == 0) return;
     __gshared immutable ubyte[16] BIN_TO_HEX_UPPER = [
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
         'A', 'B', 'C', 'D', 'E', 'F' ];
@@ -59,6 +60,7 @@ void hexEncode(char* output,
 */
 string hexEncode(const(ubyte)* input, size_t input_length, bool uppercase = true)
 {
+	if (input_length == 0) return "";
     char[] output;
     output.length = 2 * input_length;
     
@@ -106,6 +108,7 @@ size_t hexDecode(ubyte* output,
                  ref size_t input_consumed,
                  bool ignore_ws = true)
 {
+	if (input_length == 0) return 0;
     /*
     * Mapping of hex characters to either their binary equivalent
     * or to an error code.
@@ -238,6 +241,7 @@ size_t hexDecode(ubyte* output, in string input, bool ignore_ws = true)
 */
 Vector!ubyte hexDecode(string input, bool ignore_ws = true)
 {
+	if (input.length == 0) return Vector!ubyte();
     Vector!ubyte bin;
     bin.resize(1 + input.length / 2);
     

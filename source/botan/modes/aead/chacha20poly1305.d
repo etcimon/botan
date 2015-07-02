@@ -12,6 +12,11 @@ module botan.modes.aead.chacha20poly1305;
 import botan.modes.aead.aead;
 import botan.stream.stream_cipher;
 import botan.mac.mac;
+import botan.algo_base.transform;
+import botan.block.block_cipher;
+import botan.libstate.libstate;
+import botan.utils.loadstor;
+import botan.utils.mem_ops;
 
 /**
 * Base class
@@ -19,28 +24,27 @@ import botan.mac.mac;
 * If a nonce of 64 bits is used the older version described in
 * draft-agl-tls-chacha20poly1305-04 is used instead.
 */
-class ChaCha20Poly1305Mode : AEADMode
+abstract class ChaCha20Poly1305Mode : AEADMode, Transformation
 {
 public:
-	
 	override SecureVector!ubyte startRaw(const(ubyte)* nonce, size_t nonce_len) {
 		if(!validNonceLength(nonce_len))
-			throw InvalidIVLength(name, nonce_len);
+			throw new InvalidIVLength(name, nonce_len);
 		
 		m_ctext_len = 0;
 		m_nonce_len = nonce_len;
 		
-		m_chacha->setIv(nonce, nonce_len);
+		m_chacha.setIv(nonce, nonce_len);
 		
 		ubyte[64] zeros;
-		m_chacha.encrypt(zeros.ptr, zeros.length);
+		m_chacha.cipher1(zeros.ptr, zeros.length);
 		
 		m_poly1305.setKey(zeros.ptr, 32);
 		// Remainder of output is discard
 		
 		m_poly1305.update(m_ad);
 		
-		if(cfrg_version()) {
+		if(cfrgVersion()) {
 			auto padding = Vector!ubyte(16 - m_ad.length % 16);
 			m_poly1305.update(padding);
 		}
@@ -53,12 +57,12 @@ public:
 	override void setAssociatedData(const(ubyte)* ad, size_t ad_len) {
 		if(m_ctext_len)
 			throw new Exception("Too late to set AD for ChaCha20Poly1305");
-		m_ad = ad[0 .. length];
+		m_ad = SecureVector!ubyte(ad[0 .. ad_len]);
 	}
 	
 	override @property string name() const { return "ChaCha20Poly1305"; }
 	override size_t updateGranularity() const { return 64; }
-	override KeyLengthSpecification keySpec() const { return Key_Length_Specification(32); }
+	override KeyLengthSpecification keySpec() const { return KeyLengthSpecification(32); }
 	override bool validNonceLength(size_t n) const { return (n == 8 || n == 12); }
 	override size_t tagSize() const { return 16; }
 	
@@ -73,26 +77,22 @@ public:
 	override void keySchedule(const(ubyte)* key, size_t length) {   
 		m_chacha.setKey(key, length);
 	}
-	
-	bool valid_nonce_length(size_t n) const override;
-	
-	size_t tagSize() const override { return 16; }
-	
-	void clear() override;
+
 protected:
+	this() {
+		AlgorithmFactory af = globalState().algorithmFactory();
+		m_chacha = af.makeStreamCipher("ChaCha");
+		m_poly1305 = af.makeMac("Poly1305");
+	}
+
 	Unique!StreamCipher m_chacha;
 	Unique!MessageAuthenticationCode m_poly1305;
-	
-	this() {
-		m_chacha = makeStreamCipher("ChaCha");
-		m_poly1305 = makeMac("Poly1305");
-	}
-	
+
 	SecureVector!ubyte m_ad;
 	size_t m_nonce_len;
 	size_t m_ctext_len;
 	
-	bool cfrg_version() const { return m_nonce_len == 12; }
+	bool cfrgVersion() const { return m_nonce_len == 12; }
 	void updateLength(size_t len) {		
 		ubyte[8] len8;
 		storeLittleEndian(cast(ulong)len, len8.ptr);
@@ -103,15 +103,10 @@ protected:
 /**
 * ChaCha20Poly1305 Encryption
 */
-class ChaCha20Poly1305Encryption : ChaCha20Poly1305Mode, Transformation
+final class ChaCha20Poly1305Encryption : ChaCha20Poly1305Mode, Transformation
 {
 public:
-	
-	this(BlockCipher cipher, size_t tagSize = 16) 
-	{
-		super(cipher, tagSize);
-	}
-	
+	this() { super(); }
 	override size_t outputLength(size_t input_length) const { return input_length + tagSize(); }
 	
 	override size_t minimumFinalSize() const { return 0; }
@@ -131,11 +126,11 @@ public:
 	override void finish(ref SecureVector!ubyte buffer, size_t offset = 0)
 	{
 		update(buffer, offset);
-		if(cfrg_version())
+		if(cfrgVersion())
 		{
 			auto padding = Vector!ubyte(16 - m_ctext_len % 16);
 			m_poly1305.update(padding);
-			updateLength(m_ad.size());
+			updateLength(m_ad.length);
 		}
 		updateLength(m_ctext_len);
 		
@@ -158,10 +153,11 @@ public:
 /**
 * ChaCha20Poly1305 Decryption
 */
-class ChaCha20Poly1305Decryption : ChaCha20Poly1305Mode, Transformation
+final class ChaCha20Poly1305Decryption : ChaCha20Poly1305Mode, Transformation
 {
 public:
-	
+
+	this() { super(); }
 	override size_t outputLength(size_t input_length) const { 
 		assert(input_length > tagSize(), "Sufficient input");
 		return input_length - tagSize(); 
@@ -195,21 +191,21 @@ public:
 			m_ctext_len += remaining;
 		}
 		
-		if(cfrg_version()) {
+		if(cfrgVersion()) {
 			for(size_t i = 0; i != 16 - m_ctext_len % 16; ++i)
 				m_poly1305.update(0);
-			updateLength(m_ad.size());
+			updateLength(m_ad.length);
 		}
 		
 		updateLength(m_ctext_len);
 		const SecureVector!ubyte mac = m_poly1305.finished();
 		
-		const ubyte* included_tag = buf.ptr + remaining;
+		const ubyte* included_tag = buf + remaining;
 		
 		m_ctext_len = 0;
 		
 		if(!sameMem(mac.ptr, included_tag, tagSize()))
-			throw Integrity_Failure("ChaCha20Poly1305 tag check failed");
+			throw new IntegrityFailure("ChaCha20Poly1305 tag check failed");
 		
 		buffer.resize(offset + remaining);
 	}

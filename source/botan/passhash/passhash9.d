@@ -22,6 +22,7 @@ import botan.filters.pipe;
 import botan.utils.get_byte;
 import botan.utils.exceptn;
 import std.string : toStringz;
+import botan.codec.base64;
 
 /**
 * Create a password hash using PBKDF2
@@ -55,11 +56,11 @@ string generatePasshash9(in string pass,
     const size_t kdf_iterations = WORK_FACTOR_SCALE * work_factor;
     
     SecureVector!ubyte blob;
-    blob.push_back(alg_id);
-    blob.push_back(get_byte(0, work_factor));
-    blob.push_back(get_byte(1, work_factor));
-    blob += salt;
-    blob += kdf.derive_key(PASSHASH9_PBKDF_OUTPUT_LEN,
+    blob ~= alg_id;
+    blob ~= get_byte(0, work_factor);
+    blob ~= get_byte(1, work_factor);
+    blob ~= salt;
+    blob ~= kdf.deriveKey(PASSHASH9_PBKDF_OUTPUT_LEN,
 	                       pass,
 	                       salt.ptr, salt.length,
 	                       kdf_iterations).bitsOf();
@@ -86,7 +87,7 @@ bool checkPasshash9(in string password, in string hash)
         if (hash[i] != MAGIC_PREFIX[i])
             return false;
     
-	SecureVector!ubyte bin = base64Decode(hash.ptr + MAGIC_PREFIX.length, hash.length - MAGIC_PREFIX.length);
+	SecureVector!ubyte bin = base64Decode(hash.ptr[MAGIC_PREFIX.length .. hash.length]);
         
     if (bin.length != BINARY_LENGTH)
         return false;

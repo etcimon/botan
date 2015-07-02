@@ -32,6 +32,7 @@ const SKIP_BCRYPT_TEST = false;
 const SKIP_PASSHASH9_TEST = false;
 const SKIP_PBKDF_TEST = false;
 const SKIP_HKDF_TEST = false;
+const SKIP_CURVE22519_TEST = false;
 const SKIP_DH_TEST = false;
 const SKIP_DLIES_TEST = false;
 const SKIP_DSA_TEST = false;

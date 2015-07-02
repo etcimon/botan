@@ -10,6 +10,9 @@
 */
 module botan.constructs.pbes2;
 
+import botan.constants;
+static if (BOTAN_HAS_PBE_PKCS_V20):
+
 import botan.utils.types;
 import botan.algo_base.transform;
 import std.datetime;
@@ -20,6 +23,13 @@ import botan.asn1.alg_id;
 import botan.asn1.oids;
 import botan.rng.rng;
 import botan.utils.parsing;
+import botan.stream.stream_cipher;
+import botan.modes.cipher_mode;
+import botan.modes.cbc;
+import botan.modes.aead.gcm;
+import botan.utils.mem_ops;
+import botan.libstate.libstate;
+
 
 /**
 * Encrypt with PBES2 from PKCS #5 v2.0
@@ -29,14 +39,16 @@ import botan.utils.parsing;
 *  digest = specifies the PRF to use with PBKDF2 (eg "HMAC(SHA-1)")
 *  rng = a random number generator
 */
-Pair!(AlgorithmIdentifier, Vector!ubyte)
-	pbes2Encrypt(const ref SecureVector!ubyte key_bits,
-                 const string passphrase,
-                 Duration msec,
-                 const string cipher,
-                 const string digest,
-                 RandomNumberGenerator rng)
+Pair!(AlgorithmIdentifier, Array!ubyte)
+	pbes2Encrypt()(auto const ref SecureVector!ubyte key_bits,
+                   const string passphrase,
+                   Duration msec,
+                   const string cipher,
+                   const string digest,
+                   RandomNumberGenerator rng,
+                   AlgorithmFactory af = null)
 {
+	if (!af) af = globalState().algorithmFactory();
 	const string prf = "HMAC(" ~ digest ~ ")";
 	
 	const Vector!string cipher_spec = splitter(cipher, '/');
@@ -47,28 +59,42 @@ Pair!(AlgorithmIdentifier, Vector!ubyte)
 	
 	if(cipher_spec[1] != "CBC" && cipher_spec[1] != "GCM")
 		throw new DecodingError("PBE-PKCS5 v2.0: Don't know param format for " ~ cipher);
-	
-	Unique!CipherMode enc = getCipherMode(cipher, ENCRYPTION);
-	
+
+	Unique!KeyedTransform enc;
+	static if (BOTAN_HAS_AEAD_GCM) {
+		if(cipher_spec[1] == "GCM")
+			enc = new GCMEncryption(af.makeBlockCipher(cipher_spec[0]));
+		else if(cipher_spec[1] == "CBC")
+			enc = new CBCEncryption(af.makeBlockCipher(cipher_spec[0]), new PKCS7Padding);
+		else
+			throw new DecodingError("PBE-PKCS5 v2.0: Don't know param format for " ~ cipher);
+	} else {	
+		if(cipher_spec[1] == "CBC")
+			enc = new CBCEncryption(af.makeBlockCipher(cipher_spec[0]), new PKCS7Padding);
+		else
+			throw new DecodingError("PBE-PKCS5 v2.0: Don't know param format for " ~ cipher);
+	}
+
 	Unique!PBKDF pbkdf = getPbkdf("PBKDF2(" ~ prf ~ ")");
 	
-	const size_t key_length = enc.keySpec().maximumKeyLength();
+	const size_t key_length = enc.keySpec().maximumKeylength();
 	size_t iterations = 0;
 	
 	SecureVector!ubyte iv = rng.randomVec(enc.defaultNonceLength());
-	
-	enc.setKey(pbkdf.deriveKey(key_length, passphrase, salt.ptr, salt.length,
-			msec, iterations).bitsOf());
+
+	auto key = pbkdf.deriveKey(key_length, passphrase, salt.ptr, salt.length,
+		msec, iterations).bitsOf();
+	enc.setKey(key.ptr, key.length);
 	
 	enc.start(iv);
-	SecureVector!ubyte buf = key_bits;
+	SecureVector!ubyte buf = key_bits.ptr[0 .. key_bits.length];
 	enc.finish(buf);
 	
 	AlgorithmIdentifier id = AlgorithmIdentifier(
 		OIDS.lookup("PBE-PKCS5v20"),
 		encodePbes2Params(cipher, prf, salt, iv, iterations, key_length));
 	
-	return makePair(id, unlock(buf));
+	return makePair(id, unlock(buf).dupr);
 	
 }
 /*
@@ -82,7 +108,7 @@ Vector!ubyte encodePbes2Params(const string cipher,
                                size_t key_length)
 {
 	return DEREncoder()
-		.startCons(SEQUENCE)
+		.startCons(ASN1Tag.SEQUENCE)
 			.encode(AlgorithmIdentifier("PKCS5.PBKDF2", 
 					DEREncoder()
 					.startCons(ASN1Tag.SEQUENCE)
@@ -112,10 +138,12 @@ Vector!ubyte encodePbes2Params(const string cipher,
 *  params = the PBES2 parameters
 */
 SecureVector!ubyte
-	pbes2Decrypt(const ref SecureVector!ubyte key_bits,
-				 const string passphrase,
-				 const ref Vector!ubyte params)
+	pbes2Decrypt()(const ref SecureVector!ubyte key_bits,
+				   const string passphrase,
+				   auto const ref Vector!ubyte params,
+                   AlgorithmFactory af = null)
 {
+	if (!af) af = globalState().algorithmFactory();
 	AlgorithmIdentifier kdf_algo, enc_algo;
 	
 	BERDecoder(params)
@@ -131,14 +159,14 @@ SecureVector!ubyte
 		throw new DecodingError("PBE-PKCS5 v2.0: Unknown KDF algorithm " ~ kdf_algo.oid.toString());
 	
 	SecureVector!ubyte salt;
-	size_t iterations = 0, key_length = 0;
+	size_t iterations, key_length;
 	
 	BERDecoder(kdf_algo.parameters)
 		.startCons(ASN1Tag.SEQUENCE)
 			.decode(salt, ASN1Tag.OCTET_STRING)
 			.decode(iterations)
-			.decode_optional(key_length, ASN1Tag.INTEGER, ASN1Tag.UNIVERSAL)
-			.decode_optional(prf_algo, ASN1Tag.SEQUENCE, ASN1Tag.CONSTRUCTED,
+			.decodeOptional(key_length, ASN1Tag.INTEGER, ASN1Tag.UNIVERSAL)
+			.decodeOptional(prf_algo, ASN1Tag.SEQUENCE, ASN1Tag.CONSTRUCTED,
 				AlgorithmIdentifier("HMAC(SHA-160)",
 					AlgorithmIdentifierImpl.USE_NULL_PARAM))
 			.verifyEnd()
@@ -160,17 +188,30 @@ SecureVector!ubyte
 	const string prf = OIDS.lookup(prf_algo.oid);
 	
 	Unique!PBKDF pbkdf = getPbkdf("PBKDF2(" ~ prf ~ ")");
-	
-	Unique!Cipher_Mode dec = getCipherMode(cipher, DECRYPTION);
-	
+
+	Unique!KeyedTransform dec;
+	static if (BOTAN_HAS_AEAD_GCM) {
+		if (cipher_spec[1] == "GCM")
+			dec = new GCMDecryption(af.makeBlockCipher(cipher_spec[0]));
+		else if (cipher_spec[1] == "CBC")
+			dec = new CBCDecryption(af.makeBlockCipher(cipher_spec[0]), new PKCS7Padding);
+		else
+			throw new DecodingError("PBE-PKCS5 v2.0: Don't know param format for " ~ cipher);
+	} else {	
+		if (cipher_spec[1] == "CBC")
+			dec = new CBCDecryption(af.makeBlockCipher(cipher_spec[0]), new PKCS7Padding);
+		else
+			throw new DecodingError("PBE-PKCS5 v2.0: Don't know param format for " ~ cipher);
+	}
+
 	if(key_length == 0)
-		key_length = dec.keySpec().maximumKeyLength();
+		key_length = dec.keySpec().maximumKeylength();
 	
-	dec.set_key(pbkdf.deriveKey(key_length, passphrase, salt.ptr, salt.legth, iterations));
+	dec.setKey(pbkdf.deriveKey(key_length, passphrase, salt.ptr, salt.length, iterations));
 	
 	dec.start(iv);
 	
-	SecureVector!ubyte buf = key_bits;
+	SecureVector!ubyte buf = key_bits.ptr[0 .. key_bits.length];
 	dec.finish(buf);
 	
 	return buf.move();

@@ -187,7 +187,7 @@ size_t validateSignature(ref PKVerifier v, ref PKSigner s, string algo,
         logError("FAILED (sign): " ~ algo);
         dumpData(sig, expected);
         ++fails;
-    }
+	}
     
     mixin( PKTEST(` v.verifyMessage(message, sig) `, "Correct signature is valid") );
     
@@ -213,7 +213,7 @@ size_t validateSignature(ref PKVerifier v, ref PKSigner s, string algo,
                          string random,
                          string exp)
 {
-    auto fixed_rng = scoped!FixedOutputRNG(hexDecode(random));
+    auto fixed_rng = scoped!FixedOutputRNG(random);
     
     return validateSignature(v, s, algo, input, fixed_rng, rng, exp);
 }

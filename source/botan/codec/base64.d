@@ -37,6 +37,7 @@ size_t base64Encode(char* output,
                      ref size_t input_consumed,
                      bool final_inputs)
 {
+	if (input_length == 0) return 0;
     input_consumed = 0;
     
     size_t input_remaining = input_length;
@@ -133,6 +134,7 @@ size_t base64Decode(ubyte* output,
                      bool final_inputs,
                      bool ignore_ws = true)
 {
+	if (input_length == 0) return 0;
     /*
     * Base64 Decoder Lookup Table
     * Warning: assumes ASCII encodings

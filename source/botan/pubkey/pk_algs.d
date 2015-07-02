@@ -144,7 +144,7 @@ PrivateKey makePrivateKey(const ref AlgorithmIdentifier alg_id,
 	
 	static if (BOTAN_HAS_CURVE22519) {
 		if (alg_name == "Curve22519")
-			return Curve22519PrivateKey(alg_id, key_bits).release();
+			return Curve22519PrivateKey(alg_id, key_bits, rng).release();
 	}
     
     return null;

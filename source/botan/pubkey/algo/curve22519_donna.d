@@ -28,17 +28,20 @@
  */
 module botan.pubkey.algo.curve22519_donna;
 
+import botan.constants;
+static if (BOTAN_HAS_CURVE22519):
 import botan.utils.donna128;
 import botan.utils.mul128;
 import botan.utils.loadstor;
+import botan.utils.mem_ops;
 
 package
 int curve25519Donna(ubyte* mypublic, const ubyte* secret, const ubyte* basepoint) {
-	limb[5] bp = void;
-	limb[5] x = void;
-	limb[5] z = void;
-	limb[5] zmone = void;
-	ubyte[32] e = void;
+	limb[5] bp;
+	limb[5] x;
+	limb[5] z;
+	limb[5] zmone;
+	ubyte[32] e;
 	int i;
 	
 	for (i = 0;i < 32;++i) e[i] = secret[i];
@@ -46,7 +49,7 @@ int curve25519Donna(ubyte* mypublic, const ubyte* secret, const ubyte* basepoint
 	e[31] &= 127;
 	e[31] |= 64;
 	
-	fexpand(bp, basepoint);
+	fexpand(bp.ptr, basepoint);
 	cmult(x.ptr, z.ptr, e.ptr, bp.ptr);
 	crecip(zmone.ptr, z.ptr);
 	fmul(z.ptr, x.ptr, zmone.ptr);
@@ -154,8 +157,8 @@ void fmul(limb* output, const limb* input2, const limb* input)
 	t[2] += c; r2 = t[2] & 0x7ffffffffffff; c = carry_shift(t[2], 51);
 	t[3] += c; r3 = t[3] & 0x7ffffffffffff; c = carry_shift(t[3], 51);
 	t[4] += c; r4 = t[4] & 0x7ffffffffffff; c = carry_shift(t[4], 51);
-	r0 +=     c * 19; c = carry_shift(r0, 51); r0 = r0 & 0x7ffffffffffff;
-	r1 +=     c;      c = carry_shift(r1, 51); r1 = r1 & 0x7ffffffffffff;
+	r0 +=     c * 19; c = carry_shift(uint128_t(r0), 51); r0 = r0 & 0x7ffffffffffff;
+	r1 +=     c;      c = carry_shift(uint128_t(r1), 51); r1 = r1 & 0x7ffffffffffff;
 	r2 +=     c;
 	
 	output[0] = r0;
@@ -167,7 +170,7 @@ void fmul(limb* output, const limb* input2, const limb* input)
 
 void fsquareTimes(limb* output, const limb* input, limb count) 
 {
-	uint128_t[5] t = void;
+	uint128_t[5] t;
 	limb r0,r1,r2,r3,r4,c;
 	limb d0,d1,d2,d4,d419;
 	
@@ -232,7 +235,7 @@ void fexpand(limb* output, const ubyte* input) {
  */
 void fcontract(ubyte* output, const limb* input)
 {
-	uint128_t[5] t = void;
+	uint128_t[5] t;
 	
 	t[0] = input[0];
 	t[1] = input[1];
@@ -279,10 +282,10 @@ void fcontract(ubyte* output, const limb* input)
 	t[4] += t[3] >> 51; t[3] &= 0x7ffffffffffff;
 	t[4] &= 0x7ffffffffffff;
 	
-	store_limb(output,    combine_lower(t[0], 0, t[1], 51));
-	store_limb(output+8,  combine_lower(t[1], 13, t[2], 38));
-	store_limb(output+16, combine_lower(t[2], 26, t[3], 25));
-	store_limb(output+24, combine_lower(t[3], 39, t[4], 12));
+	storeLimb(output,    combine_lower(t[0], 0, t[1], 51));
+	storeLimb(output+8,  combine_lower(t[1], 13, t[2], 38));
+	storeLimb(output+16, combine_lower(t[2], 26, t[3], 25));
+	storeLimb(output+24, combine_lower(t[3], 39, t[4], 12));
 }
 
 /* Input: Q, Q', Q-Q'
@@ -300,38 +303,38 @@ void fmonty(limb* x2, limb* z2, /* output 2Q */
 	limb* xprime, limb* zprime, /* input Q' */
 	const limb* qmqp /* input Q - Q' */) 
 {
-	limb[5] origx = void;
-	limb[5] origxprime = void;
-	limb[5] zzz = void;
-	limb[5] xx = void;
-	limb[5] zz = void;
-	limb[5] xxprime = void;
-	limb[5] zzprime = void;
-	limb[5] zzzprime = void;
+	limb[5] origx;
+	limb[5] origxprime;
+	limb[5] zzz;
+	limb[5] xx;
+	limb[5] zz;
+	limb[5] xxprime;
+	limb[5] zzprime;
+	limb[5] zzzprime;
 	
-	copyMem(origx, x, 5);
+	copyMem(origx.ptr, x, 5);
 	fsum(x, z);
-	fdifferenceBackwards(z, origx);    // does x - z
+	fdifferenceBackwards(z, origx.ptr);    // does x - z
 	
-	copyMem(origxprime, xprime, 5);
+	copyMem(origxprime.ptr, xprime, 5);
 	fsum(xprime, zprime);
-	fdifferenceBackwards(zprime, origxprime);
-	fmul(xxprime, xprime, z);
-	fmul(zzprime, x, zprime);
-	copyMem(origxprime, xxprime, 5);
-	fsum(xxprime, zzprime);
-	fdifferenceBackwards(zzprime, origxprime);
-	fsquareTimes(x3, xxprime, 1);
-	fsquareTimes(zzzprime, zzprime, 1);
-	fmul(z3, zzzprime, qmqp);
+	fdifferenceBackwards(zprime, origxprime.ptr);
+	fmul(xxprime.ptr, xprime, z);
+	fmul(zzprime.ptr, x, zprime);
+	copyMem(origxprime.ptr, xxprime.ptr, 5);
+	fsum(xxprime.ptr, zzprime.ptr);
+	fdifferenceBackwards(zzprime.ptr, origxprime.ptr);
+	fsquareTimes(x3, xxprime.ptr, 1);
+	fsquareTimes(zzzprime.ptr, zzprime.ptr, 1);
+	fmul(z3, zzzprime.ptr, qmqp);
 	
-	fsquareTimes(xx, x, 1);
-	fsquareTimes(zz, z, 1);
-	fmul(x2, xx, zz);
-	fdifferenceBackwards(zz, xx);    // does zz = xx - zz
-	fscalarProduct(zzz, zz, 121665);
-	fsum(zzz, xx);
-	fmul(z2, zz, zzz);
+	fsquareTimes(xx.ptr, x, 1);
+	fsquareTimes(zz.ptr, z, 1);
+	fmul(x2, xx.ptr, zz.ptr);
+	fdifferenceBackwards(zz.ptr, xx.ptr);    // does zz = xx - zz
+	fscalarProduct(zzz.ptr, zz.ptr, 121665);
+	fsum(zzz.ptr, xx.ptr);
+	fmul(z2, zz.ptr, zzz.ptr);
 }
 
 // -----------------------------------------------------------------------------
@@ -342,10 +345,9 @@ void fmonty(limb* x2, limb* z2, /* output 2Q */
 // information.
 // -----------------------------------------------------------------------------
 void swapConditional(limb* a, limb* b, limb iswap) {
-	unsigned i;
 	const limb swap = cast(limb)(-iswap);
 	
-	for (i = 0; i < 5; ++i) {
+	for (size_t i = 0; i < 5; ++i) {
 		const limb x = swap & (a[i] ^ b[i]);
 		a[i] ^= x;
 		b[i] ^= x;
@@ -377,14 +379,14 @@ void cmult(limb* resultx, limb* resultz, const ubyte* n, const limb* q) {
 	limb* nqx2 = g.ptr;
 	limb* nqz2 = h.ptr;
 	
-	unsigned i, j;
+	size_t i, j;
 	
 	copyMem(nqpqx, q, 5);
 	
 	for (i = 0; i < 32; ++i) {
-		ubyte b = n[31 - i];
+		ubyte by = n[31 - i];
 		for (j = 0; j < 8; ++j) {
-			const limb bit = b >> 7;
+			const limb bit = cast(limb)(by >> 7);
 			
 			swapConditional(nqx, nqpqx, bit);
 			swapConditional(nqz, nqpqz, bit);
@@ -409,7 +411,7 @@ void cmult(limb* resultx, limb* resultz, const ubyte* n, const limb* q) {
 			nqpqz = nqpqz2;
 			nqpqz2 = t;
 			
-			b <<= 1;
+			by <<= 1;
 		}
 	}
 	

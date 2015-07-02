@@ -71,7 +71,7 @@ size_t macTest(string algo, string key_hex, string in_hex, string out_hex)
     atomicOp!"+="(total_tests, 1);
     if (providers.empty)
     {
-        logTrace("Unknown algo " ~ algo);
+        logError("Unknown algo " ~ algo);
         ++fails;
     }
     
