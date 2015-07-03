@@ -21,6 +21,8 @@ import memutils.helpers;
 import botan.utils.types;
 import botan.utils.mem_ops;
 import botan.utils.loadstor;
+import botan.asn1.ber_dec;
+import botan.asn1.der_enc;
 
 /**
 * This class represents Curve22519 Public Keys.
