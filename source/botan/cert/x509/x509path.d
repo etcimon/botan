@@ -556,8 +556,8 @@ Vector!( RBTreeRef!CertificateStatusCode )
         
         if (current_time > crl.nextUpdate())
             status.insert(CertificateStatusCode.CRL_HAS_EXPIRED);
-        
-        if (crl.checkSignature(ca.subjectPublicKey()) == false)
+		Unique!PublicKey pubkey = ca.subjectPublicKey();
+		if (crl.checkSignature(*pubkey) == false)
             status.insert(CertificateStatusCode.CRL_BAD_SIGNATURE);
         
         if (crl.isRevoked(subject))

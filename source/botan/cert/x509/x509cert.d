@@ -390,8 +390,8 @@ public:
         if (subjectKeyId().length)
             output ~= "\nSubject keyid: " ~ hexEncode(subjectKeyId());
         
-        const X509PublicKey pubkey = subjectPublicKey();
-        output ~= "\nPublic Key:\n\n" ~ x509_key.PEM_encode(pubkey) ~ "\n";
+        Unique!X509PublicKey pubkey = subjectPublicKey();
+        output ~= "\nPublic Key:\n\n" ~ x509_key.PEM_encode(*pubkey) ~ "\n";
         
         return output.data;
     }

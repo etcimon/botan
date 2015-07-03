@@ -157,8 +157,8 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
                             TLSCredentialsManager creds,
                             TLSPolicy policy)
 {
-    auto server_sessions = new TLSSessionManagerInMemory(rng);
-    auto client_sessions = new TLSSessionManagerInMemory(rng);
+    Unique!TLSSessionManagerInMemory server_sessions = new TLSSessionManagerInMemory(rng);
+	Unique!TLSSessionManagerInMemory client_sessions = new TLSSessionManagerInMemory(rng);
     
     Vector!ubyte c2s_q, s2c_q, c2s_data, s2c_data;
     
@@ -196,7 +196,7 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
                                 save_server_data,
                                 print_alert,
                                 handshake_complete,
-                                server_sessions,
+                                *server_sessions,
                                 creds,
                                 policy,
                                 rng,
@@ -207,7 +207,7 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
                                 save_client_data,
                                 print_alert,
                                 handshake_complete,
-                                client_sessions,
+                                *client_sessions,
                                 creds,
                                 policy,
                                 rng,

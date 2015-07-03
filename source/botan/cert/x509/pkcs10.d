@@ -213,8 +213,8 @@ protected:
                                   attr_bits.type_tag, attr_bits.class_tag);
         
         cert_req_info.verifyEnd();
-        
-        if (!this.checkSignature(subjectPublicKey()))
+		Unique!PublicKey pubkey = subjectPublicKey();
+		if (!this.checkSignature(*pubkey))
             throw new DecodingError("PKCS #10 request: Bad signature detected");
     }
 
