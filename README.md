@@ -18,7 +18,7 @@ Botan has been tested on Windows x86, Windows x64, OSX x64, Linux x86, Linux x64
 
 For development, you should use the [Mono-D](http://wiki.dlang.org/Mono-D) IDE, as it has been specifically crafted to handle the high amount of symbols.
 
-- Compile [DMD](https://github.com/D-Programming-Language/dmd), [druntime](https://github.com/D-Programming-Language/druntime) and [Phobos](https://github.com/D-Programming-Language/phobos) v2.067 (only available through Git at the moment). You can find information on compiling D in the [wiki](http://wiki.dlang.org/Building_DMD).
+- Install [DMD](http://dlang.org/download) v2.067.0+
 
 - Install [dub](http://code.dlang.org/download) v0.9.22+
 
