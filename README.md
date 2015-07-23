@@ -135,10 +135,7 @@ submitted to the corresponding [Botan C++ issue tracker](https://github.com/rand
 TODO
 ----
 
-- Create a vibe.d driver
-- Test Certificate OCSP with cmd/ utility
-- Test compression with cmd/ utility
-- Upgrade to 1.11.14
+- OCSP stapling
 
 License
 -------
