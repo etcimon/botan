@@ -47,6 +47,7 @@ static if (BOTAN_HAS_GOST_34_10_2001) import botan.pubkey.algo.gost_3410;
 static if (BOTAN_HAS_NYBERG_RUEPPEL)  import  botan.pubkey.algo.nr;
 static if (BOTAN_HAS_DIFFIE_HELLMAN)  import botan.pubkey.algo.dh;
 static if (BOTAN_HAS_ECDH)            import botan.pubkey.algo.ecdh;
+static if (BOTAN_HAS_CURVE25519)      import botan.pubkey.algo.curve25519;
 /// Blocks
 static if (BOTAN_HAS_AES)             import botan.block.aes;
 static if (BOTAN_HAS_BLOWFISH)        import botan.block.blowfish;
@@ -575,6 +576,11 @@ public:
 
     override KeyAgreement getKeyAgreementOp(in PrivateKey key, RandomNumberGenerator rng) const
     {
+		static if (BOTAN_HAS_CURVE25519) {
+			if (Curve25519PrivateKey.algoName == key.algoName)
+				return new Curve25519KAOperation(key);
+		}
+
         static if (BOTAN_HAS_DIFFIE_HELLMAN) {
             if (DHPrivateKey.algoName == key.algoName)
                 return new DHKAOperation(key, rng);

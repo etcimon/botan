@@ -276,9 +276,6 @@ private:
 *  sig_algo = will be set to the chosen scheme
 * Returns: A PKSigner object for generating signatures
 */
-/*
-* Choose a signing format for the key
-*/
 PKSigner chooseSigFormat(in PrivateKey key,
                          in string hash_fn,
                          ref AlgorithmIdentifier sig_algo)

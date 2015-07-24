@@ -26,10 +26,10 @@
  * uses many of the tricks described therein. Only the crecip function is taken
  * from the sample implementation.
  */
-module botan.pubkey.algo.curve22519_donna;
+module botan.pubkey.algo.curve25519_donna;
 
 import botan.constants;
-static if (BOTAN_HAS_CURVE22519):
+static if (BOTAN_HAS_CURVE25519):
 import botan.utils.donna128;
 import botan.utils.mul128;
 import botan.utils.loadstor;

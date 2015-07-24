@@ -282,7 +282,11 @@ public:
     */
     string crlDistributionPoint() const
     {
-        return m_subject.get1("CRL.DistributionPoint", "");
+		import std.range : front;
+		auto crl_dist = m_subject.get("CRL.DistributionPoint");
+		if (crl_dist.length)
+			return crl_dist.front;
+		return "";
     }
 
     /**

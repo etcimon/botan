@@ -119,7 +119,7 @@ public:
         addOidstr("1.3.6.1.4.1.3029.1.2.1", "ElGamal");
         addOidstr("1.3.6.1.4.1.25258.1.1", "RW");
         addOidstr("1.3.6.1.4.1.25258.1.2", "NR");
-        
+		addOidstr("1.3.6.1.4.1.25258.1.4", "Curve25519");
         // X9.62 ecPublicKey, valid for ECDSA and ECDH (RFC 3279 sec 2.3.5)
         addOidstr("1.2.840.10045.2.1", "ECDSA");
         
@@ -151,6 +151,12 @@ public:
 		addOidstr("2.16.840.1.101.3.4.1.46", "AES-256/GCM");
 		addOidstr("1.3.6.1.4.1.25258.3.101", "Serpent/GCM");
 		addOidstr("1.3.6.1.4.1.25258.3.102", "Twofish/GCM");
+		addOidstr("1.3.6.1.4.1.25258.3.2.1", "AES-128/OCB");
+		addOidstr("1.3.6.1.4.1.25258.3.2.2", "AES-192/OCB");
+		addOidstr("1.3.6.1.4.1.25258.3.2.3", "AES-256/OCB");
+		addOidstr("1.3.6.1.4.1.25258.3.2.4", "Serpent/OCB");
+		addOidstr("1.3.6.1.4.1.25258.3.2.5", "Twofish/OCB");
+
 		/* Hash Functions */
         addOidstr("1.2.840.113549.2.5", "MD5");
         addOidstr("1.3.6.1.4.1.11591.12.2", "Tiger(24,3)");
