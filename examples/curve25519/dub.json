@@ -1,0 +1,14 @@
+{
+    "name": "curve25519",
+    "description": "A Botan test to generate and use a public/private key",
+    "license": "MIT",
+    "authors": ["Etienne Cimon", "See CREDITS.md for more."],
+    "targetName": "botan",
+    "targetType": "executable",
+    "targetPath": "build",
+    "workingDirectory": "build",
+    "dependencies": {
+            "botan": { "version": "~master", "path": "../../" } 
+    }, 
+    "versions": ["DisableDebugger"]
+}
