@@ -14,8 +14,6 @@ import botan.cert.x509.x509self;
 import botan.cert.x509.pkcs10;
 import std.datetime;
 
-// Curve22519 is the 25519 variant which provides better performance
-
 void main() {
 	Unique!AutoSeededRNG rng = new AutoSeededRNG;
 
