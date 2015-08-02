@@ -18,7 +18,13 @@ import std.stdio;
 import std.file;
 import std.datetime;
 
-/* The CA Certificate can be installed in a machine to trust other certificates signed by it */
+const string hash_fn = "SHA-256";
+
+// If CA Key is present, it will be loaded rather than created
+const string ca_key_file = "ca.key";
+const string ca_cert_file = "ca.crt";
+
+// The CA Certificate can be installed in a machine to trust other certificates signed by it
 X509CertOptions caOpts()
 {
 	// Common Name/Country/Organization/OrgUnit
@@ -33,7 +39,13 @@ X509CertOptions caOpts()
     return opts;
 }
 
-/* The certificate request must be signed by a CA Certificate to inherit trust/authority and become a valid certificate */
+// User's signed certificate
+const string key_file = "private.pem";
+const string pub_file = "public.pem";
+const string cert_file = "cert.crt";
+const size_t signed_cert_expiration_years = 5; // years
+
+// The certificate request must be signed by a CA Certificate to inherit trust/authority and become a valid certificate
 X509CertOptions reqOpts()
 {
     X509CertOptions opts = X509CertOptions("GlobecSys.com/CA/GlobecSys Inc/Web Development");
@@ -56,13 +68,6 @@ X509Time yearsLater(size_t in_years)
 
 void main() {
 	Unique!AutoSeededRNG rng = new AutoSeededRNG;
-	
-    const string hash_fn = "SHA-256";
-    const string ca_key_file = "ca.key";
-	const string ca_cert_file = "ca.crt";	
-	const string key_file = "private.pem";
-	const string pub_file = "public.pem";
-	const string cert_file = "cert.crt";
 	
 	string ca_key_pass_verif = "";
 	string ca_key_pass = "";
@@ -91,7 +96,7 @@ void main() {
 		key_pass_verif = stdin.readln();
 	} while (key_pass_verif != key_pass);
 	
-    /* Create the CA's key and self-signed cert */
+    // Create the CA's key and self-signed cert
     RSAPrivateKey ca_key;
 	X509Certificate ca_cert;
 	if (!std.file.exists(ca_key_file))
@@ -107,7 +112,7 @@ void main() {
 		ca_key = RSAPrivateKey(loadKey(ca_key_file, *rng, ca_key_pass));
 		ca_cert = X509Certificate(ca_cert_file);
 	}
-    /* Create user's key and cert request */
+    // Create user's key and cert request
 	ECGroup ecc_domain = ECGroup(OID("1.2.840.10045.3.1.7"));
 	auto user_key = ECDSAPrivateKey(*rng, ecc_domain);
 	
@@ -119,11 +124,11 @@ void main() {
 	
     PKCS10Request sign_req = x509self.createCertReq(reqOpts(), *user_key, hash_fn, *rng);
     
-    /* Create the CA object */
+    // Create the CA object
     X509CA ca = X509CA(ca_cert, *ca_key, hash_fn);
     
-    /* Sign the requests with the CA object to create the cert */
-    X509Certificate user_cert = ca.signRequest(sign_req, *rng, X509Time(Clock.currTime().to!Date().toISOExtString()), 5.yearsLater());
+    // Sign the requests with the CA object to create the cert
+    X509Certificate user_cert = ca.signRequest(sign_req, *rng, X509Time(Clock.currTime().to!Date().toISOExtString()), signed_cert_expiration_years.yearsLater());
    
 	std.file.write(cert_file, user_cert.PEM_encode());
 	
