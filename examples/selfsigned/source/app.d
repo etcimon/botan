@@ -85,6 +85,7 @@ void main() {
 			ca_key_pass_verif = stdin.readln();
 		} else ca_key_pass_verif = ca_key_pass;
 	} while (ca_key_pass_verif != ca_key_pass);
+	ca_key_pass = ca_key_pass[0 .. $-1]; // remove \n
 	
 	string key_pass_verif = "";
 	string key_pass = "";
@@ -95,7 +96,7 @@ void main() {
 		stdout.write("Verify: ");
 		key_pass_verif = stdin.readln();
 	} while (key_pass_verif != key_pass);
-	
+	key_pass = key_pass[0 .. $-1]; // remove \n
     // Create the CA's key and self-signed cert
     RSAPrivateKey ca_key;
 	X509Certificate ca_cert;
