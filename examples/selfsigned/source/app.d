@@ -16,8 +16,9 @@ import botan.pubkey.algo.ecdsa;
 import memutils.unique;
 import std.stdio;
 import std.file;
+import std.datetime;
 
-/* Return some option sets */
+/* The CA Certificate can be installed in a machine to trust other certificates signed by it */
 X509CertOptions caOpts()
 {
 	// Common Name/Country/Organization/OrgUnit
@@ -26,12 +27,13 @@ X509CertOptions caOpts()
     opts.uri = "http://globecsys.com";
     opts.dns = "globecsys.com";
     opts.email = "etcimon@globecsys.com";
-    
+    opts.end = 15.yearsLater();
     opts.CAKey(1);
     
     return opts;
 }
 
+/* The certificate request must be signed by a CA Certificate to inherit trust/authority and become a valid certificate */
 X509CertOptions reqOpts()
 {
     X509CertOptions opts = X509CertOptions("GlobecSys.com/CA/GlobecSys Inc/Web Development");
@@ -41,8 +43,15 @@ X509CertOptions reqOpts()
     opts.email = "etcimon@globecsys.com";
     
     opts.addExConstraint("PKIX.EmailProtection");
-    
+    opts.addExConstraint("PKIX.ServerAuth");
+    //opts.addExConstraint("PKIX.ClientAuth");
+    //opts.addExConstraint("PKIX.CodeSigning");
     return opts;
+}
+
+X509Time yearsLater(size_t in_years)
+{
+	return X509Time(Clock.currTime.to!Date().add!"years"(in_years, AllowDayOverflow.no).toISOExtString());
 }
 
 void main() {
@@ -58,11 +67,18 @@ void main() {
 	string ca_key_pass_verif = "";
 	string ca_key_pass = "";
 	do {
+		if (std.file.exists(ca_key_file)) {
+			assert(std.file.exists(ca_cert_file), "Found CA Private Key but could not find CA Cert file.");
+			writeln("Using saved CA Key/CA Cert");
+		}
 		stdout.writeln("Enter a password for the CA Private Key (default: '')");
 		stdout.write("Password: ");
 		ca_key_pass = stdin.readln();
-		stdout.write("Verify: ");
-		ca_key_pass_verif = stdin.readln();
+		if (!std.file.exists(ca_key_file))
+		{
+			stdout.write("Verify: ");
+			ca_key_pass_verif = stdin.readln();
+		} else ca_key_pass_verif = ca_key_pass;
 	} while (ca_key_pass_verif != ca_key_pass);
 	
 	string key_pass_verif = "";
@@ -76,18 +92,21 @@ void main() {
 	} while (key_pass_verif != key_pass);
 	
     /* Create the CA's key and self-signed cert */
-    auto ca_key = RSAPrivateKey(*rng, 2048);
-	
-	auto ca_key_enc = pkcs8.PEM_encode(cast(PrivateKey)*ca_key, *rng, ca_key_pass);
-	
-	std.file.write(ca_key_file, ca_key_enc);
-	
-    X509Certificate ca_cert = x509self.createSelfSignedCert(caOpts(), *ca_key, hash_fn, *rng);
-	
-	auto ca_cert_enc = ca_cert.PEM_encode();
-	
-	std.file.write(ca_cert_file, ca_cert_enc);
-	
+    RSAPrivateKey ca_key;
+	X509Certificate ca_cert;
+	if (!std.file.exists(ca_key_file))
+	{
+		ca_key = RSAPrivateKey(*rng, 2048);	
+		auto ca_key_enc = pkcs8.PEM_encode(cast(PrivateKey)*ca_key, *rng, ca_key_pass);		
+		std.file.write(ca_key_file, ca_key_enc);		
+		ca_cert = x509self.createSelfSignedCert(caOpts(), *ca_key, hash_fn, *rng);		
+		auto ca_cert_enc = ca_cert.PEM_encode();		
+		std.file.write(ca_cert_file, ca_cert_enc);
+	}
+	else {
+		ca_key = RSAPrivateKey(loadKey(ca_key_file, *rng, ca_key_pass));
+		ca_cert = X509Certificate(ca_cert_file);
+	}
     /* Create user's key and cert request */
 	ECGroup ecc_domain = ECGroup(OID("1.2.840.10045.3.1.7"));
 	auto user_key = ECDSAPrivateKey(*rng, ecc_domain);
@@ -104,7 +123,7 @@ void main() {
     X509CA ca = X509CA(ca_cert, *ca_key, hash_fn);
     
     /* Sign the requests with the CA object to create the cert */
-    X509Certificate user_cert = ca.signRequest(sign_req, *rng, X509Time("2015-08-01"), X509Time("2020-08-01"));
+    X509Certificate user_cert = ca.signRequest(sign_req, *rng, X509Time(Clock.currTime().to!Date().toISOExtString()), 5.yearsLater());
    
 	std.file.write(cert_file, user_cert.PEM_encode());
 	
