@@ -477,7 +477,7 @@ public:
     }
 
     /**
-    * Check two certificates for ineah jsais sadfadfasfaquality
+    * Check two certificates for quality
     * Returns: true if the arguments represent different certificates,
     * false if they are binary identical
     */

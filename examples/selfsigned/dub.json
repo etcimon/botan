@@ -1,0 +1,14 @@
+{
+    "name": "selfsigned",
+    "description": "A Botan test for creating a self-signed certificate",
+    "license": "MIT",
+    "authors": ["Etienne Cimon", "See CREDITS.md for more."],
+    "targetName": "botan",
+    "targetType": "executable",
+    "targetPath": "build",
+    "workingDirectory": "build",
+    "dependencies": {
+            "botan": { "path": "../../" } 
+    }, 
+    "versions": ["DisableDebugger"]
+}

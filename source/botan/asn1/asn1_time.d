@@ -19,10 +19,11 @@ import botan.asn1.ber_dec;
 import botan.utils.charset;
 import botan.utils.parsing;
 import botan.utils.types;
+import memutils.refcounted;
 import std.conv : to;
 import std.array : Appender;
 
-alias X509Time = RefCounted!X509TimeImpl;
+public alias X509Time = RefCounted!X509TimeImpl;
 
 /**
 * X.509 Time
