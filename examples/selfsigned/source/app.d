@@ -48,13 +48,13 @@ const size_t signed_cert_expiration_years = 5; // years
 // The certificate request must be signed by a CA Certificate to inherit trust/authority and become a valid certificate
 X509CertOptions reqOpts()
 {
-    X509CertOptions opts = X509CertOptions("GlobecSys.com/CA/GlobecSys Inc/Web Development");
+    X509CertOptions opts = X509CertOptions("GlobecSys.com/CA/GlobecSys Inc/PostgreSQL DB Mgmt");
     
     opts.uri = "http://globecsys.com";
-    opts.dns = "globecsys.com";
+    opts.dns = "localhost";
     opts.email = "etcimon@globecsys.com";
     
-    opts.addExConstraint("PKIX.EmailProtection");
+    //opts.addExConstraint("PKIX.EmailProtection");
     opts.addExConstraint("PKIX.ServerAuth");
     //opts.addExConstraint("PKIX.ClientAuth");
     //opts.addExConstraint("PKIX.CodeSigning");

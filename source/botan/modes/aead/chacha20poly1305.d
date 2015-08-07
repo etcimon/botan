@@ -9,6 +9,9 @@
 * Botan is released under the Simplified BSD License (see LICENSE.md)
 */
 module botan.modes.aead.chacha20poly1305;
+
+import botan.constants;
+static if (BOTAN_HAS_AEAD_CHACHA20_POLY1305):
 import botan.modes.aead.aead;
 import botan.stream.stream_cipher;
 import botan.mac.mac;

@@ -32,8 +32,8 @@ import std.conv : to;
 * @see http://www.usenix.org/events/usenix99/provos/provos_html/
 */
 string generateBcrypt(in string password,
-                       RandomNumberGenerator rng,
-                       ushort work_factor = 10)
+                      RandomNumberGenerator rng,
+                      ushort work_factor = 10)
 {
     return makeBcrypt(password, unlock(rng.randomVec(16)), work_factor);
 }
@@ -55,9 +55,23 @@ bool checkBcrypt(in string password, in string hash)
     const ushort workfactor = cast(ushort) to!uint(hash[4 .. 6]);
 
     Vector!ubyte salt = bcryptBase64Decode(hash[7 .. 29].dup);
-
     const string compare = makeBcrypt(password, salt, workfactor);
-    return (hash == compare);
+	// constant time memory comparisons on hashes, inefficient but necessary for timing attacks
+	bool valid = true;
+	if (compare.length != hash.length)
+		valid = false;
+	else {
+		foreach (i, immutable(char) c; hash) {
+			foreach (j, immutable(char) c2; compare) {
+				if (i != j) continue;
+				if (c != c2) {
+					valid = false;
+				}
+				break;
+			}
+		}
+	}
+    return valid;
 }
 
 

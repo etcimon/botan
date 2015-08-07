@@ -1,0 +1,15 @@
+{
+    "name": "bcrypt",
+    "description": "A Botan test for password hashing using bcrypt",
+    "license": "MIT",
+    "authors": ["Etienne Cimon", "See CREDITS.md for more."],
+    "targetName": "botan",
+    "targetType": "executable",
+    "targetPath": "build",
+    "workingDirectory": "build",
+    "dependencies": {
+            "botan": { "version": "~master", "path": "../../" } 
+    }, 
+    "subConfigurations": { "botan": "hash" },
+    "versions": ["DisableDebugger", "BCrypt", "Blowfish"]
+}
