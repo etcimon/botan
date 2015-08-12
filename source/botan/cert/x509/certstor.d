@@ -39,7 +39,9 @@ public:
 
     final bool certificateKnown(in X509Certificate cert) const
     {
-        return findCert(cert.subjectDn(), cert.subjectKeyId()) != X509Certificate.init;
+		auto cert_ = findCert(cert.subjectDn(), cert.subjectKeyId());
+		if (!*cert_) return false;
+        return cert_ != X509Certificate.init;
     }
 
     // remove this (used by TLSServer)
