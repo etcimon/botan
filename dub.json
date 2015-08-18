@@ -86,6 +86,7 @@
     "dependencies": {
             "memutils": { "version": "~>0.4.1" } 
     }, 
+	"buildOptions": ["inline"],
     "libs-posix": ["dl"],
     "libs-windows": ["advapi32", "user32"],
     "versions": ["Have_botan", "Botan"],

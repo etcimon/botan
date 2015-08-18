@@ -118,6 +118,7 @@ enum {
 }
 alias BOOL = int;
 alias LPCSTR = const(char)*;
+alias LPCWSTR = const(wchar)*;
 enum {
     CRYPT_VERIFYCONTEXT = 0xF0000000,
 }

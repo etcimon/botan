@@ -21,6 +21,8 @@ import botan.utils.loadstor;
 import botan.utils.mem_ops;
 import std.datetime;
 
+/// The higher the safer, but will takes longer to load
+size_t g_passphraseIterations = 128*1024;
 
 /**
 * An implementation of TLSSessionManager that saves values in a SQLite3
@@ -107,7 +109,7 @@ public:
             // new database case
             
             Vector!ubyte salt = unlock(rng.randomVec(16));
-            const size_t iterations = 256 * 1024;
+			const size_t iterations = g_passphraseIterations;
             size_t check_val = 0;
             
             m_session_key = deriveKey(passphrase, salt.ptr, salt.length, iterations, check_val);
@@ -116,7 +118,7 @@ public:
                                                                 ~ " values(?1, ?2, ?3)");
             
             stmt.bind(1, salt);
-            stmt.bind(2, iterations);
+            stmt.bind(2, cast(int) iterations);
             stmt.bind(3, cast(int) check_val);
             
             stmt.spin();
