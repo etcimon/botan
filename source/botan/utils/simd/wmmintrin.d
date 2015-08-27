@@ -59,7 +59,7 @@ version(GDC) {
     }
 }
 
-version(LDC) {
+version(none) {
     // _mm_aesenc_si128
     __m128i _mm_aesenc_si128()(auto ref __m128i a, auto const ref __m128i b) {
         return cast(__m128i) __builtin_ia32_aesenc128(cast(long2) a, cast(long2) b);

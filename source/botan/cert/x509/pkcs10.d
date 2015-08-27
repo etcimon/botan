@@ -214,7 +214,8 @@ protected:
         
         cert_req_info.verifyEnd();
         
-        if (!this.checkSignature(subjectPublicKey()))
+		Unique!PublicKey pubkey = subjectPublicKey();
+        if (!this.checkSignature(*pubkey))
             throw new DecodingError("PKCS #10 request: Bad signature detected");
     }
 

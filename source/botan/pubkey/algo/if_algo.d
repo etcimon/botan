@@ -48,6 +48,7 @@ public:
         m_e = e.move(); 
     }
 
+
     final void decodeOptions(T)(in T options) {
         static if (__traits(hasMember, T, "checkKey"))
             m_check_key = &options.checkKey;

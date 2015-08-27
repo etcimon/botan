@@ -59,8 +59,8 @@ public:
         }
     }
 }
-
-version(D_InlineAsm_X86) {
+//version(DMD)
+version(D_InlineAsm_X86_64) {
 
     // todo: move this to another module
     int _rdrand32_step(uint* r) {
@@ -69,7 +69,7 @@ version(D_InlineAsm_X86) {
         asm
         {
             mov EAX, ret;
-            rdrand EAX;
+            db 0x0F, 0xC7, 0xF0; // rdrand EAX
             mov ret, EAX;
         }
         if (ret != 0)
@@ -92,28 +92,7 @@ version(GDC) {
 
 }
 
-version(LDC) {
+version(none) {
     pragma(LDC_intrinsic, "llvm.x86.rdrand.32")
-        int _rdrand32_step(uint*);
-}
-
-version(D_InlineAsm_X86_64) {
-    
-    // todo: move this to another module
-    int _rdrand32_step(uint* r) {
-        int ret;
-        
-        asm
-        {
-            mov EAX, ret;
-            rdrand EAX;
-            mov ret, EAX;
-        }
-        if (ret != 0)
-            *r = ret;
-        else
-            return 0;
-        return 1;
-    }
-    
+        int _rdrand32_step(int*);
 }

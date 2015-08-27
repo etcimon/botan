@@ -100,7 +100,7 @@ version(GDC) {
 
 }
 
-version(LDC) {
+version(none) {
     // LDC <--> immintrin ==> clang/test/CodeGen/avx2-builtins.c, rdrand-builtins.c
 
     pragma(LDC_inline_ir)

@@ -256,7 +256,7 @@ version(GNU)
     }
 }
 
-version(LDC) {
+version(none) {
     private void rawCpuid(uint ain, uint cin, ref uint a, ref uint b, ref uint c, ref uint d)
     {
         version(PreserveEBX)
@@ -299,7 +299,7 @@ shared static this() {
         {
             rawCpuid(0, 0, a, venptr[0], venptr[2], venptr[1]);     
         }
-        else version(LDC) rawCpuid(0, 0, a, venptr[0], venptr[2], venptr[1]);
+        else version(none) rawCpuid(0, 0, a, venptr[0], venptr[2], venptr[1]);
         else {
             version(D_InlineAsm_X86)
             {
@@ -332,7 +332,7 @@ shared static this() {
         {
             rawCpuid(0x8000_0000, 0, a2, unused, unused, unused);
         }
-        else version(LDC) rawCpuid(0x8000_0000, 0, a2, unused, unused, unused);
+        else version(none) rawCpuid(0x8000_0000, 0, a2, unused, unused, unused);
         else {
             asm pure nothrow {
                 mov EAX, 0x8000_0000;
@@ -353,7 +353,7 @@ shared static this() {
         version(GNU)
         {
             rawCpuid(1, 0, a, apic, c, d);
-        } else version(LDC) rawCpuid(1, 0, a, apic, c, d);
+        } else version(none) rawCpuid(1, 0, a, apic, c, d);
         else
         {
             asm pure nothrow {
@@ -378,7 +378,7 @@ shared static this() {
         uint ext, reserved;
 
         version(GNU) rawCpuid(7, 0, unused, ext, reserved, unused);
-        else version (LDC) rawCpuid(7, 0, unused, ext, reserved, unused);
+        else version(none) rawCpuid(7, 0, unused, ext, reserved, unused);
         else
         {
             asm
@@ -424,7 +424,7 @@ shared static this() {
         version(GNU)
         {
             rawCpuid(0x8000_0001, 0, unused, unused, c, d);
-        } else version(LDC) rawCpuid(0x8000_0001, 0, unused, unused, c, d);
+        } else version(none) rawCpuid(0x8000_0001, 0, unused, unused, c, d);
         else
         {
             asm pure nothrow {
@@ -444,7 +444,7 @@ shared static this() {
         {
             rawCpuid(0x8000_0005, 0, unused, unused, c, unused);
         }
-        else version(LDC) rawCpuid(0x8000_0005, 0, unused, unused, c, unused);
+        else version(none) rawCpuid(0x8000_0005, 0, unused, unused, c, unused);
         else
         {
             asm pure nothrow {

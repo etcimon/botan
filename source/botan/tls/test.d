@@ -122,19 +122,22 @@ public:
     Vector!CertificateStore m_stores;
 }
 
-TLSCredentialsManager createCreds(RandomNumberGenerator rng)
+TLSCredentialsManagerTest createCreds(RandomNumberGenerator rng)
 {
+
+	import std.stdio : writeln;
+	writeln("ca_key");
     auto ca_key = RSAPrivateKey(rng, 1024);
-    
+    writeln("ca_key: ", cast(IFSchemePublicKey)*ca_key);
     X509CertOptions ca_opts;
     ca_opts.common_name = "Test CA";
     ca_opts.country = "US";
     ca_opts.CAKey(1);
     
     X509Certificate ca_cert = x509self.createSelfSignedCert(ca_opts, *ca_key, "SHA-256", rng);
-    
+    writeln("Server_key");
     auto server_key = RSAPrivateKey(rng, 1024).release();
-    
+    writeln("Server_key: ", cast(IFSchemePublicKey)server_key);
     X509CertOptions server_opts;
     server_opts.common_name = "localhost";
     server_opts.country = "US";
@@ -154,11 +157,11 @@ TLSCredentialsManager createCreds(RandomNumberGenerator rng)
 
 size_t basicTestHandshake(RandomNumberGenerator rng,
                             TLSProtocolVersion offer_version,
-                            TLSCredentialsManager creds,
+                            TLSCredentialsManagerTest creds,
                             TLSPolicy policy)
 {
-    auto server_sessions = new TLSSessionManagerInMemory(rng);
-    auto client_sessions = new TLSSessionManagerInMemory(rng);
+    Unique!TLSSessionManagerInMemory server_sessions = new TLSSessionManagerInMemory(rng);
+    Unique!TLSSessionManagerInMemory client_sessions = new TLSSessionManagerInMemory(rng);
     
     Vector!ubyte c2s_q, s2c_q, c2s_data, s2c_data;
     
@@ -196,25 +199,25 @@ size_t basicTestHandshake(RandomNumberGenerator rng,
                                 save_server_data,
                                 print_alert,
                                 handshake_complete,
-                                server_sessions,
+                                *server_sessions,
                                 creds,
                                 policy,
                                 rng,
                                 next_protocol_chooser);
     
 
-    Unique!TLSClient client = new TLSClient((in ubyte[] buf) { c2s_q ~= cast(ubyte[]) buf; },
+    TLSClient client = new TLSClient((in ubyte[] buf) { c2s_q ~= cast(ubyte[]) buf; },
                                 save_client_data,
                                 print_alert,
                                 handshake_complete,
-                                client_sessions,
+                                *client_sessions,
                                 creds,
                                 policy,
                                 rng,
                                 TLSServerInformation(),
                                 offer_version,
                                 protocols_offered.move);
-                            
+    scope(exit) client.destroy();                        
     while(true)
     {
         if (client.isActive())
@@ -301,7 +304,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
     
     Unique!TestPolicy default_policy = new TestPolicy;
 	Unique!AutoSeededRNG rng = new AutoSeededRNG;
-    Unique!TLSCredentialsManager basic_creds = createCreds(*rng);
+    Unique!TLSCredentialsManagerTest basic_creds = createCreds(*rng);
     
     errors += basicTestHandshake(*rng, TLSProtocolVersion(TLSProtocolVersion.SSL_V3), *basic_creds, *default_policy);
     errors += basicTestHandshake(*rng, TLSProtocolVersion(TLSProtocolVersion.TLS_V10), *basic_creds, *default_policy);

@@ -258,7 +258,7 @@ version(GDC) {
     }
 }
 
-version(LDC) {
+version(none) {
     import ldc.gccbuiltins_x86;
 
     pragma(LDC_intrinsic, "llvm.bswap.i64")
@@ -424,7 +424,7 @@ version(LDC) {
     }
     
     // _mm_xor_si128 ; PXOR
-    __m128i _mm_xor_si128 ( __m128i a, auto const ref __m128i b) {
+    __m128i _mm_xor_si128()( __m128i a, auto const ref __m128i b) {
         return cast(__m128i) __builtin_ia32_pxor128(cast(long2) a, cast(long2) b);
     }
     
@@ -441,7 +441,6 @@ version(LDC) {
     // bswap64
     
 }
-
 version(D_InlineAsm_X86_64) {
     // _mm_set1_epi16
     __m128i _mm_set1_epi16(short w) {

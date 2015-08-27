@@ -309,7 +309,7 @@ public:
             }
             
             PublicKey peer_key = (*server_certs)[0].subjectPublicKey();
-            
+            logDebug("Peer key: ", &peer_key);
             if (peer_key.algoName != state.ciphersuite().sigAlgo())
                 throw new TLSException(TLSAlert.ILLEGAL_PARAMETER, "Certificate key type did not match ciphersuite");
             

@@ -12,41 +12,41 @@ module botan.constants;
 version(FailureOMF) static assert(false, "\n\nCannot compile Botan with the OMF linker on windows.\nThe reason is that Botan uses too many symbols.\nUse --config=32mscoff to use COFF linker on x86, or --arch=x86_64 to use COFF linker on x86_64. \n\nThis might require the installation of Windows SDK, \nsee: http://wiki.dlang.org/Installing_DMD_on_64-bit_Windows_7_%28COFF-compatible%29\n\nIMPORTANT: In addition to this restriction, the COFF Linker will also fail for DMD <= 2.067.0, you will have to use DMD >=2.067.1 because it includes a new patch for COFF Big Tables\n\n");
 const LogLevel = Debug;
 
-const SKIP_TRANSFORM_TEST = false;
-const SKIP_X509_TEST = false;
-const SKIP_BLOCK_TEST = false;
+const SKIP_TRANSFORM_TEST = true;
+const SKIP_X509_TEST = true;
+const SKIP_BLOCK_TEST = true;
 const SKIP_CVC_TEST = true; // TODO: EAC11 ECDSA Key decoding
-const SKIP_CRYPTOBOX_TEST = false;
-const SKIP_RFC3394_TEST = false;
-const SKIP_TSS_TEST = false;
-const SKIP_HASH_TEST = false;
-const SKIP_KDF_TEST = false;
-const SKIP_COMPRESSION_TEST = false;
-const SKIP_MAC_TEST = false;
-const SKIP_BIGINT_TEST = false;
-const SKIP_EC_GFP_TEST = false;
-const SKIP_AEAD_TEST = false;
-const SKIP_OCB_TEST = false;
-const SKIP_CIPHER_MODE_TEST = false;
-const SKIP_BCRYPT_TEST = false;
-const SKIP_PASSHASH9_TEST = false;
-const SKIP_PBKDF_TEST = false;
-const SKIP_HKDF_TEST = false;
-const SKIP_CURVE22519_TEST = false;
-const SKIP_DH_TEST = false;
-const SKIP_DLIES_TEST = false;
-const SKIP_DSA_TEST = false;
-const SKIP_ECDH_TEST = false;
-const SKIP_ECDSA_TEST = false;
-const SKIP_ELGAMAL_TEST = false;
-const SKIP_GOST_TEST = false;
-const SKIP_NR_TEST = false;
-const SKIP_RFC6979_TEST = false;
-const SKIP_RSA_TEST = false;
-const SKIP_RW_TEST = false;
-const SKIP_X509_KEY_TEST = false;
-const SKIP_RNG_TEST = false;
-const SKIP_STREAM_CIPHER_TEST = false;
+const SKIP_CRYPTOBOX_TEST = true;
+const SKIP_RFC3394_TEST = true;
+const SKIP_TSS_TEST = true;
+const SKIP_HASH_TEST = true;
+const SKIP_KDF_TEST = true;
+const SKIP_COMPRESSION_TEST = true;
+const SKIP_MAC_TEST = true;
+const SKIP_BIGINT_TEST = true;
+const SKIP_EC_GFP_TEST = true;
+const SKIP_AEAD_TEST = true;
+const SKIP_OCB_TEST = true;
+const SKIP_CIPHER_MODE_TEST = true;
+const SKIP_BCRYPT_TEST = true;
+const SKIP_PASSHASH9_TEST = true;
+const SKIP_PBKDF_TEST = true;
+const SKIP_HKDF_TEST = true;
+const SKIP_CURVE22519_TEST = true;
+const SKIP_DH_TEST = true;
+const SKIP_DLIES_TEST = true;
+const SKIP_DSA_TEST = true;
+const SKIP_ECDH_TEST = true;
+const SKIP_ECDSA_TEST = true;
+const SKIP_ELGAMAL_TEST = true;
+const SKIP_GOST_TEST = true;
+const SKIP_NR_TEST = true;
+const SKIP_RFC6979_TEST = true;
+const SKIP_RSA_TEST = true;
+const SKIP_RW_TEST = true;
+const SKIP_X509_KEY_TEST = true;
+const SKIP_RNG_TEST = true;
+const SKIP_STREAM_CIPHER_TEST = true;
 const SKIP_TLS_TEST = false;
 
 version(CanTest)     {    const BOTAN_HAS_TESTS = true;                                                         }
@@ -85,8 +85,8 @@ else static if (BOTAN_HAS_ARM_ARCH)
     const BOTAN_MP_WORD_BITS = 32;
 // todo: else static if (BOTAN_HAS_PPC_ARCH)
 
-version(D_SIMD) const BOTAN_HAS_SIMD = true;
-else            const BOTAN_HAS_SIMD = false;
+/*version(D_SIMD)*/ const BOTAN_HAS_SIMD = true;
+//else            const BOTAN_HAS_SIMD = false;
 
 
 const BOTAN_KARAT_MUL_THRESHOLD = 32;
