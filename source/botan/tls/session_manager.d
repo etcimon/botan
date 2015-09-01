@@ -202,7 +202,7 @@ private:
         {
             session = TLSSession.decrypt(*val, m_session_key);
         }
-        catch (Throwable)
+        catch (Exception)
         {
             return false;
         }

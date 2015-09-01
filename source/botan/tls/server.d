@@ -210,7 +210,7 @@ protected:
             {
                 have_session_ticket_key = m_creds.psk("tls-server", "session-ticket", "").length > 0;
             }
-            catch (Throwable) {}
+            catch (Exception) {}
 
             m_application_protocol = "";
 
@@ -267,7 +267,7 @@ protected:
                                                                         session_info.encrypt(ticket_key, rng()),
                                                                         m_policy.sessionTicketLifetime()));
                     }
-                    catch (Throwable) {}
+                    catch (Exception) {}
                     
                     if (!state.newSessionTicket())
                     {
@@ -491,7 +491,7 @@ protected:
                                                      m_policy.sessionTicketLifetime())
                                 );
                         }
-                        catch (Throwable) {}
+                        catch (Exception) {}
                     }
                     else
                         sessionManager().save(session_info);
@@ -571,7 +571,7 @@ bool checkForResume(ref TLSSession session_info,
                 session_info.sessionAge() > session_ticket_lifetime)
                 return false; // ticket has expired
         }
-        catch (Throwable)
+        catch (Exception)
         {
             return false;
         }

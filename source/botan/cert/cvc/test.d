@@ -140,7 +140,7 @@ void testEncGenSelfsigned(RandomNumberGenerator rng)
     {
         ASN1Ced("1999 01 01");
     }
-    catch (Throwable)
+    catch (Exception)
     {
         ill_date_exc = true;
     }
@@ -151,7 +151,7 @@ void testEncGenSelfsigned(RandomNumberGenerator rng)
     {
         ASN1Ced("2100 01 01");
     }
-    catch (Throwable)
+    catch (Exception)
     {
         ill_date_exc2 = true;
     }

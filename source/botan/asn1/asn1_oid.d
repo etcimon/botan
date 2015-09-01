@@ -239,7 +239,7 @@ public:
         {
             m_id = parseAsn1Oid(oid_str);
         }
-        catch (Throwable e)
+        catch (Exception e)
         {
 
             logError("parseAsn1Oid failure with '" ~ oid_str ~ "': " ~ e.toString());

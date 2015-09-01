@@ -63,7 +63,7 @@ public:
             if (m_issuer_key_hash != unlock(hash.process(extractKeyBitstr(issuer))))
                 return false;
         }
-        catch (Throwable)
+        catch (Exception)
         {
             return false;
         }

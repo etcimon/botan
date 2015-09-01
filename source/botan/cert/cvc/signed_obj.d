@@ -98,7 +98,7 @@ public:
             PKVerifier verifier = PKVerifier(pub_key, padding, format);
             return verifier.verifyMessage(to_sign, sig);
         }
-        catch (Throwable)
+        catch (Exception)
         {
             return false;
         }

@@ -798,7 +798,7 @@ size_t testCurveCpCtor()
         ECGroup dom_pars = ECGroup(OID("1.3.132.0.8"));
         CurveGFp curve = dom_pars.getCurve().dup;
     }
-    catch (Throwable)
+    catch (Exception)
     {
         return 1;
         

@@ -220,7 +220,7 @@ public:
 						BigInt _res = powermod_d1_p(*cast(BigInt*)i2);
 						synchronized(cast()mtx) ret.load( _res );
 					}
-				} catch (Throwable e) { logDebug("Error: ", e.toString()); }
+				} catch (Exception e) { logDebug("Error: ", e.toString()); }
 			}
 		}
 		

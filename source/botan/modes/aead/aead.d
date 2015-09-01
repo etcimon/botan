@@ -232,7 +232,7 @@ size_t aeadTest(string algo, string input, string expected, string nonce_hex, st
             logError(algo ~ " accepted message with modified message");
             ++fail;
         }
-        catch (Throwable) {}
+        catch (Exception) {}
         
         if (nonce.length)
         {

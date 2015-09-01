@@ -35,7 +35,7 @@ void zap(T, Alloc)(ref Vector!(T, Alloc) vec)
     import std.traits : hasIndirections;
     static if (!hasIndirections!T && !is(Alloc == SecureMem))
         zeroise(vec);
-    vec.clear();
+    vec.destroy();
 }
 
 size_t bufferInsert(T, Alloc)(ref Vector!(T, Alloc) buf, size_t buf_offset, in T* input, size_t input_length)

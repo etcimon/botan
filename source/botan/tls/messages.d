@@ -737,7 +737,7 @@ public:
                     throw new DecodingError("ClientKeyExchange: Secret corrupted");
                 }
             }
-            catch (Throwable)
+            catch (Exception)
             {
                 m_pre_master = fake_pre_master;
             }

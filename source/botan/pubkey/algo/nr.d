@@ -264,7 +264,7 @@ public:
 						scope(exit) ThreadMem.free(powermod_y_p);
 						synchronized(cast()mtx) ret.load( powermod_y_p(*cast(BigInt*)c2) );
 					}
-				} catch (Throwable e) { logDebug("Error: ", e.toString()); }
+				} catch (Exception e) { logDebug("Error: ", e.toString()); }
 
 			}
 		}

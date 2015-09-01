@@ -145,7 +145,7 @@ public:
                 session = TLSSession.decrypt(blob.first, blob.second, m_session_key);
                 return true;
             }
-            catch (Throwable)
+            catch (Exception)
             {
             }
         }
@@ -171,7 +171,7 @@ public:
                 session = TLSSession.decrypt(blob.first, blob.second, m_session_key);
                 return true;
             }
-            catch (Throwable)
+            catch (Exception)
             {
             }
         }

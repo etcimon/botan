@@ -128,7 +128,7 @@ string srp6GroupIdentifier(const ref BigInt N, const ref BigInt g)
         
         throw new Exception("Unknown SRP params");
     }
-    catch (Throwable)
+    catch (Exception)
     {
         throw new InvalidArgument("Bad SRP group parameters");
     }

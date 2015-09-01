@@ -34,7 +34,7 @@ public:
             
             globalState().initialize();
         }
-        catch (Throwable)
+        catch (Exception)
         {
             deinitialize();
             throw new Exception("Library innullitialization failed");

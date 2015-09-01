@@ -257,7 +257,7 @@ public:
             sendFatalAlert(TLSAlert.DECODE_ERROR);
             throw e;
         }
-        catch(Throwable e)
+        catch(Exception e)
         {
             sendFatalAlert(TLSAlert.INTERNAL_ERROR);
             throw e;
@@ -320,7 +320,7 @@ public:
                 auto rec = alert.serialize();
                 sendRecord(ALERT, rec);
             }
-            catch (Throwable) { /* swallow it */ }
+            catch (Exception) { /* swallow it */ }
         }
         
         if (alert.type() == TLSAlert.NO_RENEGOTIATION)

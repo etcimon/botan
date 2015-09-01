@@ -73,7 +73,7 @@ public:
             return (coded == emsa3Encoding(raw, key_bits,
                                             m_hash_id.ptr, m_hash_id.length));
         }
-        catch (Throwable)
+        catch (Exception)
         {
             return false;
         }
@@ -116,7 +116,7 @@ public:
         {
             return (coded == emsa3Encoding(raw, key_bits, null, 0));
         }
-        catch (Throwable)
+        catch (Exception)
         {
             return false;
         }

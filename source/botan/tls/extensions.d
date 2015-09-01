@@ -651,7 +651,7 @@ public:
                 buf.pushBack(hash_code);
                 buf.pushBack(sig_code);
             }
-            catch (Throwable)
+            catch (Exception)
             {}
         }
         

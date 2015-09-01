@@ -73,7 +73,7 @@ public:
             return (coded == emsa2Encoding(raw, key_bits,
                                             m_empty_hash, m_hash_id));
         }
-        catch (Throwable)
+        catch (Exception)
         {
             return false;
         }

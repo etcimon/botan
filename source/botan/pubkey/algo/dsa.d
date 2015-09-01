@@ -198,7 +198,7 @@ public:
 							synchronized(cast()mtx) ret.load(_res);
 						}
 					}
-					catch (Throwable e) { logDebug("Error: ", e.toString()); }
+					catch (Exception e) { logDebug("Error: ", e.toString()); }
 				}
 			}
 			
@@ -304,7 +304,7 @@ public:
 						BigInt _res = powermod_g_p(mult);
 						synchronized(cast()mtx) ret.load(_res);
 					}
-				} catch (Throwable e) {
+				} catch (Exception e) {
 					logDebug("Got error: ", e.toString);
 				}
 			}
