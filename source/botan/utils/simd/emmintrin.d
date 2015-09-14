@@ -258,7 +258,7 @@ version(GDC) {
     }
 }
 
-version(LDC) {
+version(none) {
     import ldc.gccbuiltins_x86;
 
     pragma(LDC_intrinsic, "llvm.bswap.i64")

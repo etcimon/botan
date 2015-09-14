@@ -415,7 +415,13 @@ static if (BOTAN_HAS_GCM_CLMUL)
     void gcmMultiplyClmul(ref ubyte[16] x, in ubyte[16] H) 
 {
     __gshared immutable(__m128i) BSWAP_MASK = _mm_set1_epi8!([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])();
-    version(D_InlineAsm_X86_64) {
+	version(D_InlineAsm_X86_64) {
+		version(DMD) {
+			enum USE_ASM = true;
+		} else enum USE_ASM = false;
+	} else enum USE_ASM = false;
+
+    static if (USE_ASM) {
         __m128i* a = cast(__m128i*) x.ptr;
         __m128i* b = cast(__m128i*) H.ptr;
         __m128i* c = cast(__m128i*) &BSWAP_MASK;

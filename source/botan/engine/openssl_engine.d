@@ -119,9 +119,9 @@ public:
             Using OpenSSL's AES causes crashes inside EVP on x86-64 with OpenSSL 0.9.8g
             cause is unknown
             */
-            mixin(HANDLE_EVP_CIPHER!("AES-128", EVP_aes_128_ecb)());
-            mixin(HANDLE_EVP_CIPHER!("AES-192", EVP_aes_192_ecb)());
-            mixin(HANDLE_EVP_CIPHER!("AES-256", EVP_aes_256_ecb)());
+            //mixin(HANDLE_EVP_CIPHER!("AES-128", EVP_aes_128_ecb)());
+            //mixin(HANDLE_EVP_CIPHER!("AES-192", EVP_aes_192_ecb)());
+            //mixin(HANDLE_EVP_CIPHER!("AES-256", EVP_aes_256_ecb)());
         }
 
         static if (!BOTAN_HAS_OPENSSL_NO_DES) {
