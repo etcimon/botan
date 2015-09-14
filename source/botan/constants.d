@@ -13,35 +13,35 @@ version(FailureOMF) static assert(false, "\n\nCannot compile Botan with the OMF 
 const LogLevel = Debug;
 
 const SKIP_TRANSFORM_TEST = false;
-const SKIP_X509_TEST = false;
-const SKIP_BLOCK_TEST = false;
+const SKIP_X509_TEST = true;
+const SKIP_BLOCK_TEST = true;
 const SKIP_CVC_TEST = true; // TODO: EAC11 ECDSA Key decoding
-const SKIP_CRYPTOBOX_TEST = false;
-const SKIP_RFC3394_TEST = false;
-const SKIP_TSS_TEST = false;
-const SKIP_HASH_TEST = false;
-const SKIP_KDF_TEST = false;
-const SKIP_COMPRESSION_TEST = false;
-const SKIP_MAC_TEST = false;
-const SKIP_BIGINT_TEST = false;
-const SKIP_EC_GFP_TEST = false;
-const SKIP_AEAD_TEST = false;
-const SKIP_OCB_TEST = false;
-const SKIP_CIPHER_MODE_TEST = false;
-const SKIP_BCRYPT_TEST = false;
-const SKIP_PASSHASH9_TEST = false;
-const SKIP_PBKDF_TEST = false;
-const SKIP_HKDF_TEST = false;
-const SKIP_CURVE25519_TEST = false;
-const SKIP_DH_TEST = false;
-const SKIP_DLIES_TEST = false;
-const SKIP_DSA_TEST = false;
-const SKIP_ECDH_TEST = false;
-const SKIP_ECDSA_TEST = false;
-const SKIP_ELGAMAL_TEST = false;
-const SKIP_GOST_TEST = false;
-const SKIP_NR_TEST = false;
-const SKIP_RFC6979_TEST = false;
+const SKIP_CRYPTOBOX_TEST = true;
+const SKIP_RFC3394_TEST = true;
+const SKIP_TSS_TEST = true;
+const SKIP_HASH_TEST = true;
+const SKIP_KDF_TEST = true;
+const SKIP_COMPRESSION_TEST = true;
+const SKIP_MAC_TEST = true;
+const SKIP_BIGINT_TEST = true;
+const SKIP_EC_GFP_TEST = true;
+const SKIP_AEAD_TEST = true;
+const SKIP_OCB_TEST = true;
+const SKIP_CIPHER_MODE_TEST = true;
+const SKIP_BCRYPT_TEST = true;
+const SKIP_PASSHASH9_TEST = true;
+const SKIP_PBKDF_TEST = true;
+const SKIP_HKDF_TEST = true;
+const SKIP_CURVE25519_TEST = true;
+const SKIP_DH_TEST = true;
+const SKIP_DLIES_TEST = true;
+const SKIP_DSA_TEST = true;
+const SKIP_ECDH_TEST = true;
+const SKIP_ECDSA_TEST = true;
+const SKIP_ELGAMAL_TEST = true;
+const SKIP_GOST_TEST = true;
+const SKIP_NR_TEST = true;
+const SKIP_RFC6979_TEST = true;
 const SKIP_RSA_TEST = false;
 const SKIP_RW_TEST = false;
 const SKIP_X509_KEY_TEST = false;
@@ -56,7 +56,7 @@ else                      const BOTAN_HAS_TESTS = false;
 // This indicates the corresponding Botan (C++) version numbers
 const BOTAN_VERSION_MAJOR = 1;
 const BOTAN_VERSION_MINOR = 12;
-const BOTAN_VERSION_PATCH = 0;
+const BOTAN_VERSION_PATCH = 1;
 const BOTAN_VERSION_DATESTAMP = 20150702;
 const BOTAN_VERSION_RELEASE_TYPE = "unreleased";
 const BOTAN_VERSION_VC_REVISION = "git:6661c489929afc6c83c3038518dc37fd58938f3a";
@@ -85,9 +85,9 @@ else static if (BOTAN_HAS_ARM_ARCH)
     const BOTAN_MP_WORD_BITS = 32;
 // todo: else static if (BOTAN_HAS_PPC_ARCH)
 
-version(D_SIMD) const BOTAN_HAS_SIMD = true;
+/*version(D_SIMD) const BOTAN_HAS_SIMD = true;
 else            const BOTAN_HAS_SIMD = false;
-
+*/
 
 const BOTAN_KARAT_MUL_THRESHOLD = 32;
 const BOTAN_KARAT_SQR_THRESHOLD = 32;

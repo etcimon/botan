@@ -229,7 +229,9 @@ static if (BOTAN_HAS_TESTS && !SKIP_TRANSFORM_TEST) unittest
 {
     logDebug("Testing transform.d ...");
     File vec = File("../test_data/transform.vec", "r");
-    
+	import std.datetime : seconds;
+	import core.thread : Thread;
+	Thread.sleep(5.seconds);
     size_t fails = runTests(vec, "Transform", "Output", true,
          (ref HashMap!(string, string) m) {
             atomicOp!"+="(total_tests, 1);

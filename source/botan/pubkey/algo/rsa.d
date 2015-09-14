@@ -35,14 +35,11 @@ struct RSAOptions {
     */
     static bool checkKey(in IFSchemePrivateKey privkey, RandomNumberGenerator rng, bool strong)
     {
-        //logTrace("checkKey");
-
         if (!privkey.checkKeyImpl(rng, strong))
             return false;
 
         if (!strong)
             return true;
-        
         if ((privkey.getE() * privkey.getD()) % lcm(privkey.getP() - 1, privkey.getQ() - 1) != 1)
             return false;
         

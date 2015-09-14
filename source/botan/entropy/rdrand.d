@@ -92,7 +92,7 @@ version(GDC) {
 
 }
 
-version(LDC) {
+version(none) {
     pragma(LDC_intrinsic, "llvm.x86.rdrand.32")
         int _rdrand32_step(uint*);
 }
@@ -102,11 +102,11 @@ version(D_InlineAsm_X86_64) {
     // todo: move this to another module
     int _rdrand32_step(uint* r) {
         int ret;
-        
+        //(for LDC) rdrand EAX => db 0x0F, 0xC7, 0xF0
         asm
         {
             mov EAX, ret;
-            rdrand EAX;
+            db 0x0F, 0xC7, 0xF0;
             mov ret, EAX;
         }
         if (ret != 0)

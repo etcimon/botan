@@ -27,7 +27,7 @@ version(GDC) {
     }
 }
 
-version(LDC) {    
+version(none) {    
     // _mm_shuffle_epi8
     __m128i _mm_shuffle_epi8()(auto ref __m128i a, auto const ref __m128i b) {
         return cast(__m128i) __builtin_ia32_pshufb128(a, b);

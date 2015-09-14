@@ -13,6 +13,8 @@ module botan.pubkey.algo.curve25519;
 import botan.constants;
 
 static if (BOTAN_HAS_CURVE25519):
+import botan.asn1.der_enc;
+import botan.asn1.ber_dec;
 import botan.pubkey.pk_keys;
 import botan.rng.rng;
 import botan.pubkey.pk_ops;
