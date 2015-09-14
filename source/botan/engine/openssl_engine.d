@@ -362,10 +362,10 @@ public:
     /*
     * OSSL_BN Destructor
     */
-    ~this()
+    ~this() const
     {
 		if (m_bn)
-	        BN_clear_free(m_bn);
+	        BN_clear_free((cast()this).m_bn);
     }
         
     BIGNUM* ptr() const { return (cast()this).m_bn; }
