@@ -114,7 +114,7 @@ else {
     version(GNU) {
         enum START_ASM = "asm pure nothrow {";
     }
-    version(LDC) {
+    version(none) {
         enum START_ASM = "__asm pure nothrow {";
     }
     enum END_ASM = "::}";
