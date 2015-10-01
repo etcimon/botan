@@ -45,7 +45,7 @@ public:
         m_version = m_handshake_io.initialRecordVersion();
     }
 
-    ~this() {}
+	~this() { m_handshake_io.drop(); }
 
     HandshakeIO handshakeIo() { return *m_handshake_io; }
 
@@ -392,6 +392,7 @@ public:
         if (m_msg_callback)
             m_msg_callback(msg);
     }
+
 
 private:
 

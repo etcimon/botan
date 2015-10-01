@@ -1649,7 +1649,6 @@ public:
             appendTlsLengthValue(m_params, BigInt.encode(dh.getDomain().getG()), 2);
             appendTlsLengthValue(m_params, dh.publicValue(), 2);
             m_kex_key = dh.release();
-			m_kex_verif = *m_kex_key;
         }
         else if (kex_algo == "ECDH" || kex_algo == "ECDHE_PSK")
         {
@@ -1682,7 +1681,6 @@ public:
             appendTlsLengthValue(m_params, ecdh.publicValue(), 1);
             
             m_kex_key = ecdh.release();
-			m_kex_verif = *m_kex_key;
         }
         else if (kex_algo == "SRP_SHA")
         {
@@ -1760,14 +1758,10 @@ protected:
 
 	~this() {
 		// workaround for unknown segfault during GC collection
-		if (*m_kex_key !is m_kex_verif)
-			m_kex_key.drop();
+		m_kex_key.drop();
 	}
 private:
-	PrivateKey m_kex_verif;
-	long space;
     Unique!PrivateKey m_kex_key;
-	long space_;
 	static if (BOTAN_HAS_SRP6)
 	    Unique!SRP6ServerSession m_srp_params;
 
