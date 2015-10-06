@@ -208,22 +208,21 @@ private:
     */
     CertificateExtension getExtension(in OID oid)
     {
-        string X509_EXTENSION(string NAME, string TYPE)() {
-            return `if (OIDS.nameOf(oid, "` ~ NAME ~ `")) return new ` ~ TYPE ~ `();`;
-        }
+        enum string X509_EXTENSION(string NAME, string TYPE) =
+            `if (OIDS.nameOf(oid, "` ~ NAME ~ `")) return new ` ~ TYPE ~ `();`;
         
-        mixin( X509_EXTENSION!("X509v3.KeyUsage", "KeyUsage")() );
-        mixin( X509_EXTENSION!("X509v3.BasicConstraints", "BasicConstraints")() );
-        mixin( X509_EXTENSION!("X509v3.SubjectKeyIdentifier", "SubjectKeyID")() );
-        mixin( X509_EXTENSION!("X509v3.AuthorityKeyIdentifier", "AuthorityKeyID")() );
-        mixin( X509_EXTENSION!("X509v3.ExtendedKeyUsage", "ExtendedKeyUsage")() );
-        mixin( X509_EXTENSION!("X509v3.IssuerAlternativeName", "IssuerAlternativeName")() );
-        mixin( X509_EXTENSION!("X509v3.SubjectAlternativeName", "SubjectAlternativeName")() );
-        mixin( X509_EXTENSION!("X509v3.CertificatePolicies", "CertificatePolicies")() );
-        mixin( X509_EXTENSION!("X509v3.CRLDistributionPoints", "CRLDistributionPoints")() );
-        mixin( X509_EXTENSION!("PKIX.AuthorityInformationAccess", "AuthorityInformationAccess")() );
-        mixin( X509_EXTENSION!("X509v3.CRLNumber", "CRLNumber")() );
-        mixin( X509_EXTENSION!("X509v3.ReasonCode", "CRLReasonCode")() );
+        mixin( X509_EXTENSION!("X509v3.KeyUsage", "KeyUsage") );
+        mixin( X509_EXTENSION!("X509v3.BasicConstraints", "BasicConstraints") );
+        mixin( X509_EXTENSION!("X509v3.SubjectKeyIdentifier", "SubjectKeyID") );
+        mixin( X509_EXTENSION!("X509v3.AuthorityKeyIdentifier", "AuthorityKeyID") );
+        mixin( X509_EXTENSION!("X509v3.ExtendedKeyUsage", "ExtendedKeyUsage") );
+        mixin( X509_EXTENSION!("X509v3.IssuerAlternativeName", "IssuerAlternativeName") );
+        mixin( X509_EXTENSION!("X509v3.SubjectAlternativeName", "SubjectAlternativeName") );
+        mixin( X509_EXTENSION!("X509v3.CertificatePolicies", "CertificatePolicies") );
+        mixin( X509_EXTENSION!("X509v3.CRLDistributionPoints", "CRLDistributionPoints") );
+        mixin( X509_EXTENSION!("PKIX.AuthorityInformationAccess", "AuthorityInformationAccess") );
+        mixin( X509_EXTENSION!("X509v3.CRLNumber", "CRLNumber") );
+        mixin( X509_EXTENSION!("X509v3.ReasonCode", "CRLReasonCode") );
         
         return null;
     }
