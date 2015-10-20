@@ -16,6 +16,7 @@ import botan.block.block_cipher;
 import botan.utils.loadstor;
 import botan.utils.simd.wmmintrin;
 import botan.utils.mem_ops;
+import std.format : format;
 
 /**
 * AES-128 using AES-NI
@@ -59,16 +60,16 @@ public:
             B2 = _mm_xor_si128(B2, K0);
             B3 = _mm_xor_si128(B3, K0);
             
-            mixin(AES_ENC_4_ROUNDS!(K1)());
-            mixin(AES_ENC_4_ROUNDS!(K2)());
-            mixin(AES_ENC_4_ROUNDS!(K3)());
-            mixin(AES_ENC_4_ROUNDS!(K4)());
-            mixin(AES_ENC_4_ROUNDS!(K5)());
-            mixin(AES_ENC_4_ROUNDS!(K6)());
-            mixin(AES_ENC_4_ROUNDS!(K7)());
-            mixin(AES_ENC_4_ROUNDS!(K8)());
-            mixin(AES_ENC_4_ROUNDS!(K9)());
-            mixin(AES_ENC_4_LAST_ROUNDS!(K10)());
+            mixin(AES_ENC_4_ROUNDS!(K1));
+            mixin(AES_ENC_4_ROUNDS!(K2));
+            mixin(AES_ENC_4_ROUNDS!(K3));
+            mixin(AES_ENC_4_ROUNDS!(K4));
+            mixin(AES_ENC_4_ROUNDS!(K5));
+            mixin(AES_ENC_4_ROUNDS!(K6));
+            mixin(AES_ENC_4_ROUNDS!(K7));
+            mixin(AES_ENC_4_ROUNDS!(K8));
+            mixin(AES_ENC_4_ROUNDS!(K9));
+            mixin(AES_ENC_4_LAST_ROUNDS!(K10));
 
             _mm_storeu_si128(out_mm + 0, B0);
             _mm_storeu_si128(out_mm + 1, B1);
@@ -135,16 +136,16 @@ public:
             B2 = _mm_xor_si128(B2, K0);
             B3 = _mm_xor_si128(B3, K0);
             
-            mixin(AES_DEC_4_ROUNDS!(K1)());
-            mixin(AES_DEC_4_ROUNDS!(K2)());
-            mixin(AES_DEC_4_ROUNDS!(K3)());
-            mixin(AES_DEC_4_ROUNDS!(K4)());
-            mixin(AES_DEC_4_ROUNDS!(K5)());
-            mixin(AES_DEC_4_ROUNDS!(K6)());
-            mixin(AES_DEC_4_ROUNDS!(K7)());
-            mixin(AES_DEC_4_ROUNDS!(K8)());
-            mixin(AES_DEC_4_ROUNDS!(K9)());
-            mixin(AES_DEC_4_LAST_ROUNDS!(K10)());
+            mixin(AES_DEC_4_ROUNDS!(K1));
+            mixin(AES_DEC_4_ROUNDS!(K2));
+            mixin(AES_DEC_4_ROUNDS!(K3));
+            mixin(AES_DEC_4_ROUNDS!(K4));
+            mixin(AES_DEC_4_ROUNDS!(K5));
+            mixin(AES_DEC_4_ROUNDS!(K6));
+            mixin(AES_DEC_4_ROUNDS!(K7));
+            mixin(AES_DEC_4_ROUNDS!(K8));
+            mixin(AES_DEC_4_ROUNDS!(K9));
+            mixin(AES_DEC_4_LAST_ROUNDS!(K10));
             
             _mm_storeu_si128(out_mm + 0, B0);
             _mm_storeu_si128(out_mm + 1, B1);
@@ -201,16 +202,16 @@ protected:
         m_DK.resize(44);
         
         __m128i K0  = _mm_loadu_si128(cast(const(__m128i*))(key));
-        mixin(`__m128i K1  = ` ~ AES_128_key_exp!("K0", 0x01)());
-        mixin(`__m128i K2  = ` ~ AES_128_key_exp!("K1", 0x02)());
-        mixin(`__m128i K3  = ` ~  AES_128_key_exp!("K2", 0x04)());
-        mixin(`__m128i K4  = ` ~  AES_128_key_exp!("K3", 0x08)());
-        mixin(`__m128i K5  = ` ~  AES_128_key_exp!("K4", 0x10)());
-        mixin(`__m128i K6  = ` ~  AES_128_key_exp!("K5", 0x20)());
-        mixin(`__m128i K7  = ` ~  AES_128_key_exp!("K6", 0x40)());
-        mixin(`__m128i K8  = ` ~  AES_128_key_exp!("K7", 0x80)());
-        mixin(`__m128i K9  = ` ~  AES_128_key_exp!("K8", 0x1B)());
-        mixin(`__m128i K10 = ` ~  AES_128_key_exp!("K9", 0x36)());
+        mixin(`__m128i K1  = ` ~ AES_128_key_exp!("K0", 0x01));
+        mixin(`__m128i K2  = ` ~ AES_128_key_exp!("K1", 0x02));
+        mixin(`__m128i K3  = ` ~  AES_128_key_exp!("K2", 0x04));
+        mixin(`__m128i K4  = ` ~  AES_128_key_exp!("K3", 0x08));
+        mixin(`__m128i K5  = ` ~  AES_128_key_exp!("K4", 0x10));
+        mixin(`__m128i K6  = ` ~  AES_128_key_exp!("K5", 0x20));
+        mixin(`__m128i K7  = ` ~  AES_128_key_exp!("K6", 0x40));
+        mixin(`__m128i K8  = ` ~  AES_128_key_exp!("K7", 0x80));
+        mixin(`__m128i K9  = ` ~  AES_128_key_exp!("K8", 0x1B));
+        mixin(`__m128i K10 = ` ~  AES_128_key_exp!("K9", 0x36));
         __m128i* EK_mm = cast(__m128i*)(m_EK.ptr);
         _mm_storeu_si128(EK_mm      , K0);
         mixin( q{
@@ -289,18 +290,18 @@ public:
             B2 = _mm_xor_si128(B2, K0);
             B3 = _mm_xor_si128(B3, K0);
             
-            mixin(AES_ENC_4_ROUNDS!(K1)());
-            mixin(AES_ENC_4_ROUNDS!(K2)());
-            mixin(AES_ENC_4_ROUNDS!(K3)());
-            mixin(AES_ENC_4_ROUNDS!(K4)());
-            mixin(AES_ENC_4_ROUNDS!(K5)());
-            mixin(AES_ENC_4_ROUNDS!(K6)());
-            mixin(AES_ENC_4_ROUNDS!(K7)());
-            mixin(AES_ENC_4_ROUNDS!(K8)());
-            mixin(AES_ENC_4_ROUNDS!(K9)());
-            mixin(AES_ENC_4_ROUNDS!(K10)());
-            mixin(AES_ENC_4_ROUNDS!(K11)());
-            mixin(AES_ENC_4_LAST_ROUNDS!(K12)());
+            mixin(AES_ENC_4_ROUNDS!(K1));
+            mixin(AES_ENC_4_ROUNDS!(K2));
+            mixin(AES_ENC_4_ROUNDS!(K3));
+            mixin(AES_ENC_4_ROUNDS!(K4));
+            mixin(AES_ENC_4_ROUNDS!(K5));
+            mixin(AES_ENC_4_ROUNDS!(K6));
+            mixin(AES_ENC_4_ROUNDS!(K7));
+            mixin(AES_ENC_4_ROUNDS!(K8));
+            mixin(AES_ENC_4_ROUNDS!(K9));
+            mixin(AES_ENC_4_ROUNDS!(K10));
+            mixin(AES_ENC_4_ROUNDS!(K11));
+            mixin(AES_ENC_4_LAST_ROUNDS!(K12));
             
             _mm_storeu_si128(out_mm + 0, B0);
             _mm_storeu_si128(out_mm + 1, B1);
@@ -371,18 +372,18 @@ public:
             B2 = _mm_xor_si128(B2, K0);
             B3 = _mm_xor_si128(B3, K0);
             
-            mixin(AES_DEC_4_ROUNDS!(K1)());
-            mixin(AES_DEC_4_ROUNDS!(K2)());
-            mixin(AES_DEC_4_ROUNDS!(K3)());
-            mixin(AES_DEC_4_ROUNDS!(K4)());
-            mixin(AES_DEC_4_ROUNDS!(K5)());
-            mixin(AES_DEC_4_ROUNDS!(K6)());
-            mixin(AES_DEC_4_ROUNDS!(K7)());
-            mixin(AES_DEC_4_ROUNDS!(K8)());
-            mixin(AES_DEC_4_ROUNDS!(K9)());
-            mixin(AES_DEC_4_ROUNDS!(K10)());
-            mixin(AES_DEC_4_ROUNDS!(K11)());
-            mixin(AES_DEC_4_LAST_ROUNDS!(K12)());
+            mixin(AES_DEC_4_ROUNDS!(K1));
+            mixin(AES_DEC_4_ROUNDS!(K2));
+            mixin(AES_DEC_4_ROUNDS!(K3));
+            mixin(AES_DEC_4_ROUNDS!(K4));
+            mixin(AES_DEC_4_ROUNDS!(K5));
+            mixin(AES_DEC_4_ROUNDS!(K6));
+            mixin(AES_DEC_4_ROUNDS!(K7));
+            mixin(AES_DEC_4_ROUNDS!(K8));
+            mixin(AES_DEC_4_ROUNDS!(K9));
+            mixin(AES_DEC_4_ROUNDS!(K10));
+            mixin(AES_DEC_4_ROUNDS!(K11));
+            mixin(AES_DEC_4_LAST_ROUNDS!(K12));
             
             _mm_storeu_si128(out_mm + 0, B0);
             _mm_storeu_si128(out_mm + 1, B1);
@@ -446,14 +447,14 @@ protected:
         
         loadLittleEndian(m_EK.ptr, key, 6);
         
-        mixin(AES_192_key_exp!(0x01, 6)());
-        mixin(AES_192_key_exp!(0x02, 12)());
-        mixin(AES_192_key_exp!(0x04, 18)());
-        mixin(AES_192_key_exp!(0x08, 24)());
-        mixin(AES_192_key_exp!(0x10, 30)());
-        mixin(AES_192_key_exp!(0x20, 36)());
-        mixin(AES_192_key_exp!(0x40, 42)());
-        mixin(AES_192_key_exp!(0x80, 48)());
+        mixin(AES_192_key_exp!(0x01, 6));
+        mixin(AES_192_key_exp!(0x02, 12));
+        mixin(AES_192_key_exp!(0x04, 18));
+        mixin(AES_192_key_exp!(0x08, 24));
+        mixin(AES_192_key_exp!(0x10, 30));
+        mixin(AES_192_key_exp!(0x20, 36));
+        mixin(AES_192_key_exp!(0x40, 42));
+        mixin(AES_192_key_exp!(0x80, 48));
         
         // Now generate decryption keys
         const(__m128i*) EK_mm = cast(const(__m128i*))(m_EK.ptr);
@@ -525,20 +526,20 @@ public:
             B2 = _mm_xor_si128(B2, K0);
             B3 = _mm_xor_si128(B3, K0);
             
-            mixin(AES_ENC_4_ROUNDS!(K1)());
-            mixin(AES_ENC_4_ROUNDS!(K2)());
-            mixin(AES_ENC_4_ROUNDS!(K3)());
-            mixin(AES_ENC_4_ROUNDS!(K4)());
-            mixin(AES_ENC_4_ROUNDS!(K5)());
-            mixin(AES_ENC_4_ROUNDS!(K6)());
-            mixin(AES_ENC_4_ROUNDS!(K7)());
-            mixin(AES_ENC_4_ROUNDS!(K8)());
-            mixin(AES_ENC_4_ROUNDS!(K9)());
-            mixin(AES_ENC_4_ROUNDS!(K10)());
-            mixin(AES_ENC_4_ROUNDS!(K11)());
-            mixin(AES_ENC_4_ROUNDS!(K12)());
-            mixin(AES_ENC_4_ROUNDS!(K13)());
-            mixin(AES_ENC_4_LAST_ROUNDS!(K14)());
+            mixin(AES_ENC_4_ROUNDS!(K1));
+            mixin(AES_ENC_4_ROUNDS!(K2));
+            mixin(AES_ENC_4_ROUNDS!(K3));
+            mixin(AES_ENC_4_ROUNDS!(K4));
+            mixin(AES_ENC_4_ROUNDS!(K5));
+            mixin(AES_ENC_4_ROUNDS!(K6));
+            mixin(AES_ENC_4_ROUNDS!(K7));
+            mixin(AES_ENC_4_ROUNDS!(K8));
+            mixin(AES_ENC_4_ROUNDS!(K9));
+            mixin(AES_ENC_4_ROUNDS!(K10));
+            mixin(AES_ENC_4_ROUNDS!(K11));
+            mixin(AES_ENC_4_ROUNDS!(K12));
+            mixin(AES_ENC_4_ROUNDS!(K13));
+            mixin(AES_ENC_4_LAST_ROUNDS!(K14));
             
             _mm_storeu_si128(out_mm + 0, B0);
             _mm_storeu_si128(out_mm + 1, B1);
@@ -613,20 +614,20 @@ public:
             B2 = _mm_xor_si128(B2, K0);
             B3 = _mm_xor_si128(B3, K0);
             
-            mixin(AES_DEC_4_ROUNDS!(K1)());
-            mixin(AES_DEC_4_ROUNDS!(K2)());
-            mixin(AES_DEC_4_ROUNDS!(K3)());
-            mixin(AES_DEC_4_ROUNDS!(K4)());
-            mixin(AES_DEC_4_ROUNDS!(K5)());
-            mixin(AES_DEC_4_ROUNDS!(K6)());
-            mixin(AES_DEC_4_ROUNDS!(K7)());
-            mixin(AES_DEC_4_ROUNDS!(K8)());
-            mixin(AES_DEC_4_ROUNDS!(K9)());
-            mixin(AES_DEC_4_ROUNDS!(K10)());
-            mixin(AES_DEC_4_ROUNDS!(K11)());
-            mixin(AES_DEC_4_ROUNDS!(K12)());
-            mixin(AES_DEC_4_ROUNDS!(K13)());
-            mixin(AES_DEC_4_LAST_ROUNDS!(K14)());
+            mixin(AES_DEC_4_ROUNDS!(K1));
+            mixin(AES_DEC_4_ROUNDS!(K2));
+            mixin(AES_DEC_4_ROUNDS!(K3));
+            mixin(AES_DEC_4_ROUNDS!(K4));
+            mixin(AES_DEC_4_ROUNDS!(K5));
+            mixin(AES_DEC_4_ROUNDS!(K6));
+            mixin(AES_DEC_4_ROUNDS!(K7));
+            mixin(AES_DEC_4_ROUNDS!(K8));
+            mixin(AES_DEC_4_ROUNDS!(K9));
+            mixin(AES_DEC_4_ROUNDS!(K10));
+            mixin(AES_DEC_4_ROUNDS!(K11));
+            mixin(AES_DEC_4_ROUNDS!(K12));
+            mixin(AES_DEC_4_ROUNDS!(K13));
+            mixin(AES_DEC_4_LAST_ROUNDS!(K14));
             
             _mm_storeu_si128(out_mm + 0, B0);
             _mm_storeu_si128(out_mm + 1, B1);
@@ -797,48 +798,38 @@ __m128i aes_256_key_expansion(__m128i key, __m128i key2)
     return _mm_xor_si128(key, key_with_rcon);
 }
 
-string AES_ENC_4_ROUNDS(alias K)()
-{ 
-    const K2 = __traits(identifier, K);
-    return `B0 = _mm_aesenc_si128(B0, ` ~ K2 ~ `);
-            B1 = _mm_aesenc_si128(B1, ` ~ K2 ~ `);
-            B2 = _mm_aesenc_si128(B2, ` ~ K2 ~ `);
-            B3 = _mm_aesenc_si128(B3, ` ~ K2 ~ `);`;
-}
+enum string AES_ENC_4_ROUNDS(alias K) = q{
+    B0 = _mm_aesenc_si128(B0, %1$s);
+    B1 = _mm_aesenc_si128(B1, %1$s);
+    B2 = _mm_aesenc_si128(B2, %1$s);
+    B3 = _mm_aesenc_si128(B3, %1$s);
+}.format(__traits(identifier, K));
 
-string AES_ENC_4_LAST_ROUNDS(alias K)()
-{
-    const K2 = __traits(identifier, K);
-    return `B0 = _mm_aesenclast_si128(B0, ` ~ K2 ~ `);
-            B1 = _mm_aesenclast_si128(B1, ` ~ K2 ~ `);
-            B2 = _mm_aesenclast_si128(B2, ` ~ K2 ~ `);
-            B3 = _mm_aesenclast_si128(B3, ` ~ K2 ~ `);`;
-}
+enum string AES_ENC_4_LAST_ROUNDS(alias K) = q{
+    B0 = _mm_aesenclast_si128(B0, %1$s);
+    B1 = _mm_aesenclast_si128(B1, %1$s);
+    B2 = _mm_aesenclast_si128(B2, %1$s);
+    B3 = _mm_aesenclast_si128(B3, %1$s);
+}.format(__traits(identifier, K));
 
-string AES_DEC_4_ROUNDS(alias K)()
-{
-    const K2 = __traits(identifier, K);
-    return `B0 = _mm_aesdec_si128(B0, ` ~ K2 ~ `);
-            B1 = _mm_aesdec_si128(B1, ` ~ K2 ~ `);
-            B2 = _mm_aesdec_si128(B2, ` ~ K2 ~ `);
-            B3 = _mm_aesdec_si128(B3, ` ~ K2 ~ `);`;
-}
+enum string AES_DEC_4_ROUNDS(alias K) = q{
+    B0 = _mm_aesdec_si128(B0, %1$s);
+    B1 = _mm_aesdec_si128(B1, %1$s);
+    B2 = _mm_aesdec_si128(B2, %1$s);
+    B3 = _mm_aesdec_si128(B3, %1$s);
+}.format(__traits(identifier, K));
 
-string AES_DEC_4_LAST_ROUNDS(alias K)()
-{
-    const K2 = __traits(identifier, K);
-    return `B0 = _mm_aesdeclast_si128(B0, ` ~ K2 ~ `);
-            B1 = _mm_aesdeclast_si128(B1, ` ~ K2 ~ `);
-            B2 = _mm_aesdeclast_si128(B2, ` ~ K2 ~ `);
-            B3 = _mm_aesdeclast_si128(B3, ` ~ K2 ~ `);`;
-}
+enum string AES_DEC_4_LAST_ROUNDS(alias K) = q{
+    B0 = _mm_aesdeclast_si128(B0, %1$s);
+    B1 = _mm_aesdeclast_si128(B1, %1$s);
+    B2 = _mm_aesdeclast_si128(B2, %1$s);
+    B3 = _mm_aesdeclast_si128(B3, %1$s);
+}.format(__traits(identifier, K));
 
-string AES_128_key_exp(string K, ubyte RCON)() {
-    return `aes_128_key_expansion(` ~ K ~ `, _mm_aeskeygenassist_si128!` ~ RCON.to!string ~ `(` ~ K ~ `));`;
-}
+enum string AES_128_key_exp(string K, ubyte RCON) =
+    `aes_128_key_expansion(` ~ K ~ `, _mm_aeskeygenassist_si128!` ~ RCON.to!string ~ `(` ~ K ~ `));`;
 
-string AES_192_key_exp(ubyte RCON, size_t EK_OFF)() {
-    return `aes_192_key_expansion(&K0, &K1, 
+enum string AES_192_key_exp(ubyte RCON, size_t EK_OFF) = 
+    `aes_192_key_expansion(&K0, &K1, 
                                   _mm_aeskeygenassist_si128! ` ~ RCON.to!string ~ `(K1),
                                   &m_EK[` ~ EK_OFF.stringof ~ `], ` ~ EK_OFF.stringof ~ ` == 48);`;
-}

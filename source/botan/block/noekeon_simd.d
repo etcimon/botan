@@ -52,13 +52,13 @@ public:
             {
                 A0 ^= SIMD32(cast(uint) m_RC[i]);
                 
-                mixin(NOK_SIMD_THETA());
+                mixin(NOK_SIMD_THETA);
                 
                 A1.rotateLeft!1();
                 A2.rotateLeft!5();
                 A3.rotateLeft!2();
 
-                mixin(NOK_SIMD_GAMMA());
+                mixin(NOK_SIMD_GAMMA);
                 
                 A1.rotateRight!1();
                 A2.rotateRight!5();
@@ -66,7 +66,7 @@ public:
             }
             
             A0 ^= SIMD32(cast(uint) m_RC[16]);
-            mixin(NOK_SIMD_THETA());
+            mixin(NOK_SIMD_THETA);
             
             SIMD32.transpose(A0, A1, A2, A3);
             
@@ -107,7 +107,7 @@ public:
             
             foreach (size_t i; 0 .. 16)
             {
-                mixin(NOK_SIMD_THETA());
+                mixin(NOK_SIMD_THETA);
                 
                 A0 ^= SIMD32(cast(uint) m_RC[16-i]);
                 
@@ -115,14 +115,14 @@ public:
                 A2.rotateLeft!5();
                 A3.rotateLeft!2();
                 
-                mixin(NOK_SIMD_GAMMA());
+                mixin(NOK_SIMD_GAMMA);
                 
                 A1.rotateRight!1();
                 A2.rotateRight!5();
                 A3.rotateRight!2();
             }
             
-            mixin(NOK_SIMD_THETA());
+            mixin(NOK_SIMD_THETA);
             A0 ^= SIMD32(cast(uint) m_RC[0]);
             
             SIMD32.transpose(A0, A1, A2, A3);
@@ -147,8 +147,8 @@ public:
 /*
 * Noekeon's Theta Operation
 */
-string NOK_SIMD_THETA() {
-    return `{SIMD32 T = A0 ^ A2;
+enum string NOK_SIMD_THETA =
+    `{SIMD32 T = A0 ^ A2;
     SIMD32 T_l8 = T;
     SIMD32 T_r8 = T;
     T_l8.rotateLeft!8();
@@ -169,14 +169,13 @@ string NOK_SIMD_THETA() {
     T ^= T_l8;
     T ^= T_r8;
     A0 ^= T;            
-    A2 ^= T;}`;            
-} 
+    A2 ^= T;}`;
 
 /*
 * Noekeon's Gamma S-Box Layer
 */
-string NOK_SIMD_GAMMA() {
-    return `{A1 ^= A3.andc(~A2);
+enum string NOK_SIMD_GAMMA =
+    `{A1 ^= A3.andc(~A2);
     A0 ^= A2 & A1;
     SIMD32 T = A3;
     A3 = A0;
@@ -184,4 +183,3 @@ string NOK_SIMD_GAMMA() {
     A2 ^= A0 ^ A1 ^ A3;
     A1 ^= A3.andc(~A2);
     A0 ^= A2 & A1;}`;
-}

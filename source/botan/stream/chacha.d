@@ -19,6 +19,7 @@ import botan.utils.rotate;
 import botan.utils.xor_buf;
 import botan.utils.types;
 import botan.utils.mem_ops;
+import std.format : format;
 
 /**
 * DJB's ChaCha (http://cr.yp.to/chacha.html)
@@ -117,15 +118,15 @@ protected:
         
         foreach (size_t i; 0 .. 10)
         {
-            mixin(CHACHA_QUARTER_ROUND!(x00, x04, x08, x12)() ~
-                  CHACHA_QUARTER_ROUND!(x01, x05, x09, x13)() ~
-                  CHACHA_QUARTER_ROUND!(x02, x06, x10, x14)() ~
-                  CHACHA_QUARTER_ROUND!(x03, x07, x11, x15)() ~
+            mixin(CHACHA_QUARTER_ROUND!(x00, x04, x08, x12) ~
+                  CHACHA_QUARTER_ROUND!(x01, x05, x09, x13) ~
+                  CHACHA_QUARTER_ROUND!(x02, x06, x10, x14) ~
+                  CHACHA_QUARTER_ROUND!(x03, x07, x11, x15) ~
                   
-                  CHACHA_QUARTER_ROUND!(x00, x05, x10, x15)() ~
-                  CHACHA_QUARTER_ROUND!(x01, x06, x11, x12)() ~
-                  CHACHA_QUARTER_ROUND!(x02, x07, x08, x13)() ~
-                  CHACHA_QUARTER_ROUND!(x03, x04, x09, x14)()
+                  CHACHA_QUARTER_ROUND!(x00, x05, x10, x15) ~
+                  CHACHA_QUARTER_ROUND!(x01, x06, x11, x12) ~
+                  CHACHA_QUARTER_ROUND!(x02, x07, x08, x13) ~
+                  CHACHA_QUARTER_ROUND!(x03, x04, x09, x14)
                   );
         }
         
@@ -192,15 +193,9 @@ protected:
     size_t m_position = 0;
 }
 
-string CHACHA_QUARTER_ROUND(alias _a, alias _b, alias _c, alias _d)()
-{
-    enum a = __traits(identifier, _a);
-    enum b = __traits(identifier, _b);
-    enum c = __traits(identifier, _c);
-    enum d = __traits(identifier, _d);
-
-    return a ~ ` += ` ~ b ~ `; ` ~ d ~ ` ^= ` ~ a ~ `; ` ~ d ~ ` = rotateLeft(` ~ d ~ `, 16);
-                ` ~ c ~ ` += ` ~ d ~ `; ` ~ b ~ ` ^= ` ~ c ~ `; ` ~ b ~ ` = rotateLeft(` ~ b ~ `, 12);
-                ` ~ a ~ ` += ` ~ b ~ `; ` ~ d ~ ` ^= ` ~ a ~ `; ` ~ d ~ ` = rotateLeft(` ~ d ~ `, 8);
-                ` ~ c ~ ` += ` ~ d ~ `; ` ~ b ~ ` ^= ` ~ c ~ `; ` ~ b ~ ` = rotateLeft(` ~ b ~ `, 7);`;
-}
+enum string CHACHA_QUARTER_ROUND(alias _a, alias _b, alias _c, alias _d) = q{
+    %1$s += %2$s; %4$s ^= %1$s; %4$s = rotateLeft(%4$s, 16);
+    %3$s += %4$s; %2$s ^= %3$s; %2$s = rotateLeft(%2$s, 12);
+    %1$s += %2$s; %4$s ^= %1$s; %4$s = rotateLeft(%4$s, 8);
+    %3$s += %4$s; %2$s ^= %3$s; %2$s = rotateLeft(%2$s, 7);
+}.format(__traits(identifier, _a), __traits(identifier, _b), __traits(identifier, _c), __traits(identifier, _d));

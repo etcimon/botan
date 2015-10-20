@@ -17,6 +17,7 @@ import botan.block.threefish;
 import botan.utils.simd.immintrin;
 import botan.block.block_cipher;
 import botan.utils.mem_ops;
+import std.format : format;
 
 /**
 * Threefish-512
@@ -73,19 +74,19 @@ public:
             interleave_epi64(X0, X1);
             interleave_epi64(X2, X3);
             
-            mixin(THREEFISH_INJECT_KEY_2!(K0, K1, 2, 3)());
+            mixin(THREEFISH_INJECT_KEY_2!(K0, K1, 2, 3));
             
-            mixin(THREEFISH_ENC_2_8_ROUNDS!(K1,K2,K3, 1, 2, 3)());
-            mixin(THREEFISH_ENC_2_8_ROUNDS!(K3,K4,K5, 2, 3, 1)());
-            mixin(THREEFISH_ENC_2_8_ROUNDS!(K5,K6,K7, 3, 1, 2)());
+            mixin(THREEFISH_ENC_2_8_ROUNDS!(K1,K2,K3, 1, 2, 3));
+            mixin(THREEFISH_ENC_2_8_ROUNDS!(K3,K4,K5, 2, 3, 1));
+            mixin(THREEFISH_ENC_2_8_ROUNDS!(K5,K6,K7, 3, 1, 2));
             
-            mixin(THREEFISH_ENC_2_8_ROUNDS!(K7,K8,K0, 1, 2, 3)());
-            mixin(THREEFISH_ENC_2_8_ROUNDS!(K0,K1,K2, 2, 3, 1)());
-            mixin(THREEFISH_ENC_2_8_ROUNDS!(K2,K3,K4, 3, 1, 2)());
+            mixin(THREEFISH_ENC_2_8_ROUNDS!(K7,K8,K0, 1, 2, 3));
+            mixin(THREEFISH_ENC_2_8_ROUNDS!(K0,K1,K2, 2, 3, 1));
+            mixin(THREEFISH_ENC_2_8_ROUNDS!(K2,K3,K4, 3, 1, 2));
             
-            mixin(THREEFISH_ENC_2_8_ROUNDS!(K4,K5,K6, 1, 2, 3)());
-            mixin(THREEFISH_ENC_2_8_ROUNDS!(K6,K7,K8, 2, 3, 1)());
-            mixin(THREEFISH_ENC_2_8_ROUNDS!(K8,K0,K1, 3, 1, 2)());
+            mixin(THREEFISH_ENC_2_8_ROUNDS!(K4,K5,K6, 1, 2, 3));
+            mixin(THREEFISH_ENC_2_8_ROUNDS!(K6,K7,K8, 2, 3, 1));
+            mixin(THREEFISH_ENC_2_8_ROUNDS!(K8,K0,K1, 3, 1, 2));
             
             deinterleave_epi64(X0, X1);
             deinterleave_epi64(X2, X3);
@@ -109,19 +110,19 @@ public:
             
             interleave_epi64(X0, X1);
             
-            mixin(THREEFISH_ENC_INJECT_KEY!(K0, K1, 2, 3)());
+            mixin(THREEFISH_ENC_INJECT_KEY!(K0, K1, 2, 3));
             
-            mixin(THREEFISH_ENC_8_ROUNDS!(K1,K2,K3, 1, 2, 3)());
-            mixin(THREEFISH_ENC_8_ROUNDS!(K3,K4,K5, 2, 3, 1)());
-            mixin(THREEFISH_ENC_8_ROUNDS!(K5,K6,K7, 3, 1, 2)());
+            mixin(THREEFISH_ENC_8_ROUNDS!(K1,K2,K3, 1, 2, 3));
+            mixin(THREEFISH_ENC_8_ROUNDS!(K3,K4,K5, 2, 3, 1));
+            mixin(THREEFISH_ENC_8_ROUNDS!(K5,K6,K7, 3, 1, 2));
             
-            mixin(THREEFISH_ENC_8_ROUNDS!(K7,K8,K0, 1, 2, 3)());
-            mixin(THREEFISH_ENC_8_ROUNDS!(K0,K1,K2, 2, 3, 1)());
-            mixin(THREEFISH_ENC_8_ROUNDS!(K2,K3,K4, 3, 1, 2)());
+            mixin(THREEFISH_ENC_8_ROUNDS!(K7,K8,K0, 1, 2, 3));
+            mixin(THREEFISH_ENC_8_ROUNDS!(K0,K1,K2, 2, 3, 1));
+            mixin(THREEFISH_ENC_8_ROUNDS!(K2,K3,K4, 3, 1, 2));
             
-            mixin(THREEFISH_ENC_8_ROUNDS!(K4,K5,K6, 1, 2, 3)());
-            mixin(THREEFISH_ENC_8_ROUNDS!(K6,K7,K8, 2, 3, 1)());
-            mixin(THREEFISH_ENC_8_ROUNDS!(K8,K0,K1, 3, 1, 2)());
+            mixin(THREEFISH_ENC_8_ROUNDS!(K4,K5,K6, 1, 2, 3));
+            mixin(THREEFISH_ENC_8_ROUNDS!(K6,K7,K8, 2, 3, 1));
+            mixin(THREEFISH_ENC_8_ROUNDS!(K8,K0,K1, 3, 1, 2));
             
             deinterleave_epi64(X0, X1);
             
@@ -175,17 +176,17 @@ public:
             
             interleave_epi64(X0, X1);
 
-            mixin(THREEFISH_DEC_8_ROUNDS!(K8,K0,K1, 3, 1, 2)());
-            mixin(THREEFISH_DEC_8_ROUNDS!(K6,K7,K8, 2, 3, 1)());
-            mixin(THREEFISH_DEC_8_ROUNDS!(K4,K5,K6, 1, 2, 3)());
-            mixin(THREEFISH_DEC_8_ROUNDS!(K2,K3,K4, 3, 1, 2)());
-            mixin(THREEFISH_DEC_8_ROUNDS!(K0,K1,K2, 2, 3, 1)());
-            mixin(THREEFISH_DEC_8_ROUNDS!(K7,K8,K0, 1, 2, 3)());
-            mixin(THREEFISH_DEC_8_ROUNDS!(K5,K6,K7, 3, 1, 2)());
-            mixin(THREEFISH_DEC_8_ROUNDS!(K3,K4,K5, 2, 3, 1)());
-            mixin(THREEFISH_DEC_8_ROUNDS!(K1,K2,K3, 1, 2, 3)());
+            mixin(THREEFISH_DEC_8_ROUNDS!(K8,K0,K1, 3, 1, 2));
+            mixin(THREEFISH_DEC_8_ROUNDS!(K6,K7,K8, 2, 3, 1));
+            mixin(THREEFISH_DEC_8_ROUNDS!(K4,K5,K6, 1, 2, 3));
+            mixin(THREEFISH_DEC_8_ROUNDS!(K2,K3,K4, 3, 1, 2));
+            mixin(THREEFISH_DEC_8_ROUNDS!(K0,K1,K2, 2, 3, 1));
+            mixin(THREEFISH_DEC_8_ROUNDS!(K7,K8,K0, 1, 2, 3));
+            mixin(THREEFISH_DEC_8_ROUNDS!(K5,K6,K7, 3, 1, 2));
+            mixin(THREEFISH_DEC_8_ROUNDS!(K3,K4,K5, 2, 3, 1));
+            mixin(THREEFISH_DEC_8_ROUNDS!(K1,K2,K3, 1, 2, 3));
 
-            mixin(THREEFISH_DEC_INJECT_KEY!(K0, K1, 2, 3)());
+            mixin(THREEFISH_DEC_INJECT_KEY!(K0, K1, 2, 3));
             
             deinterleave_epi64(X0, X1);
             
@@ -223,164 +224,107 @@ void deinterleave_epi64(ref __m256i X0, ref __m256i X1) pure
 
 
 
-string THREEFISH_ENC_ROUND(alias _SHL)()
-{
-    const SHL = __traits(identifier, _SHL);
+enum string THREEFISH_ENC_ROUND(alias _SHL) = q{
+    {const __m256i SHR = _mm256_sub_epi64(_mm256_set1_epi64x(64), %1$s);
+    X0 = _mm256_add_epi64(X0, X1);
+    X1 = _mm256_or_si256(_mm256_sllv_epi64(X1, %1$s), _mm256_srlv_epi64(X1, SHR));
+    X1 = _mm256_xor_si256(X1, X0);
+    X0 = _mm256_permute4x64_epi64(X0, _MM_SHUFFLE(0, 3, 2, 1));
+    X1 = _mm256_permute4x64_epi64(X1, _MM_SHUFFLE(1, 2, 3, 0));}
+}.format(__traits(identifier, _SHL));
 
-    return `{const __m256i SHR = _mm256_sub_epi64(_mm256_set1_epi64x(64), ` ~ SHL ~ `);
-            X0 = _mm256_add_epi64(X0, X1);
-            X1 = _mm256_or_si256(_mm256_sllv_epi64(X1, ` ~ SHL ~ `), _mm256_srlv_epi64(X1, SHR));
-            X1 = _mm256_xor_si256(X1, X0);
-            X0 = _mm256_permute4x64_epi64(X0, _MM_SHUFFLE(0, 3, 2, 1));
-            X1 = _mm256_permute4x64_epi64(X1, _MM_SHUFFLE(1, 2, 3, 0));}`;
-}
+enum string THREEFISH_ENC_ROUND_2(alias _SHL) = q{
+    {const __m256i SHR = _mm256_sub_epi64(_mm256_set1_epi64x(64), %1$s);
+    X0 = _mm256_add_epi64(X0, X1);
+    X2 = _mm256_add_epi64(X2, X3);
+    X1 = _mm256_or_si256(_mm256_sllv_epi64(X1, %1$s), _mm256_srlv_epi64(X1, SHR));
+    X3 = _mm256_or_si256(_mm256_sllv_epi64(X3, %1$s), _mm256_srlv_epi64(X3, SHR));
+    X1 = _mm256_xor_si256(X1, X0);
+    X3 = _mm256_xor_si256(X3, X2);
+    X0 = _mm256_permute4x64_epi64(X0, _MM_SHUFFLE(0, 3, 2, 1));
+    X2 = _mm256_permute4x64_epi64(X2, _MM_SHUFFLE(0, 3, 2, 1));
+    X1 = _mm256_permute4x64_epi64(X1, _MM_SHUFFLE(1, 2, 3, 0));
+    X3 = _mm256_permute4x64_epi64(X3, _MM_SHUFFLE(1, 2, 3, 0));}
+}.format(__traits(identifier, _SHL));
 
-string THREEFISH_ENC_ROUND_2(alias _SHL)()
-{
-    const SHL = __traits(identifier, _SHL);
+enum string THREEFISH_ENC_INJECT_KEY(alias _K0, alias _K1, ubyte _T0I, ubyte _T1I) = q{
+    {const __m256i T0_ = _mm256_permute4x64_epi64(T, _MM_SHUFFLE(%3$s, 0, 0, 0));
+    const __m256i T1_ = _mm256_permute4x64_epi64(T, _MM_SHUFFLE(0, %4$s, 0, 0));
+    X0 = _mm256_add_epi64(X0, %1$s);
+    X1 = _mm256_add_epi64(X1, %2$s);
+    X1 = _mm256_add_epi64(X1, R);
+    X0 = _mm256_add_epi64(X0, T0_);
+    X1 = _mm256_add_epi64(X1, T1_);
+    R = _mm256_add_epi64(R, ONE);}
+}.format(__traits(identifier, _K0), __traits(identifier, _K1), _T0I, _T1I);
 
-    return `{const __m256i SHR = _mm256_sub_epi64(_mm256_set1_epi64x(64), ` ~ SHL ~ `);
-            X0 = _mm256_add_epi64(X0, X1);
-            X2 = _mm256_add_epi64(X2, X3);
-            X1 = _mm256_or_si256(_mm256_sllv_epi64(X1, ` ~ SHL ~ `), _mm256_srlv_epi64(X1, SHR));
-            X3 = _mm256_or_si256(_mm256_sllv_epi64(X3, ` ~ SHL ~ `), _mm256_srlv_epi64(X3, SHR));
-            X1 = _mm256_xor_si256(X1, X0);
-            X3 = _mm256_xor_si256(X3, X2);
-            X0 = _mm256_permute4x64_epi64(X0, _MM_SHUFFLE(0, 3, 2, 1));
-            X2 = _mm256_permute4x64_epi64(X2, _MM_SHUFFLE(0, 3, 2, 1));
-            X1 = _mm256_permute4x64_epi64(X1, _MM_SHUFFLE(1, 2, 3, 0));
-            X3 = _mm256_permute4x64_epi64(X3, _MM_SHUFFLE(1, 2, 3, 0));}`;
-}
+enum string THREEFISH_ENC_INJECT_KEY_2(alias _K0, alias _K1, ubyte _T0I, ubyte _T1I) = q{
+    {const __m256i T0_ = _mm256_permute4x64_epi64(T, _MM_SHUFFLE(%3$s, 0, 0, 0));
+    __m256i T1_ = _mm256_permute4x64_epi64(T, _MM_SHUFFLE(0, %4$s, 0, 0));
+    X0 = _mm256_add_epi64(X0, %1$s);
+    X2 = _mm256_add_epi64(X2, %1$s);
+    X1 = _mm256_add_epi64(X1, %2$s);
+    X3 = _mm256_add_epi64(X3, %2$s);
+    T1_ = _mm256_add_epi64(T1_, R);
+    X0 = _mm256_add_epi64(X0, T0_);
+    X2 = _mm256_add_epi64(X2, T0_);
+    X1 = _mm256_add_epi64(X1, T1_);
+    X3 = _mm256_add_epi64(X3, T1_);
+    R = _mm256_add_epi64(R, ONE);}
+}.format(__traits(identifier, _K0), __traits(identifier, _K1), _T0I.stringof, _T1I.stringof);
 
-string THREEFISH_ENC_INJECT_KEY(alias _K0, alias _K1, ubyte _T0I, ubyte _T1I)()
-{
-    const K0 = __traits(identifier, _K0);
-    const K1 = __traits(identifier, _K1);
-    const T0I = _T0I.stringof;
-    const T1I = _T1I.stringof;
+enum string THREEFISH_ENC_8_ROUNDS(alias _K1, alias _K2, alias _K3, ubyte _T0, ubyte _T1, ubyte _T2) =
+    `mixin(THREEFISH_ENC_ROUND!(ROTATE_1));
+    mixin(THREEFISH_ENC_ROUND!(ROTATE_2));
+    mixin(THREEFISH_ENC_ROUND!(ROTATE_3));
+    mixin(THREEFISH_ENC_ROUND!(ROTATE_4));
+    mixin(THREEFISH_ENC_INJECT_KEY!(`~__traits(identifier, _K1)~`, `~__traits(identifier, _K2)~`, `~_T0.stringof~`, `~_T1.stringof~`));
+    mixin(THREEFISH_ENC_ROUND!(ROTATE_5));
+    mixin(THREEFISH_ENC_ROUND!(ROTATE_6));
+    mixin(THREEFISH_ENC_ROUND!(ROTATE_7));
+    mixin(THREEFISH_ENC_ROUND!(ROTATE_8));
+    mixin(THREEFISH_ENC_INJECT_KEY!(`~__traits(identifier, _K2)~`, `~__traits(identifier, _K3)~`, `~_T2.stringof~`, `~_T0.stringof~`));`;
 
-    return `{const __m256i T0_ = _mm256_permute4x64_epi64(T, _MM_SHUFFLE(` ~ T0I ~ `, 0, 0, 0));
-            const __m256i T1_ = _mm256_permute4x64_epi64(T, _MM_SHUFFLE(0, ` ~ T1I ~ `, 0, 0));
-            X0 = _mm256_add_epi64(X0, ` ~ K0 ~ `);
-            X1 = _mm256_add_epi64(X1, ` ~ K1 ~ `);
-            X1 = _mm256_add_epi64(X1, R);
-            X0 = _mm256_add_epi64(X0, T0_);
-            X1 = _mm256_add_epi64(X1, T1_);
-            R = _mm256_add_epi64(R, ONE);}`;
-}
+enum string THREEFISH_ENC_2_8_ROUNDS(alias _K1, alias _K2, alias _K3, ubyte _T0, ubyte _T1, ubyte _T2) =
+    `mixin(THREEFISH_ENC_ROUND_2!(ROTATE_1));
+    mixin(THREEFISH_ENC_ROUND_2!(ROTATE_2));
+    mixin(THREEFISH_ENC_ROUND_2!(ROTATE_3));
+    mixin(THREEFISH_ENC_ROUND_2!(ROTATE_4));
+    mixin(THREEFISH_ENC_INJECT_KEY_2!(`~__traits(identifier, _K1)~`, `~__traits(identifier, _K2)~`, `~_T0.stringof~`, `~_T1.stringof~`));
+    mixin(THREEFISH_ENC_ROUND_2!(ROTATE_5));
+    mixin(THREEFISH_ENC_ROUND_2!(ROTATE_6));
+    mixin(THREEFISH_ENC_ROUND_2!(ROTATE_7));
+    mixin(THREEFISH_ENC_ROUND_2!(ROTATE_8));
+    mixin(THREEFISH_ENC_INJECT_KEY_2!(`~__traits(identifier, _K2)~`, `~__traits(identifier, _K3)~`, `~_T2.stringof~`, `~_T0.stringof~`));`;
 
-string THREEFISH_ENC_INJECT_KEY_2(alias _K0, alias _K1, ubyte _T0I, ubyte _T1I)()    
-{
-    const K0 = __traits(identifier, _K0);
-    const K1 = __traits(identifier, _K1);
-    const K2 = __traits(identifier, _K2);
-    const T0I = _T0I.stringof;
-    const T1I = _T1I.stringof;
+enum string THREEFISH_DEC_ROUND(alias _SHR) = q{
+    {const __m256i SHL = _mm256_sub_epi64(_mm256_set1_epi64x(64), %1$s);
+    X0 = _mm256_permute4x64_epi64(X0, _MM_SHUFFLE(2, 1, 0, 3));
+    X1 = _mm256_permute4x64_epi64(X1, _MM_SHUFFLE(1, 2, 3, 0));
+    X1 = _mm256_xor_si256(X1, X0);
+    X1 = _mm256_or_si256(_mm256_sllv_epi64(X1, SHL), _mm256_srlv_epi64(X1, %1$s));
+    X0 = _mm256_sub_epi64(X0, X1);}
+}.format(__traits(identifier, _SHR));
 
-    return `{const __m256i T0_ = _mm256_permute4x64_epi64(T, _MM_SHUFFLE(` ~ T0I ~ `, 0, 0, 0));
-            __m256i T1_ = _mm256_permute4x64_epi64(T, _MM_SHUFFLE(0, ` ~ T1I ~ `, 0, 0));
-            X0 = _mm256_add_epi64(X0, ` ~ K0 ~ `);
-            X2 = _mm256_add_epi64(X2, ` ~ K0 ~ `);
-            X1 = _mm256_add_epi64(X1, ` ~ K1 ~ `);
-            X3 = _mm256_add_epi64(X3, ` ~ K1 ~ `);
-            T1_ = _mm256_add_epi64(T1_, R);
-            X0 = _mm256_add_epi64(X0, T0_);
-            X2 = _mm256_add_epi64(X2, T0_);
-            X1 = _mm256_add_epi64(X1, T1_);
-            X3 = _mm256_add_epi64(X3, T1_);
-            R = _mm256_add_epi64(R, ONE);}`;
-}
+enum string THREEFISH_DEC_INJECT_KEY(alias _K0, alias _K1, ubyte _T0I, ubyte _T1I) = q{
+    {const __m256i T0_ = _mm256_permute4x64_epi64(T, _MM_SHUFFLE(%3$s, 0, 0, 0));
+    const __m256i T1_ = _mm256_permute4x64_epi64(T, _MM_SHUFFLE(0, %4$s, 0, 0));
+    X0 = _mm256_sub_epi64(X0, %1$s);
+    X1 = _mm256_sub_epi64(X1, %2$s);
+    X1 = _mm256_sub_epi64(X1, R);
+    R = _mm256_sub_epi64(R, ONE);
+    X0 = _mm256_sub_epi64(X0, T0_);
+    X1 = _mm256_sub_epi64(X1, T1_);}
+}.format(__traits(identifier, _K0), __traits(identifier, _K1), _T0I.stringof, _T1I.stringof);
 
-string THREEFISH_ENC_8_ROUNDS(alias _K1, alias _K2, alias _K3, ubyte _T0, ubyte _T1, ubyte _T2)()
-{
-    const K1 = __traits(identifier, _K1);
-    const K2 = __traits(identifier, _K2);
-    const K3 = __traits(identifier, _K3);
-    const T0 = _T0.stringof;
-    const T1 = _T1.stringof;
-    const T2 = _T2.stringof;
-
-    return `mixin(THREEFISH_ENC_ROUND!(ROTATE_1)());
-            mixin(THREEFISH_ENC_ROUND!(ROTATE_2)());
-            mixin(THREEFISH_ENC_ROUND!(ROTATE_3)());
-            mixin(THREEFISH_ENC_ROUND!(ROTATE_4)());
-            mixin(THREEFISH_ENC_INJECT_KEY!(` ~ K1 ~ `, ` ~ K2 ~ `, ` ~ T0 ~ `, ` ~ T1 ~ `)());
-
-            mixin(THREEFISH_ENC_ROUND!(ROTATE_5)());
-            mixin(THREEFISH_ENC_ROUND!(ROTATE_6)());
-            mixin(THREEFISH_ENC_ROUND!(ROTATE_7)());
-            mixin(THREEFISH_ENC_ROUND!(ROTATE_8)());
-            mixin(THREEFISH_ENC_INJECT_KEY!(` ~ K2 ~ `, ` ~ K3 ~ `, ` ~ T2 ~ `, ` ~ T0 ~ `)());`;
-}
-
-string THREEFISH_ENC_2_8_ROUNDS(alias _K1, alias _K2, alias _K3, ubyte _T0, ubyte _T1, ubyte _T2)()
-{
-    const K1 = __traits(identifier, _K1);
-    const K2 = __traits(identifier, _K2);
-    const K3 = __traits(identifier, _K3);
-    const T0 = _T0.stringof;
-    const T1 = _T1.stringof;
-    const T2 = _T2.stringof;
-
-    return `mixin(THREEFISH_ENC_ROUND_2!(ROTATE_1)());
-            mixin(THREEFISH_ENC_ROUND_2!(ROTATE_2)());
-            mixin(THREEFISH_ENC_ROUND_2!(ROTATE_3)());
-            mixin(THREEFISH_ENC_ROUND_2!(ROTATE_4)());
-            mixin(THREEFISH_ENC_INJECT_KEY_2!(` ~ K1 ~ `, ` ~ K2 ~ `, ` ~ T0 ~ `, ` ~ T1 ~ `)());
-
-            mixin(THREEFISH_ENC_ROUND_2!(ROTATE_5)());
-            mixin(THREEFISH_ENC_ROUND_2!(ROTATE_6)());
-            mixin(THREEFISH_ENC_ROUND_2!(ROTATE_7)());
-            mixin(THREEFISH_ENC_ROUND_2!(ROTATE_8)());
-            mixin(THREEFISH_ENC_INJECT_KEY_2!(` ~ K2 ~ `, ` ~ K3 ~ `, ` ~ T2 ~ `, ` ~ T0 ~ `)());`;
-}
-
-string THREEFISH_DEC_ROUND(alias _SHR)()
-{
-    const SHR = __traits(identifier, _SHR);
-
-    return `{const __m256i SHL = _mm256_sub_epi64(_mm256_set1_epi64x(64), ` ~ SHR ~ `);
-            X0 = _mm256_permute4x64_epi64(X0, _MM_SHUFFLE(2, 1, 0, 3));
-            X1 = _mm256_permute4x64_epi64(X1, _MM_SHUFFLE(1, 2, 3, 0));
-            X1 = _mm256_xor_si256(X1, X0);
-            X1 = _mm256_or_si256(_mm256_sllv_epi64(X1, SHL), _mm256_srlv_epi64(X1, ` ~ SHR ~ `));
-            X0 = _mm256_sub_epi64(X0, X1);}`;
-}
-
-string THREEFISH_DEC_INJECT_KEY(alias _K0, alias _K1, ubyte _T0I, ubyte _T1I)()
-{
-    const K0 = __traits(identifier, _K0);
-    const K1 = __traits(identifier, _K1);
-    const T0I = _T0I.stringof;
-    const T1I = _T1I.stringof;
-    return `{const __m256i T0_ = _mm256_permute4x64_epi64(T, _MM_SHUFFLE(` ~ T0I ~ `, 0, 0, 0));
-            const __m256i T1_ = _mm256_permute4x64_epi64(T, _MM_SHUFFLE(0, ` ~ T1I ~ `, 0, 0));
-            X0 = _mm256_sub_epi64(X0, ` ~ K0 ~ `);
-            X1 = _mm256_sub_epi64(X1, ` ~ K1 ~ `);
-            X1 = _mm256_sub_epi64(X1, R);
-            R = _mm256_sub_epi64(R, ONE);
-            X0 = _mm256_sub_epi64(X0, T0_);
-            X1 = _mm256_sub_epi64(X1, T1_);}`;                    
-}
-
-string THREEFISH_DEC_8_ROUNDS(alias _K1, alias _K2, alias _K3, ubyte _T0, ubyte _T1, ubyte _T2)()
-{
-    const K1 = __traits(identifier, _K1);
-    const K2 = __traits(identifier, _K2);
-    const K3 = __traits(identifier, _K3);
-    const T0 = _T0.stringof;
-    const T1 = _T1.stringof;
-    const T2 = _T2.stringof;
-
-    return `mixin(THREEFISH_DEC_INJECT_KEY!(` ~ K2 ~ `, ` ~ K3 ~ `, ` ~ T2 ~ `, ` ~ T0 ~ `)());
-            mixin(THREEFISH_DEC_ROUND!(ROTATE_8)());
-            mixin(THREEFISH_DEC_ROUND!(ROTATE_7)());
-            mixin(THREEFISH_DEC_ROUND!(ROTATE_6)());
-            mixin(THREEFISH_DEC_ROUND!(ROTATE_5)());
-
-            mixin(THREEFISH_DEC_INJECT_KEY!(` ~ K1 ~ `, ` ~ K2 ~ `, ` ~ T0 ~ `, ` ~ T1 ~ `)());
-            mixin(THREEFISH_DEC_ROUND!(ROTATE_4)());
-            mixin(THREEFISH_DEC_ROUND!(ROTATE_3)());
-            mixin(THREEFISH_DEC_ROUND!(ROTATE_2)());
-            mixin(THREEFISH_DEC_ROUND!(ROTATE_1)());`;
-}
+enum string THREEFISH_DEC_8_ROUNDS(alias _K1, alias _K2, alias _K3, ubyte _T0, ubyte _T1, ubyte _T2) =
+    `mixin(THREEFISH_DEC_INJECT_KEY!(`~__traits(identifier, _K2)~`, `~__traits(identifier, _K3)~`, `~_T2.stringof~`, `~_T0.stringof~`));
+    mixin(THREEFISH_DEC_ROUND!(ROTATE_8));
+    mixin(THREEFISH_DEC_ROUND!(ROTATE_7));
+    mixin(THREEFISH_DEC_ROUND!(ROTATE_6));
+    mixin(THREEFISH_DEC_ROUND!(ROTATE_5));
+    mixin(THREEFISH_DEC_INJECT_KEY!(`~__traits(identifier, _K1)~`, `~__traits(identifier, _K2)~`, `~_T0.stringof~`, `~_T1.stringof~`));
+    mixin(THREEFISH_DEC_ROUND!(ROTATE_4));
+    mixin(THREEFISH_DEC_ROUND!(ROTATE_3));
+    mixin(THREEFISH_DEC_ROUND!(ROTATE_2));
+    mixin(THREEFISH_DEC_ROUND!(ROTATE_1));`;
