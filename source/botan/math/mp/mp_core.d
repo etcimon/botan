@@ -698,9 +698,6 @@ void bigint_comba_sqr4(ref word[8] z, in word[4] x)
 */
 void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 {
-	logDebug(z.to!string);
-	logDebug(x.to!string);
-	logDebug(y.to!string);
 	//word[8] z_verif = z[];
 	version(none) {
 
