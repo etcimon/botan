@@ -698,12 +698,11 @@ void bigint_comba_sqr4(ref word[8] z, in word[4] x)
 */
 void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 {
-	//word[8] z_verif = z[];
-	version(none) {
+	version(D_InlineAsm_X86_64) {
 
 	    auto _x = x.ptr;
 		auto _y = y.ptr;
-		word* _z = z_verif.ptr;
+		word* _z = z.ptr;
 		// w1 : R14
 		// w2 : R15
 		// w0 : R13
@@ -727,8 +726,8 @@ void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 				adc RDX, 0;
 				add R14, RDX;
 				mov R13, RAX;
-				cmp R14, R11;
-				jnl MUL_2;
+				cmp R14, RDX;
+				jnb MUL_2;
 				add R15, 1;
 
 			MUL_2:
@@ -747,13 +746,12 @@ void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 				add R15, RDX;
 				mov R14, RAX;
 				cmp R15, RDX;
-				jnl MUL_3;
+				jnb MUL_3;
 				add R13, 1;
 			MUL_3:
 				align 8;
 				add R8, 8;
 				sub R9, 8;
-				mov RDX, 0;
 
 				mov RAX, [R8];
 				mov RBX, [R9];
@@ -763,7 +761,7 @@ void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 				add R15, RDX;
 				mov R14, RAX;
 				cmp R15, RDX;
-				jnl MUL_4;
+				jnb MUL_4;
 				add R13, 1;
 
 			MUL_4:
@@ -784,7 +782,7 @@ void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 				add R13, RDX;
 				mov R15, RAX;
 				cmp R13, RDX;
-				jnl MUL_5;
+				jnb MUL_5;
 				add R14, 1;
 			MUL_5:
 				align 8;
@@ -799,7 +797,7 @@ void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 				add R13, RDX;
 				mov R15, RAX;
 				cmp R13, RDX;
-				jnl MUL_6;
+				jnb MUL_6;
 				add R14, 1;
 
 			MUL_6:
@@ -816,7 +814,7 @@ void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 				add R10, 8;
 				mov R15, RAX;
 				cmp R13, RDX;
-				jnl MUL_7;
+				jnb MUL_7;
 				add R14, 1;
 
 			MUL_7:
@@ -838,7 +836,7 @@ void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 				add R14, RDX;
 				mov R13, RAX;
 				cmp R14, RDX;
-				jnl MUL_8;
+				jnb MUL_8;
 				add R15, 1;
 
 			MUL_8:
@@ -854,7 +852,7 @@ void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 				add R14, RDX;
 				mov R13, RAX;
 				cmp R14, RDX;
-				jnl MUL_9;
+				jnb MUL_9;
 				add R15, 1;
 			MUL_9:		
 				align 8;	
@@ -870,7 +868,7 @@ void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 				add R14, RDX;
 				mov R13, RAX;
 				cmp R14, RDX;
-				jnl MUL_10;
+				jnb MUL_10;
 				add R15, 1;
 			MUL_10:	
 				align 8;		
@@ -886,7 +884,7 @@ void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 				add R14, RDX;
 				mov R13, RAX;
 				cmp R14, RDX;
-				jnl MUL_11;
+				jnb MUL_11;
 				add R15, 1;
 
 			MUL_11:	
@@ -909,7 +907,7 @@ void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 				add R15, RDX;
 				mov R14, RAX;
 				cmp R15, RDX;
-				jnl MUL_12;
+				jnb MUL_12;
 				add R13, 1;
 			MUL_12:		
 				align 8;
@@ -925,7 +923,7 @@ void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 				add R15, RDX;
 				mov R14, RAX;
 				cmp R15, RDX;
-				jnl MUL_13;
+				jnb MUL_13;
 				add R13, 1;
 			MUL_13:	
 				align 8;		
@@ -941,7 +939,7 @@ void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 				add R15, RDX;
 				mov R14, RAX;
 				cmp R15, RDX;
-				jnl MUL_14;
+				jnb MUL_14;
 				add R13, 1;
 			MUL_14:		
 				align 8;
@@ -961,7 +959,7 @@ void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 				add R13, RDX;
 				mov R15, RAX;
 				cmp R13, RDX;
-				jnl MUL_15;
+				jnb MUL_15;
 				add R14, 1;
 			MUL_15:	
 				align 8;		
@@ -977,7 +975,7 @@ void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 				add R13, RDX;
 				mov R15, RAX;
 				cmp R13, RDX;
-				jnl MUL_16;
+				jnb MUL_16;
 				add R14, 1;
 
 			MUL_16:	
@@ -1117,7 +1115,6 @@ void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 		z[ 6] = w0;
 		z[ 7] = w1;
 	}
-	//assert(z_verif == z);
 }
 
 /*
