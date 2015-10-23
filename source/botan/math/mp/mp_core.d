@@ -662,7 +662,7 @@ word bigint_modop(word n1, word n0, word d)
 /*
 * Comba 4x4 Squaring
 */
-void bigint_comba_sqr4(ref word[8] z, in word[4] x)
+void bigint_comba_sqr4(ref word[8] z, const ref word[4] x)
 {
     word w2 = 0, w1 = 0, w0 = 0;
     
@@ -696,7 +696,7 @@ void bigint_comba_sqr4(ref word[8] z, in word[4] x)
 /*
 * Comba 4x4 Multiplication
 */
-void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
+void bigint_comba_mul4(ref word[8] z, const ref word[4] x, const ref word[4] y)
 {
 	version(D_InlineAsm_X86_64) {
 
@@ -1120,7 +1120,7 @@ void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 /*
 * Comba 6x6 Squaring
 */
-void bigint_comba_sqr6(ref word[12] z, in word[6] x)
+void bigint_comba_sqr6(ref word[12] z, const ref word[6] x)
 {
     word w2 = 0, w1 = 0, w0 = 0;
     
@@ -1172,7 +1172,7 @@ void bigint_comba_sqr6(ref word[12] z, in word[6] x)
 /*
 * Comba 6x6 Multiplication
 */
-void bigint_comba_mul6(ref word[12] z, in word[6] x, in word[6] y)
+void bigint_comba_mul6(ref word[12] z, const ref word[6] x, const ref word[6] y)
 {
     word w2 = 0, w1 = 0, w0 = 0;
 	word carry;
@@ -1419,7 +1419,7 @@ void bigint_comba_mul6(ref word[12] z, in word[6] x, in word[6] y)
 /*
 * Comba 8x8 Squaring
 */
-void bigint_comba_sqr8(ref word[16] z, in word[8] x)
+void bigint_comba_sqr8(ref word[16] z, const ref word[8] x)
 {
     word w2 = 0, w1 = 0, w0 = 0;
     
@@ -1494,7 +1494,7 @@ void bigint_comba_sqr8(ref word[16] z, in word[8] x)
 /*
 * Comba 8x8 Multiplication
 */
-void bigint_comba_mul8(ref word[16] z, in word[8] x, in word[8] y)
+void bigint_comba_mul8(ref word[16] z, const ref word[8] x, const ref word[8] y)
 {
     word w2 = 0, w1 = 0, w0 = 0;
 	size_t carry;
@@ -1627,7 +1627,7 @@ void bigint_comba_mul8(ref word[16] z, in word[8] x, in word[8] y)
 /*
 * Comba 9x9 Squaring
 */
-void bigint_comba_sqr9(ref word[18] z, in word[9] x)
+void bigint_comba_sqr9(ref word[18] z, const ref word[9] x)
 {
     word w2 = 0, w1 = 0, w0 = 0;
     
@@ -1715,7 +1715,7 @@ void bigint_comba_sqr9(ref word[18] z, in word[9] x)
 /*
 * Comba 9x9 Multiplication
 */
-void bigint_comba_mul9(ref word[18] z, in word[9] x, in word[9] y)
+void bigint_comba_mul9(ref word[18] z, const ref word[9] x, const ref word[9] y)
 {
     word w2 = 0, w1 = 0, w0 = 0;
     
@@ -1839,7 +1839,7 @@ void bigint_comba_mul9(ref word[18] z, in word[9] x, in word[9] y)
 /*
 * Comba 16x16 Squaring
 */
-void bigint_comba_sqr16(ref word[32] z, in word[16] x)
+void bigint_comba_sqr16(ref word[32] z, const ref word[16] x)
 {
     word w2 = 0, w1 = 0, w0 = 0;
     
@@ -2046,7 +2046,7 @@ void bigint_comba_sqr16(ref word[32] z, in word[16] x)
 /*
 * Comba 16x16 Multiplication
 */
-void bigint_comba_mul16(ref word[32] z, in word[16] x, in word[16] y)
+void bigint_comba_mul16(ref word[32] z, const ref word[16] x, const ref word[16] y)
 {
     word w2 = 0, w1 = 0, w0 = 0;
     
@@ -2476,7 +2476,7 @@ word word_add(word x, word y, word* carry)
 /*
 * Eight Word Block Addition, Two Argument
 */
-word word8_add2(ref word[8] x, in word[8] y, word carry)
+word word8_add2(ref word[8] x, const ref word[8] y, word carry)
 {
 	void word_add_i(size_t i) {
 		word z = x.ptr[i] + y.ptr[i];
@@ -2499,7 +2499,7 @@ word word8_add2(ref word[8] x, in word[8] y, word carry)
 /*
 * Eight Word Block Addition, Three Argument
 */
-word word8_add3(ref word[8] z, in word[8] x, in word[8] y, word carry)
+word word8_add3(ref word[8] z, const ref word[8] x, const ref word[8] y, word carry)
 {
     z[0] = word_add(x[0], y[0], &carry);
     z[1] = word_add(x[1], y[1], &carry);
@@ -2527,7 +2527,7 @@ word word_sub(word x, word y, word* carry)
 /*
 * Eight Word Block Subtraction, Two Argument
 */
-word word8_sub2(ref word[8] x, in word[8] y, word carry)
+word word8_sub2(ref word[8] x, const ref word[8] y, word carry)
 {
     x[0] = word_sub(x[0], y[0], &carry);
     x[1] = word_sub(x[1], y[1], &carry);
@@ -2543,7 +2543,7 @@ word word8_sub2(ref word[8] x, in word[8] y, word carry)
 /*
 * Eight Word Block Subtraction, Two Argument
 */
-word word8_sub2_rev(ref word[8] x, in word[8] y, word carry)
+word word8_sub2_rev(ref word[8] x, const ref word[8] y, word carry)
 {
     x[0] = word_sub(y[0], x[0], &carry);
     x[1] = word_sub(y[1], x[1], &carry);
@@ -2559,7 +2559,7 @@ word word8_sub2_rev(ref word[8] x, in word[8] y, word carry)
 /*
 * Eight Word Block Subtraction, Three Argument
 */
-word word8_sub3(ref word[8] z, in word[8] x, in word[8] y, word carry)
+word word8_sub3(ref word[8] z, const ref word[8] x, const ref word[8] y, word carry)
 {
     z[0] = word_sub(x[0], y[0], &carry);
     z[1] = word_sub(x[1], y[1], &carry);
@@ -2673,7 +2673,7 @@ word word8_linmul2(ref word[8] x, word y, word carry)
 /*
 * Eight Word Block Linear Multiplication
 */
-word word8_linmul3(ref word[8] z, in word[8] x, word y, word carry)
+word word8_linmul3(ref word[8] z, const ref word[8] x, word y, word carry)
 {
 
 	version(D_InlineAsm_X86_64) {
@@ -2781,7 +2781,7 @@ word word8_linmul3(ref word[8] z, in word[8] x, word y, word carry)
 /*
 * Eight Word Block Multiply/Add
 */
-word word8_madd3(ref word[8] z, in word[8] x, word y, word carry)
+word word8_madd3(ref word[8] z, const ref word[8] x, word y, word carry)
 {
 	version(D_InlineAsm_X86_64) {
 		auto _x = x.ptr;
