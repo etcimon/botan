@@ -47,7 +47,7 @@ void bigint_monty_sqr(word* z, size_t z_size,
 }
 
 // todo: Bring back ASM for x86_32, x86_64, from Botan C++.
-pure:
+
 /*
 * The size of the word type, in bits
 */
@@ -489,9 +489,9 @@ void bigint_linmul2(word* x, size_t x_size, word y)
     for (size_t i = 0; i != blocks; i += 8)
         carry = word8_linmul2(*cast(word[8]*) (x + i), y, carry);
     
-    foreach (size_t i; blocks .. x_size)
+    foreach (size_t i; blocks .. x_size) {
         x[i] = word_madd2(x[i], y, &carry);
-    
+	}
     x[x_size] = carry;
 }
 
@@ -535,7 +535,7 @@ void bigint_monty_redc(word* z, in word* p, size_t p_size, word p_dash, word* ws
     {
         word* z_i = z + i;
         
-        const word y = z_i[0] * p_dash;
+        word y = (*z_i) * p_dash;
         
         /*
         bigint_linmul3(ws, p, p_size, y);
@@ -544,12 +544,32 @@ void bigint_monty_redc(word* z, in word* p, size_t p_size, word p_dash, word* ws
         
         word carry = 0;
         
-        for (size_t j = 0; j != blocks_of_8; j += 8)
+        for (size_t j = 0; j < blocks_of_8; j += 8)
             carry = word8_madd3(*cast(word[8]*) (z_i + j), *cast(word[8]*) (p + j), y, carry);
         
-        foreach (size_t j; blocks_of_8 .. p_size)
-            z_i[j] = word_madd3(p[j], y, z_i[j], &carry);
-        
+		for (size_t j = blocks_of_8; j < p_size; j++) {
+			version(D_InlineAsm_X86_64) {
+				word* _x = (cast(word*)p) + j;
+				word* _z = z_i + j;
+				size_t word_size = word.sizeof;
+				asm pure nothrow @nogc {
+					mov R8, _x;
+					mov R9, _z;
+					mov RCX, carry;
+					
+					mov RAX, [R8];
+					mov RBX, y;
+					mul RBX;
+					add RAX, [R9];
+					adc RDX, 0;
+					add RAX, RCX;
+					adc RDX, 0;
+					mov carry, RDX;
+					mov [R9], RAX;
+				}
+			} else 
+            	z_i[j] = word_madd3(p[j], y, z_i[j], &carry);
+		}
         word z_sum = z_i[p_size] + carry;
         carry = (z_sum < z_i[p_size]);
         z_i[p_size] = z_sum;
@@ -662,6 +682,7 @@ void bigint_comba_sqr4(ref word[8] z, in word[4] x)
     
     word3_muladd_2(&w0, &w2, &w1, x[ 1], x[ 3]);
     word3_muladd(&w0, &w2, &w1, x[ 2], x[ 2]);
+
     z[ 4] = w1; w1 = 0;
     
     word3_muladd_2(&w1, &w0, &w2, x[ 2], x[ 3]);
@@ -677,38 +698,429 @@ void bigint_comba_sqr4(ref word[8] z, in word[4] x)
 */
 void bigint_comba_mul4(ref word[8] z, in word[4] x, in word[4] y)
 {
-    word w2 = 0, w1 = 0, w0 = 0;
-    
-    word3_muladd(&w2, &w1, &w0, x[ 0], y[ 0]);
-    z[ 0] = w0; w0 = 0;
-    
-    word3_muladd(&w0, &w2, &w1, x[ 0], y[ 1]);
-    word3_muladd(&w0, &w2, &w1, x[ 1], y[ 0]);
-    z[ 1] = w1; w1 = 0;
-    
-    word3_muladd(&w1, &w0, &w2, x[ 0], y[ 2]);
-    word3_muladd(&w1, &w0, &w2, x[ 1], y[ 1]);
-    word3_muladd(&w1, &w0, &w2, x[ 2], y[ 0]);
-    z[ 2] = w2; w2 = 0;
-    
-    word3_muladd(&w2, &w1, &w0, x[ 0], y[ 3]);
-    word3_muladd(&w2, &w1, &w0, x[ 1], y[ 2]);
-    word3_muladd(&w2, &w1, &w0, x[ 2], y[ 1]);
-    word3_muladd(&w2, &w1, &w0, x[ 3], y[ 0]);
-    z[ 3] = w0; w0 = 0;
-    
-    word3_muladd(&w0, &w2, &w1, x[ 1], y[ 3]);
-    word3_muladd(&w0, &w2, &w1, x[ 2], y[ 2]);
-    word3_muladd(&w0, &w2, &w1, x[ 3], y[ 1]);
-    z[ 4] = w1; w1 = 0;
-    
-    word3_muladd(&w1, &w0, &w2, x[ 2], y[ 3]);
-    word3_muladd(&w1, &w0, &w2, x[ 3], y[ 2]);
-    z[ 5] = w2; w2 = 0;
-    
-    word3_muladd(&w2, &w1, &w0, x[ 3], y[ 3]);
-    z[ 6] = w0;
-    z[ 7] = w1;
+	logDebug(z.to!string);
+	logDebug(x.to!string);
+	logDebug(y.to!string);
+	//word[8] z_verif = z[];
+	version(none) {
+
+	    auto _x = x.ptr;
+		auto _y = y.ptr;
+		word* _z = z_verif.ptr;
+		// w1 : R14
+		// w2 : R15
+		// w0 : R13
+		{
+			asm pure nothrow @nogc {
+
+				align 8;
+				mov R8, _x;
+				mov R9, _y;
+				mov R10, _z;
+				mov R15, 0;
+				mov R13, 0;
+				mov R14, 0;
+
+				//1
+				mov RAX, [R8];
+				mov RBX, [R9];
+				mul RBX;
+
+				add RAX, R13;
+				adc RDX, 0;
+				add R14, RDX;
+				mov R13, RAX;
+				cmp R14, R11;
+				jnl MUL_2;
+				add R15, 1;
+
+			MUL_2:
+
+				align 8;
+				//2
+				add R9, 8;
+				mov [R10], R13;
+				xor R13, R13;
+				// R15: w2, R13: w0, R14: w1
+				mov RAX, [R8];
+				mov RBX, [R9];
+				mul RBX;
+				add RAX, R14;
+				adc RDX, 0;
+				add R15, RDX;
+				mov R14, RAX;
+				cmp R15, RDX;
+				jnl MUL_3;
+				add R13, 1;
+			MUL_3:
+				align 8;
+				add R8, 8;
+				sub R9, 8;
+				mov RDX, 0;
+
+				mov RAX, [R8];
+				mov RBX, [R9];
+				mul RBX;
+				add RAX, R14;
+				adc RDX, 0;
+				add R15, RDX;
+				mov R14, RAX;
+				cmp R15, RDX;
+				jnl MUL_4;
+				add R13, 1;
+
+			MUL_4:
+				align 8;
+				sub R8, 8;
+				add R9, 8;
+				add R9, 8;
+				add R10, 8;
+				// R15: w2, R13: w0, R14: w1
+				mov [R10], R14;
+				mov R14, 0;
+				
+				mov RAX, [R8];
+				mov RBX, [R9];
+				mul RBX;
+				add RAX, R15;
+				adc RDX, 0;
+				add R13, RDX;
+				mov R15, RAX;
+				cmp R13, RDX;
+				jnl MUL_5;
+				add R14, 1;
+			MUL_5:
+				align 8;
+				add R8, 8;
+				sub R9, 8;
+				
+				mov RAX, [R8];
+				mov RBX, [R9];
+				mul RBX;
+				add RAX, R15;
+				adc RDX, 0;
+				add R13, RDX;
+				mov R15, RAX;
+				cmp R13, RDX;
+				jnl MUL_6;
+				add R14, 1;
+
+			MUL_6:
+				align 8;
+				add R8, 8;
+				sub R9, 8;
+				
+				mov RAX, [R8];
+				mov RBX, [R9];
+				mul RBX;
+				add RAX, R15;
+				adc RDX, 0;
+				add R13, RDX;
+				add R10, 8;
+				mov R15, RAX;
+				cmp R13, RDX;
+				jnl MUL_7;
+				add R14, 1;
+
+			MUL_7:
+				align 8;
+				sub R8, 8;
+				sub R8, 8;
+				add R9, 8;
+				add R9, 8;
+				add R9, 8;
+				mov [R10], R15;
+				mov R15, 0;
+				// R15: w2, R13: w0, R14: w1
+
+				mov RAX, [R8];
+				mov RBX, [R9];
+				mul RBX;
+				add RAX, R13;
+				adc RDX, 0;
+				add R14, RDX;
+				mov R13, RAX;
+				cmp R14, RDX;
+				jnl MUL_8;
+				add R15, 1;
+
+			MUL_8:
+				align 8;				
+				add R8, 8;
+				sub R9, 8;
+				
+				mov RAX, [R8];
+				mov RBX, [R9];
+				mul RBX;
+				add RAX, R13;
+				adc RDX, 0;
+				add R14, RDX;
+				mov R13, RAX;
+				cmp R14, RDX;
+				jnl MUL_9;
+				add R15, 1;
+			MUL_9:		
+				align 8;	
+				add R8, 8;
+				sub R9, 8;
+				// R15: w2, R13: w0, R14: w1
+				
+				mov RAX, [R8];
+				mov RBX, [R9];
+				mul RBX;
+				add RAX, R13;
+				adc RDX, 0;
+				add R14, RDX;
+				mov R13, RAX;
+				cmp R14, RDX;
+				jnl MUL_10;
+				add R15, 1;
+			MUL_10:	
+				align 8;		
+				add R8, 8;
+				sub R9, 8;
+				// R15: w2, R13: w0, R14: w1
+				
+				mov RAX, [R8];
+				mov RBX, [R9];
+				mul RBX;
+				add RAX, R13;
+				adc RDX, 0;
+				add R14, RDX;
+				mov R13, RAX;
+				cmp R14, RDX;
+				jnl MUL_11;
+				add R15, 1;
+
+			MUL_11:	
+				align 8;		
+				sub R8, 8;
+				sub R8, 8;
+				add R9, 8;
+				add R9, 8;
+				add R9, 8;
+				add R10, 8;
+				mov [R10], R13;
+				mov R13, 0;
+				// R15: w2, R13: w0, R14: w1
+				
+				mov RAX, [R8];
+				mov RBX, [R9];
+				mul RBX;
+				add RAX, R14;
+				adc RDX, 0;
+				add R15, RDX;
+				mov R14, RAX;
+				cmp R15, RDX;
+				jnl MUL_12;
+				add R13, 1;
+			MUL_12:		
+				align 8;
+				add R8, 8;
+				sub R9, 8;
+				// R15: w2, R13: w0, R14: w1
+				
+				mov RAX, [R8];
+				mov RBX, [R9];
+				mul RBX;
+				add RAX, R14;
+				adc RDX, 0;
+				add R15, RDX;
+				mov R14, RAX;
+				cmp R15, RDX;
+				jnl MUL_13;
+				add R13, 1;
+			MUL_13:	
+				align 8;		
+				add R8, 8;
+				sub R9, 8;
+				// R15: w2, R13: w0, R14: w1
+				
+				mov RAX, [R8];
+				mov RBX, [R9];
+				mul RBX;
+				add RAX, R14;
+				adc RDX, 0;
+				add R15, RDX;
+				mov R14, RAX;
+				cmp R15, RDX;
+				jnl MUL_14;
+				add R13, 1;
+			MUL_14:		
+				align 8;
+				sub R8, 8;
+				add R9, 8;
+				add R9, 8;
+				add R10, 8;
+				add [R10], R14;
+				mov R14, 0;
+				// R15: w2, R13: w0, R14: w1
+				
+				mov RAX, [R8];
+				mov RBX, [R9];
+				mul RBX;
+				add RAX, R15;
+				adc RDX, 0;
+				add R13, RDX;
+				mov R15, RAX;
+				cmp R13, RDX;
+				jnl MUL_15;
+				add R14, 1;
+			MUL_15:	
+				align 8;		
+				add R8, 8;
+				sub R9, 8;
+				// R15: w2, R13: w0, R14: w1
+				
+				mov RAX, [R8];
+				mov RBX, [R9];
+				mul RBX;
+				add RAX, R15;
+				adc RDX, 0;
+				add R13, RDX;
+				mov R15, RAX;
+				cmp R13, RDX;
+				jnl MUL_16;
+				add R14, 1;
+
+			MUL_16:	
+				align 8;		
+				add R9, 8;
+				// R15: w2, R13: w0, R14: w1
+
+				add R10, 8;
+				mov [R10], R15;
+				mov R15, 0;
+
+				mov RAX, [R8];
+				mov RBX, [R9];
+				mul RBX;
+				add RAX, R13;
+				adc RDX, 0;
+				add R14, RDX;
+				add R10, 8;
+				mov [R10], RAX;
+				add R10, 8;
+				mov [R10], R14;
+
+			}
+		}
+	} else
+	{
+		word w2 = 0, w1 = 0, w0 = 0;
+		word carry;
+		{
+			carry = w0;
+			w0 = word_madd2(x[0], y[0], &carry);
+			w1 += carry;
+			w2 += (w1 < carry) ? 1 : 0;
+		}
+		z[ 0] = w0; w0 = 0;
+		
+		{ //2
+			carry = w1;
+			w1 = word_madd2(x[0], y[1], &carry);
+			w2 += carry;
+			w0 += (w2 < carry) ? 1 : 0;
+		}
+		{
+			carry = w1;
+			w1 = word_madd2(x[1], y[0], &carry);
+			w2 += carry;
+			w0 += (w2 < carry) ? 1 : 0;
+		}
+		z[ 1] = w1; w1 = 0;
+		
+		{ //4
+			carry = w2;
+			w2 = word_madd2(x[0], y[2], &carry);
+			w0 += carry;
+			w1 += (w0 < carry) ? 1 : 0;
+		}
+		{ //5
+			carry = w2;
+			w2 = word_madd2(x[1], y[1], &carry);
+			w0 += carry;
+			w1 += (w0 < carry) ? 1 : 0;
+		}
+		{ //6
+			carry = w2;
+			w2 = word_madd2(x[2], y[0], &carry);
+			w0 += carry;
+			w1 += (w0 < carry) ? 1 : 0;
+		}
+		z[ 2] = w2; w2 = 0;
+		
+		{ //7
+			carry = w0;
+			w0 = word_madd2(x[0], y[3], &carry);
+			w1 += carry;
+			w2 += (w1 < carry) ? 1 : 0;
+		}
+		{//8
+			carry = w0;
+			w0 = word_madd2(x[1], y[2], &carry);
+			w1 += carry;
+			w2 += (w1 < carry) ? 1 : 0;
+		}
+		{//9
+			carry = w0;
+			w0 = word_madd2(x[2], y[1], &carry);
+			w1 += carry;
+			w2 += (w1 < carry) ? 1 : 0;
+		}
+		{//10
+			carry = w0;
+			w0 = word_madd2(x[3], y[0], &carry);
+			w1 += carry;
+			w2 += (w1 < carry) ? 1 : 0;
+		}
+		z[ 3] = w0; w0 = 0;
+		
+		{//11
+			carry = w1;
+			w1 = word_madd2(x[1], y[3], &carry);
+			w2 += carry;
+			w0 += (w2 < carry) ? 1 : 0;
+		}
+		{//12
+			carry = w1;
+			w1 = word_madd2(x[2], y[2], &carry);
+			w2 += carry;
+			w0 += (w2 < carry) ? 1 : 0;
+		}
+		{//13
+			carry = w1;
+			w1 = word_madd2(x[3], y[1], &carry);
+			w2 += carry;
+			w0 += (w2 < carry) ? 1 : 0;
+		}
+		z[ 4] = w1; w1 = 0;
+		
+		{//14
+			carry = w2;
+			w2 = word_madd2(x[2], y[3], &carry);
+			w0 += carry;
+			w1 += (w0 < carry) ? 1 : 0;
+		}
+		{//15
+			carry = w2;
+			w2 = word_madd2(x[3], y[2], &carry);
+			w0 += carry;
+			w1 += (w0 < carry) ? 1 : 0;
+		}
+		z[ 5] = w2; w2 = 0;
+		
+		{//16
+			carry = w0;
+			w0 = word_madd2(x[3], y[3], &carry);
+			w1 += carry;
+			w2 += (w1 < carry) ? 1 : 0;
+		}
+		z[ 6] = w0;
+		z[ 7] = w1;
+	}
+	//assert(z_verif == z);
 }
 
 /*
@@ -769,63 +1181,243 @@ void bigint_comba_sqr6(ref word[12] z, in word[6] x)
 void bigint_comba_mul6(ref word[12] z, in word[6] x, in word[6] y)
 {
     word w2 = 0, w1 = 0, w0 = 0;
-    
-    word3_muladd(&w2, &w1, &w0, x[ 0], y[ 0]);
+	word carry;
+	{
+		carry = w0;
+		w0 = word_madd2(x[0], y[0], &carry);
+		w1 += carry;
+		w2 += (w1 < carry) ? 1 : 0;
+	}
     z[ 0] = w0; w0 = 0;
 
-    word3_muladd(&w0, &w2, &w1, x[ 0], y[ 1]);
-    word3_muladd(&w0, &w2, &w1, x[ 1], y[ 0]);
+	{
+		carry = w1;
+		w1 = word_madd2(x[0], y[1], &carry);
+		w2 += carry;
+		w0 += (w2 < carry) ? 1 : 0;
+	}
+	{
+		carry = w1;
+		w1 = word_madd2(x[1], y[0], &carry);
+		w2 += carry;
+		w0 += (w2 < carry) ? 1 : 0;
+	}
     z[ 1] = w1; w1 = 0;
     
-    word3_muladd(&w1, &w0, &w2, x[ 0], y[ 2]);
-    word3_muladd(&w1, &w0, &w2, x[ 1], y[ 1]);
-    word3_muladd(&w1, &w0, &w2, x[ 2], y[ 0]);
+	{
+		carry = w2;
+		w2 = word_madd2(x[0], y[2], &carry);
+		w0 += carry;
+		w1 += (w0 < carry) ? 1 : 0;
+	}
+	{
+		carry = w2;
+		w2 = word_madd2(x[1], y[1], &carry);
+		w0 += carry;
+		w1 += (w0 < carry) ? 1 : 0;
+	}
+	{
+		carry = w2;
+		w2 = word_madd2(x[2], y[0], &carry);
+		w0 += carry;
+		w1 += (w0 < carry) ? 1 : 0;
+	}
     z[ 2] = w2; w2 = 0;
     
-    word3_muladd(&w2, &w1, &w0, x[ 0], y[ 3]);
-    word3_muladd(&w2, &w1, &w0, x[ 1], y[ 2]);
-    word3_muladd(&w2, &w1, &w0, x[ 2], y[ 1]);
-    word3_muladd(&w2, &w1, &w0, x[ 3], y[ 0]);
+	{
+		carry = w0;
+		w0 = word_madd2(x[0], y[3], &carry);
+		w1 += carry;
+		w2 += (w1 < carry) ? 1 : 0;
+	}
+	{
+		carry = w0;
+		w0 = word_madd2(x[1], y[2], &carry);
+		w1 += carry;
+		w2 += (w1 < carry) ? 1 : 0;
+	}
+	{
+		carry = w0;
+		w0 = word_madd2(x[2], y[1], &carry);
+		w1 += carry;
+		w2 += (w1 < carry) ? 1 : 0;
+	}
+	{
+		carry = w0;
+		w0 = word_madd2(x[3], y[0], &carry);
+		w1 += carry;
+		w2 += (w1 < carry) ? 1 : 0;
+	}
     z[ 3] = w0; w0 = 0;
     
-    word3_muladd(&w0, &w2, &w1, x[ 0], y[ 4]);
-    word3_muladd(&w0, &w2, &w1, x[ 1], y[ 3]);
-    word3_muladd(&w0, &w2, &w1, x[ 2], y[ 2]);
-    word3_muladd(&w0, &w2, &w1, x[ 3], y[ 1]);
-    word3_muladd(&w0, &w2, &w1, x[ 4], y[ 0]);
+	{
+		carry = w1;
+		w1 = word_madd2(x[0], y[4], &carry);
+		w2 += carry;
+		w0 += (w2 < carry) ? 1 : 0;
+	}
+	{
+		carry = w1;
+		w1 = word_madd2(x[1], y[3], &carry);
+		w2 += carry;
+		w0 += (w2 < carry) ? 1 : 0;
+	}
+	{
+		carry = w1;
+		w1 = word_madd2(x[2], y[2], &carry);
+		w2 += carry;
+		w0 += (w2 < carry) ? 1 : 0;
+	}
+	{
+		carry = w1;
+		w1 = word_madd2(x[3], y[1], &carry);
+		w2 += carry;
+		w0 += (w2 < carry) ? 1 : 0;
+	}
+	{
+		carry = w1;
+		w1 = word_madd2(x[4], y[0], &carry);
+		w2 += carry;
+		w0 += (w2 < carry) ? 1 : 0;
+	}
     z[ 4] = w1; w1 = 0;
     
-    word3_muladd(&w1, &w0, &w2, x[ 0], y[ 5]);
-    word3_muladd(&w1, &w0, &w2, x[ 1], y[ 4]);
-    word3_muladd(&w1, &w0, &w2, x[ 2], y[ 3]);
-    word3_muladd(&w1, &w0, &w2, x[ 3], y[ 2]);
-    word3_muladd(&w1, &w0, &w2, x[ 4], y[ 1]);
-    word3_muladd(&w1, &w0, &w2, x[ 5], y[ 0]);
+	{
+		carry = w2;
+		w2 = word_madd2(x[0], y[5], &carry);
+		w0 += carry;
+		w1 += (w0 < carry) ? 1 : 0;
+	}
+	{
+		carry = w2;
+		w2 = word_madd2(x[1], y[4], &carry);
+		w0 += carry;
+		w1 += (w0 < carry) ? 1 : 0;
+	}
+	{
+		carry = w2;
+		w2 = word_madd2(x[2], y[3], &carry);
+		w0 += carry;
+		w1 += (w0 < carry) ? 1 : 0;
+	}
+	{
+		carry = w2;
+		w2 = word_madd2(x[3], y[2], &carry);
+		w0 += carry;
+		w1 += (w0 < carry) ? 1 : 0;
+	}
+	{
+		carry = w2;
+		w2 = word_madd2(x[4], y[1], &carry);
+		w0 += carry;
+		w1 += (w0 < carry) ? 1 : 0;
+	}
+	{
+		carry = w2;
+		w2 = word_madd2(x[5], y[0], &carry);
+		w0 += carry;
+		w1 += (w0 < carry) ? 1 : 0;
+	}
     z[ 5] = w2; w2 = 0;
     
-    word3_muladd(&w2, &w1, &w0, x[ 1], y[ 5]);
-    word3_muladd(&w2, &w1, &w0, x[ 2], y[ 4]);
-    word3_muladd(&w2, &w1, &w0, x[ 3], y[ 3]);
-    word3_muladd(&w2, &w1, &w0, x[ 4], y[ 2]);
-    word3_muladd(&w2, &w1, &w0, x[ 5], y[ 1]);
+	{
+		carry = w0;
+		w0 = word_madd2(x[1], y[5], &carry);
+		w1 += carry;
+		w2 += (w1 < carry) ? 1 : 0;
+	}
+	{
+		carry = w0;
+		w0 = word_madd2(x[2], y[4], &carry);
+		w1 += carry;
+		w2 += (w1 < carry) ? 1 : 0;
+	}
+	{
+		carry = w0;
+		w0 = word_madd2(x[3], y[3], &carry);
+		w1 += carry;
+		w2 += (w1 < carry) ? 1 : 0;
+	}
+	{
+		carry = w0;
+		w0 = word_madd2(x[4], y[2], &carry);
+		w1 += carry;
+		w2 += (w1 < carry) ? 1 : 0;
+	}
+	{
+		carry = w0;
+		w0 = word_madd2(x[5], y[1], &carry);
+		w1 += carry;
+		w2 += (w1 < carry) ? 1 : 0;
+	}
     z[ 6] = w0; w0 = 0;
     
-    word3_muladd(&w0, &w2, &w1, x[ 2], y[ 5]);
-    word3_muladd(&w0, &w2, &w1, x[ 3], y[ 4]);
-    word3_muladd(&w0, &w2, &w1, x[ 4], y[ 3]);
-    word3_muladd(&w0, &w2, &w1, x[ 5], y[ 2]);
+	{
+		carry = w1;
+		w1 = word_madd2(x[2], y[5], &carry);
+		w2 += carry;
+		w0 += (w2 < carry) ? 1 : 0;
+	}
+	{
+		carry = w1;
+		w1 = word_madd2(x[3], y[4], &carry);
+		w2 += carry;
+		w0 += (w2 < carry) ? 1 : 0;
+	}
+	{
+		carry = w1;
+		w1 = word_madd2(x[4], y[3], &carry);
+		w2 += carry;
+		w0 += (w2 < carry) ? 1 : 0;
+	}
+	{
+		carry = w1;
+		w1 = word_madd2(x[5], y[2], &carry);
+		w2 += carry;
+		w0 += (w2 < carry) ? 1 : 0;
+	}
     z[ 7] = w1; w1 = 0;
     
-    word3_muladd(&w1, &w0, &w2, x[ 3], y[ 5]);
-    word3_muladd(&w1, &w0, &w2, x[ 4], y[ 4]);
-    word3_muladd(&w1, &w0, &w2, x[ 5], y[ 3]);
+	{
+		carry = w2;
+		w2 = word_madd2(x[3], y[5], &carry);
+		w0 += carry;
+		w1 += (w0 < carry) ? 1 : 0;
+	}
+	{
+		carry = w2;
+		w2 = word_madd2(x[4], y[4], &carry);
+		w0 += carry;
+		w1 += (w0 < carry) ? 1 : 0;
+	}
+	{
+		carry = w2;
+		w2 = word_madd2(x[5], y[3], &carry);
+		w0 += carry;
+		w1 += (w0 < carry) ? 1 : 0;
+	}
     z[ 8] = w2; w2 = 0;
     
-    word3_muladd(&w2, &w1, &w0, x[ 4], y[ 5]);
-    word3_muladd(&w2, &w1, &w0, x[ 5], y[ 4]);
+	{
+		carry = w0;
+		w0 = word_madd2(x[4], y[5], &carry);
+		w1 += carry;
+		w2 += (w1 < carry) ? 1 : 0;
+	}
+	{
+		carry = w0;
+		w0 = word_madd2(x[5], y[4], &carry);
+		w1 += carry;
+		w2 += (w1 < carry) ? 1 : 0;
+	}
     z[ 9] = w0; w0 = 0;
     
-    word3_muladd(&w0, &w2, &w1, x[ 5], y[ 5]);
+	{
+		carry = w1;
+		w1 = word_madd2(x[5], y[5], &carry);
+		w2 += carry;
+		w0 += (w2 < carry) ? 1 : 0;
+	}
     z[10] = w1;
     z[11] = w2;
 }
@@ -911,99 +1503,129 @@ void bigint_comba_sqr8(ref word[16] z, in word[8] x)
 void bigint_comba_mul8(ref word[16] z, in word[8] x, in word[8] y)
 {
     word w2 = 0, w1 = 0, w0 = 0;
-    
-    word3_muladd(&w2, &w1, &w0, x[ 0], y[ 0]);
+	size_t carry;
+	void word3_mulladd_012(size_t i, size_t j) {
+		carry = w0;
+		w0 = word_madd2(x.ptr[i], y.ptr[j], &carry);
+		w1 += carry;
+		w2 += (w1 < carry) ? 1 : 0;
+	}
+
+	void word3_mulladd_021(size_t i, size_t j) {
+		carry = w1;
+		w1 = word_madd2(x.ptr[i], y.ptr[j], &carry);
+		w2 += carry;
+		w0 += (w2 < carry) ? 1 : 0;
+	}
+	
+	void word3_mulladd_102(size_t i, size_t j) {
+		carry = w2;
+		w2 = word_madd2(x.ptr[i], y.ptr[j], &carry);
+		w0 += carry;
+		w1 += (w0 < carry) ? 1 : 0;
+	}
+
+	void word3_mulladd_210(size_t i, size_t j) {
+		carry = w0;
+		w0 = word_madd2(x.ptr[i], y.ptr[j], &carry);
+		w1 += carry;
+		w2 += (w1 < carry) ? 1 : 0;
+	}
+
+
+	word3_mulladd_012(0, 0);
+
     z[ 0] = w0; w0 = 0;
     
-    word3_muladd(&w0, &w2, &w1, x[ 0], y[ 1]);
-    word3_muladd(&w0, &w2, &w1, x[ 1], y[ 0]);
+	word3_mulladd_021(0, 1);
+	word3_mulladd_021(1, 0);
     z[ 1] = w1; w1 = 0;
     
-    word3_muladd(&w1, &w0, &w2, x[ 0], y[ 2]);
-    word3_muladd(&w1, &w0, &w2, x[ 1], y[ 1]);
-    word3_muladd(&w1, &w0, &w2, x[ 2], y[ 0]);
+	word3_mulladd_102(0, 2);
+	word3_mulladd_102(1, 1);
+	word3_mulladd_102(2, 0);
     z[ 2] = w2; w2 = 0;
     
-    word3_muladd(&w2, &w1, &w0, x[ 0], y[ 3]);
-    word3_muladd(&w2, &w1, &w0, x[ 1], y[ 2]);
-    word3_muladd(&w2, &w1, &w0, x[ 2], y[ 1]);
-    word3_muladd(&w2, &w1, &w0, x[ 3], y[ 0]);
+	word3_mulladd_210(0, 3);
+	word3_mulladd_210(1, 2);
+	word3_mulladd_210(2, 1);
+	word3_mulladd_210(3, 0);
     z[ 3] = w0; w0 = 0;
     
-    word3_muladd(&w0, &w2, &w1, x[ 0], y[ 4]);
-    word3_muladd(&w0, &w2, &w1, x[ 1], y[ 3]);
-    word3_muladd(&w0, &w2, &w1, x[ 2], y[ 2]);
-    word3_muladd(&w0, &w2, &w1, x[ 3], y[ 1]);
-    word3_muladd(&w0, &w2, &w1, x[ 4], y[ 0]);
+	word3_mulladd_021(0, 4);
+	word3_mulladd_021(1, 3);
+	word3_mulladd_021(2, 2);
+	word3_mulladd_021(3, 1);
+	word3_mulladd_021(4, 0);
     z[ 4] = w1; w1 = 0;
     
-    word3_muladd(&w1, &w0, &w2, x[ 0], y[ 5]);
-    word3_muladd(&w1, &w0, &w2, x[ 1], y[ 4]);
-    word3_muladd(&w1, &w0, &w2, x[ 2], y[ 3]);
-    word3_muladd(&w1, &w0, &w2, x[ 3], y[ 2]);
-    word3_muladd(&w1, &w0, &w2, x[ 4], y[ 1]);
-    word3_muladd(&w1, &w0, &w2, x[ 5], y[ 0]);
+	word3_mulladd_102(0, 5);
+	word3_mulladd_102(1, 4);
+	word3_mulladd_102(2, 3);
+	word3_mulladd_102(3, 2);
+	word3_mulladd_102(4, 1);
+	word3_mulladd_102(5, 0);
     z[ 5] = w2; w2 = 0;
     
-    word3_muladd(&w2, &w1, &w0, x[ 0], y[ 6]);
-    word3_muladd(&w2, &w1, &w0, x[ 1], y[ 5]);
-    word3_muladd(&w2, &w1, &w0, x[ 2], y[ 4]);
-    word3_muladd(&w2, &w1, &w0, x[ 3], y[ 3]);
-    word3_muladd(&w2, &w1, &w0, x[ 4], y[ 2]);
-    word3_muladd(&w2, &w1, &w0, x[ 5], y[ 1]);
-    word3_muladd(&w2, &w1, &w0, x[ 6], y[ 0]);
+	word3_mulladd_210(0, 6);
+	word3_mulladd_210(1, 5);
+	word3_mulladd_210(2, 4);
+	word3_mulladd_210(3, 3);
+	word3_mulladd_210(4, 2);
+	word3_mulladd_210(5, 1);
+	word3_mulladd_210(6, 0);
     z[ 6] = w0; w0 = 0;
     
-    word3_muladd(&w0, &w2, &w1, x[ 0], y[ 7]);
-    word3_muladd(&w0, &w2, &w1, x[ 1], y[ 6]);
-    word3_muladd(&w0, &w2, &w1, x[ 2], y[ 5]);
-    word3_muladd(&w0, &w2, &w1, x[ 3], y[ 4]);
-    word3_muladd(&w0, &w2, &w1, x[ 4], y[ 3]);
-    word3_muladd(&w0, &w2, &w1, x[ 5], y[ 2]);
-    word3_muladd(&w0, &w2, &w1, x[ 6], y[ 1]);
-    word3_muladd(&w0, &w2, &w1, x[ 7], y[ 0]);
+	word3_mulladd_021(0, 7);
+	word3_mulladd_021(1, 6);
+	word3_mulladd_021(2, 5);
+	word3_mulladd_021(3, 4);
+	word3_mulladd_021(4, 3);
+	word3_mulladd_021(5, 2);
+	word3_mulladd_021(6, 1);
+	word3_mulladd_021(7, 0);
     z[ 7] = w1; w1 = 0;
     
-    word3_muladd(&w1, &w0, &w2, x[ 1], y[ 7]);
-    word3_muladd(&w1, &w0, &w2, x[ 2], y[ 6]);
-    word3_muladd(&w1, &w0, &w2, x[ 3], y[ 5]);
-    word3_muladd(&w1, &w0, &w2, x[ 4], y[ 4]);
-    word3_muladd(&w1, &w0, &w2, x[ 5], y[ 3]);
-    word3_muladd(&w1, &w0, &w2, x[ 6], y[ 2]);
-    word3_muladd(&w1, &w0, &w2, x[ 7], y[ 1]);
+    word3_mulladd_102(1, 7);
+	word3_mulladd_102(2, 6);
+	word3_mulladd_102(3, 5);
+	word3_mulladd_102(4, 4);
+	word3_mulladd_102(5, 3);
+	word3_mulladd_102(6, 2);
+	word3_mulladd_102(7, 1);
     z[ 8] = w2; w2 = 0;
     
-    word3_muladd(&w2, &w1, &w0, x[ 2], y[ 7]);
-    word3_muladd(&w2, &w1, &w0, x[ 3], y[ 6]);
-    word3_muladd(&w2, &w1, &w0, x[ 4], y[ 5]);
-    word3_muladd(&w2, &w1, &w0, x[ 5], y[ 4]);
-    word3_muladd(&w2, &w1, &w0, x[ 6], y[ 3]);
-    word3_muladd(&w2, &w1, &w0, x[ 7], y[ 2]);
+	word3_mulladd_210(2, 7);
+	word3_mulladd_210(3, 6);
+	word3_mulladd_210(4, 5);
+	word3_mulladd_210(5, 4);
+	word3_mulladd_210(6, 3);
+	word3_mulladd_210(7, 2);
     z[ 9] = w0; w0 = 0;
     
-    word3_muladd(&w0, &w2, &w1, x[ 3], y[ 7]);
-    word3_muladd(&w0, &w2, &w1, x[ 4], y[ 6]);
-    word3_muladd(&w0, &w2, &w1, x[ 5], y[ 5]);
-    word3_muladd(&w0, &w2, &w1, x[ 6], y[ 4]);
-    word3_muladd(&w0, &w2, &w1, x[ 7], y[ 3]);
+	word3_mulladd_021(3, 7);
+	word3_mulladd_021(4, 6);
+	word3_mulladd_021(5, 5);
+	word3_mulladd_021(6, 4);
+	word3_mulladd_021(7, 3);
     z[10] = w1; w1 = 0;
     
-    word3_muladd(&w1, &w0, &w2, x[ 4], y[ 7]);
-    word3_muladd(&w1, &w0, &w2, x[ 5], y[ 6]);
-    word3_muladd(&w1, &w0, &w2, x[ 6], y[ 5]);
-    word3_muladd(&w1, &w0, &w2, x[ 7], y[ 4]);
+	word3_mulladd_102(4, 7);
+	word3_mulladd_102(5, 6);
+	word3_mulladd_102(6, 5);
+	word3_mulladd_102(7, 4);
     z[11] = w2; w2 = 0;
     
-    word3_muladd(&w2, &w1, &w0, x[ 5], y[ 7]);
-    word3_muladd(&w2, &w1, &w0, x[ 6], y[ 6]);
-    word3_muladd(&w2, &w1, &w0, x[ 7], y[ 5]);
+	word3_mulladd_210(5, 7);
+	word3_mulladd_210(6, 6);
+	word3_mulladd_210(7, 5);
     z[12] = w0; w0 = 0;
     
-    word3_muladd(&w0, &w2, &w1, x[ 6], y[ 7]);
-    word3_muladd(&w0, &w2, &w1, x[ 7], y[ 6]);
+	word3_mulladd_021(6, 7);
+	word3_mulladd_021(7, 6);
     z[13] = w1; w1 = 0;
     
-    word3_muladd(&w1, &w0, &w2, x[ 7], y[ 7]);
+	word3_mulladd_102(7, 7);
     z[14] = w2;
     z[15] = w0;
 }
@@ -1862,14 +2484,21 @@ word word_add(word x, word y, word* carry)
 */
 word word8_add2(ref word[8] x, in word[8] y, word carry)
 {
-    x[0] = word_add(x[0], y[0], &carry);
-    x[1] = word_add(x[1], y[1], &carry);
-    x[2] = word_add(x[2], y[2], &carry);
-    x[3] = word_add(x[3], y[3], &carry);
-    x[4] = word_add(x[4], y[4], &carry);
-    x[5] = word_add(x[5], y[5], &carry);
-    x[6] = word_add(x[6], y[6], &carry);
-    x[7] = word_add(x[7], y[7], &carry);
+	void word_add_i(size_t i) {
+		word z = x.ptr[i] + y.ptr[i];
+		word c1 = (z < x.ptr[i]);
+		z += carry;
+		carry = c1 | (z < carry);
+		x.ptr[i] = z;
+	}
+	word_add_i(0);
+	word_add_i(1);
+	word_add_i(2);
+	word_add_i(3);
+	word_add_i(4);
+	word_add_i(5);
+	word_add_i(6);
+	word_add_i(7);
     return carry;
 }
 
@@ -1954,15 +2583,97 @@ word word8_sub3(ref word[8] z, in word[8] x, in word[8] y, word carry)
 */
 word word8_linmul2(ref word[8] x, word y, word carry)
 {
-    x[0] = word_madd2(x[0], y, &carry);
-    x[1] = word_madd2(x[1], y, &carry);
-    x[2] = word_madd2(x[2], y, &carry);
-    x[3] = word_madd2(x[3], y, &carry);
-    x[4] = word_madd2(x[4], y, &carry);
-    x[5] = word_madd2(x[5], y, &carry);
-    x[6] = word_madd2(x[6], y, &carry);
-    x[7] = word_madd2(x[7], y, &carry);
-    return carry;
+	version(D_InlineAsm_X86_64) {
+		word* _x = x.ptr;
+		size_t word_size = word.sizeof;
+		asm pure nothrow @nogc {
+			mov R8, _x;
+			mov RCX, carry;
+
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R8], RAX;
+			add R8, word_size;
+
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R8], RAX;
+			add R8, word_size;
+
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R8], RAX;
+			add R8, word_size;
+
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R8], RAX;
+			add R8, word_size;
+
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R8], RAX;
+			add R8, word_size;
+
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R8], RAX;
+			add R8, word_size;
+
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R8], RAX;
+			add R8, word_size;
+
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov carry, RDX;
+			mov [R8], RAX;
+		}
+		return carry;
+	}
+	else {
+	    x[0] = word_madd2(x[0], y, &carry);
+	    x[1] = word_madd2(x[1], y, &carry);
+	    x[2] = word_madd2(x[2], y, &carry);
+	    x[3] = word_madd2(x[3], y, &carry);
+	    x[4] = word_madd2(x[4], y, &carry);
+	    x[5] = word_madd2(x[5], y, &carry);
+	    x[6] = word_madd2(x[6], y, &carry);
+	    x[7] = word_madd2(x[7], y, &carry);
+	    return carry;
+	}
 }
 
 /*
@@ -1970,15 +2681,107 @@ word word8_linmul2(ref word[8] x, word y, word carry)
 */
 word word8_linmul3(ref word[8] z, in word[8] x, word y, word carry)
 {
-    z[0] = word_madd2(x[0], y, &carry);
-    z[1] = word_madd2(x[1], y, &carry);
-    z[2] = word_madd2(x[2], y, &carry);
-    z[3] = word_madd2(x[3], y, &carry);
-    z[4] = word_madd2(x[4], y, &carry);
-    z[5] = word_madd2(x[5], y, &carry);
-    z[6] = word_madd2(x[6], y, &carry);
-    z[7] = word_madd2(x[7], y, &carry);
-    return carry;
+
+	version(D_InlineAsm_X86_64) {
+		word* _x = cast(word*)x.ptr;
+		word* _z = z.ptr;
+		size_t word_size = word.sizeof;
+		asm pure nothrow @nogc {
+			mov R8, _x;
+			mov R9, _z;
+			mov RCX, carry;
+			
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R9], RAX;
+			add R8, word_size;
+			add R9, word_size;
+			
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R9], RAX;
+			add R8, word_size;
+			add R9, word_size;
+			
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R9], RAX;
+			add R8, word_size;
+			add R9, word_size;
+			
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R9], RAX;
+			add R8, word_size;
+			add R9, word_size;
+			
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R9], RAX;
+			add R8, word_size;
+			add R9, word_size;
+			
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R9], RAX;
+			add R8, word_size;
+			add R9, word_size;
+			
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R9], RAX;
+			add R8, word_size;
+			add R9, word_size;
+			
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov carry, RDX;
+			mov [R9], RAX;
+		}
+		return carry;
+	}
+	else {
+	    z[0] = word_madd2(x[0], y, &carry);
+	    z[1] = word_madd2(x[1], y, &carry);
+	    z[2] = word_madd2(x[2], y, &carry);
+	    z[3] = word_madd2(x[3], y, &carry);
+	    z[4] = word_madd2(x[4], y, &carry);
+	    z[5] = word_madd2(x[5], y, &carry);
+	    z[6] = word_madd2(x[6], y, &carry);
+	    z[7] = word_madd2(x[7], y, &carry);
+	    return carry;
+	}
 }
 
 /*
@@ -1986,15 +2789,121 @@ word word8_linmul3(ref word[8] z, in word[8] x, word y, word carry)
 */
 word word8_madd3(ref word[8] z, in word[8] x, word y, word carry)
 {
-    z[0] = word_madd3(x[0], y, z[0], &carry);
-    z[1] = word_madd3(x[1], y, z[1], &carry);
-    z[2] = word_madd3(x[2], y, z[2], &carry);
-    z[3] = word_madd3(x[3], y, z[3], &carry);
-    z[4] = word_madd3(x[4], y, z[4], &carry);
-    z[5] = word_madd3(x[5], y, z[5], &carry);
-    z[6] = word_madd3(x[6], y, z[6], &carry);
-    z[7] = word_madd3(x[7], y, z[7], &carry);
-    return carry;
+	version(D_InlineAsm_X86_64) {
+		auto _x = x.ptr;
+		word* _z = z.ptr;
+		size_t word_size = word.sizeof;
+		asm pure nothrow @nogc {
+			mov R8, _x;
+			mov R9, _z;
+			mov RCX, carry;
+			
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, [R9];
+			adc RDX, 0;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R9], RAX;
+			add R8, word_size;
+			add R9, word_size;
+			
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, [R9];
+			adc RDX, 0;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R9], RAX;
+			add R8, word_size;
+			add R9, word_size;
+			
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, [R9];
+			adc RDX, 0;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R9], RAX;
+			add R8, word_size;
+			add R9, word_size;
+			
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, [R9];
+			adc RDX, 0;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R9], RAX;
+			add R8, word_size;
+			add R9, word_size;
+			
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, [R9];
+			adc RDX, 0;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R9], RAX;
+			add R8, word_size;
+			add R9, word_size;
+			
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, [R9];
+			adc RDX, 0;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R9], RAX;
+			add R8, word_size;
+			add R9, word_size;
+			
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, [R9];
+			adc RDX, 0;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov RCX, RDX;
+			mov [R9], RAX;
+			add R8, word_size;
+			add R9, word_size;
+			
+			mov RAX, [R8];
+			mov RBX, y;
+			mul RBX;
+			add RAX, [R9];
+			adc RDX, 0;
+			add RAX, RCX;
+			adc RDX, 0;
+			mov carry, RDX;
+			mov [R9], RAX;
+		}
+		return carry;
+	} else {
+	    z[0] = word_madd3(x[0], y, z[0], &carry);
+	    z[1] = word_madd3(x[1], y, z[1], &carry);
+	    z[2] = word_madd3(x[2], y, z[2], &carry);
+	    z[3] = word_madd3(x[3], y, z[3], &carry);
+	    z[4] = word_madd3(x[4], y, z[4], &carry);
+	    z[5] = word_madd3(x[5], y, z[5], &carry);
+	    z[6] = word_madd3(x[6], y, z[6], &carry);
+	    z[7] = word_madd3(x[7], y, z[7], &carry);
+	    return carry;
+	}
 }
 
 /*

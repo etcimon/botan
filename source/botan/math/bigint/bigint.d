@@ -112,6 +112,7 @@ public:
 	void load()(auto ref BigInt other) {
 		m_reg[] = other.m_reg[];
 		m_signedness = other.m_signedness;
+		sig_words_cache = size_t.max;
 	}
 
     /**
@@ -202,6 +203,7 @@ public:
         import std.algorithm : swap;
         m_reg.swap(reg);
         swap(m_signedness, sign);
+        sig_words_cache = size_t.max;	
     }
 
 	void reserve(size_t n) {
@@ -231,11 +233,13 @@ public:
 		m_reg.swap(other.m_reg);
 
         .swap(m_signedness, other.m_signedness);
+        .swap(sig_words_cache, other.sig_words_cache);
     }
 
     void swapReg(ref SecureVector!word reg)
     {
         m_reg.swap(reg);
+        sig_words_cache = size_t.max;
     }
 
     /**
@@ -255,19 +259,21 @@ public:
             bigint_add2(mutablePtr(), reg_size - 1, y.ptr, y_sw);
         else
         {
-            int relative_size = bigint_cmp(m_reg.ptr, x_sw, y.ptr, y_sw);
+            int relative_size = bigint_cmp(mutablePtr(), x_sw, y.ptr, y_sw);
             
             if (relative_size < 0)
             {
                 SecureVector!word z = SecureVector!word(reg_size - 1);
-                bigint_sub3(z.ptr, y.ptr, reg_size - 1, m_reg.ptr, x_sw);
+                bigint_sub3(z.ptr, y.ptr, reg_size - 1, mutablePtr(), x_sw);
                 m_reg[] = z;
+		        sig_words_cache = size_t.max;
                 setSign(y.sign());
             }
             else if (relative_size == 0)
             {
                 zeroise(m_reg);
-                setSign(Positive);
+             	sig_words_cache = size_t.max;
+		        setSign(Positive);
             }
             else if (relative_size > 0)
                 bigint_sub2(mutablePtr(), x_sw, y.ptr, y_sw);
@@ -291,7 +297,7 @@ public:
     {
         const size_t x_sw = sigWords(), y_sw = y.sigWords();
         
-        int relative_size = bigint_cmp(m_reg.ptr, x_sw, y.ptr, y_sw);
+        int relative_size = bigint_cmp(mutablePtr(), x_sw, y.ptr, y_sw);
         
         const size_t reg_size = std.algorithm.max(x_sw, y_sw) + 1;
         growTo(reg_size);
@@ -362,7 +368,7 @@ public:
         {
             growTo(size() + y.length);
             
-            SecureVector!word z = SecureVector!word(m_reg.ptr[0 .. x_sw]);
+            SecureVector!word z = SecureVector!word(mutablePtr()[0 .. x_sw]);
             SecureVector!word workspace = SecureVector!word(size());
             
             bigint_mul(mutablePtr(), size(), workspace.ptr, z.ptr, z.length, x_sw, y.ptr, y.length, y_sw);
@@ -480,7 +486,7 @@ public:
             const size_t shift_bits  = shift % MP_WORD_BITS;
             
             bigint_shr1(mutablePtr(), sigWords(), shift_words, shift_bits);
-            
+            sig_words_cache = size_t.max;
             if (isZero())
                 setSign(Positive);
         }
@@ -524,7 +530,7 @@ public:
     { 
         import std.c.string : memset;
         if (!m_reg.empty){
-            memset(m_reg.ptr, 0, word.sizeof*m_reg.length);
+            memset(mutablePtr(), 0, word.sizeof*m_reg.length);
         }
     }
 
@@ -618,6 +624,7 @@ public:
         const word mask = cast(word)(1) << (n % MP_WORD_BITS);
         if (which >= size()) growTo(which + 1);
         m_reg[which] |= mask;
+        sig_words_cache = size_t.max;
     }
 
     /**
@@ -631,6 +638,7 @@ public:
         const word mask = cast(word)(1) << (n % MP_WORD_BITS);
         if (which < size())
             m_reg[which] &= ~mask;
+        sig_words_cache = size_t.max;
     }
 
     /**
@@ -650,6 +658,7 @@ public:
             clearMem(&m_reg[top_word+1], size() - (top_word + 1));
         
         m_reg[top_word] &= mask;
+        sig_words_cache = size_t.max;
     }
 
     /**
@@ -806,11 +815,13 @@ public:
     */
     size_t sigWords() const
     {
+        if (sig_words_cache != size_t.max) return sig_words_cache;
         const word* x = m_reg.ptr;
         size_t sig = m_reg.length;
 
         while (sig && (x[sig-1] == 0))
             sig--;
+        (cast()this).sig_words_cache = sig;
         return sig;
     }
 
@@ -841,7 +852,7 @@ public:
     * Return a mutable pointer to the register
     * Returns: a pointer to the start of the internal register
     */
-    word* mutablePtr() { return m_reg.ptr; }
+    word* mutablePtr() { sig_words_cache = size_t.max; return m_reg.ptr; }
 
     /**
     * Return a const pointer to the register
@@ -917,8 +928,8 @@ public:
         
         foreach (size_t i; 0 .. (length % WORD_BYTES))
             m_reg[length / WORD_BYTES] = (m_reg[length / WORD_BYTES] << 8) | buf[i];
+    	sig_words_cache = size_t.max;
     }
-
 
     /**
     * Read integer value from a ubyte array (SecureVector!ubyte)
@@ -1385,6 +1396,9 @@ public:
         return BigInt(m_reg.dup(), m_signedness);
     }
 private:
+
     SecureVector!word m_reg;
     Sign m_signedness = Positive;
+    size_t sig_words_cache = size_t.max;
+	
 }
