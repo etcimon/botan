@@ -119,32 +119,32 @@ public:
             Using OpenSSL's AES causes crashes inside EVP on x86-64 with OpenSSL 0.9.8g
             cause is unknown
             */
-            //mixin(HANDLE_EVP_CIPHER!("AES-128", EVP_aes_128_ecb)());
-            //mixin(HANDLE_EVP_CIPHER!("AES-192", EVP_aes_192_ecb)());
-            //mixin(HANDLE_EVP_CIPHER!("AES-256", EVP_aes_256_ecb)());
+            //mixin(HANDLE_EVP_CIPHER!("AES-128", EVP_aes_128_ecb));
+            //mixin(HANDLE_EVP_CIPHER!("AES-192", EVP_aes_192_ecb));
+            //mixin(HANDLE_EVP_CIPHER!("AES-256", EVP_aes_256_ecb));
         }
 
         static if (!BOTAN_HAS_OPENSSL_NO_DES) {
-            mixin(HANDLE_EVP_CIPHER!("DES", EVP_des_ecb)());
-            mixin(HANDLE_EVP_CIPHER_KEYLEN!("TripleDES", EVP_des_ede3_ecb, 16, 24, 8)());
+            mixin(HANDLE_EVP_CIPHER!("DES", EVP_des_ecb));
+            mixin(HANDLE_EVP_CIPHER_KEYLEN!("TripleDES", EVP_des_ede3_ecb, 16, 24, 8));
         }
         
         static if (!BOTAN_HAS_OPENSSL_NO_BF) {
-            mixin(HANDLE_EVP_CIPHER_KEYLEN!("Blowfish", EVP_bf_ecb, 1, 56, 1)());
+            mixin(HANDLE_EVP_CIPHER_KEYLEN!("Blowfish", EVP_bf_ecb, 1, 56, 1));
         }
         
         static if (!BOTAN_HAS_OPENSSL_NO_CAST) {
-            mixin(HANDLE_EVP_CIPHER_KEYLEN!("Cast-128", EVP_cast5_ecb, 1, 16, 1)());
+            mixin(HANDLE_EVP_CIPHER_KEYLEN!("Cast-128", EVP_cast5_ecb, 1, 16, 1));
         }
 
         static if (!BOTAN_HAS_OPENSSL_NO_CAMELLIA) {
-            mixin(HANDLE_EVP_CIPHER!("Camellia-128", EVP_camellia_128_ecb)());
-            mixin(HANDLE_EVP_CIPHER!("Camellia-192", EVP_camellia_192_ecb)());
-            mixin(HANDLE_EVP_CIPHER!("Camellia-256", EVP_camellia_256_ecb)());
+            mixin(HANDLE_EVP_CIPHER!("Camellia-128", EVP_camellia_128_ecb));
+            mixin(HANDLE_EVP_CIPHER!("Camellia-192", EVP_camellia_192_ecb));
+            mixin(HANDLE_EVP_CIPHER!("Camellia-256", EVP_camellia_256_ecb));
         }
         
         static if (!BOTAN_HAS_OPENSSL_NO_RC2) {
-            mixin(HANDLE_EVP_CIPHER_KEYLEN!("RC2", EVP_rc2_ecb, 1, 32, 1)());
+            mixin(HANDLE_EVP_CIPHER_KEYLEN!("RC2", EVP_rc2_ecb, 1, 32, 1));
         }
         
         static if (!BOTAN_HAS_OPENSSL_NO_RC5) {
@@ -161,7 +161,7 @@ public:
         }
         
         static if (!BOTAN_HAS_OPENSSL_NO_SEED) {
-            mixin(HANDLE_EVP_CIPHER!("SEED", EVP_seed_ecb)());
+            mixin(HANDLE_EVP_CIPHER!("SEED", EVP_seed_ecb));
         }
         
 		return null;
@@ -618,18 +618,14 @@ protected:
 }
 
 
-string HANDLE_EVP_CIPHER(string NAME, alias EVP)()
-{
-    return `if (request.algoName == "` ~ NAME ~ `" && request.argCount() == 0)
-                return new EVPBlockCipher(` ~ __traits(identifier, EVP) ~ `(), "` ~ NAME ~ `");`;
-}
+enum string HANDLE_EVP_CIPHER(string NAME, alias EVP) =
+    `if (request.algoName == "` ~ NAME ~ `" && request.argCount() == 0)
+        return new EVPBlockCipher(` ~ __traits(identifier, EVP) ~ `(), "` ~ NAME ~ `");`;
 
-
-string HANDLE_EVP_CIPHER_KEYLEN(string NAME, alias EVP, int MIN, int MAX, int MOD)() {
-    return `if (request.algoName == "` ~ NAME ~ `" && request.argCount() == 0)
-                return new EVPBlockCipher(` ~ __traits(identifier, EVP) ~ `(), "` ~ 
+enum string HANDLE_EVP_CIPHER_KEYLEN(string NAME, alias EVP, int MIN, int MAX, int MOD) =
+    `if (request.algoName == "` ~ NAME ~ `" && request.argCount() == 0)
+        return new EVPBlockCipher(` ~ __traits(identifier, EVP) ~ `(), "` ~ 
         NAME ~ `", ` ~ MIN.stringof ~ `, ` ~ MAX.stringof ~ `, ` ~ MOD.stringof ~ `);`;
-}
 
 /*
 * EVP Hash Function

@@ -18,6 +18,7 @@ import botan.utils.loadstor;
 import botan.block.block_cipher;
 import botan.utils.types;
 import botan.utils.mem_ops;
+import std.format : format;
 
 /**
 * Threefish-512
@@ -41,17 +42,17 @@ public:
             ulong X6 = loadLittleEndian!ulong(input, 6);
             ulong X7 = loadLittleEndian!ulong(input, 7);
             
-            mixin(THREEFISH_ENC_INJECT_KEY!(0)());
+            mixin(THREEFISH_ENC_INJECT_KEY!(0));
 
-            mixin(THREEFISH_ENC_8_ROUNDS!(1,2)());
-            mixin(THREEFISH_ENC_8_ROUNDS!(3,4)());
-            mixin(THREEFISH_ENC_8_ROUNDS!(5,6)());
-            mixin(THREEFISH_ENC_8_ROUNDS!(7,8)());
-            mixin(THREEFISH_ENC_8_ROUNDS!(9,10)());
-            mixin(THREEFISH_ENC_8_ROUNDS!(11,12)());
-            mixin(THREEFISH_ENC_8_ROUNDS!(13,14)());
-            mixin(THREEFISH_ENC_8_ROUNDS!(15,16)());
-            mixin(THREEFISH_ENC_8_ROUNDS!(17,18)());
+            mixin(THREEFISH_ENC_8_ROUNDS!(1,2));
+            mixin(THREEFISH_ENC_8_ROUNDS!(3,4));
+            mixin(THREEFISH_ENC_8_ROUNDS!(5,6));
+            mixin(THREEFISH_ENC_8_ROUNDS!(7,8));
+            mixin(THREEFISH_ENC_8_ROUNDS!(9,10));
+            mixin(THREEFISH_ENC_8_ROUNDS!(11,12));
+            mixin(THREEFISH_ENC_8_ROUNDS!(13,14));
+            mixin(THREEFISH_ENC_8_ROUNDS!(15,16));
+            mixin(THREEFISH_ENC_8_ROUNDS!(17,18));
             
             storeLittleEndian(output, X0, X1, X2, X3, X4, X5, X6, X7);
             
@@ -76,17 +77,17 @@ public:
             ulong X6 = loadLittleEndian!ulong(input, 6);
             ulong X7 = loadLittleEndian!ulong(input, 7);
             
-            mixin(THREEFISH_DEC_INJECT_KEY!(18)());
+            mixin(THREEFISH_DEC_INJECT_KEY!(18));
 
-            mixin(THREEFISH_DEC_8_ROUNDS!(17,16)());
-            mixin(THREEFISH_DEC_8_ROUNDS!(15,14)());
-            mixin(THREEFISH_DEC_8_ROUNDS!(13,12)());
-            mixin(THREEFISH_DEC_8_ROUNDS!(11,10)());
-            mixin(THREEFISH_DEC_8_ROUNDS!(9,8)());
-            mixin(THREEFISH_DEC_8_ROUNDS!(7,6)());
-            mixin(THREEFISH_DEC_8_ROUNDS!(5,4)());
-            mixin(THREEFISH_DEC_8_ROUNDS!(3,2)());
-            mixin(THREEFISH_DEC_8_ROUNDS!(1,0)());
+            mixin(THREEFISH_DEC_8_ROUNDS!(17,16));
+            mixin(THREEFISH_DEC_8_ROUNDS!(15,14));
+            mixin(THREEFISH_DEC_8_ROUNDS!(13,12));
+            mixin(THREEFISH_DEC_8_ROUNDS!(11,10));
+            mixin(THREEFISH_DEC_8_ROUNDS!(9,8));
+            mixin(THREEFISH_DEC_8_ROUNDS!(7,6));
+            mixin(THREEFISH_DEC_8_ROUNDS!(5,4));
+            mixin(THREEFISH_DEC_8_ROUNDS!(3,2));
+            mixin(THREEFISH_DEC_8_ROUNDS!(1,0));
             
             storeLittleEndian(output, X0, X1, X2, X3, X4, X5, X6, X7);
             
@@ -155,17 +156,17 @@ public:
         ulong X6 = M[6];
         ulong X7 = M[7];
         
-        mixin(THREEFISH_ENC_INJECT_KEY!(0)());
+        mixin(THREEFISH_ENC_INJECT_KEY!(0));
 
-        mixin(THREEFISH_ENC_8_ROUNDS!(1,2)());
-        mixin(THREEFISH_ENC_8_ROUNDS!(3,4)());
-        mixin(THREEFISH_ENC_8_ROUNDS!(5,6)());
-        mixin(THREEFISH_ENC_8_ROUNDS!(7,8)());
-        mixin(THREEFISH_ENC_8_ROUNDS!(9,10)());
-        mixin(THREEFISH_ENC_8_ROUNDS!(11,12)());
-        mixin(THREEFISH_ENC_8_ROUNDS!(13,14)());
-        mixin(THREEFISH_ENC_8_ROUNDS!(15,16)());
-        mixin(THREEFISH_ENC_8_ROUNDS!(17,18)());
+        mixin(THREEFISH_ENC_8_ROUNDS!(1,2));
+        mixin(THREEFISH_ENC_8_ROUNDS!(3,4));
+        mixin(THREEFISH_ENC_8_ROUNDS!(5,6));
+        mixin(THREEFISH_ENC_8_ROUNDS!(7,8));
+        mixin(THREEFISH_ENC_8_ROUNDS!(9,10));
+        mixin(THREEFISH_ENC_8_ROUNDS!(11,12));
+        mixin(THREEFISH_ENC_8_ROUNDS!(13,14));
+        mixin(THREEFISH_ENC_8_ROUNDS!(15,16));
+        mixin(THREEFISH_ENC_8_ROUNDS!(17,18));
         
         m_K[0] = M[0] ^ X0;
         m_K[1] = M[1] ^ X1;
@@ -188,119 +189,87 @@ public:
 package:
 
 
-string THREEFISH_ENC_ROUND(alias _X0, alias _X1, alias _X2, alias _X3, 
+enum string THREEFISH_ENC_ROUND(alias _X0, alias _X1, alias _X2, alias _X3, 
                            alias _X4, alias _X5, alias _X6, alias _X7, 
-                           ubyte _ROT1, ubyte _ROT2, ubyte _ROT3, ubyte _ROT4)()
-{
-    const X0 = __traits(identifier, _X0);
-    const X1 = __traits(identifier, _X1);
-    const X2 = __traits(identifier, _X2);
-    const X3 = __traits(identifier, _X3);
-    const X4 = __traits(identifier, _X4);
-    const X5 = __traits(identifier, _X5);
-    const X6 = __traits(identifier, _X6);
-    const X7 = __traits(identifier, _X7);
-    const ROT1 = _ROT1.stringof;
-    const ROT2 = _ROT2.stringof;
-    const ROT3 = _ROT3.stringof;
-    const ROT4 = _ROT4.stringof;
+                           ubyte _ROT1, ubyte _ROT2, ubyte _ROT3, ubyte _ROT4) = q{
+    %1$s += %5$s;
+    %2$s += %6$s;
+    %3$s += %7$s;
+    %4$s += %8$s;
+    %5$s = rotateLeft(%5$s, %9$s);
+    %6$s = rotateLeft(%6$s, %10$s);
+    %7$s = rotateLeft(%7$s, %11$s);
+    %8$s = rotateLeft(%8$s, %12$s);
+    %5$s ^= %1$s;
+    %6$s ^= %2$s;
+    %7$s ^= %3$s;
+    %8$s ^= %4$s;
+}.format(
+    __traits(identifier, _X0), __traits(identifier, _X1), __traits(identifier, _X2), __traits(identifier, _X3),
+    __traits(identifier, _X4), __traits(identifier, _X5), __traits(identifier, _X6), __traits(identifier, _X7),
+    _ROT1.stringof, _ROT2.stringof, _ROT3.stringof, _ROT4.stringof);
 
-    return  X0 ~ ` += ` ~ X4 ~ `;
-        ` ~ X1 ~ ` += ` ~ X5 ~ `;
-        ` ~ X2 ~ ` += ` ~ X6 ~ `;
-        ` ~ X3 ~ ` += ` ~ X7 ~ `;
-        ` ~ X4 ~ ` = rotateLeft(` ~ X4 ~ `, ` ~ ROT1 ~ `);
-        ` ~ X5 ~ ` = rotateLeft(` ~ X5 ~ `, ` ~ ROT2 ~ `);
-        ` ~ X6 ~ ` = rotateLeft(` ~ X6 ~ `, ` ~ ROT3 ~ `);
-        ` ~ X7 ~ ` = rotateLeft(` ~ X7 ~ `, ` ~ ROT4 ~ `);
-        ` ~ X4 ~ ` ^= ` ~ X0 ~ `;
-        ` ~ X5 ~ ` ^= ` ~ X1 ~ `;
-        ` ~ X6 ~ ` ^= ` ~ X2 ~ `;
-        ` ~ X7 ~ ` ^= ` ~ X3 ~ `;`;
-}
+enum string THREEFISH_ENC_INJECT_KEY(ushort r) = 
+    `X0 += m_K[(` ~ r.stringof ~ `  ) % 9];
+    X1 += m_K[(` ~ (r + 1).stringof ~ `) % 9];
+    X2 += m_K[(` ~ (r + 2).stringof ~ `) % 9];
+    X3 += m_K[(` ~ (r + 3).stringof ~ `) % 9];
+    X4 += m_K[(` ~ (r + 4).stringof ~ `) % 9];
+    X5 += m_K[(` ~ (r + 5).stringof ~ `) % 9] + m_T[(` ~ r.stringof ~ `  ) % 3];
+    X6 += m_K[(` ~ (r + 6).stringof ~ `) % 9] + m_T[(` ~ (r + 1).stringof ~ `) % 3];
+    X7 += m_K[(` ~ (r + 7).stringof ~ `) % 9] + (` ~ r.stringof ~ `);`;
 
-string THREEFISH_ENC_INJECT_KEY(ushort r)() 
-{
-    
-    return `X0 += m_K[(` ~ r.stringof ~ `  ) % 9];
-            X1 += m_K[(` ~ (r + 1).stringof ~ `) % 9];
-            X2 += m_K[(` ~ (r + 2).stringof ~ `) % 9];
-            X3 += m_K[(` ~ (r + 3).stringof ~ `) % 9];
-            X4 += m_K[(` ~ (r + 4).stringof ~ `) % 9];
-            X5 += m_K[(` ~ (r + 5).stringof ~ `) % 9] + m_T[(` ~ r.stringof ~ `  ) % 3];
-            X6 += m_K[(` ~ (r + 6).stringof ~ `) % 9] + m_T[(` ~ (r + 1).stringof ~ `) % 3];
-            X7 += m_K[(` ~ (r + 7).stringof ~ `) % 9] + (` ~ r.stringof ~ `);`;
-}
+enum string THREEFISH_ENC_8_ROUNDS(ushort R1, ushort R2) =
+    `mixin(THREEFISH_ENC_ROUND!(X0,X2,X4,X6, X1,X3,X5,X7, 46,36,19,37));
+    mixin(THREEFISH_ENC_ROUND!(X2,X4,X6,X0, X1,X7,X5,X3, 33,27,14,42));
+    mixin(THREEFISH_ENC_ROUND!(X4,X6,X0,X2, X1,X3,X5,X7, 17,49,36,39));
+    mixin(THREEFISH_ENC_ROUND!(X6,X0,X2,X4, X1,X7,X5,X3, 44, 9,54,56));
+    mixin(THREEFISH_ENC_INJECT_KEY!(` ~ R1.stringof ~ `));
+    mixin(THREEFISH_ENC_ROUND!(X0,X2,X4,X6, X1,X3,X5,X7, 39,30,34,24));
+    mixin(THREEFISH_ENC_ROUND!(X2,X4,X6,X0, X1,X7,X5,X3, 13,50,10,17));
+    mixin(THREEFISH_ENC_ROUND!(X4,X6,X0,X2, X1,X3,X5,X7, 25,29,39,43));
+    mixin(THREEFISH_ENC_ROUND!(X6,X0,X2,X4, X1,X7,X5,X3,  8,35,56,22));
+    mixin(THREEFISH_ENC_INJECT_KEY!(` ~ R2.stringof ~ `));`;
 
-string THREEFISH_ENC_8_ROUNDS(ushort R1, ushort R2)()
-{
-    return `mixin(THREEFISH_ENC_ROUND!(X0,X2,X4,X6, X1,X3,X5,X7, 46,36,19,37)());
-            mixin(THREEFISH_ENC_ROUND!(X2,X4,X6,X0, X1,X7,X5,X3, 33,27,14,42)());
-            mixin(THREEFISH_ENC_ROUND!(X4,X6,X0,X2, X1,X3,X5,X7, 17,49,36,39)());
-            mixin(THREEFISH_ENC_ROUND!(X6,X0,X2,X4, X1,X7,X5,X3, 44, 9,54,56)());
-            mixin(THREEFISH_ENC_INJECT_KEY!(` ~ R1.stringof ~ `)());
-
-            mixin(THREEFISH_ENC_ROUND!(X0,X2,X4,X6, X1,X3,X5,X7, 39,30,34,24)());
-            mixin(THREEFISH_ENC_ROUND!(X2,X4,X6,X0, X1,X7,X5,X3, 13,50,10,17)());
-            mixin(THREEFISH_ENC_ROUND!(X4,X6,X0,X2, X1,X3,X5,X7, 25,29,39,43)());
-            mixin(THREEFISH_ENC_ROUND!(X6,X0,X2,X4, X1,X7,X5,X3,  8,35,56,22)());
-            mixin(THREEFISH_ENC_INJECT_KEY!(` ~ R2.stringof ~ `)());`;
-}
-
-string THREEFISH_DEC_ROUND(alias _X0, alias _X1, alias _X2, alias _X3, 
+enum string THREEFISH_DEC_ROUND(alias _X0, alias _X1, alias _X2, alias _X3, 
                            alias _X4, alias _X5, alias _X6, alias _X7, 
-                           ubyte _ROT1, ubyte _ROT2, ubyte _ROT3, ubyte _ROT4)()
-{
-    const X0 = __traits(identifier, _X0);
-    const X1 = __traits(identifier, _X1);
-    const X2 = __traits(identifier, _X2);
-    const X3 = __traits(identifier, _X3);
-    const X4 = __traits(identifier, _X4);
-    const X5 = __traits(identifier, _X5);
-    const X6 = __traits(identifier, _X6);
-    const X7 = __traits(identifier, _X7);
-    const ROT1 = _ROT1.stringof;
-    const ROT2 = _ROT2.stringof;
-    const ROT3 = _ROT3.stringof;
-    const ROT4 = _ROT4.stringof;
-    return X4 ~ `  ^= ` ~ X0 ~ `;
-        ` ~ X5 ~ ` ^= ` ~ X1 ~ `;
-        ` ~ X6 ~ ` ^= ` ~ X2 ~ `;
-        ` ~ X7 ~ ` ^= ` ~ X3 ~ `;
-        ` ~ X4 ~ ` = rotateRight(` ~ X4 ~ `, ` ~ ROT1 ~ `);
-        ` ~ X5 ~ ` = rotateRight(` ~ X5 ~ `, ` ~ ROT2 ~ `);
-        ` ~ X6 ~ ` = rotateRight(` ~ X6 ~ `, ` ~ ROT3 ~ `);
-        ` ~ X7 ~ ` = rotateRight(` ~ X7 ~ `, ` ~ ROT4 ~ `);
-        ` ~ X0 ~ ` -= ` ~ X4 ~ `;
-        ` ~ X1 ~ ` -= ` ~ X5 ~ `;
-        ` ~ X2 ~ ` -= ` ~ X6 ~ `;
-        ` ~ X3 ~ ` -= ` ~ X7 ~ `;`;
-}
+                           ubyte _ROT1, ubyte _ROT2, ubyte _ROT3, ubyte _ROT4) = q{
+    %5$s ^= %1$s;
+    %6$s ^= %2$s;
+    %7$s ^= %3$s;
+    %8$s ^= %4$s;
+    %5$s = rotateRight(%5$s, %9$s);
+    %6$s = rotateRight(%6$s, %10$s);
+    %7$s = rotateRight(%7$s, %11$s);
+    %8$s = rotateRight(%8$s, %12$s);
+    %1$s -= %5$s;
+    %2$s -= %6$s;
+    %3$s -= %7$s;
+    %4$s -= %8$s;
+}.format(
+    __traits(identifier, _X0), __traits(identifier, _X1), __traits(identifier, _X2), __traits(identifier, _X3),
+    __traits(identifier, _X4), __traits(identifier, _X5), __traits(identifier, _X6), __traits(identifier, _X7),
+    _ROT1.stringof, _ROT2.stringof, _ROT3.stringof, _ROT4.stringof);
     
-string THREEFISH_DEC_INJECT_KEY(ushort r)() 
-{
-    return `X0 -= m_K[(` ~ r.stringof ~ `  ) % 9];
-            X1 -= m_K[(` ~ (r+1).stringof ~ `) % 9];
-            X2 -= m_K[(` ~ (r+2).stringof ~ `) % 9];
-            X3 -= m_K[(` ~ (r+3).stringof ~ `) % 9];
-            X4 -= m_K[(` ~ (r+4).stringof ~ `) % 9];
-            X5 -= m_K[(` ~ (r+5).stringof ~ `) % 9] + m_T[(` ~ r.stringof ~ `  ) % 3];
-            X6 -= m_K[(` ~ (r+6).stringof ~ `) % 9] + m_T[(` ~ (r+1).stringof ~ `) % 3];
-            X7 -= m_K[(` ~ (r+7).stringof ~ `) % 9] + (` ~ r.stringof ~ `);`;
-}
+enum string THREEFISH_DEC_INJECT_KEY(ushort r) =
+    `X0 -= m_K[(` ~ r.stringof ~ `  ) % 9];
+    X1 -= m_K[(` ~ (r+1).stringof ~ `) % 9];
+    X2 -= m_K[(` ~ (r+2).stringof ~ `) % 9];
+    X3 -= m_K[(` ~ (r+3).stringof ~ `) % 9];
+    X4 -= m_K[(` ~ (r+4).stringof ~ `) % 9];
+    X5 -= m_K[(` ~ (r+5).stringof ~ `) % 9] + m_T[(` ~ r.stringof ~ `  ) % 3];
+    X6 -= m_K[(` ~ (r+6).stringof ~ `) % 9] + m_T[(` ~ (r+1).stringof ~ `) % 3];
+    X7 -= m_K[(` ~ (r+7).stringof ~ `) % 9] + (` ~ r.stringof ~ `);`;
 
-string THREEFISH_DEC_8_ROUNDS(ushort R1, ushort R2)()
-{
-    return `mixin(THREEFISH_DEC_ROUND!(X6,X0,X2,X4, X1,X7,X5,X3,  8,35,56,22)());
-            mixin(THREEFISH_DEC_ROUND!(X4,X6,X0,X2, X1,X3,X5,X7, 25,29,39,43)());
-            mixin(THREEFISH_DEC_ROUND!(X2,X4,X6,X0, X1,X7,X5,X3, 13,50,10,17)());
-            mixin(THREEFISH_DEC_ROUND!(X0,X2,X4,X6, X1,X3,X5,X7, 39,30,34,24)());
-            mixin(THREEFISH_DEC_INJECT_KEY!(` ~ R1.stringof ~ `)());
-            
-            mixin(THREEFISH_DEC_ROUND!(X6,X0,X2,X4, X1,X7,X5,X3, 44, 9,54,56)());
-            mixin(THREEFISH_DEC_ROUND!(X4,X6,X0,X2, X1,X3,X5,X7, 17,49,36,39)());
-            mixin(THREEFISH_DEC_ROUND!(X2,X4,X6,X0, X1,X7,X5,X3, 33,27,14,42)());
-            mixin(THREEFISH_DEC_ROUND!(X0,X2,X4,X6, X1,X3,X5,X7, 46,36,19,37)());
-            mixin(THREEFISH_DEC_INJECT_KEY!(` ~ R2.stringof ~ `)());`;
-}
+enum string THREEFISH_DEC_8_ROUNDS(ushort R1, ushort R2) =
+    `mixin(THREEFISH_DEC_ROUND!(X6,X0,X2,X4, X1,X7,X5,X3,  8,35,56,22));
+    mixin(THREEFISH_DEC_ROUND!(X4,X6,X0,X2, X1,X3,X5,X7, 25,29,39,43));
+    mixin(THREEFISH_DEC_ROUND!(X2,X4,X6,X0, X1,X7,X5,X3, 13,50,10,17));
+    mixin(THREEFISH_DEC_ROUND!(X0,X2,X4,X6, X1,X3,X5,X7, 39,30,34,24));
+    mixin(THREEFISH_DEC_INJECT_KEY!(` ~ R1.stringof ~ `));
+    mixin(THREEFISH_DEC_ROUND!(X6,X0,X2,X4, X1,X7,X5,X3, 44, 9,54,56));
+    mixin(THREEFISH_DEC_ROUND!(X4,X6,X0,X2, X1,X3,X5,X7, 17,49,36,39));
+    mixin(THREEFISH_DEC_ROUND!(X2,X4,X6,X0, X1,X7,X5,X3, 33,27,14,42));
+    mixin(THREEFISH_DEC_ROUND!(X0,X2,X4,X6, X1,X3,X5,X7, 46,36,19,37));
+    mixin(THREEFISH_DEC_INJECT_KEY!(` ~ R2.stringof ~ `));`;
 

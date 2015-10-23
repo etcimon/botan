@@ -20,6 +20,7 @@ import botan.utils.loadstor;
 import botan.utils.rotate;
 import botan.hash.hash;
 import botan.utils.types;
+import std.format : format;
 
 /**
 * SHA-224
@@ -166,26 +167,15 @@ uint sigma(uint X, uint rot1, uint rot2, uint shift)
 * Use a macro as many compilers won't  a function this big,
 * even though it is much faster if d.
 */
-string SHA2_32_F(alias _A, alias _B, alias _C, alias _D, alias _E, alias _F, alias _G, alias _H, alias _M1, alias _M2, alias _M3, alias _M4, uint magic)()
-{
-    enum A = __traits(identifier, _A);
-    enum B = __traits(identifier, _B);
-    enum C = __traits(identifier, _C);
-    enum D = __traits(identifier, _D);
-    enum E = __traits(identifier, _E);
-    enum F = __traits(identifier, _F);
-    enum G = __traits(identifier, _G);
-    enum H = __traits(identifier, _H);
-    enum M1 = __traits(identifier, _M1);
-    enum M2 = __traits(identifier, _M2);
-    enum M3 = __traits(identifier, _M3);
-    enum M4 = __traits(identifier, _M4);
-    
-    return H ~ ` += ` ~ magic.stringof ~ ` + rho(` ~ E ~ `, 6, 11, 25) + ((` ~ E ~ ` & ` ~ F ~ `) ^ (~` ~ E ~ ` & ` ~ G ~ `)) + ` ~ M1 ~ `;
-        ` ~ D ~ ` += ` ~ H ~ `;
-        ` ~ H ~ ` += rho(` ~ A ~ `, 2, 13, 22) + ((` ~ A ~ ` & ` ~ B ~ `) | ((` ~ A ~ ` | ` ~ B ~ `) & ` ~ C ~ `));
-        ` ~ M1 ~ ` += sigma(` ~ M2 ~ `, 17, 19, 10) + ` ~ M3 ~ ` + sigma(` ~ M4 ~ `, 7, 18, 3);`;
-}
+enum string SHA2_32_F(alias _A, alias _B, alias _C, alias _D, alias _E, alias _F, alias _G, alias _H, alias _M1, alias _M2, alias _M3, alias _M4, uint magic) = q{
+    %9$s += %1$s + rho(%6$s, 6, 11, 25) + ((%6$s & %7$s) ^ (~%6$s & %8$s)) + %10$s;
+    %5$s += %9$s;
+    %9$s += rho(%2$s, 2, 13, 22) + ((%2$s & %3$s) | ((%2$s | %3$s) & %4$s));
+    %10$s += sigma(%11$s, 17, 19, 10) + %12$s + sigma(%13$s, 7, 18, 3);
+}.format(magic,
+    __traits(identifier, _A), __traits(identifier, _B), __traits(identifier, _C), __traits(identifier, _D),
+    __traits(identifier, _E), __traits(identifier, _F), __traits(identifier, _G), __traits(identifier, _H),
+    __traits(identifier, _M1), __traits(identifier, _M2), __traits(identifier, _M3), __traits(identifier, _M4));
 
 /*
 * SHA-224 / SHA-256 compression function
@@ -217,70 +207,70 @@ void compress(ref uint[8] digest,
         uint W15 = loadBigEndian!uint(input, 15);
         
         mixin(
-            SHA2_32_F!(A, B, C, D, E, F, G, H, W00, W14, W09, W01, 0x428A2F98)() ~ 
-            SHA2_32_F!(H, A, B, C, D, E, F, G, W01, W15, W10, W02, 0x71374491)() ~ 
-            SHA2_32_F!(G, H, A, B, C, D, E, F, W02, W00, W11, W03, 0xB5C0FBCF)() ~ 
-            SHA2_32_F!(F, G, H, A, B, C, D, E, W03, W01, W12, W04, 0xE9B5DBA5)() ~ 
-            SHA2_32_F!(E, F, G, H, A, B, C, D, W04, W02, W13, W05, 0x3956C25B)() ~ 
-            SHA2_32_F!(D, E, F, G, H, A, B, C, W05, W03, W14, W06, 0x59F111F1)() ~ 
-            SHA2_32_F!(C, D, E, F, G, H, A, B, W06, W04, W15, W07, 0x923F82A4)() ~ 
-            SHA2_32_F!(B, C, D, E, F, G, H, A, W07, W05, W00, W08, 0xAB1C5ED5)() ~ 
-            SHA2_32_F!(A, B, C, D, E, F, G, H, W08, W06, W01, W09, 0xD807AA98)() ~ 
-            SHA2_32_F!(H, A, B, C, D, E, F, G, W09, W07, W02, W10, 0x12835B01)() ~ 
-            SHA2_32_F!(G, H, A, B, C, D, E, F, W10, W08, W03, W11, 0x243185BE)() ~ 
-            SHA2_32_F!(F, G, H, A, B, C, D, E, W11, W09, W04, W12, 0x550C7DC3)() ~ 
-            SHA2_32_F!(E, F, G, H, A, B, C, D, W12, W10, W05, W13, 0x72BE5D74)() ~ 
-            SHA2_32_F!(D, E, F, G, H, A, B, C, W13, W11, W06, W14, 0x80DEB1FE)() ~ 
-            SHA2_32_F!(C, D, E, F, G, H, A, B, W14, W12, W07, W15, 0x9BDC06A7)() ~ 
-            SHA2_32_F!(B, C, D, E, F, G, H, A, W15, W13, W08, W00, 0xC19BF174)() ~ 
-            SHA2_32_F!(A, B, C, D, E, F, G, H, W00, W14, W09, W01, 0xE49B69C1)() ~ 
-            SHA2_32_F!(H, A, B, C, D, E, F, G, W01, W15, W10, W02, 0xEFBE4786)() ~ 
-            SHA2_32_F!(G, H, A, B, C, D, E, F, W02, W00, W11, W03, 0x0FC19DC6)() ~ 
-            SHA2_32_F!(F, G, H, A, B, C, D, E, W03, W01, W12, W04, 0x240CA1CC)() ~ 
-            SHA2_32_F!(E, F, G, H, A, B, C, D, W04, W02, W13, W05, 0x2DE92C6F)() ~ 
-            SHA2_32_F!(D, E, F, G, H, A, B, C, W05, W03, W14, W06, 0x4A7484AA)() ~ 
-            SHA2_32_F!(C, D, E, F, G, H, A, B, W06, W04, W15, W07, 0x5CB0A9DC)() ~ 
-            SHA2_32_F!(B, C, D, E, F, G, H, A, W07, W05, W00, W08, 0x76F988DA)() ~ 
-            SHA2_32_F!(A, B, C, D, E, F, G, H, W08, W06, W01, W09, 0x983E5152)() ~ 
-            SHA2_32_F!(H, A, B, C, D, E, F, G, W09, W07, W02, W10, 0xA831C66D)() ~ 
-            SHA2_32_F!(G, H, A, B, C, D, E, F, W10, W08, W03, W11, 0xB00327C8)() ~ 
-            SHA2_32_F!(F, G, H, A, B, C, D, E, W11, W09, W04, W12, 0xBF597FC7)() ~ 
-            SHA2_32_F!(E, F, G, H, A, B, C, D, W12, W10, W05, W13, 0xC6E00BF3)() ~ 
-            SHA2_32_F!(D, E, F, G, H, A, B, C, W13, W11, W06, W14, 0xD5A79147)() ~ 
-            SHA2_32_F!(C, D, E, F, G, H, A, B, W14, W12, W07, W15, 0x06CA6351)() ~ 
-            SHA2_32_F!(B, C, D, E, F, G, H, A, W15, W13, W08, W00, 0x14292967)() ~ 
-            SHA2_32_F!(A, B, C, D, E, F, G, H, W00, W14, W09, W01, 0x27B70A85)() ~ 
-            SHA2_32_F!(H, A, B, C, D, E, F, G, W01, W15, W10, W02, 0x2E1B2138)() ~ 
-            SHA2_32_F!(G, H, A, B, C, D, E, F, W02, W00, W11, W03, 0x4D2C6DFC)() ~ 
-            SHA2_32_F!(F, G, H, A, B, C, D, E, W03, W01, W12, W04, 0x53380D13)() ~ 
-            SHA2_32_F!(E, F, G, H, A, B, C, D, W04, W02, W13, W05, 0x650A7354)() ~ 
-            SHA2_32_F!(D, E, F, G, H, A, B, C, W05, W03, W14, W06, 0x766A0ABB)() ~ 
-            SHA2_32_F!(C, D, E, F, G, H, A, B, W06, W04, W15, W07, 0x81C2C92E)() ~ 
-            SHA2_32_F!(B, C, D, E, F, G, H, A, W07, W05, W00, W08, 0x92722C85)() ~ 
-            SHA2_32_F!(A, B, C, D, E, F, G, H, W08, W06, W01, W09, 0xA2BFE8A1)() ~ 
-            SHA2_32_F!(H, A, B, C, D, E, F, G, W09, W07, W02, W10, 0xA81A664B)() ~ 
-            SHA2_32_F!(G, H, A, B, C, D, E, F, W10, W08, W03, W11, 0xC24B8B70)() ~ 
-            SHA2_32_F!(F, G, H, A, B, C, D, E, W11, W09, W04, W12, 0xC76C51A3)() ~ 
-            SHA2_32_F!(E, F, G, H, A, B, C, D, W12, W10, W05, W13, 0xD192E819)() ~ 
-            SHA2_32_F!(D, E, F, G, H, A, B, C, W13, W11, W06, W14, 0xD6990624)() ~ 
-            SHA2_32_F!(C, D, E, F, G, H, A, B, W14, W12, W07, W15, 0xF40E3585)() ~ 
-            SHA2_32_F!(B, C, D, E, F, G, H, A, W15, W13, W08, W00, 0x106AA070)() ~ 
-            SHA2_32_F!(A, B, C, D, E, F, G, H, W00, W14, W09, W01, 0x19A4C116)() ~ 
-            SHA2_32_F!(H, A, B, C, D, E, F, G, W01, W15, W10, W02, 0x1E376C08)() ~ 
-            SHA2_32_F!(G, H, A, B, C, D, E, F, W02, W00, W11, W03, 0x2748774C)() ~ 
-            SHA2_32_F!(F, G, H, A, B, C, D, E, W03, W01, W12, W04, 0x34B0BCB5)() ~ 
-            SHA2_32_F!(E, F, G, H, A, B, C, D, W04, W02, W13, W05, 0x391C0CB3)() ~ 
-            SHA2_32_F!(D, E, F, G, H, A, B, C, W05, W03, W14, W06, 0x4ED8AA4A)() ~ 
-            SHA2_32_F!(C, D, E, F, G, H, A, B, W06, W04, W15, W07, 0x5B9CCA4F)() ~ 
-            SHA2_32_F!(B, C, D, E, F, G, H, A, W07, W05, W00, W08, 0x682E6FF3)() ~ 
-            SHA2_32_F!(A, B, C, D, E, F, G, H, W08, W06, W01, W09, 0x748F82EE)() ~ 
-            SHA2_32_F!(H, A, B, C, D, E, F, G, W09, W07, W02, W10, 0x78A5636F)() ~ 
-            SHA2_32_F!(G, H, A, B, C, D, E, F, W10, W08, W03, W11, 0x84C87814)() ~ 
-            SHA2_32_F!(F, G, H, A, B, C, D, E, W11, W09, W04, W12, 0x8CC70208)() ~ 
-            SHA2_32_F!(E, F, G, H, A, B, C, D, W12, W10, W05, W13, 0x90BEFFFA)() ~ 
-            SHA2_32_F!(D, E, F, G, H, A, B, C, W13, W11, W06, W14, 0xA4506CEB)() ~ 
-            SHA2_32_F!(C, D, E, F, G, H, A, B, W14, W12, W07, W15, 0xBEF9A3F7)() ~ 
-            SHA2_32_F!(B, C, D, E, F, G, H, A, W15, W13, W08, W00, 0xC67178F2)()
+            SHA2_32_F!(A, B, C, D, E, F, G, H, W00, W14, W09, W01, 0x428A2F98) ~ 
+            SHA2_32_F!(H, A, B, C, D, E, F, G, W01, W15, W10, W02, 0x71374491) ~ 
+            SHA2_32_F!(G, H, A, B, C, D, E, F, W02, W00, W11, W03, 0xB5C0FBCF) ~ 
+            SHA2_32_F!(F, G, H, A, B, C, D, E, W03, W01, W12, W04, 0xE9B5DBA5) ~ 
+            SHA2_32_F!(E, F, G, H, A, B, C, D, W04, W02, W13, W05, 0x3956C25B) ~ 
+            SHA2_32_F!(D, E, F, G, H, A, B, C, W05, W03, W14, W06, 0x59F111F1) ~ 
+            SHA2_32_F!(C, D, E, F, G, H, A, B, W06, W04, W15, W07, 0x923F82A4) ~ 
+            SHA2_32_F!(B, C, D, E, F, G, H, A, W07, W05, W00, W08, 0xAB1C5ED5) ~ 
+            SHA2_32_F!(A, B, C, D, E, F, G, H, W08, W06, W01, W09, 0xD807AA98) ~ 
+            SHA2_32_F!(H, A, B, C, D, E, F, G, W09, W07, W02, W10, 0x12835B01) ~ 
+            SHA2_32_F!(G, H, A, B, C, D, E, F, W10, W08, W03, W11, 0x243185BE) ~ 
+            SHA2_32_F!(F, G, H, A, B, C, D, E, W11, W09, W04, W12, 0x550C7DC3) ~ 
+            SHA2_32_F!(E, F, G, H, A, B, C, D, W12, W10, W05, W13, 0x72BE5D74) ~ 
+            SHA2_32_F!(D, E, F, G, H, A, B, C, W13, W11, W06, W14, 0x80DEB1FE) ~ 
+            SHA2_32_F!(C, D, E, F, G, H, A, B, W14, W12, W07, W15, 0x9BDC06A7) ~ 
+            SHA2_32_F!(B, C, D, E, F, G, H, A, W15, W13, W08, W00, 0xC19BF174) ~ 
+            SHA2_32_F!(A, B, C, D, E, F, G, H, W00, W14, W09, W01, 0xE49B69C1) ~ 
+            SHA2_32_F!(H, A, B, C, D, E, F, G, W01, W15, W10, W02, 0xEFBE4786) ~ 
+            SHA2_32_F!(G, H, A, B, C, D, E, F, W02, W00, W11, W03, 0x0FC19DC6) ~ 
+            SHA2_32_F!(F, G, H, A, B, C, D, E, W03, W01, W12, W04, 0x240CA1CC) ~ 
+            SHA2_32_F!(E, F, G, H, A, B, C, D, W04, W02, W13, W05, 0x2DE92C6F) ~ 
+            SHA2_32_F!(D, E, F, G, H, A, B, C, W05, W03, W14, W06, 0x4A7484AA) ~ 
+            SHA2_32_F!(C, D, E, F, G, H, A, B, W06, W04, W15, W07, 0x5CB0A9DC) ~ 
+            SHA2_32_F!(B, C, D, E, F, G, H, A, W07, W05, W00, W08, 0x76F988DA) ~ 
+            SHA2_32_F!(A, B, C, D, E, F, G, H, W08, W06, W01, W09, 0x983E5152) ~ 
+            SHA2_32_F!(H, A, B, C, D, E, F, G, W09, W07, W02, W10, 0xA831C66D) ~ 
+            SHA2_32_F!(G, H, A, B, C, D, E, F, W10, W08, W03, W11, 0xB00327C8) ~ 
+            SHA2_32_F!(F, G, H, A, B, C, D, E, W11, W09, W04, W12, 0xBF597FC7) ~ 
+            SHA2_32_F!(E, F, G, H, A, B, C, D, W12, W10, W05, W13, 0xC6E00BF3) ~ 
+            SHA2_32_F!(D, E, F, G, H, A, B, C, W13, W11, W06, W14, 0xD5A79147) ~ 
+            SHA2_32_F!(C, D, E, F, G, H, A, B, W14, W12, W07, W15, 0x06CA6351) ~ 
+            SHA2_32_F!(B, C, D, E, F, G, H, A, W15, W13, W08, W00, 0x14292967) ~ 
+            SHA2_32_F!(A, B, C, D, E, F, G, H, W00, W14, W09, W01, 0x27B70A85) ~ 
+            SHA2_32_F!(H, A, B, C, D, E, F, G, W01, W15, W10, W02, 0x2E1B2138) ~ 
+            SHA2_32_F!(G, H, A, B, C, D, E, F, W02, W00, W11, W03, 0x4D2C6DFC) ~ 
+            SHA2_32_F!(F, G, H, A, B, C, D, E, W03, W01, W12, W04, 0x53380D13) ~ 
+            SHA2_32_F!(E, F, G, H, A, B, C, D, W04, W02, W13, W05, 0x650A7354) ~ 
+            SHA2_32_F!(D, E, F, G, H, A, B, C, W05, W03, W14, W06, 0x766A0ABB) ~ 
+            SHA2_32_F!(C, D, E, F, G, H, A, B, W06, W04, W15, W07, 0x81C2C92E) ~ 
+            SHA2_32_F!(B, C, D, E, F, G, H, A, W07, W05, W00, W08, 0x92722C85) ~ 
+            SHA2_32_F!(A, B, C, D, E, F, G, H, W08, W06, W01, W09, 0xA2BFE8A1) ~ 
+            SHA2_32_F!(H, A, B, C, D, E, F, G, W09, W07, W02, W10, 0xA81A664B) ~ 
+            SHA2_32_F!(G, H, A, B, C, D, E, F, W10, W08, W03, W11, 0xC24B8B70) ~ 
+            SHA2_32_F!(F, G, H, A, B, C, D, E, W11, W09, W04, W12, 0xC76C51A3) ~ 
+            SHA2_32_F!(E, F, G, H, A, B, C, D, W12, W10, W05, W13, 0xD192E819) ~ 
+            SHA2_32_F!(D, E, F, G, H, A, B, C, W13, W11, W06, W14, 0xD6990624) ~ 
+            SHA2_32_F!(C, D, E, F, G, H, A, B, W14, W12, W07, W15, 0xF40E3585) ~ 
+            SHA2_32_F!(B, C, D, E, F, G, H, A, W15, W13, W08, W00, 0x106AA070) ~ 
+            SHA2_32_F!(A, B, C, D, E, F, G, H, W00, W14, W09, W01, 0x19A4C116) ~ 
+            SHA2_32_F!(H, A, B, C, D, E, F, G, W01, W15, W10, W02, 0x1E376C08) ~ 
+            SHA2_32_F!(G, H, A, B, C, D, E, F, W02, W00, W11, W03, 0x2748774C) ~ 
+            SHA2_32_F!(F, G, H, A, B, C, D, E, W03, W01, W12, W04, 0x34B0BCB5) ~ 
+            SHA2_32_F!(E, F, G, H, A, B, C, D, W04, W02, W13, W05, 0x391C0CB3) ~ 
+            SHA2_32_F!(D, E, F, G, H, A, B, C, W05, W03, W14, W06, 0x4ED8AA4A) ~ 
+            SHA2_32_F!(C, D, E, F, G, H, A, B, W06, W04, W15, W07, 0x5B9CCA4F) ~ 
+            SHA2_32_F!(B, C, D, E, F, G, H, A, W07, W05, W00, W08, 0x682E6FF3) ~ 
+            SHA2_32_F!(A, B, C, D, E, F, G, H, W08, W06, W01, W09, 0x748F82EE) ~ 
+            SHA2_32_F!(H, A, B, C, D, E, F, G, W09, W07, W02, W10, 0x78A5636F) ~ 
+            SHA2_32_F!(G, H, A, B, C, D, E, F, W10, W08, W03, W11, 0x84C87814) ~ 
+            SHA2_32_F!(F, G, H, A, B, C, D, E, W11, W09, W04, W12, 0x8CC70208) ~ 
+            SHA2_32_F!(E, F, G, H, A, B, C, D, W12, W10, W05, W13, 0x90BEFFFA) ~ 
+            SHA2_32_F!(D, E, F, G, H, A, B, C, W13, W11, W06, W14, 0xA4506CEB) ~ 
+            SHA2_32_F!(C, D, E, F, G, H, A, B, W14, W12, W07, W15, 0xBEF9A3F7) ~ 
+            SHA2_32_F!(B, C, D, E, F, G, H, A, W15, W13, W08, W00, 0xC67178F2)
             );
         
         A = (digest[0] += A);

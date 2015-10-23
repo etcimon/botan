@@ -19,6 +19,7 @@ import botan.utils.rotate;
 import botan.utils.xor_buf;
 import botan.utils.types;
 import botan.utils.mem_ops;
+import std.format : format;
 
 /**
 * DJB's Salsa20 (and XSalsa20)
@@ -184,15 +185,15 @@ void hsalsa20(ref uint[8] output, in uint[16] input)
     
     foreach (size_t i; 0 .. 10)
     {
-        mixin(    SALSA20_QUARTER_ROUND!(x00, x04, x08, x12)() ~
-                SALSA20_QUARTER_ROUND!(x05, x09, x13, x01)() ~
-                SALSA20_QUARTER_ROUND!(x10, x14, x02, x06)() ~
-                SALSA20_QUARTER_ROUND!(x15, x03, x07, x11)() ~
+        mixin(    SALSA20_QUARTER_ROUND!(x00, x04, x08, x12) ~
+                SALSA20_QUARTER_ROUND!(x05, x09, x13, x01) ~
+                SALSA20_QUARTER_ROUND!(x10, x14, x02, x06) ~
+                SALSA20_QUARTER_ROUND!(x15, x03, x07, x11) ~
                 
-                SALSA20_QUARTER_ROUND!(x00, x01, x02, x03)() ~
-                SALSA20_QUARTER_ROUND!(x05, x06, x07, x04)() ~
-                SALSA20_QUARTER_ROUND!(x10, x11, x08, x09)() ~
-                SALSA20_QUARTER_ROUND!(x15, x12, x13, x14)()
+                SALSA20_QUARTER_ROUND!(x00, x01, x02, x03) ~
+                SALSA20_QUARTER_ROUND!(x05, x06, x07, x04) ~
+                SALSA20_QUARTER_ROUND!(x10, x11, x08, x09) ~
+                SALSA20_QUARTER_ROUND!(x15, x12, x13, x14)
               );
     }
     
@@ -218,15 +219,15 @@ void salsa20(ref ubyte[64] output, in uint[16] input)
     
     foreach (size_t i; 0 .. 10)
     {
-        mixin(    SALSA20_QUARTER_ROUND!(x00, x04, x08, x12)() ~
-                SALSA20_QUARTER_ROUND!(x05, x09, x13, x01)() ~
-                SALSA20_QUARTER_ROUND!(x10, x14, x02, x06)() ~
-                SALSA20_QUARTER_ROUND!(x15, x03, x07, x11)() ~
+        mixin(    SALSA20_QUARTER_ROUND!(x00, x04, x08, x12) ~
+                SALSA20_QUARTER_ROUND!(x05, x09, x13, x01) ~
+                SALSA20_QUARTER_ROUND!(x10, x14, x02, x06) ~
+                SALSA20_QUARTER_ROUND!(x15, x03, x07, x11) ~
 
-                SALSA20_QUARTER_ROUND!(x00, x01, x02, x03)() ~
-                SALSA20_QUARTER_ROUND!(x05, x06, x07, x04)() ~
-                SALSA20_QUARTER_ROUND!(x10, x11, x08, x09)() ~
-                 SALSA20_QUARTER_ROUND!(x15, x12, x13, x14)()
+                SALSA20_QUARTER_ROUND!(x00, x01, x02, x03) ~
+                SALSA20_QUARTER_ROUND!(x05, x06, x07, x04) ~
+                SALSA20_QUARTER_ROUND!(x10, x11, x08, x09) ~
+                 SALSA20_QUARTER_ROUND!(x15, x12, x13, x14)
               );
     }
     
@@ -248,15 +249,9 @@ void salsa20(ref ubyte[64] output, in uint[16] input)
     storeLittleEndian(x15 + input[15], output.ptr + 4 * 15);
 }
 
-string SALSA20_QUARTER_ROUND(alias _x1, alias _x2, alias _x3, alias _x4)()
-{
-    enum x1 = __traits(identifier, _x1);
-    enum x2 = __traits(identifier, _x2);
-    enum x3 = __traits(identifier, _x3);
-    enum x4 = __traits(identifier, _x4);
-    
-    return x2 ~ ` ^= rotateLeft(` ~ x1 ~ ` + ` ~ x4 ~ `,  7);
-            ` ~ x3 ~ ` ^= rotateLeft(` ~ x2 ~ ` + ` ~ x1 ~ `,  9);
-            ` ~ x4 ~ ` ^= rotateLeft(` ~ x3 ~ ` + ` ~ x2 ~ `, 13);
-            ` ~ x1 ~ ` ^= rotateLeft(` ~ x4 ~ ` + ` ~ x3 ~ `, 18);`;
-}
+enum string SALSA20_QUARTER_ROUND(alias _x1, alias _x2, alias _x3, alias _x4) = q{
+    %2$s ^= rotateLeft(%1$s + %4$s,  7);
+    %3$s ^= rotateLeft(%2$s + %1$s,  9);
+    %4$s ^= rotateLeft(%3$s + %2$s, 13);
+    %1$s ^= rotateLeft(%4$s + %3$s, 18);
+}.format(__traits(identifier, _x1), __traits(identifier, _x2), __traits(identifier, _x3), __traits(identifier, _x4));

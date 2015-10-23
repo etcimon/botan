@@ -19,6 +19,7 @@ import botan.utils.rotate;
 import botan.utils.exceptn;
 import botan.utils.get_byte;
 import botan.utils.mem_ops;
+import std.format : format;
 
 /**
 * The GOST 28147-89 block cipher uses a set of 4 bit Sboxes, however
@@ -110,16 +111,16 @@ public:
             
             foreach (size_t j; 0 .. 3)
             {
-                mixin(GOST_2ROUND!(N1, N2, 0, 1)());
-                mixin(GOST_2ROUND!(N1, N2, 2, 3)());
-                mixin(GOST_2ROUND!(N1, N2, 4, 5)());
-                mixin(GOST_2ROUND!(N1, N2, 6, 7)());
+                mixin(GOST_2ROUND!(N1, N2, 0, 1));
+                mixin(GOST_2ROUND!(N1, N2, 2, 3));
+                mixin(GOST_2ROUND!(N1, N2, 4, 5));
+                mixin(GOST_2ROUND!(N1, N2, 6, 7));
             }
             
-            mixin(GOST_2ROUND!(N1, N2, 7, 6)());
-            mixin(GOST_2ROUND!(N1, N2, 5, 4)());
-            mixin(GOST_2ROUND!(N1, N2, 3, 2)());
-            mixin(GOST_2ROUND!(N1, N2, 1, 0)());
+            mixin(GOST_2ROUND!(N1, N2, 7, 6));
+            mixin(GOST_2ROUND!(N1, N2, 5, 4));
+            mixin(GOST_2ROUND!(N1, N2, 3, 2));
+            mixin(GOST_2ROUND!(N1, N2, 1, 0));
             
             storeLittleEndian(output, N2, N1);
             
@@ -138,17 +139,17 @@ public:
             uint N1 = loadLittleEndian!uint(input, 0);
             uint N2 = loadLittleEndian!uint(input, 1);
             
-            mixin(GOST_2ROUND!(N1, N2, 0, 1)());
-            mixin(GOST_2ROUND!(N1, N2, 2, 3)());
-            mixin(GOST_2ROUND!(N1, N2, 4, 5)());
-            mixin(GOST_2ROUND!(N1, N2, 6, 7)());
+            mixin(GOST_2ROUND!(N1, N2, 0, 1));
+            mixin(GOST_2ROUND!(N1, N2, 2, 3));
+            mixin(GOST_2ROUND!(N1, N2, 4, 5));
+            mixin(GOST_2ROUND!(N1, N2, 6, 7));
             
             foreach (size_t j; 0 .. 3)
             {
-                mixin(GOST_2ROUND!(N1, N2, 7, 6)());
-                mixin(GOST_2ROUND!(N1, N2, 5, 4)());
-                mixin(GOST_2ROUND!(N1, N2, 3, 2)());
-                mixin(GOST_2ROUND!(N1, N2, 1, 0)());
+                mixin(GOST_2ROUND!(N1, N2, 7, 6));
+                mixin(GOST_2ROUND!(N1, N2, 5, 4));
+                mixin(GOST_2ROUND!(N1, N2, 3, 2));
+                mixin(GOST_2ROUND!(N1, N2, 1, 0));
             }
             
             storeLittleEndian(output, N2, N1);
@@ -238,21 +239,18 @@ protected:
 /*
 * Two rounds of GOST
 */
-string GOST_2ROUND(alias N1, alias N2, ubyte R1, ubyte R2)()
-{
-    const N1_ = __traits(identifier, N1);
-    const N2_ = __traits(identifier, N2);
-    return `{
-            uint T0 = ` ~ N1_ ~ ` + m_EK[` ~ R1.stringof ~ `];
-            N2 ^= m_SBOX[get_byte(3, T0)] |
-                m_SBOX[get_byte(2, T0)+256] | 
-                m_SBOX[get_byte(1, T0)+512] | 
-                m_SBOX[get_byte(0, T0)+768];
+enum string GOST_2ROUND(alias N1, alias N2, ubyte R1, ubyte R2) = q{
+    {
+        uint T0 = %1$s + m_EK[%3$s];
+        N2 ^= m_SBOX[get_byte(3, T0)] |
+            m_SBOX[get_byte(2, T0)+256] | 
+            m_SBOX[get_byte(1, T0)+512] | 
+            m_SBOX[get_byte(0, T0)+768];
 
-            uint T1 = ` ~ N2_ ~ ` + m_EK[` ~ R2.stringof ~ `];
-            N1 ^= m_SBOX[get_byte(3, T1)] |
-                m_SBOX[get_byte(2, T1)+256] |
-                m_SBOX[get_byte(1, T1)+512] |
-                m_SBOX[get_byte(0, T1)+768];
-        }`;
-}
+        uint T1 = %2$s + m_EK[%4$s];
+        N1 ^= m_SBOX[get_byte(3, T1)] |
+            m_SBOX[get_byte(2, T1)+256] |
+            m_SBOX[get_byte(1, T1)+512] |
+            m_SBOX[get_byte(0, T1)+768];
+    }
+}.format(__traits(identifier, N1), __traits(identifier, N2), R1, R2);
