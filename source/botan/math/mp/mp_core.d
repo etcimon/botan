@@ -698,7 +698,8 @@ void bigint_comba_sqr4(ref word[8] z, const ref word[4] x)
 */
 void bigint_comba_mul4(ref word[8] z, const ref word[4] x, const ref word[4] y)
 {
-	version(D_InlineAsm_X86_64) {
+	// issue with rw and intermittent with rsa
+	version(none) {
 
 	    auto _x = x.ptr;
 		auto _y = y.ptr;
