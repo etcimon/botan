@@ -28,11 +28,11 @@ const string ca_cert_file = "ca.crt";
 X509CertOptions caOpts()
 {
 	// Common Name/Country/Organization/OrgUnit
-    X509CertOptions opts = X509CertOptions("GlobecSys CA/CA/GlobecSys Inc/Security");
+	X509CertOptions opts = X509CertOptions("Gramblr.com/CA/Gramblr Team/Security");
     
-    opts.uri = "http://globecsys.com";
-    opts.dns = "globecsys.com";
-    opts.email = "etcimon@globecsys.com";
+    opts.uri = "http://gramblr.com";
+    opts.dns = "app.gramblr.com";
+    opts.email = "info@gramblr.com";
     opts.end = 15.yearsLater();
     opts.CAKey(1);
     
@@ -48,11 +48,11 @@ const size_t signed_cert_expiration_years = 5; // years
 // The certificate request must be signed by a CA Certificate to inherit trust/authority and become a valid certificate
 X509CertOptions reqOpts()
 {
-    X509CertOptions opts = X509CertOptions("GlobecSys.com/CA/GlobecSys Inc/PostgreSQL DB Mgmt");
+    X509CertOptions opts = X509CertOptions("Gramblr.com/CA/Gramblr Team/Application Admin Mgmnt");
     
-    opts.uri = "http://globecsys.com";
-    opts.dns = "localhost";
-    opts.email = "etcimon@globecsys.com";
+    opts.uri = "https://app.gramblr.com";
+    opts.dns = "app.gramblr.com";
+    opts.email = "info@gramblr.com";
     
     //opts.addExConstraint("PKIX.EmailProtection");
     opts.addExConstraint("PKIX.ServerAuth");
@@ -114,16 +114,15 @@ void main() {
 		ca_cert = X509Certificate(ca_cert_file);
 	}
     // Create user's key and cert request
-	ECGroup ecc_domain = ECGroup(OID("1.2.840.10045.3.1.7"));
-	auto user_key = ECDSAPrivateKey(*rng, ecc_domain);
+	auto user_key = RSAPrivateKey(*rng, 1024).release();
 	
-	auto user_key_enc = pkcs8.PEM_encode(cast(PrivateKey)*user_key, *rng, key_pass);
-	auto user_pub_enc = x509_key.PEM_encode(cast(PublicKey)*user_key);
+	auto user_key_enc = pkcs8.PEM_encode(cast(PrivateKey)user_key, *rng, key_pass);
+	auto user_pub_enc = x509_key.PEM_encode(cast(PublicKey)user_key);
 	
 	std.file.write(key_file, user_key_enc);
 	std.file.write(pub_file, user_pub_enc);
 	
-    PKCS10Request sign_req = x509self.createCertReq(reqOpts(), *user_key, hash_fn, *rng);
+    PKCS10Request sign_req = x509self.createCertReq(reqOpts(), user_key, hash_fn, *rng);
     
     // Create the CA object
     X509CA ca = X509CA(ca_cert, *ca_key, hash_fn);
