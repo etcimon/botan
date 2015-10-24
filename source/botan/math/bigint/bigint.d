@@ -112,7 +112,7 @@ public:
 	void load()(auto ref BigInt other) {
 		m_reg[] = other.m_reg[];
 		m_signedness = other.m_signedness;
-		sig_words_cache = size_t.max;
+		m_sig_words = other.m_sig_words;
 	}
 
     /**
@@ -191,19 +191,19 @@ public:
         this.swap(other);
     }    
 
-    this(ALLOC)(auto const ref Vector!(ubyte, ALLOC) payload, in Sign sign) {
-        this(payload.ptr, payload.length);
+    this(ALLOC)(auto const ref Vector!(ubyte, ALLOC) payload, in Sign sign, in size_t sig_words = size_t.max) {
+        this(payload.ptr, payload.length, sig_words);
     }
 
-    this(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) payload, in Sign sign) {
-        this(payload.ptr, payload.length);
+    this(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) payload, in Sign sign, in size_t sig_words = size_t.max) {
+        this(payload.ptr, payload.length, sig_words);
     }
 
-    this()(auto ref SecureVector!word reg, Sign sign) {
+    this()(auto ref SecureVector!word reg, Sign sign, in size_t sig_words = size_t.max) {
         import std.algorithm : swap;
         m_reg.swap(reg);
         swap(m_signedness, sign);
-        sig_words_cache = size_t.max;	
+        m_sig_words = sig_words;	
     }
 
 	void reserve(size_t n) {
@@ -233,13 +233,13 @@ public:
 		m_reg.swap(other.m_reg);
 
         .swap(m_signedness, other.m_signedness);
-        .swap(sig_words_cache, other.sig_words_cache);
+        .swap(m_sig_words, other.m_sig_words);
     }
 
     void swapReg(ref SecureVector!word reg)
     {
         m_reg.swap(reg);
-        sig_words_cache = size_t.max;
+        m_sig_words = size_t.max;
     }
 
     /**
@@ -266,16 +266,15 @@ public:
                 SecureVector!word z = SecureVector!word(reg_size - 1);
                 bigint_sub3(z.ptr, y.ptr, reg_size - 1, mutablePtr(), x_sw);
                 m_reg[] = z;
-		        sig_words_cache = size_t.max;
+		        m_sig_words = z.length;
                 setSign(y.sign());
             }
             else if (relative_size == 0)
             {
                 zeroise(m_reg);
-             	sig_words_cache = size_t.max;
 		        setSign(Positive);
             }
-            else if (relative_size > 0)
+            else if (relative_size > 0) 
                 bigint_sub2(mutablePtr(), x_sw, y.ptr, y_sw);
         }
         
@@ -486,7 +485,7 @@ public:
             const size_t shift_bits  = shift % MP_WORD_BITS;
             
             bigint_shr1(mutablePtr(), sigWords(), shift_words, shift_bits);
-            sig_words_cache = size_t.max;
+            m_sig_words = size_t.max;
             if (isZero())
                 setSign(Positive);
         }
@@ -624,7 +623,7 @@ public:
         const word mask = cast(word)(1) << (n % MP_WORD_BITS);
         if (which >= size()) growTo(which + 1);
         m_reg[which] |= mask;
-        sig_words_cache = size_t.max;
+        m_sig_words = size_t.max;
     }
 
     /**
@@ -638,7 +637,7 @@ public:
         const word mask = cast(word)(1) << (n % MP_WORD_BITS);
         if (which < size())
             m_reg[which] &= ~mask;
-        sig_words_cache = size_t.max;
+        m_sig_words = size_t.max;
     }
 
     /**
@@ -658,7 +657,7 @@ public:
             clearMem(&m_reg[top_word+1], size() - (top_word + 1));
         
         m_reg[top_word] &= mask;
-        sig_words_cache = size_t.max;
+        m_sig_words = size_t.max;
     }
 
     /**
@@ -815,13 +814,13 @@ public:
     */
     size_t sigWords() const
     {
-        if (sig_words_cache != size_t.max) return sig_words_cache;
+        if (m_sig_words != size_t.max) return m_sig_words;
         const word* x = m_reg.ptr;
         size_t sig = m_reg.length;
 
         while (sig && (x[sig-1] == 0))
             sig--;
-        (cast()this).sig_words_cache = sig;
+        (cast()this).m_sig_words = sig;
         return sig;
     }
 
@@ -852,7 +851,7 @@ public:
     * Return a mutable pointer to the register
     * Returns: a pointer to the start of the internal register
     */
-    word* mutablePtr() { sig_words_cache = size_t.max; return m_reg.ptr; }
+    word* mutablePtr() { m_sig_words = size_t.max; return m_reg.ptr; }
 
     /**
     * Return a const pointer to the register
@@ -928,7 +927,7 @@ public:
         
         foreach (size_t i; 0 .. (length % WORD_BYTES))
             m_reg[length / WORD_BYTES] = (m_reg[length / WORD_BYTES] << 8) | buf[i];
-    	sig_words_cache = size_t.max;
+    	m_sig_words = size_t.max;
     }
 
     /**
@@ -1389,16 +1388,16 @@ public:
     }
 
     @property BigInt move() {
-        return BigInt(m_reg, m_signedness);
+        return BigInt(m_reg, m_signedness, m_sig_words);
     }
 
     @property BigInt dup() const {
-        return BigInt(m_reg.dup(), m_signedness);
+        return BigInt(m_reg.dup(), m_signedness, m_sig_words);
     }
 private:
 
     SecureVector!word m_reg;
     Sign m_signedness = Positive;
-    size_t sig_words_cache = size_t.max;
+    size_t m_sig_words = size_t.max;
 	
 }
