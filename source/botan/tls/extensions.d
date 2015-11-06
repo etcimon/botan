@@ -523,7 +523,7 @@ public:
     this(ref TLSDataReader reader, ushort extension_size)
     {
         ushort len = reader.get_ushort();
-		logDebug("Got elliptic curves len: ", len, " ext size: ", extension_size);
+		//logDebug("Got elliptic curves len: ", len, " ext size: ", extension_size);
         if (len + 2 != extension_size)
             throw new DecodingError("Inconsistent length field in elliptic curve list");
         
@@ -536,7 +536,7 @@ public:
         {
             const ushort id = reader.get_ushort();
             const string name = curveIdToName(id);
-			logDebug("Got curve name: ", name);
+			//logDebug("Got curve name: ", name);
             
             if (name != "")
                 m_curves.pushBack(name);
@@ -689,7 +689,7 @@ public:
             // If not something we know, ignore it completely
             if (hash_code == "" || sig_code == "")
                 continue;
-			logDebug("Got signature: ", hash_code, " => ",sig_code);
+			//logDebug("Got signature: ", hash_code, " => ",sig_code);
             m_supported_algos.pushBack(makePair(hash_code, sig_code));
         }
     }

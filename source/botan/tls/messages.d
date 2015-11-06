@@ -445,12 +445,12 @@ protected:
                 m_extensions.add(new RenegotiationExtension());
             }
         }
-		logDebug("Ciphersuites: ", ciphersuites()[]);
+		/*logDebug("Ciphersuites: ", ciphersuites()[]);
 		logDebug("Session ID: ", sessionId[]);
 		logDebug("Random: ", random()[]);
 		logDebug("sni Hostname: ", sniHostname);
 		logDebug("sentFallback SCSV: ", sentFallbackSCSV());
-		logDebug("Secure renegotiation: ", secureRenegotiation());
+		logDebug("Secure renegotiation: ", secureRenegotiation());*/
 		//logDebug("NextProtocol: ", nextProtocols[]);
     }
 
