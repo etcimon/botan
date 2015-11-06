@@ -30,7 +30,8 @@
         {
             "name": "base",
             "dependencies": {
-                "memutils": { "version": "~>0.4.3" }
+                "memutils": { "version": "~>0.4.3" },
+				"botan-math": { "version": "~>1.0.0" }
             }, 
             "targetPath": "build",
             "workingDirectory": "build",
@@ -156,7 +157,7 @@
                         "TLS", "X509", "PUBKEY", "FPE_FE1", "RFC3394", "PassHash9", "BCrypt", "SRP6", "TSS", "CryptoBox", "CryptoBox_PSK"
                     ],
                     "dflags-windows-x86": ["-m32mscoff"],
-                    "subConfigurations": { "memutils": "32mscoff" }
+                    "subConfigurations": { "memutils": "32mscoff", "botan-math": "32mscoff" }
                 },
                 {
                     "name": "lite",

@@ -125,7 +125,7 @@ protected:
                 return;
             }
             state.clientHello(new ClientHello(contents, type));
-            
+
 			// choose a proper context depending on hostname and register the userdata
 			if (m_sni_handler) {
 				const string sni_hostname = state.clientHello().sniHostname();

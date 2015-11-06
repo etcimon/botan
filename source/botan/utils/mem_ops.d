@@ -10,6 +10,7 @@
 */
 module botan.utils.mem_ops;
 import botan.utils.types;
+public import botan_math.mem_ops;
 import std.algorithm : min;
 
 
@@ -57,30 +58,6 @@ size_t bufferInsert(T, Alloc, Alloc2)(ref Vector!(T, Alloc) buf, size_t buf_offs
 }
 
 pure:
-
-/**
-* Zeroise memory
-* Params:
-*  ptr = a pointer to an array
-*  n = the number of Ts pointed to by ptr
-*/
-void clearMem(T)(T* ptr, size_t n)
-{
-    setMem(ptr,n,0);
-}
-
-/**
-* Copy memory
-* Params:
-*  output = the destination array
-*  input = the source array
-*  n = the number of elements of in/out
-*/
-void copyMem(T)(T* output, in T* input, in size_t n)
-{
-    import std.c.string : memmove;
-    memmove(output, input, T.sizeof*n);
-}
 
 /**
 * Set memory to a fixed value

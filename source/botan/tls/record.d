@@ -413,7 +413,7 @@ size_t readTLSRecord(ref SecureVector!ubyte readbuf,
 
     const size_t record_len = make_ushort(readbuf[TLS_HEADER_SIZE-2], readbuf[TLS_HEADER_SIZE-1]);
     if (record_len > MAX_CIPHERTEXT_SIZE)
-        throw new TLSException(TLSAlert.RECORD_OVERFLOW, "Got message that exceeds maximum size");
+        throw new TLSException(TLSAlert.RECORD_OVERFLOW, "Got message that exceeds maximum size: " ~ cast(string)readbuf[]);
     
     if (size_t needed = fillBufferTo(readbuf, input, input_sz, consumed, TLS_HEADER_SIZE + record_len))
         return needed;
