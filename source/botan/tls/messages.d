@@ -445,6 +445,13 @@ protected:
                 m_extensions.add(new RenegotiationExtension());
             }
         }
+		logDebug("Ciphersuites: ", ciphersuites()[]);
+		logDebug("Session ID: ", sessionId[]);
+		logDebug("Random: ", random()[]);
+		logDebug("sni Hostname: ", sniHostname);
+		logDebug("sentFallback SCSV: ", sentFallbackSCSV());
+		logDebug("Secure renegotiation: ", secureRenegotiation());
+		//logDebug("NextProtocol: ", nextProtocols[]);
     }
 
     void deserializeSslv2(const ref Vector!ubyte buf)

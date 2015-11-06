@@ -9,6 +9,8 @@
 * Botan is released under the Simplified BSD License (see LICENSE.md)
 */
 module botan.constants;
+
+public import botan_math.mp_types;
 version(FailureOMF) static assert(false, "\n\nCannot compile Botan with the OMF linker on windows.\nThe reason is that Botan uses too many symbols.\nUse --config=32mscoff to use COFF linker on x86, or --arch=x86_64 to use COFF linker on x86_64. \n\nThis might require the installation of Windows SDK, \nsee: http://wiki.dlang.org/Installing_DMD_on_64-bit_Windows_7_%28COFF-compatible%29\n\nIMPORTANT: In addition to this restriction, the COFF Linker will also fail for DMD <= 2.067.0, you will have to use DMD >=2.067.1 because it includes a new patch for COFF Big Tables\n\n");
 enum LogLevel = Debug;
 
@@ -70,25 +72,6 @@ enum TLS_DEFAULT_BUFFERSIZE = 4096;
 
 enum BOTAN_MEM_POOL_CHUNK_SIZE = 64*1024;
 enum BOTAN_BLOCK_CIPHER_PAR_MULT = 4;
-
-version(X86) { enum BOTAN_HAS_X86_ARCH = true; enum BOTAN_HAS_X86_64_ARCH = false; enum BOTAN_HAS_ARM_ARCH = false; }
-version(X86_64) { enum BOTAN_HAS_X86_ARCH = false; enum BOTAN_HAS_X86_64_ARCH = true; enum BOTAN_HAS_ARM_ARCH = false; }
-version(ARM) { enum BOTAN_HAS_X86_ARCH = false; enum BOTAN_HAS_X86_64_ARCH = false; enum BOTAN_HAS_ARM_ARCH = true; }
-
-enum ERR_ARCH = "Cannot compile the selected module on this processor architecture.";
-
-static if (BOTAN_HAS_X86_ARCH)
-    enum BOTAN_MP_WORD_BITS = 32; 
-else static if (BOTAN_HAS_X86_64_ARCH)
-    enum BOTAN_MP_WORD_BITS = 64;
-else static if (BOTAN_HAS_ARM_ARCH)
-    enum BOTAN_MP_WORD_BITS = 32;
-// todo: else static if (BOTAN_HAS_PPC_ARCH)
-
-version(D_SIMD) enum BOTAN_HAS_SIMD = true;
-else version(LDC) enum BOTAN_HAS_SIMD = true;
-else            enum BOTAN_HAS_SIMD = false;
-
 
 enum BOTAN_KARAT_MUL_THRESHOLD = 32;
 enum BOTAN_KARAT_SQR_THRESHOLD = 32;

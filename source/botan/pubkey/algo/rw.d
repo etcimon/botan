@@ -173,7 +173,7 @@ public:
 
     override SecureVector!ubyte sign(const(ubyte)* msg, size_t msg_len, RandomNumberGenerator rng)
     {
-		//import core.memory : GC; GC.disable(); scope(exit) GC.enable();
+		import core.memory : GC; GC.disable(); scope(exit) GC.enable();
 		import core.thread;
         rng.addEntropy(msg, msg_len);
 
@@ -370,6 +370,8 @@ size_t rwSigVerify(string e,
 
 static if (BOTAN_HAS_TESTS && !SKIP_RW_TEST) unittest
 {
+	import core.thread : Thread;
+	//Thread.sleep(10.seconds);
     logDebug("Testing rw.d ...");
     size_t fails = 0;
     
