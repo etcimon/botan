@@ -274,7 +274,6 @@ public:
         
         m_emsa = getEmsa(emsa_name);
         m_sig_format = format;
-        assert(*m_op !is null && *m_verify_op !is null && *m_emsa !is null);
     }
 private:
     /*

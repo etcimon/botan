@@ -57,10 +57,19 @@ public:
     void createTable(in string table_schema)
     {
         char* errmsg = null;
-        int rc = sqlite3_exec(m_db, table_schema.toStringz, null, null, &errmsg);
-        
-        if (rc != SQLITE_OK)
-        {
+		int rc;
+		int iter;
+		import core.thread;
+		do {
+			rc = sqlite3_exec(m_db, table_schema.toStringz, null, null, &errmsg);
+			if (rc != SQLITE_OK) {
+				Thread.sleep(30.msecs);
+				continue;
+			}
+		} while (++iter < 5);
+
+		if (rc != SQLITE_OK) {
+			import std.conv : to;
             const string err_msg = fromStringz(errmsg).to!string;
             sqlite3_free(errmsg);
             sqlite3_close(m_db);

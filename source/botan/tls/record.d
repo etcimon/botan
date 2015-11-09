@@ -266,7 +266,8 @@ void writeRecord(ref SecureVector!ubyte output,
         aead.setAssociatedDataVec(cs.formatAd(seq, msg_type, _version, cast(ushort) msg_length));
         
 		output ~= nonce.ptr[cs.nonceBytesFromHandshake() .. cs.nonceBytesFromHandshake() + cs.nonceBytesFromRecord()];
-        assert(aead.start(*nonce).empty, "AEAD doesn't return anything from start");
+		auto start_vec = aead.start(*nonce);
+		assert(start_vec.empty, "AEAD doesn't return anything from start");
         
         const size_t offset = output.length;
         output ~= msg[0 .. msg_length];
