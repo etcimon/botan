@@ -11,7 +11,6 @@
 module botan.constants;
 
 public import botan_math.mp_types;
-version(FailureOMF) static assert(false, "\n\nCannot compile Botan with the OMF linker on windows.\nThe reason is that Botan uses too many symbols.\nUse --config=32mscoff to use COFF linker on x86, or --arch=x86_64 to use COFF linker on x86_64. \n\nThis might require the installation of Windows SDK, \nsee: http://wiki.dlang.org/Installing_DMD_on_64-bit_Windows_7_%28COFF-compatible%29\n\nIMPORTANT: In addition to this restriction, the COFF Linker will also fail for DMD <= 2.067.0, you will have to use DMD >=2.067.1 because it includes a new patch for COFF Big Tables\n\n");
 enum LogLevel = Debug;
 
 enum SKIP_TRANSFORM_TEST = false;
@@ -58,8 +57,8 @@ else                      enum BOTAN_HAS_TESTS = false;
 // This indicates the corresponding Botan (C++) version numbers
 enum BOTAN_VERSION_MAJOR = 1;
 enum BOTAN_VERSION_MINOR = 12;
-enum BOTAN_VERSION_PATCH = 1;
-enum BOTAN_VERSION_DATESTAMP = 20150702;
+enum BOTAN_VERSION_PATCH = 3;
+enum BOTAN_VERSION_DATESTAMP = 20151109;
 enum BOTAN_VERSION_RELEASE_TYPE = "unreleased";
 enum BOTAN_VERSION_VC_REVISION = "git:6661c489929afc6c83c3038518dc37fd58938f3a";
 enum BOTAN_DISTRIBUTION_INFO = "unspecified";
