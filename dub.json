@@ -31,7 +31,7 @@
             "name": "base",
             "dependencies": {
                 "memutils": { "version": "~>0.4.3" },
-				"botan-math": { "version": "~>1.0.0" }
+				"botan-math": { "version": "~>1.0.1" } 
             }, 
             "targetPath": "build",
             "workingDirectory": "build",

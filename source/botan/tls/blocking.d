@@ -93,6 +93,7 @@ public:
         {
             ubyte[] readref = m_readbuf.ptr[0 .. m_readbuf.length];
             const ubyte[] from_socket = m_read_fn(readref);
+			enforce(channel!is null, "Connection closed during handshake");
             channel.receivedData(cast(const(ubyte)*)from_socket.ptr, from_socket.length);
         }
     }
@@ -131,6 +132,8 @@ public:
 	ubyte[] readBuf(ubyte[] buf)
     {
 		assert(!m_slice);
+		m_reading = true;
+		scope(exit) m_reading = false;
 
 		if (m_plaintext.length != 0) {
 			size_t len = min(m_plaintext.length, buf.length);
@@ -155,6 +158,7 @@ public:
 			}
 			else break;
 			const ubyte[] from_socket = m_read_fn(slice);
+			enforce(channel !is null, "Connection closed while reading from TLS Channel");
 			channel.receivedData(cast(const(ubyte)*)from_socket.ptr, from_socket.length);
         }
 
@@ -182,7 +186,13 @@ public:
         return buf[0 .. returned];
     }
 
-	void write(in ubyte[] buf) { enforce(channel); channel.send(cast(const(ubyte)*)buf.ptr, buf.length); }
+	void write(in ubyte[] buf) { 
+		m_writing = true;
+		scope(exit) m_writing = false;
+
+		enforce(channel !is null, "Connection closed when attempting to write to channel"); 
+		channel.send(cast(const(ubyte)*)buf.ptr, buf.length);
+	}
 
     inout(TLSChannel) underlyingChannel() inout { return channel; }
 
@@ -190,11 +200,13 @@ public:
 
 	bool isClosed() const { return m_closed || m_impl.client is null; }
 
+	@property bool isBusy() const { return m_reading || m_writing; }
+
 	const(Vector!X509Certificate) peerCertChain() const { enforce(channel); return channel.peerCertChain(); }
 
 	~this()
 	{
-		if (!m_impl.client) return;
+		if (isBusy) return;
 		if (m_is_client)
 			m_impl.client.destroy(); 
 		else m_impl.server.destroy();
@@ -265,6 +277,8 @@ private:
 		return (m_is_client ? cast(inout(TLSChannel)) m_impl.client : cast(inout(TLSChannel)) m_impl.server); 
 	}
 
+	bool m_reading;
+	bool m_writing;
     bool m_is_client;
 	bool m_closed;
     DataReader m_read_fn;
