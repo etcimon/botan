@@ -106,7 +106,7 @@ public:
     * Params:
     *  pem_or_oid = PEM-encoded data, or an OID
     */
-    this(in string pem_or_oid = "")
+    this(in string pem_or_oid)
     {
         m_curve = CurveGFp.init;
         m_base_point = PointGFp.init;

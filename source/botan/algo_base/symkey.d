@@ -109,7 +109,7 @@ public:
     * Params:
     *  hex_string = A hex encoded string
     */
-    this(in string hex_string = "")
+    this(in string hex_string) // = ""
     {
         m_bits.resize(1 + hex_string.length / 2);
         m_bits.resize(hexDecode(m_bits.ptr, hex_string));

@@ -51,7 +51,7 @@ public:
     * Params:
     *  named_version = a specific named version of the protocol
     */
-    this(VersionCode named_version = 0)
+    this(VersionCode named_version)
     {
         m_version = cast(ushort) named_version;
     }

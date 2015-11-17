@@ -253,7 +253,7 @@ public:
     */
     this(in PrivateKey key, in string emsa_name,
          SignatureFormat format = IEEE_1363,
-         FaultProtection prot = ENABLE_FAULT_PROTECTION)
+         FaultProtection prot = DISABLE_FAULT_PROTECTION)
     {
         AlgorithmFactory af = globalState().algorithmFactory();
 
