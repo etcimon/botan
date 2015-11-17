@@ -53,7 +53,7 @@ public:
     * Params:
     *  options = a string listing initialization options
     */
-    this(string options = "")  { LibraryInitializer.initialize(); }
+    this(string options)  { LibraryInitializer.initialize(); }
 
     ~this() { LibraryInitializer.deinitialize(); }
 }

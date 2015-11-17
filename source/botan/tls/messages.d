@@ -928,8 +928,8 @@ public:
                 
                 DLGroup group = DLGroup(p, g);
                 
-                if (!group.verifyGroup(rng, true))
-                    throw new InternalError("DH group failed validation, possible attack");
+                if (!group.verifyGroup(rng, false))
+                    throw new TLSException(TLSAlert.INSUFFICIENT_SECURITY, "DH group failed validation, possible attack");
                 auto counterparty_key = DHPublicKey(group.dup, Y.move);
                 
                 auto priv_key = DHPrivateKey(rng, group.move);

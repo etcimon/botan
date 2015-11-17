@@ -607,7 +607,7 @@ bool checkForResume(ref TLSSession session_info,
         if (clientHello.sniHostname() != session_info.serverInfo().hostname())
             return false;
     }
-    
+
     return true;
 }
 
