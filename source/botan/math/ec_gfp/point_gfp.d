@@ -171,7 +171,19 @@ public:
             return PointGFp(point.getCurve()); // zero point
         }
         Vector!(RefCounted!BigInt) ws = Vector!(RefCounted!BigInt)(9);
-        
+		if (scalar.abs() <= 2) // special cases for small values
+		{
+		    ubyte value = scalar.abs().byteAt(0);
+		    
+			    PointGFp result = point.dup;
+		    
+			    if (value == 2)
+				        result.mult2(ws);
+			    if (scalar.isNegative())
+				        result.negate();
+		    
+			    return result.move();
+		}
         const size_t scalar_bits = scalar.bits();
 
         
