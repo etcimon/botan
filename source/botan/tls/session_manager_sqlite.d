@@ -200,8 +200,18 @@ public:
         stmt.bind(5, session.encrypt(m_session_key, m_rng));
         
         stmt.spin();
-        
-        pruneSessionCache();
+		static int save_count;
+		if (++save_count > 200)
+		{
+			bool failed;
+			try pruneSessionCache();
+			catch (Exception e) {
+				failed = true;
+			}
+			if (!failed)
+				save_count = 0;
+
+		}
     }
 
     override Duration sessionLifetime() const
