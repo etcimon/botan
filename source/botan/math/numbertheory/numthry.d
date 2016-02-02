@@ -350,7 +350,7 @@ BigInt ressol()(auto const ref BigInt a, auto const ref BigInt p)
             ++i;
         }
         
-        if (s <= i) {
+        if (i > s) {
             auto bi = -BigInt(1);
             return bi.move();
         }
