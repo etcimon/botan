@@ -117,21 +117,17 @@ public:
         if (pem_or_oid == "")
             throw new DecodingError("No OID Data for EC Group construction"); // no initialization / uninitialized
 
-        try
-        {
-            Vector!ubyte ber = unlock(PEM.decodeCheckLabel(pem_or_oid, "EC PARAMETERS"));
-            BER_decode(ber); // throws if not PEM
-        }
-        catch(DecodingError)
-        {
-            string pem = getPemForNamedGroup(pem_or_oid);
-            
-            if (!pem)
-                throw new LookupError("No ECC domain data for " ~ pem_or_oid);
-            Vector!ubyte ber = unlock(PEM.decodeCheckLabel(pem, "EC PARAMETERS"));
-            BER_decode(ber);
-            m_oid = OIDS.lookup(pem_or_oid).toString();
-        }
+		string pem = getPemForNamedGroup(pem_or_oid);
+		
+		if (!pem) {
+			Vector!ubyte ber = unlock(PEM.decodeCheckLabel(pem_or_oid, "EC PARAMETERS"));
+			BER_decode(ber); // throws if not PEM
+		}
+		else {
+			Vector!ubyte ber = unlock(PEM.decodeCheckLabel(pem, "EC PARAMETERS"));
+			BER_decode(ber);
+			m_oid = OIDS.lookup(pem_or_oid).toString();
+		}
     }
 
     void BER_decode(const ref Vector!ubyte ber_data) {
