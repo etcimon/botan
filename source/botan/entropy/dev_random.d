@@ -22,7 +22,7 @@ import core.sys.posix.sys.select;
 import core.sys.posix.sys.stat;
 import core.sys.posix.unistd;
 import core.sys.posix.fcntl;
-import std.c.string;
+import core.stdc.string;
 import botan.utils.rounding;
 import std.string : toStringz;
 

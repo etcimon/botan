@@ -35,7 +35,7 @@ public:
 private:
     void* doMalloc(size_t n, size_t size) nothrow
     {
-        import std.c.stdlib : malloc;
+        import core.stdc.stdlib : malloc;
         const size_t total_sz = n * size;
         
         void* ptr = malloc(total_sz);
@@ -47,7 +47,7 @@ private:
     {
         if (ptr)
         {
-            import std.c.stdlib : free;
+            import core.stdc.stdlib : free;
 			size_t* sz;
 			try sz = ptr in m_current_allocs;
 			catch (Exception e) assert(false, e.msg);

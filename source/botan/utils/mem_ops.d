@@ -68,7 +68,7 @@ pure:
 */
 void setMem(T)(T* ptr, size_t n, ubyte val)
 {
-    import std.c.string : memset;
+    import core.stdc.string : memset;
     //logDebug("memset ops: ", cast(void*)ptr, " L:", T.sizeof*n);
     memset(ptr, val, T.sizeof*n);
 }

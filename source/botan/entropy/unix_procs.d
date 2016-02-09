@@ -26,7 +26,7 @@ import core.sys.posix.sys.socket;
 import core.sys.posix.sys.wait;
 import core.sys.posix.sys.resource;
 import core.sys.posix.signal;
-import std.c.stdlib;
+import core.stdc.stdlib;
 import std.string : toStringz;
 
 extern(C) int getrusage(int, rusage*);
