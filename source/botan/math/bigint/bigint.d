@@ -527,7 +527,7 @@ public:
     */
     void clear() 
     { 
-        import std.c.string : memset;
+        import core.stdc.string : memset;
         if (!m_reg.empty){
             memset(mutablePtr(), 0, word.sizeof*m_reg.length);
         }

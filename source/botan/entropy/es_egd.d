@@ -30,7 +30,7 @@ import core.sys.posix.unistd;
 import core.sys.posix.sys.socket;
 import core.sys.posix.sys.un;
 
-import std.c.string;
+import core.stdc.string;
 import std.string : toStringz;
 
 enum PF_LOCAL = AF_UNIX;

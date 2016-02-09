@@ -15,7 +15,7 @@ import std.string : toStringz, fromStringz;
 version(linux)
     import core.sys.linux.dlfcn;
 version(Windows)
-    import std.c.windows.windows;
+    import core.sys.windows.windows;
 
 void raiseRuntimeLoaderException(in string lib_name, string msg)
 {
