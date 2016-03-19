@@ -16,6 +16,8 @@ package:
 
 import botan.tls.handshake_state;
 import botan.tls.session_key;
+import std.algorithm : canFind;
+import botan.tls.alert : TLSAlert;
 import memutils.dictionarylist;
 
 public import botan.algo_base.sym_algo;
@@ -51,6 +53,7 @@ import botan.rng.rng;
 import botan.utils.types : Unique;
 import std.datetime;
 import botan.utils.types;
+
 // import string;
 
 enum {
@@ -961,7 +964,11 @@ public:
                 
                 if (name == "")
                     throw new DecodingError("TLSServer sent unknown named curve " ~ to!string(curve_id));
-                
+
+				if(!policy.allowedEccCurves[].canFind(name))
+					throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "Server sent ECC curve prohibited by policy");
+
+
                 ECGroup group = ECGroup(name);
                 
                 Vector!ubyte ecdh_key = reader.getRange!ubyte(1, 1, 255);
