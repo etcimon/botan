@@ -166,10 +166,11 @@ public:
     * Params:
     *  rng = random number generator
     *  bits = size in bits
+    *  set_high_bit = if true, the highest bit is always set
     */
-    this(RandomNumberGenerator rng, size_t bits)
+    this(RandomNumberGenerator rng, size_t bits, bool set_high_bit = true)
     {
-        randomize(rng, bits);
+        randomize(rng, bits, set_high_bit);
     }
     /**
     * Create BigInt of specified size, all zeros
@@ -872,11 +873,16 @@ public:
 
     /**
     * Fill BigInt with a random number with size of bitsize
+    * If set_high_bit is true, the highest bit will be set, which causes
+    * the entropy to be bits-1. Otherwise the highest bit is randomly choosen
+    * by the rng, causing the entropy to be bits.
+    * 
     * Params:
     *  rng = the random number generator to use
     *  bitsize = number of bits the created random value should have
+    *  set_high_bit = if true, the highest bit is always set
     */
-    void randomize(RandomNumberGenerator rng, size_t bitsize = 0)
+    void randomize(RandomNumberGenerator rng, size_t bitsize = 0, bool set_high_bit = true)
     {
         setSign(Positive);
         
@@ -885,10 +891,12 @@ public:
         else
         {
             SecureVector!ubyte array = rng.randomVec((bitsize + 7) / 8);
-            
+			// Always cut unwanted bits
             if (bitsize % 8)
                 array[0] &= 0xFF >> (8 - (bitsize % 8));
-            array[0] |= 0x80 >> ((bitsize % 8) ? (8 - bitsize % 8) : 0);
+			// Set the highest bit if wanted
+			if (set_high_bit)
+				array[0] |= 0x80 >> ((bitsize % 8) ? (8 - bitsize % 8) : 0);
             binaryDecode(array.ptr, array.length);
         }
     }
@@ -974,13 +982,18 @@ public:
     */
     static BigInt randomInteger()(RandomNumberGenerator rng, auto const ref BigInt min, auto const ref BigInt max)
     {
-		auto inv_min = -min;
-        BigInt range = inv_min + max;
+		BigInt delta_upper_bound = max - min - 1;
 
-        if (range <= 0)
+        if (delta_upper_bound <= 0)
             throw new InvalidArgument("randomInteger: invalid min/max values");
-		auto tmp = BigInt(rng, range.bits() + 2);
-        return (min + (tmp % range));
+		// Choose x in [0, delta_upper_bound]
+		BigInt x;
+		do {
+			auto bitsize = delta_upper_bound.bits();
+			x.randomize(rng, bitsize, false);
+		} while (x > delta_upper_bound);
+
+		return min + x;
     }
 
     /**

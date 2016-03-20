@@ -166,6 +166,11 @@ public:
         while (length)
         {
             size_t to_copy = std.algorithm.min(length, m_input.length - m_position);
+			if (to_copy == 0)
+			{
+				m_input.resize(m_input.length*2);
+				m_output.resize(m_output.length*2);
+			}
             copyMem(&m_input[m_position], input, to_copy);
             m_position += to_copy;
             

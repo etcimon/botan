@@ -103,6 +103,10 @@ public:
     */
     this(const ref CurveGFp curve, const ref BigInt x, const ref BigInt y)
     { 
+		if (x <= 0 || x >= curve.getP())
+			throw new InvalidArgument("Invalid PointGFp affine x");
+		if (y <= 0 || y >= curve.getP())
+			throw new InvalidArgument("Invalid PointGFp affine y");
         m_curve = curve.dup;
         //m_ws.resize(2 * (curve.getPWords() + 2));
         m_coord_x = x.dup;
@@ -175,14 +179,14 @@ public:
 		{
 		    ubyte value = scalar.abs().byteAt(0);
 		    
-			    PointGFp result = point.dup;
-		    
-			    if (value == 2)
-				        result.mult2(ws);
-			    if (scalar.isNegative())
-				        result.negate();
-		    
-			    return result.move();
+		    PointGFp result = point.dup;
+	    
+		    if (value == 2)
+			        result.mult2(ws);
+		    if (scalar.isNegative())
+			        result.negate();
+	    
+		    return result.move();
 		}
         const size_t scalar_bits = scalar.bits();
 

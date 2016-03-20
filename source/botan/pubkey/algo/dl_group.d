@@ -279,7 +279,7 @@ public:
     */
     this(RandomNumberGenerator rng, PrimeType type, size_t pbits, size_t qbits = 0)
     {
-        if (pbits < 512)
+        if (pbits < 1024)
             throw new InvalidArgument("DLGroup: prime size " ~ to!string(pbits) ~ " is too small");
         
         if (type == Strong)

@@ -964,10 +964,11 @@ public:
                 
                 if (name == "")
                     throw new DecodingError("TLSServer sent unknown named curve " ~ to!string(curve_id));
-
-				if(!policy.allowedEccCurves[].canFind(name))
-					throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "Server sent ECC curve prohibited by policy");
-
+				{
+					string[] allowed_curves = policy.allowedEccCurves[];
+					if(!allowed_curves.canFind(name))
+						throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "Server sent ECC curve prohibited by policy");
+				}
 
                 ECGroup group = ECGroup(name);
                 
