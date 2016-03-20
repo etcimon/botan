@@ -74,7 +74,8 @@ Pair!(AlgorithmIdentifier, Array!ubyte)
 		else
 			throw new DecodingError("PBE-PKCS5 v2.0: Don't know param format for " ~ cipher);
 	}
-
+	if (enc.isEmpty())
+		throw new DecodingError("PBE-PKCS5: Cannot decrypt, no cipher " ~ cipher);
 	Unique!PBKDF pbkdf = getPbkdf("PBKDF2(" ~ prf ~ ")");
 	
 	const size_t key_length = enc.keySpec().maximumKeylength();

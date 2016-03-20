@@ -211,6 +211,7 @@ public:
         m_base_point = &ecdsa.domain().getBasePoint();
         m_public_point = &ecdsa.publicPoint();
         m_order = &ecdsa.domain().getOrder();
+		m_mod_order = *m_order;
     }
 
     override size_t messageParts() const { return 2; }
@@ -239,19 +240,20 @@ public:
         }
         
         BigInt w = inverseMod(s, *m_order);
-        auto r_1 = PointGFp.multiExponentiate(*m_base_point, e, *m_public_point, r);
-        assert(r_1.onTheCurve());
-        PointGFp R = r_1 * w;
-        assert(R.onTheCurve());
+		BigInt u1 = m_mod_order.reduce(e * w);
+		BigInt u2 = m_mod_order.reduce(r * w);
+		PointGFp R = PointGFp.multiExponentiate(*m_base_point, u1, *m_public_point, u2);
         if (R.isZero()) 
             return false;
-        return (R.getAffineX() % (*m_order) == r);
+		BigInt v = m_mod_order.reduce(R.getAffineX());
+        return (v == r);
     }
 
 private:
     const PointGFp* m_base_point;
     const PointGFp* m_public_point;
     const BigInt* m_order;
+	ModularReducer m_mod_order;
 }
 
 static if (BOTAN_TEST):

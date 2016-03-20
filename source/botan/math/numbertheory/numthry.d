@@ -299,16 +299,18 @@ BigInt powerMod()(auto const ref BigInt base, auto const ref BigInt exp, auto co
 */
 BigInt ressol()(auto const ref BigInt a, auto const ref BigInt p)
 {
-    if (a < 0)
-        throw new InvalidArgument("ressol(): a to solve for must be positive");
-    if (p <= 1)
-        throw new InvalidArgument("ressol(): prime must be > 1");
     
     if (a == 0)
         return BigInt(0);
+	else if (a < 0)
+		throw new InvalidArgument("ressol(): a to solve for must be positive");
+
     if (p == 2)
         return a.dup;
-    
+	else if (p <= 1)
+		throw new InvalidArgument("ressol(): prime must be > 1");
+	else if(p.isEven())
+	   throw new InvalidArgument("ressol(): invalid prime");
     if (jacobi(a, p) != 1) { // not a quadratic residue
         auto bi = -BigInt(1);
         return bi.move();
@@ -347,13 +349,13 @@ BigInt ressol()(auto const ref BigInt a, auto const ref BigInt p)
         while (q != 1)
         {
             q = mod_p.square(q);
-            ++i;
-        }
-        
-        if (i > s) {
-            auto bi = -BigInt(1);
-            return bi.move();
-        }
+			++i;
+			if (s >= i) {
+				auto bi = -BigInt(1);
+				return bi.move();
+			}
+        }        
+
         c = powerMod(c, BigInt.powerOf2(s-i-1), p);
         r = mod_p.multiply(r, c);
         c = mod_p.square(c);

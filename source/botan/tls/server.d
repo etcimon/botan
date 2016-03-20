@@ -214,7 +214,7 @@ protected:
 
             m_application_protocol = "";
 
-            if (state.clientHello().supportsAlpn())
+            if (m_choose_next_protocol && state.clientHello().supportsAlpn())
                 m_application_protocol = m_choose_next_protocol(state.clientHello().nextProtocols());
 
             if (resuming)

@@ -322,6 +322,8 @@ public:
             buffer = obj.value.move;
         else
         {
+			if (obj.value.empty())
+				throw new BERDecodingError("Invalid BIT STRING");
             if (obj.value[0] >= 8)
                 throw new BERDecodingError("Bad number of unused bits in BIT STRING");
             
@@ -348,6 +350,8 @@ public:
             buffer = unlock(obj.value);
         else
         {
+			if (obj.value.empty())
+				throw new BERDecodingError("Invalid BIT STRING");
             if (obj.value[0] >= 8)
                 throw new BERDecodingError("Bad number of unused bits in BIT STRING");
             

@@ -414,8 +414,11 @@ size_t readTLSRecord(ref SecureVector!ubyte readbuf,
 
     const size_t record_len = make_ushort(readbuf[TLS_HEADER_SIZE-2], readbuf[TLS_HEADER_SIZE-1]);
     if (record_len > MAX_CIPHERTEXT_SIZE)
-        throw new TLSException(TLSAlert.RECORD_OVERFLOW, "Got message that exceeds maximum size: " ~ cast(string)readbuf[]);
+		throw new TLSException(TLSAlert.RECORD_OVERFLOW, "Received a record that exceeds maximum size: " ~ cast(string)readbuf[]);
     
+	if(record_len == 0)
+		throw new TLSException(TLSAlert.DECODE_ERROR, "Received a completely empty record");
+
     if (size_t needed = fillBufferTo(readbuf, input, input_sz, consumed, TLS_HEADER_SIZE + record_len))
         return needed;
     
@@ -491,10 +494,14 @@ size_t readDTLSRecord(ref SecureVector!ubyte readbuf,
     assert(record_version.isDatagramProtocol(), "Expected DTLS");
     
     const size_t record_len = make_ushort(readbuf[DTLS_HEADER_SIZE-2], readbuf[DTLS_HEADER_SIZE-1]);
-    
-    if (record_len > MAX_CIPHERTEXT_SIZE)
-        throw new TLSException(TLSAlert.RECORD_OVERFLOW, "Got message that exceeds maximum size");
-    
+
+	// Invalid packet:
+	if(record_len == 0 || record_len > MAX_CIPHERTEXT_SIZE)
+	{
+		readbuf.clear();
+		return 0;
+	}
+
     if (fillBufferTo(readbuf, input, input_sz, consumed, DTLS_HEADER_SIZE + record_len))
     {
         // Truncated packet?
