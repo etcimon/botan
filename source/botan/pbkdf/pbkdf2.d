@@ -88,7 +88,7 @@ public:
                 on how long hashing takes on whatever machine we're running on.
                 */
                 
-                const auto start = Clock.currTime();
+                const auto start = Clock.currTime(UTC());
                 
                 iterations = 1; // the first iteration we did above
                 
@@ -106,7 +106,7 @@ public:
                     */
                     if (iterations % 10000 == 0)
                     {
-                        auto time_taken = Clock.currTime() - start;
+                        auto time_taken = Clock.currTime(UTC()) - start;
                         if (time_taken > dur_per_block)
                             break;
                     }

@@ -228,7 +228,7 @@ public:
         path_limit = 0;
         constraints = KeyConstraints.NO_CONSTRAINTS;
         
-        auto now = Clock.currTime();
+        auto now = Clock.currTime(UTC());
         start = X509Time(now);
         end = X509Time(now + expiration_time);
         

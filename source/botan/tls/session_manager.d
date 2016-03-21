@@ -208,7 +208,7 @@ private:
         }
         
         // if session has expired, remove it
-        const auto now = Clock.currTime();
+        const auto now = Clock.currTime(UTC());
         
         if (session.startTime() + sessionLifetime() < now)
         {

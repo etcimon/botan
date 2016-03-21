@@ -225,7 +225,7 @@ private:
     {
         sqlite3_statement remove_expired = sqlite3_statement(m_db, "delete from tls_sessions where session_start <= ?1");
         
-        remove_expired.bind(1, Clock.currTime() - m_session_lifetime);
+        remove_expired.bind(1, Clock.currTime(UTC()) - m_session_lifetime);
         
         remove_expired.spin();
         

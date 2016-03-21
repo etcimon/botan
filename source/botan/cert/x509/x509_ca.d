@@ -228,7 +228,7 @@ private:
             next_update = 7.days;
         
         // Totally stupid: ties encoding logic to the return of std::time!!
-        auto current_time = Clock.currTime();
+        auto current_time = Clock.currTime(UTC());
         auto expire_time = current_time + next_update;
         
         X509Extensions extensions;

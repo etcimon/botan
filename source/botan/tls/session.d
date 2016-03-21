@@ -52,7 +52,7 @@ public:
          in TLSServerInformation server_info,
          in string srp_identifier)
     {
-        m_start_time = Clock.currTime();
+        m_start_time = Clock.currTime(UTC());
         m_identifier = session_identifier.move();
         m_session_ticket = ticket.move();
         m_master_secret = master_secret.move();
@@ -279,7 +279,7 @@ public:
     */
     const(Duration) sessionAge() const
     {
-        return Clock.currTime() - m_start_time;
+        return Clock.currTime(UTC()) - m_start_time;
     }
 
     /**
