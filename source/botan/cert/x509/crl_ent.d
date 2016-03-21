@@ -135,7 +135,7 @@ public:
     {
         m_throw_on_unknown_critical = false;
         m_serial = cert.serialNumber().dup;
-        m_time = X509Time(Clock.currTime());
+        m_time = X509Time(Clock.currTime(UTC()));
         m_reason = why;
     }
 

@@ -1985,7 +1985,7 @@ Vector!ubyte makeHelloRandom(RandomNumberGenerator rng, in TLSPolicy policy)
 
     if (policy.includeTimeInHelloRandom())
     {
-        const uint time32 = cast(uint)(Clock.currTime().toUnixTime);
+        const uint time32 = cast(uint)(Clock.currTime(UTC()).toUnixTime);
         storeBigEndian(time32, buf.ptr);
     }
 

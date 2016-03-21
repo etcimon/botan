@@ -65,7 +65,7 @@ public:
         hash.update(salt, salt_len);
         SecureVector!ubyte key = hash.finished();
 
-        const start = Clock.currTime();
+        const start = Clock.currTime(UTC());
         size_t iterations_performed = 1;
         
         while (true)
@@ -74,7 +74,7 @@ public:
             {
                 if (iterations_performed % 10000 == 0)
                 {
-                    auto time_taken = Clock.currTime() - start;
+                    auto time_taken = Clock.currTime(UTC()) - start;
                     if (time_taken > loop_for)
                         break;
                 }

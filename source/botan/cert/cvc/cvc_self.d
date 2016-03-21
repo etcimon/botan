@@ -198,7 +198,7 @@ EAC11CVC createCvca(in PrivateKey key,
     EAC11CVCOptions opts;
     opts.car = cast(ASN1Car)car;
     
-    opts.ced = ASN1Ced(Clock.currTime());
+    opts.ced = ASN1Ced(Clock.currTime(UTC()));
     opts.cex = ASN1Cex(opts.ced);
     opts.cex.addMonths(cvca_validity_months);
     opts.holder_auth_templ = (CVCA | (iris * IRIS) | (fingerpr * FINGERPRINT));
@@ -228,7 +228,7 @@ EAC11CVC linkCvca(in EAC11CVC signer,
     if (!priv_key)
         throw new InvalidArgument("linkCvca(): unsupported key type");
     
-    ASN1Ced ced = ASN1Ced(Clock.currTime());
+    ASN1Ced ced = ASN1Ced(Clock.currTime(UTC()));
     ASN1Cex cex = ASN1Cex(signee.getCex());
     if (cast(EACTimeImpl)(*ced) > cast(EACTimeImpl)(*cex))
     {
@@ -338,7 +338,7 @@ EAC11CVC signRequest(in EAC11CVC signer_cert,
     
     AlgorithmIdentifier sig_algo = cast(AlgorithmIdentifier) signer_cert.signatureAlgorithm();
 
-    ASN1Ced ced = ASN1Ced(Clock.currTime());
+    ASN1Ced ced = ASN1Ced(Clock.currTime(UTC()));
     
     ubyte chat_val;
     ubyte chat_low = signer_cert.getChatValue() & 0x3; // take the chat rights from signer

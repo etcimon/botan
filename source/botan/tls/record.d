@@ -50,7 +50,7 @@ public:
            ConnectionSide side, bool our_side, 
            in TLSCiphersuite suite, auto const ref TLSSessionKeys keys) 
     {
-        m_start_time = Clock.currTime();
+        m_start_time = Clock.currTime(UTC());
         m_implicit_nonce_size = suite.nonceBytesFromRecord();
         m_explicit_nonce_size = suite.nonceBytesFromHandshake();
         m_is_ssl3 = _version == TLSProtocolVersion.SSL_V3;
@@ -187,7 +187,7 @@ public:
 
     Duration age() const
     {
-        return Clock.currTime() - m_start_time;
+        return Clock.currTime(UTC()) - m_start_time;
     }
 
 private:

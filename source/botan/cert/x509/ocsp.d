@@ -154,7 +154,7 @@ public:
         {
             if (response.certid().isIdFor(issuer, subject))
             {
-                X509Time current_time = X509Time(Clock.currTime());
+                X509Time current_time = X509Time(Clock.currTime(UTC()));
                 
                 if (response.certStatus() == 1)
                     return CertificateStatusCode.CERT_IS_REVOKED;
