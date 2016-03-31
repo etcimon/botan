@@ -309,8 +309,9 @@ public:
         CiphersuitePreferenceOrdering order = CiphersuitePreferenceOrdering(ciphers, macs, kex, sigs);
         
         Vector!(TLSCiphersuite) ciphersuites;
+		ciphersuites.reserve(64);
 		auto cipher_suites = TLSCiphersuite.allKnownCiphersuites();
-		foreach (const ref TLSCiphersuite suite; cipher_suites[])
+		foreach (const ref TLSCiphersuite suite; cipher_suites)
         {
             if (!acceptableCiphersuite(suite))
                 continue;

@@ -68,7 +68,7 @@ public:
                                          in string purported_hostname,
                                          const ref Vector!X509Certificate cert_chain)
     {
-        if (cert_chain.empty)
+		if (cert_chain.empty)
             throw new InvalidArgument("Certificate chain was empty");
         
         auto trusted_CAs = trustedCertificateAuthorities(type, purported_hostname);
