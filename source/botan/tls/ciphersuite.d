@@ -355,7 +355,7 @@ public:
     static TLSCiphersuite byName(in string name)
     {
 		auto all_ciphersuites = allKnownCiphersuites();
-		foreach (const ref TLSCiphersuite suite; all_ciphersuites[])
+		foreach (const ref TLSCiphersuite suite; all_ciphersuites)
         {
             if (suite.toString() == name)
                 return suite;
@@ -369,7 +369,7 @@ public:
     *
     * Returns: list of all known ciphersuites
     */
-    static Vector!TLSCiphersuite allKnownCiphersuites()
+    static const(TLSCiphersuite[]) allKnownCiphersuites()
     {
         static Vector!TLSCiphersuite all_ciphersuites;
         static bool initialized;
@@ -377,7 +377,7 @@ public:
             initialized = true;
             all_ciphersuites = gatherKnownCiphersuites();
         }
-        return all_ciphersuites.dup();
+        return cast(const)all_ciphersuites[];
     }
 
     /**

@@ -20,6 +20,8 @@ import core.sync.mutex;
 import memutils.hashmap;
 import botan.constants;
 
+private HashMap!(string, SCANToken) m_cache;
+
 /**
 * A class encapsulating a SCAN name (similar to JCE conventions)
 * http://www.users.zetnet.co.uk/hopwood/crypto/scan/
@@ -33,6 +35,14 @@ public:
     */
     this(string algo_spec)
     {
+		if (auto tok = algo_spec in m_cache) {
+			m_args = tok.m_args;
+			m_mode_info = tok.m_mode_info;
+			m_alg_name = tok.m_alg_name;
+			m_orig_algo_spec = tok.m_orig_algo_spec;
+			return;
+		}
+		scope(exit) m_cache[algo_spec] = this;
         m_args = Array!string();
         m_mode_info = Array!string();
         m_orig_algo_spec = algo_spec;
