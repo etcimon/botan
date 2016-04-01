@@ -195,8 +195,8 @@ public:
 		// detect high traffic and apply every 3 seconds
 		static SysTime last_save;
 		static SysTime last_prune;
-		if (Clock.currTime(UTC()) - last_save >= 3.seconds) {
-			last_save = Clock.currTime(UTC());
+		//if (Clock.currTime(UTC()) - last_save >= 3.seconds) {
+			//last_save = Clock.currTime(UTC());
 
 			sqlite3_statement stmt = sqlite3_statement(m_db, "insert or replace into tls_sessions"
 				~ " values(?1, ?2, ?3, ?4, ?5)");
@@ -215,7 +215,7 @@ public:
 				catch (Exception e) {
 				}
 			}
-		}
+		//}
     }
 
     override Duration sessionLifetime() const
