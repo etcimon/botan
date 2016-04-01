@@ -25,8 +25,9 @@ class sqlite3_database
 public:
     this(in string db_filename)
     {
-        int rc = sqlite3_open(db_filename.toStringz, &m_db);
-        
+		int rc = sqlite3_open(db_filename.toStringz, &m_db);
+        if (!rc)
+			sqlite3_busy_timeout(m_db, 500);
         if (rc)
         {
             const string err_msg = fromStringz(sqlite3_errmsg(m_db)).to!string;
