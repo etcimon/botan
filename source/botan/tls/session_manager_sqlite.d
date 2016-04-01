@@ -58,7 +58,7 @@ public:
         m_session_lifetime = session_lifetime;
         m_db = new sqlite3_database(db_filename);
 
-		if (m_db.rowCount("SELECT name FROM sqlite_master WHERE type='table' AND (name='tls_sessions' OR name='tls_sessions_metadata')") == 0) {
+		if (m_db.rowCount("sqlite_master WHERE type='table' AND (name='tls_sessions' OR name='tls_sessions_metadata')") == 0) {
 
 	        m_db.createTable(
 	            "create table if not exists tls_sessions "
