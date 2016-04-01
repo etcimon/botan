@@ -24,6 +24,7 @@ import botan.codec.pem;
 import std.algorithm;
 import botan.utils.types;
 import botan.utils.types;
+import memutils.hashmap;
 
 version(X509):
 
@@ -173,9 +174,17 @@ public:
     */
     final Vector!ubyte BER_encode() const
     {
-        auto der = DEREncoder.init;
-        encodeInto(der);
-        return der.getContentsUnlocked();
+		static HashMap!(void*, ubyte[]) cache;
+		if ((cast(void*)this) in cache) return Vector!ubyte(cache[cast(void*)this]);
+		
+		auto der = DEREncoder.init;
+		encodeInto(der);
+		auto ret = der.getContentsUnlocked();
+		if (cache.length > 50)
+			cache = HashMap!(void*, ubyte[])();
+		cache[cast(void*)this] = ret[].dup;
+
+		return ret.move;
     }
 
 

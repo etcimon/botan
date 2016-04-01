@@ -58,24 +58,26 @@ public:
         m_session_lifetime = session_lifetime;
         m_db = new sqlite3_database(db_filename);
 
-        m_db.createTable(
-            "create table if not exists tls_sessions "
-            ~ "("
-            ~ "session_id TEXT PRIMARY KEY, "
-            ~ "session_start INTEGER, "
-            ~ "hostname TEXT, "
-            ~ "hostport INTEGER, "
-            ~ "session BLOB"
-            ~ ")");
-        
-        m_db.createTable(
-            "create table if not exists tls_sessions_metadata "
-            ~ "("
-            ~ "passphrase_salt BLOB, "
-            ~ "passphrase_iterations INTEGER, "
-            ~ "passphrase_check INTEGER "
-            ~ ")");
-        
+		if (m_db.rowCount("SELECT name FROM sqlite_master WHERE type='table' AND (name='tls_sessions' OR name='tls_sessions_metadata')") == 0) {
+
+	        m_db.createTable(
+	            "create table if not exists tls_sessions "
+	            ~ "("
+	            ~ "session_id TEXT PRIMARY KEY, "
+	            ~ "session_start INTEGER, "
+	            ~ "hostname TEXT, "
+	            ~ "hostport INTEGER, "
+	            ~ "session BLOB"
+	            ~ ")");
+	        
+	        m_db.createTable(
+	            "create table if not exists tls_sessions_metadata "
+	            ~ "("
+	            ~ "passphrase_salt BLOB, "
+	            ~ "passphrase_iterations INTEGER, "
+	            ~ "passphrase_check INTEGER "
+	            ~ ")");
+		}
         const size_t salts = m_db.rowCount("tls_sessions_metadata");
         
         if (salts == 1)
@@ -190,27 +192,29 @@ public:
 
     override void save(in TLSSession session)
     {
-        sqlite3_statement stmt = sqlite3_statement(m_db, "insert or replace into tls_sessions"
-                               ~ " values(?1, ?2, ?3, ?4, ?5)");
-        
-        stmt.bind(1, hexEncode(session.sessionId()));
-        stmt.bind(2, session.startTime());
-        stmt.bind(3, session.serverInfo().hostname());
-        stmt.bind(4, session.serverInfo().port());
-        stmt.bind(5, session.encrypt(m_session_key, m_rng));
-        
-        stmt.spin();
-		static int save_count;
-		if (++save_count > 200)
-		{
-			bool failed;
-			try pruneSessionCache();
-			catch (Exception e) {
-				failed = true;
-			}
-			if (!failed)
-				save_count = 0;
+		// detect high traffic and apply every 3 seconds
+		static SysTime last_save;
+		static SysTime last_prune;
+		if (Clock.currTime(UTC()) - last_save >= 3.seconds) {
+			last_save = Clock.currTime(UTC());
 
+			sqlite3_statement stmt = sqlite3_statement(m_db, "insert or replace into tls_sessions"
+				~ " values(?1, ?2, ?3, ?4, ?5)");
+			
+			stmt.bind(1, hexEncode(session.sessionId()));
+			stmt.bind(2, session.startTime());
+			stmt.bind(3, session.serverInfo().hostname());
+			stmt.bind(4, session.serverInfo().port());
+			stmt.bind(5, session.encrypt(m_session_key, m_rng));
+			
+			stmt.spin();
+			if (Clock.currTime(UTC()) - last_prune >= 30.seconds) {
+				last_prune = Clock.currTime(UTC());
+				bool failed;
+				try pruneSessionCache();
+				catch (Exception e) {
+				}
+			}
 		}
     }
 
