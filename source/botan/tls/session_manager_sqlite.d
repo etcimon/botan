@@ -192,30 +192,20 @@ public:
 
     override void save(in TLSSession session)
     {
-		// detect high traffic and apply every 3 seconds
-		static SysTime last_save;
-		static SysTime last_prune;
-		//if (Clock.currTime(UTC()) - last_save >= 3.seconds) {
-			//last_save = Clock.currTime(UTC());
 
-			sqlite3_statement stmt = sqlite3_statement(m_db, "insert or replace into tls_sessions"
-				~ " values(?1, ?2, ?3, ?4, ?5)");
-			
-			stmt.bind(1, hexEncode(session.sessionId()));
-			stmt.bind(2, session.startTime());
-			stmt.bind(3, session.serverInfo().hostname());
-			stmt.bind(4, session.serverInfo().port());
-			stmt.bind(5, session.encrypt(m_session_key, m_rng));
-			
-			stmt.spin();
-			if (Clock.currTime(UTC()) - last_prune >= 30.seconds) {
-				last_prune = Clock.currTime(UTC());
-				bool failed;
-				try pruneSessionCache();
-				catch (Exception e) {
-				}
-			}
-		//}
+		sqlite3_statement stmt = sqlite3_statement(m_db, "insert or replace into tls_sessions"
+			~ " values(?1, ?2, ?3, ?4, ?5)");
+		
+		stmt.bind(1, hexEncode(session.sessionId()));
+		stmt.bind(2, session.startTime());
+		stmt.bind(3, session.serverInfo().hostname());
+		stmt.bind(4, session.serverInfo().port());
+		stmt.bind(5, session.encrypt(m_session_key, m_rng));
+		
+		stmt.spin();
+		try pruneSessionCache();
+		catch (Exception e) {
+		}
     }
 
     override Duration sessionLifetime() const
