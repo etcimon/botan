@@ -20,6 +20,7 @@ import botan.utils.loadstor;
 import botan.utils.xor_buf;
 import botan.utils.rounding;
 import botan.utils.mem_ops;
+import std.algorithm : min;
 
 /**
 * IEEE P1619 XTS Mode
@@ -148,7 +149,7 @@ public:
         
         while (blocks)
         {
-            const size_t to_proc = std.algorithm.min(blocks, blocks_in_tweak);
+            const size_t to_proc = min(blocks, blocks_in_tweak);
             const size_t to_proc_bytes = to_proc * BS;
             
             xorBuf(buf, tweak(), to_proc_bytes);
@@ -250,7 +251,7 @@ public:
         
         while (blocks)
         {
-            const size_t to_proc = std.algorithm.min(blocks, blocks_in_tweak);
+            const size_t to_proc = min(blocks, blocks_in_tweak);
             const size_t to_proc_bytes = to_proc * BS;
             
             xorBuf(buf, tweak(), to_proc_bytes);

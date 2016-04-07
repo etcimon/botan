@@ -19,6 +19,7 @@ import botan.utils.xor_buf;
 import botan.utils.rounding;
 import botan.utils.mem_ops;
 import std.conv : to;
+import std.algorithm : swap;
 
 /**
 * RC4 stream cipher
@@ -103,7 +104,7 @@ protected:
         for (size_t i = 0, state_index = 0; i != 256; ++i)
         {
             state_index = (state_index + key[i % length] + m_state[i]) % 256;
-            std.algorithm.swap(m_state[i], m_state[state_index]);
+            swap(m_state[i], m_state[state_index]);
         }
         
         for (size_t i = 0; i <= m_SKIP; i += m_buffer.length)

@@ -20,6 +20,7 @@ import botan.mac.hmac;
 import botan.hash.md5;
 import botan.hash.sha160;
 import std.conv : to;
+import std.algorithm : min, max;
 
 /**
 * PRF used in TLS 1.0/1.1
@@ -120,7 +121,7 @@ void P_hash(ref SecureVector!ubyte output,
     
     while (offset != output.length)
     {
-        const size_t this_block_len = std.algorithm.min(mac.outputLength, output.length - offset);
+        const size_t this_block_len = min(mac.outputLength, output.length - offset);
         
         A = mac.process(A);
         

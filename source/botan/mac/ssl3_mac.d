@@ -16,6 +16,8 @@ static if (BOTAN_HAS_SSL3_MAC):
 import botan.hash.hash;
 import botan.mac.mac;
 import botan.utils.mem_ops;
+import std.algorithm : fill;
+
 /**
 * A MAC only used in SSLv3. Do not use elsewhere! Use HMAC instead.
 */
@@ -100,8 +102,8 @@ protected:
         m_ikey.resize(inner_hash_length);
         m_okey.resize(inner_hash_length);
         
-        std.algorithm.fill(m_ikey.ptr[0 .. m_ikey.length], cast(ubyte) 0x36);
-        std.algorithm.fill(m_okey.ptr[0 .. m_ikey.length], cast(ubyte) 0x5C);
+        fill(m_ikey.ptr[0 .. m_ikey.length], cast(ubyte) 0x36);
+        fill(m_okey.ptr[0 .. m_ikey.length], cast(ubyte) 0x5C);
         
         copyMem(m_ikey.ptr, key, length);
         copyMem(m_okey.ptr, key, length);

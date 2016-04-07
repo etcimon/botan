@@ -16,6 +16,7 @@ static if (BOTAN_HAS_TLS || BOTAN_HAS_PUBLIC_KEY_CRYPTO):
 import botan.kdf.kdf;
 import botan.hash.hash;
 import botan.utils.types;
+import std.algorithm : min;
 
 /**
 * KDF2, from IEEE 1363
@@ -44,7 +45,7 @@ public:
             
             SecureVector!ubyte hash_result = hash.finished();
             
-            size_t added = std.algorithm.min(hash_result.length, out_len);
+            size_t added = min(hash_result.length, out_len);
             output ~= hash_result.ptr[0 .. added];
             out_len -= added;
             

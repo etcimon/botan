@@ -109,7 +109,7 @@ public:
     {
         import std.conv : to;
         // Truncate longer passwords to the 56 ubyte limit Blowfish enforces
-        length = std.algorithm.min(length, 55);
+        length = min(length, 55);
         
         if (workfactor == 0)
             throw new InvalidArgument("Bcrypt work factor must be at least 1");

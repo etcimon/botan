@@ -85,7 +85,7 @@ public:
 
         if (m_buffer_pos + input_size >= m_main_block_mod + m_final_minimum)
         {
-            size_t to_copy = std.algorithm.min(m_buffer_2.length - m_buffer_pos, input_size);
+            size_t to_copy = min(m_buffer_2.length - m_buffer_pos, input_size);
 
             // assert(m_buffer_2.length > to_copy);
 
@@ -199,7 +199,7 @@ private:
     {
         while (input_length)
         {
-            const size_t take = std.algorithm.min(m_transform.updateGranularity(), input_length);
+            const size_t take = min(m_transform.updateGranularity(), input_length);
             m_buffer = SecureVector!ubyte(input[0 .. take]);
             m_transform.update(m_buffer);
             

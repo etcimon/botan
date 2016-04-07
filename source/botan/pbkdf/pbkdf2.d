@@ -20,6 +20,7 @@ import botan.utils.xor_buf;
 import botan.utils.rounding;
 import std.datetime;
 import std.conv : to;
+import std.algorithm : min;
 
 /**
 * PKCS #5 PBKDF2
@@ -73,7 +74,7 @@ public:
         uint counter = 1;
         while (key_len)
         {
-            size_t T_size = std.algorithm.min(mac.outputLength, key_len);
+            size_t T_size = min(mac.outputLength, key_len);
             
             mac.update(salt, salt_len);
             mac.updateBigEndian(counter);

@@ -28,6 +28,7 @@ import botan.utils.simd.wmmintrin;
 import botan.utils.types;
 
 import std.conv : to;
+import std.algorithm : min;
 
 static if (BOTAN_HAS_GCM_CLMUL) {
     import botan.utils.simd.wmmintrin;
@@ -384,7 +385,7 @@ private:
         */
         while (length)
         {
-            const size_t to_proc = std.algorithm.min(length, BS);
+            const size_t to_proc = min(length, BS);
             
             xorBuf(ghash.ptr, input, to_proc);
             gcmMultiply(ghash);
