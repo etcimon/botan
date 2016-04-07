@@ -20,7 +20,7 @@ import botan.utils.types;
 import botan.math.numbertheory.numthry;
 import botan.math.numbertheory.reducer;
 import botan.math.mp.mp_core;
-import std.algorithm : swap;
+import std.algorithm : max, swap;
 import std.conv : to;
 
 /**
@@ -237,7 +237,7 @@ public:
         const PointGFp p3 = p1 + p2;
         
         PointGFp H = PointGFp(p1.m_curve); // create as zero
-        size_t bits_left = std.algorithm.max(z1.bits(), z2.bits());
+        size_t bits_left = max(z1.bits(), z2.bits());
         
         Vector!(RefCounted!BigInt) ws = Vector!(RefCounted!BigInt)(9);
         

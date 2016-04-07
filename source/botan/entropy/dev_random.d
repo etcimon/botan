@@ -25,6 +25,7 @@ import core.sys.posix.fcntl;
 import core.stdc.string;
 import botan.utils.rounding;
 import std.string : toStringz;
+import std.algorithm : max;
 
 /**
 * Entropy source reading from kernel devices like /dev/random
@@ -52,7 +53,7 @@ public:
         foreach (device; m_devices[])
         {
             FD_SET(device, &read_set);
-            max_fd = std.algorithm.max(device, max_fd);
+            max_fd = max(device, max_fd);
         }
         
         timeval timeout;

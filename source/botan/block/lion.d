@@ -139,7 +139,7 @@ public:
     */
     this(HashFunction hash, StreamCipher cipher, size_t block_size) 
     {
-        m_block_size = std.algorithm.max(2*hash.outputLength + 1, block_size);
+        m_block_size = max(2*hash.outputLength + 1, block_size);
         m_hash = hash;
         m_cipher = cipher;
         

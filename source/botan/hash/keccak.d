@@ -23,6 +23,7 @@ import botan.utils.xor_buf;
 import botan.utils.get_byte;
 import botan.utils.types;
 import std.conv : to;
+import std.algorithm : min, max;
 
 /**
 * Keccak[1600], a SHA-3 candidate
@@ -77,7 +78,7 @@ protected:
         
         while (length)
         {
-            size_t to_take = std.algorithm.min(length, m_bitrate / 8 - m_S_pos);
+            size_t to_take = min(length, m_bitrate / 8 - m_S_pos);
             
             length -= to_take;
             

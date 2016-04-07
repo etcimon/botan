@@ -21,6 +21,7 @@ import botan.utils.xor_buf;
 import botan.utils.types;
 import botan.utils.mem_ops;
 import std.conv : to;
+import std.algorithm : min;
 
 /**
 * CFB Mode
@@ -139,7 +140,7 @@ public:
         
         while (sz)
         {
-            const size_t took = std.algorithm.min(shift, sz);
+            const size_t took = min(shift, sz);
             xorBuf(buf, &keystreamBuf()[0], took);
             // Assumes feedback-sized block except for last input
             if (BS - shift > 0) copyMem(state.ptr, &(*state)[shift], BS - shift);
@@ -195,7 +196,7 @@ public:
         
         while (sz)
         {
-            const size_t took = std.algorithm.min(shift, sz);
+            const size_t took = min(shift, sz);
             
             // first update shift register with ciphertext
             if (BS - shift > 0) copyMem(state.ptr, &(*state)[shift], BS - shift);

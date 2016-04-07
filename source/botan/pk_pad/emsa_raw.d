@@ -15,6 +15,7 @@ static if (BOTAN_HAS_EMSA_RAW):
 import botan.pk_pad.emsa;
 import botan.utils.types;
 import botan.utils.mem_ops;
+import std.algorithm : swap;
 
 /**
 * EMSA-Raw - sign inputs directly
@@ -37,7 +38,7 @@ public:
     override SecureVector!ubyte rawData()
     {
         SecureVector!ubyte output;
-        std.algorithm.swap(m_message, output);
+        swap(m_message, output);
         return output.move;
     }
 

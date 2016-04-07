@@ -17,6 +17,7 @@ import botan.mac.mac;
 import botan.hash.hash;
 import botan.utils.types;
 import botan.utils.mem_ops;
+import std.algorithm : min;
 
 /**
 * HKDF, see @rfc 5869 for details
@@ -78,7 +79,7 @@ public:
             m_prf.update(counter++);
             T = m_prf.finished();
             
-            const size_t to_write = std.algorithm.min(T.length, output_len);
+            const size_t to_write = min(T.length, output_len);
             copyMem(output, T.ptr, to_write);
             output += to_write;
             output_len -= to_write;

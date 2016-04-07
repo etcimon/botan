@@ -21,6 +21,7 @@ import botan.math.ec_gfp.curve_nistp;
 import std.algorithm : swap;
 import botan.constants;
 import memutils.unique;
+import std.conv : to;
 
 abstract class CurveGFpRepr
 {

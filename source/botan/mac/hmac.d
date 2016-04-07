@@ -100,8 +100,8 @@ protected:
         m_ikey.resize(m_hash.hashBlockSize);
         m_okey.resize(m_hash.hashBlockSize);
         
-        std.algorithm.fill(m_ikey.ptr[0 .. m_ikey.length], cast(ubyte)0x36);
-        std.algorithm.fill(m_okey.ptr[0 .. m_okey.length], cast(ubyte)0x5C);
+        fill(m_ikey.ptr[0 .. m_ikey.length], cast(ubyte)0x36);
+        fill(m_okey.ptr[0 .. m_okey.length], cast(ubyte)0x5C);
         
         if (length > m_hash.hashBlockSize)
         {

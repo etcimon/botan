@@ -18,6 +18,7 @@ import botan.utils.xor_buf;
 import botan.utils.types;
 import botan.utils.mem_ops;
 import std.exception;
+import std.algorithm : max, min;
 
 /**
 * Combines two hash functions using a Feistel scheme. Described in
@@ -97,7 +98,7 @@ protected:
         SecureVector!ubyte h2 = m_hash2.finished();
         
         // First round
-        xorBuf(h1.ptr, h2.ptr, std.algorithm.min(h1.length, h2.length));
+        xorBuf(h1.ptr, h2.ptr, min(h1.length, h2.length));
         
         // Second round
         comb4p_round(h2, h1, 1, *m_hash1, *m_hash2);
@@ -131,8 +132,8 @@ void comb4p_round(ref SecureVector!ubyte output,
     h2.update(input.ptr, input.length);
     
     SecureVector!ubyte h_buf = h1.finished();
-    xorBuf(output.ptr, h_buf.ptr, std.algorithm.min(output.length, h_buf.length));
+    xorBuf(output.ptr, h_buf.ptr, min(output.length, h_buf.length));
     
     h_buf = h2.finished();
-    xorBuf(output.ptr, h_buf.ptr, std.algorithm.min(output.length, h_buf.length));
+    xorBuf(output.ptr, h_buf.ptr, min(output.length, h_buf.length));
 }

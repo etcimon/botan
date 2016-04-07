@@ -18,6 +18,7 @@ import botan.utils.loadstor;
 import botan.utils.xor_buf;
 import botan.utils.rounding;
 import botan.utils.mem_ops;
+import std.algorithm : min, swap;
 
 /**
 * CBC Mode
@@ -219,7 +220,7 @@ public:
             
             // swap last two blocks
             foreach (size_t i; 0 .. BS)
-                std.algorithm.swap(buffer[buffer.length-BS+i], buffer[buffer.length-2*BS+i]);
+                swap(buffer[buffer.length-BS+i], buffer[buffer.length-2*BS+i]);
         }
         else
         {
@@ -292,7 +293,7 @@ public:
         
         while (blocks)
         {
-            const size_t to_proc = std.algorithm.min(BS * blocks, m_tempbuf.length);
+            const size_t to_proc = min(BS * blocks, m_tempbuf.length);
             cipher().decryptN(buf, m_tempbuf.ptr, to_proc / BS);
             
             assert(m_tempbuf.length >= BS);
@@ -375,7 +376,7 @@ public:
             // swap last two blocks
             
             foreach (size_t i; 0 .. BS)
-                std.algorithm.swap(buffer[buffer.length-BS+i], buffer[buffer.length-2*BS+i]);
+                swap(buffer[buffer.length-BS+i], buffer[buffer.length-2*BS+i]);
             
             update(buffer, offset);
         }
@@ -394,7 +395,7 @@ public:
             xorBuf(last.ptr, &last[BS], final_bytes - BS);
             
             foreach (size_t i; 0 .. (final_bytes - BS))
-                std.algorithm.swap(last[i], last[i + BS]);
+                swap(last[i], last[i + BS]);
             
             cipher().decrypt(last.ptr);
             xorBuf(last.ptr, statePtr(), BS);

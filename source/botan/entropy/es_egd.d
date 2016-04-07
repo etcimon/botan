@@ -33,6 +33,7 @@ import core.sys.posix.sys.un;
 import core.stdc.string;
 import std.string : toStringz;
 
+import std.algorithm : min;
 enum PF_LOCAL = AF_UNIX;
 
 /**
@@ -119,7 +120,7 @@ private:
             try
             {
                 // 1 == EGD command for non-blocking read
-                ubyte[2] egd_read_command = [ 1, cast(ubyte)(std.algorithm.min(length, 255)) ];
+                ubyte[2] egd_read_command = [ 1, cast(ubyte)(min(length, 255)) ];
                 
                 if (.write(m_fd, egd_read_command.ptr, 2) != 2)
                     throw new Exception("Writing entropy read command to EGD failed");
