@@ -22,8 +22,8 @@ import botan.mac.mac;
 import botan.utils.exceptn;
 import botan.utils.types;
 import botan.utils.mem_ops;
-import std.algorithm : swap;
 import std.exception;
+import std.algorithm : swap;
 
 struct FPE {
 
@@ -130,16 +130,16 @@ void factor(BigInt n, ref BigInt a, ref BigInt b)
         {
             a *= PRIMES[i];
             if (a > b)
-                std.algorithm.swap(a, b);
+                swap(a, b);
             n /= PRIMES[i];
         }
     }
     
     if (a > b)
-        std.algorithm.swap(a, b);
+        swap(a, b);
     a *= n;
     if (a < b)
-        std.algorithm.swap(a, b);
+        swap(a, b);
     
     if (a <= 1 || b <= 1)
         throw new Exception("Could not factor n for use in FPE");

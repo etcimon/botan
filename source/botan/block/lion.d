@@ -20,6 +20,7 @@ import botan.utils.xor_buf;
 import botan.utils.parsing;
 import botan.utils.mem_ops;
 import std.conv : to;
+import std.algorithm : max;
 import botan.utils.mem_ops;
 
 /**
