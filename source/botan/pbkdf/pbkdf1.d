@@ -19,6 +19,7 @@ import std.datetime;
 import botan.utils.exceptn;
 import botan.utils.types;
 import botan.algo_base.symkey;
+import std.algorithm : min;
 
 /**
 * PKCS #5 v1 PBKDF, aka PBKDF1
@@ -88,7 +89,7 @@ public:
             ++iterations_performed;
         }
         
-        return makePair(iterations_performed, OctetString(key.ptr, std.algorithm.min(key_len, key.length)));
+        return makePair(iterations_performed, OctetString(key.ptr, min(key_len, key.length)));
     }
 private:
     Unique!HashFunction m_hash;

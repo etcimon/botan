@@ -588,7 +588,7 @@ public:
     * Construct a Pipe of up to four filters. The filters are set up
     * in the same order as the arguments.
     */
-    this(Filter f1 = null, Filter f2 = null, Filter f3 = null, Filter f4 = null)
+    this(Filter f1, Filter f2 = null, Filter f3 = null, Filter f4 = null)
     {
         init();
         append(f1);
