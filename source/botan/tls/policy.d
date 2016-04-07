@@ -163,16 +163,15 @@ public:
     /**
     * Choose an elliptic curve to use
     */
-    string chooseCurve(in Vector!string curve_names) const
-    {
-        const Vector!string our_curves = allowedEccCurves();
-
-        for (size_t i = 0; i != our_curves.length; ++i)
-            if (valueExists(curve_names, our_curves[i]))
-                return our_curves[i];
-        
-        return ""; // no shared curve
-    }
+	string chooseCurve(in Vector!string curve_names) const
+	{
+		const Vector!string our_curves = allowedEccCurves();
+		for (size_t i = 0; i != our_curves.length; ++i) 
+			if (valueExists(curve_names, our_curves[i])) 
+				return our_curves[i];
+		
+		return ""; // no shared curve
+	}
 
     /**
     * Attempt to negotiate the use of the heartbeat extension

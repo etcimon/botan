@@ -50,7 +50,7 @@ public:
     *          signatures are also rejected.
     *  ocsp_all = where to use all intermediates
     */
-    this(bool require_rev = false, size_t key_strength = 80, bool ocsp_all = false, int max_cert_chain_length = 9) 
+    this(bool require_rev, size_t key_strength = 80, bool ocsp_all = false, int max_cert_chain_length = 9) 
     {
         m_require_revocation_information = require_rev;
         m_ocsp_all_intermediates = ocsp_all;

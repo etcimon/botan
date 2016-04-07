@@ -16,6 +16,7 @@ module botan.utils.simd.wmmintrin;
 */
 
 import botan.constants;
+import std.conv : to;
 static if (BOTAN_HAS_SIMD_SSE2):
 
 public import botan.utils.simd.emmintrin;
