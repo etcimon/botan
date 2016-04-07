@@ -67,7 +67,7 @@
                 "source/botan/constants.d",
                 "source/botan/test.d"
             ],
-            "versions": ["Have_botan", "Botan", "DisableDebugger", "GCCheck"],
+            "versions": ["Have_botan", "Botan"],
             "libs-posix": ["dl"],
             "libs-windows": ["advapi32", "user32"],
             "preGenerateCommands-posix": ["ld -v | grep 'gold' > /dev/null || echo 'Notice: Botan uses many symbols. Look into switching from ld (bfd) to ld (Gold) linker to reduce link times from >15s to <2s'"],
