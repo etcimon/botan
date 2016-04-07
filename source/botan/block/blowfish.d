@@ -15,6 +15,7 @@ import botan.constants;
 static if (BOTAN_HAS_BLOWFISH):
 
 import std.range : iota;
+import std.algorithm : min;
 import botan.block.block_cipher;
 import botan.utils.loadstor;
 import botan.utils.types;

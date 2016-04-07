@@ -23,6 +23,7 @@ import botan.asn1.der_enc;
 import botan.asn1.ber_dec;
 import botan.math.ec_gfp.point_gfp;
 import botan.rng.rng;
+import std.algorithm;
 import memutils.helpers : Embed;
 
 struct GOST3410Options // applied to ECPublicKey
@@ -48,7 +49,7 @@ struct GOST3410Options // applied to ECPublicKey
         const BigInt x = pkey.publicPoint().getAffineX();
         const BigInt y = pkey.publicPoint().getAffineY();
         
-        size_t part_size = std.algorithm.max(x.bytes(), y.bytes());
+        size_t part_size = max(x.bytes(), y.bytes());
         
         Vector!ubyte bits = Vector!ubyte(2*part_size);
         
@@ -58,8 +59,8 @@ struct GOST3410Options // applied to ECPublicKey
         // Keys are stored in little endian format (WTF)
         foreach (size_t i; 0 .. (part_size / 2))
         {
-            std.algorithm.swap(bits[i], bits[part_size-1-i]);
-            std.algorithm.swap(bits[part_size+i], bits[2*part_size-1-i]);
+            swap(bits[i], bits[part_size-1-i]);
+            swap(bits[part_size+i], bits[2*part_size-1-i]);
         }
         
         return DEREncoder().encode(bits, ASN1Tag.OCTET_STRING).getContentsUnlocked();
@@ -107,8 +108,8 @@ public:
         // Keys are stored in little endian format (WTF)
         foreach (size_t i; 0 .. (part_size / 2))
         {
-            std.algorithm.swap(bits[i], bits[part_size-1-i]);
-            std.algorithm.swap(bits[part_size+i], bits[2*part_size-1-i]);
+            swap(bits[i], bits[part_size-1-i]);
+            swap(bits[part_size+i], bits[2*part_size-1-i]);
         }
         
         BigInt x = BigInt(bits.ptr, part_size);
@@ -304,7 +305,7 @@ BigInt decodeLittleEndian(const(ubyte)* msg, size_t msg_len)
     SecureVector!ubyte msg_le = SecureVector!ubyte(msg[0 .. msg_len]);
     
     for (size_t i = 0; i != msg_le.length / 2; ++i)
-        std.algorithm.swap(msg_le[i], msg_le[msg_le.length-1-i]);
+        swap(msg_le[i], msg_le[msg_le.length-1-i]);
     
     return BigInt(msg_le.ptr, msg_le.length);
 }

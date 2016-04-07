@@ -16,6 +16,7 @@ public import memutils.refcounted;
 public import memutils.unique;
 public import botan.utils.exceptn;
 public import std.typecons : scoped;
+public import std.conv : to;
 
 alias Scoped(T) = typeof(scoped!T());
 

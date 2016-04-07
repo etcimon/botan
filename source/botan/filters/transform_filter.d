@@ -17,6 +17,7 @@ import botan.filters.transform_filter;
 import botan.stream.stream_cipher;
 import botan.utils.rounding;
 import botan.utils.mem_ops;
+import std.algorithm : min;
 
 /**
 * Filter interface for Transformations
@@ -95,8 +96,8 @@ public:
             input += to_copy;
             input_size -= to_copy;
             
-            size_t total_to_consume = roundDown(std.algorithm.min(m_buffer_pos,
-                                                                  m_buffer_pos + input_size - m_final_minimum),
+            size_t total_to_consume = roundDown(min(m_buffer_pos,
+                                                    m_buffer_pos + input_size - m_final_minimum),
                                                 m_main_block_mod);
             
             bufferedBlock(m_buffer_2.ptr, total_to_consume);
