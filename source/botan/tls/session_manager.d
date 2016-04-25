@@ -171,7 +171,7 @@ public:
             int to_remove = cast(int)(m_sessions.length - m_max_sessions);
 
             foreach (sess_id; m_sessions_ordered[0 .. to_remove])
-                m_sessions.remove(sess_id);
+                if (sess_id in m_sessions) m_sessions.remove(sess_id);
 
             m_sessions_ordered = Vector!string(m_sessions_ordered[to_remove .. $][]);
         }
@@ -225,7 +225,7 @@ private:
         import std.algorithm : countUntil;
         auto i = m_sessions_ordered[].countUntil(val);
         
-        if (i != m_sessions_ordered.length) {
+        if (i != (m_sessions_ordered.length - 1)) {
             auto tmp = m_sessions_ordered.ptr[i+1 .. m_sessions_ordered.length];
             m_sessions_ordered[] = Vector!string(m_sessions_ordered[0 .. i]);
             m_sessions_ordered ~= tmp;
