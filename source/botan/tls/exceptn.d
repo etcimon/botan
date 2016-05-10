@@ -24,9 +24,9 @@ class TLSException : Exception
 public:
     TLSAlertType type() const nothrow { return m_alert_type; }
 
-    this(TLSAlertType type, in string err_msg = "Unknown error") {
+	this(TLSAlertType type, in string err_msg = "Unknown error", Throwable next = null, string file = __FILE__, int line = __LINE__) {
         m_alert_type = type;
-        super(err_msg);
+		super(err_msg, next, file, line);
     }
 
 private:
@@ -38,15 +38,15 @@ private:
 */
 class TLSUnexpectedMessage : TLSException
 {
-    this(in string err) 
+	this(in string err, Throwable next = null, string file = __FILE__, int line = __LINE__) 
     {
-        super(TLSAlert.UNEXPECTED_MESSAGE, err);
+		super(TLSAlert.UNEXPECTED_MESSAGE, err, next, file, line);
     }
 }
 
 class TLSClosedException : Exception
 {
-	this(in string err_msg = "Connection was closed") {
-		super(err_msg);
+	this(in string err_msg = "Connection was closed", Throwable next = null, string file = __FILE__, int line = __LINE__) {
+		super(err_msg, next, file, line);
 	}
 }
