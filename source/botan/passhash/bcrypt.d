@@ -9,7 +9,7 @@
 * Botan is released under the Simplified BSD License (see LICENSE.md)
 */
 module botan.passhash.bcrypt;
-
+version(none):
 import botan.constants;
 static if (BOTAN_HAS_BCRYPT && BOTAN_HAS_BLOWFISH):
 

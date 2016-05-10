@@ -17,8 +17,8 @@ import std.conv : to;
 @safe pure nothrow :
 class RangeError : Exception
 {
-    @safe pure nothrow this(in string err)
-    { super("Out of bounds: " ~ err); }
+	@safe pure nothrow this(in string err, Throwable next = null, string file = __FILE__, int line = __LINE__)
+	{ super("Out of bounds: " ~ err, next, file, line); }
 }
 
 /**
@@ -26,8 +26,8 @@ class RangeError : Exception
 */
 class InvalidArgument : Exception
 {
-    @safe pure nothrow this(in string err)
-    { super("Invalid argument: " ~ err); }
+	@safe pure nothrow this(in string err, Throwable next = null, string file = __FILE__, int line = __LINE__)
+	{ super("Invalid argument: " ~ err, next, file, line); }
 }
 
 /**
@@ -35,8 +35,8 @@ class InvalidArgument : Exception
 */
 class InvalidState : Exception
 {
-    @safe pure nothrow this(in string err)
-    { super(err); }
+	@safe pure nothrow this(in string err, Throwable next = null, string file = __FILE__, int line = __LINE__)
+	{ super(err, next, file, line); }
 }
 
 /**
@@ -44,8 +44,8 @@ class InvalidState : Exception
 */
 final class LogicError : Exception
 {
-    @safe pure nothrow this(in string err)
-    { super(err); }
+	@safe pure nothrow this(in string err, Throwable next = null, string file = __FILE__, int line = __LINE__)
+	{ super(err, next, file, line); }
 }
 
 /**
@@ -53,8 +53,8 @@ final class LogicError : Exception
 */
 class LookupError : Exception
 {
-    @safe pure nothrow this(in string err)
-    { super(err); }
+	@safe pure nothrow this(in string err, Throwable next = null, string file = __FILE__, int line = __LINE__)
+	{ super(err, next, file, line); }
 }
 
 /**
@@ -62,8 +62,8 @@ class LookupError : Exception
 */
 class InternalError : Exception
 {
-    @safe pure nothrow this(in string err) 
-    { super("Internal error: " ~ err); }
+	@safe pure nothrow this(in string err, Throwable next = null, string file = __FILE__, int line = __LINE__) 
+	{ super("Internal error: " ~ err, next, file, line); }
 }
 
 /**
@@ -71,9 +71,9 @@ class InternalError : Exception
 */
 final class InvalidKeyLength : InvalidArgument
 {
-    @safe pure nothrow this(in string name, size_t length) {
+	@safe pure nothrow this(in string name, size_t length, Throwable next = null, string file = __FILE__, int line = __LINE__) {
         super(name ~ " cannot accept a key of length " ~
-              to!string(length));
+			to!string(length), next, file, line);
     }
 }
 
@@ -82,8 +82,8 @@ final class InvalidKeyLength : InvalidArgument
 */
 final class InvalidIVLength : InvalidArgument
 {
-    @safe pure nothrow this(in string mode, size_t bad_len) {
-        super("IV length " ~ to!string(bad_len) ~ " is invalid for " ~ mode);
+	@safe pure nothrow this(in string mode, size_t bad_len, Throwable next = null, string file = __FILE__, int line = __LINE__) {
+		super("IV length " ~ to!string(bad_len) ~ " is invalid for " ~ mode, next, file, line);
     }
 }
 
@@ -92,8 +92,8 @@ final class InvalidIVLength : InvalidArgument
 */
 final class PRNGUnseeded : InvalidState
 {
-    @safe pure nothrow this(in string algo) {
-        super("PRNG not seeded: " ~ algo);
+	@safe pure nothrow this(in string algo, Throwable next = null, string file = __FILE__, int line = __LINE__) {
+		super("PRNG not seeded: " ~ algo, next, file, line);
     }
 }
 
@@ -102,8 +102,8 @@ final class PRNGUnseeded : InvalidState
 */
 final class PolicyViolation : InvalidState
 {
-    @safe pure nothrow this(in string err) {
-        super("TLSPolicy violation: " ~ err);
+	@safe pure nothrow this(in string err, Throwable next = null, string file = __FILE__, int line = __LINE__) {
+		super("TLSPolicy violation: " ~ err, next, file, line);
     }
 }
 
@@ -112,8 +112,8 @@ final class PolicyViolation : InvalidState
 */
 final class AlgorithmNotFound : LookupError
 {
-    @safe pure nothrow this(in string name) {
-        super("Could not find any algorithm named \"" ~ name ~ "\"");
+	@safe pure nothrow this(in string name, Throwable next = null, string file = __FILE__, int line = __LINE__) {
+		super("Could not find any algorithm named \"" ~ name ~ "\"", next, file, line);
     }
 }
 
@@ -122,8 +122,8 @@ final class AlgorithmNotFound : LookupError
 */
 final class InvalidAlgorithmName : InvalidArgument
 {
-    @safe pure nothrow this(in string name) {
-        super("Invalid algorithm name: " ~ name);
+	@safe pure nothrow this(in string name, Throwable next = null, string file = __FILE__, int line = __LINE__) {
+		super("Invalid algorithm name: " ~ name, next, file, line);
     }
 }
 
@@ -132,8 +132,8 @@ final class InvalidAlgorithmName : InvalidArgument
 */
 final class EncodingError : InvalidArgument
 {
-    @safe pure nothrow this(in string name) {
-        super("Encoding error: " ~ name);
+	@safe pure nothrow this(in string name, Throwable next = null, string file = __FILE__, int line = __LINE__) {
+		super("Encoding error: " ~ name, next, file, line);
     }
 }
 
@@ -142,9 +142,9 @@ final class EncodingError : InvalidArgument
 */
 class DecodingError : InvalidArgument
 {
-    @safe pure nothrow this(in string name) 
+	@safe pure nothrow this(in string name, Throwable next = null, string file = __FILE__, int line = __LINE__) 
     {
-        super("Decoding error: " ~ name);
+		super("Decoding error: " ~ name, next, file, line);
     }
 }
 
@@ -153,8 +153,8 @@ class DecodingError : InvalidArgument
 */
 final class IntegrityFailure : Exception
 {
-    @safe pure nothrow this(in string msg) {
-        super("Integrity failure: " ~ msg);
+	@safe pure nothrow this(in string msg, Throwable next = null, string file = __FILE__, int line = __LINE__) {
+		super("Integrity failure: " ~ msg, next, file, line);
     }
 }
 
@@ -163,8 +163,8 @@ final class IntegrityFailure : Exception
 */
 final class InvalidOID : DecodingError
 {
-    @safe pure nothrow this(in string oid) {
-        super("Invalid ASN.1 OID: " ~ oid);
+	@safe pure nothrow this(in string oid, Throwable next = null, string file = __FILE__, int line = __LINE__) {
+		super("Invalid ASN.1 OID: " ~ oid, next, file, line);
     }
 }
 
@@ -173,8 +173,8 @@ final class InvalidOID : DecodingError
 */
 final class StreamIOError : Exception
 {
-    @safe pure nothrow this(in string err) {
-        super("I/O error: " ~ err);
+	@safe pure nothrow this(in string err, Throwable next = null, string file = __FILE__, int line = __LINE__) {
+		super("I/O error: " ~ err, next, file, line);
     }
 }
 
@@ -183,8 +183,8 @@ final class StreamIOError : Exception
 */
 final class SelfTestFailure : InternalError
 {
-    @safe pure nothrow this(in string err) {
-        super("Self test failed: " ~ err);
+	@safe pure nothrow this(in string err, Throwable next = null, string file = __FILE__, int line = __LINE__) {
+		super("Self test failed: " ~ err, next, file, line);
     }
 }
 
@@ -193,8 +193,8 @@ final class SelfTestFailure : InternalError
 */
 final class MemoryExhaustion : Exception
 {
-    @safe pure nothrow this(in string err) {
-        super("Memory Exhaustion: " ~ err);
+	@safe pure nothrow this(in string err, Throwable next = null, string file = __FILE__, int line = __LINE__) {
+		super("Memory Exhaustion: " ~ err, next, file, line);
     }
 
     string what() const nothrow pure
