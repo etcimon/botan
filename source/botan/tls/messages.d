@@ -146,9 +146,15 @@ public:
 
     ref const(Vector!ubyte) random() const { return m_random; }
 
-    ref const(Vector!ubyte) sessionId() const { return m_session_id; }
+	const(ubyte[]) randomBytes() const { return m_random[]; }
+	
+	ref const(Vector!ubyte) sessionId() const { return m_session_id; }
+	
+	const(ubyte[]) sessionIdBytes() const { return m_session_id[]; }
 
-    ref const(Vector!ushort) ciphersuites() const { return m_suites; }
+	ref const(Vector!ushort) ciphersuites() const { return m_suites; }
+
+	const(ushort[]) ciphersuitesData() const { return m_suites[]; }
 
     ref const(Vector!ubyte) compressionMethods() const { return m_comp_methods; }
 
@@ -518,7 +524,11 @@ public:
 
     ref const(Vector!ubyte) random() const { return m_random; }
 
-    ref const(Vector!ubyte) sessionId() const { return m_session_id; }
+	const(ubyte[]) randomBytes() const { return m_random[]; }
+
+	ref const(Vector!ubyte) sessionId() const { return m_session_id; }
+
+	const(ubyte[]) sessionIdBytes() const { return m_session_id[]; }
 
     ushort ciphersuite() const { return m_ciphersuite; }
 
@@ -1430,6 +1440,8 @@ public:
     ref const(Vector!ubyte) verifyData() const
     { return m_verification_data; }
 
+	const(ubyte[]) verifyDataBytes() const { return m_verification_data[]; }
+
     /*
     * Verify a Finished message
     */
@@ -1973,9 +1985,9 @@ Vector!ubyte finishedComputeVerify(in HandshakeState state,
         else
             input ~= cast(ubyte[])TLS_SERVER_LABEL;
         
-        input ~= state.hash().flushInto(state.Version(), state.ciphersuite().prfAlgo())[];
-        
-        return unlock(prf.deriveKey(12, state.sessionKeys().masterSecret(), input));
+        auto vec = state.hash().flushInto(state.Version(), state.ciphersuite().prfAlgo());
+		input ~= vec[];
+		return unlock(prf.deriveKey(12, state.sessionKeys().masterSecret(), input));
     }
 }
 

@@ -49,7 +49,7 @@ public:
 
     override void setAssociatedData(const(ubyte)* ad, size_t length)
     {
-        m_ad_mac[] = eaxPrf(1, this.blockSize(), *m_cmac, ad, length)[];
+		m_ad_mac = eaxPrf(1, this.blockSize(), *m_cmac, ad, length);
     }
 
     override @property string name() const

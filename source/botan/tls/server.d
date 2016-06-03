@@ -583,10 +583,9 @@ bool checkForResume(ref TLSSession session_info,
     // wrong version
     if (clientHello.Version() != session_info.Version())
         return false;
-    
+	import std.algorithm : canFind;
     // client didn't send original ciphersuite
-    if (!valueExists(clientHello.ciphersuites(),
-                      session_info.ciphersuiteCode()))
+    if (!clientHello.ciphersuitesData().canFind(session_info.ciphersuiteCode()))
         return false;
     
     // client didn't send original compression method
@@ -620,11 +619,12 @@ ushort chooseCiphersuite(in TLSPolicy policy,
                          in HashMapRef!(string, Array!X509Certificate) cert_chains,
                          in ClientHello client_hello)
 {
+	import std.algorithm : canFind;
     const bool our_choice = policy.serverUsesOwnCiphersuitePreferences();
     
     const bool have_srp = creds.attemptSrp("tls-server", client_hello.sniHostname());
     
-    const(Vector!ushort)* client_suites = &client_hello.ciphersuites();
+    const(ushort[]) client_suites = client_hello.ciphersuitesData();
     
     const Vector!ushort server_suites = policy.ciphersuiteList(_version, have_srp);
     
@@ -633,17 +633,17 @@ ushort chooseCiphersuite(in TLSPolicy policy,
     
     const bool have_shared_ecc_curve = (policy.chooseCurve(client_hello.supportedEccCurves()) != "");
     
-    Vector!ushort pref_list = server_suites.dup;
+    const(ushort[]) pref_list = server_suites[];
        
     if (!our_choice)
-        pref_list[] = *client_suites;
+        pref_list = client_suites;
 	debug {
 		string dbg_msg;
 		string dbg_sig;
 	}
-    foreach (suite_id; pref_list[])
+    foreach (suite_id; pref_list)
     {
-        if (!valueExists(*client_suites, suite_id))
+        if (!client_suites.canFind(suite_id))
             continue;
         
         TLSCiphersuite suite = TLSCiphersuite.byId(suite_id);
