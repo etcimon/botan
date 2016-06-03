@@ -688,13 +688,13 @@ void decryptRecord(ref SecureVector!ubyte output,
 {
     if (AEADMode aead = cs.aead())
     {
-		SecureVector!ubyte nonce = cs.aeadNonce(record_contents, record_len, record_sequence).dup;
-		const(ubyte)* msg = record_contents + cs.nonceBytesFromRecord();
+		const(SecureVector!ubyte)* nonce = &cs.aeadNonce(record_contents, record_len, record_sequence);
+		const(ubyte)* msg = &record_contents[cs.nonceBytesFromRecord()];
 		const size_t msg_length = record_len - cs.nonceBytesFromRecord();
 
         const size_t ptext_size = aead.outputLength(msg_length);
-		auto ad_fmt = cs.formatAd(record_sequence, record_type, record_version, cast(ushort) ptext_size);
-		aead.setAssociatedDataVec(ad_fmt);
+        
+        aead.setAssociatedDataVec(cs.formatAd(record_sequence, record_type, record_version, cast(ushort) ptext_size));
         
         output ~= aead.start(*nonce);
         
@@ -739,10 +739,10 @@ void decryptRecord(ref SecureVector!ubyte output,
         if (record_len < mac_pad_iv_size)
             throw new DecodingError("Record sent with invalid length");
         
-        const(ubyte)* plaintext_block = record_contents + iv_size;
+        const(ubyte)* plaintext_block = &record_contents[iv_size];
         const ushort plaintext_length = cast(ushort)(record_len - mac_pad_iv_size);
-		auto ad_fmt = cs.formatAd(record_sequence, record_type, record_version, plaintext_length);
-		cs.mac().update(ad_fmt);
+        
+        cs.mac().update(cs.formatAd(record_sequence, record_type, record_version, plaintext_length));
         
         cs.mac().update(plaintext_block, plaintext_length);
         
