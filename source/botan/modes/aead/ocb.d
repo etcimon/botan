@@ -604,11 +604,11 @@ size_t testOcbLong(ref AlgorithmFactory af, size_t keylen, size_t taglen, in str
         Vector!ubyte S = Vector!ubyte(i);
 
         storeBigEndian(cast(uint)(3*i+1), &N[8]);
-        C ~= ocbEncrypt(*enc, *dec, N, S, S)[];
+        C ~= ocbEncrypt(*enc, *dec, N, S, S);
         storeBigEndian(cast(uint)(3*i+2), &N[8]);
-        C ~= ocbEncrypt(*enc, *dec, N, S, empty)[];
+        C ~= ocbEncrypt(*enc, *dec, N, S, empty);
         storeBigEndian(cast(uint)(3*i+3), &N[8]);
-        C ~= ocbEncrypt(*enc, *dec, N, empty, S)[];
+        C ~= ocbEncrypt(*enc, *dec, N, empty, S);
     }
 
     storeBigEndian(cast(uint)385, &N[8]);
