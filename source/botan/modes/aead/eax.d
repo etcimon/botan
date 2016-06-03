@@ -35,7 +35,7 @@ public:
         if (!validNonceLength(nonce_len))
             throw new InvalidIVLength(name, nonce_len);
         
-        m_nonce_mac[] = eaxPrf(0, this.blockSize(), *m_cmac, nonce, nonce_len)[];
+        m_nonce_mac = eaxPrf(0, this.blockSize(), *m_cmac, nonce, nonce_len);
         
         m_ctr.setIv(m_nonce_mac.ptr, m_nonce_mac.length);
         
