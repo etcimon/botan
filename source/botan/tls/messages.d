@@ -399,8 +399,9 @@ protected:
         * renegotiating with a modern server)
         */
         
-        buf ~= m_extensions.serialize()[];
-        
+        auto vec = m_extensions.serialize();
+		buf ~= vec[];
+
         return buf.move();
     }
 
@@ -660,10 +661,10 @@ protected:
         buf.pushBack(get_byte(1, m_ciphersuite));
         
         buf.pushBack(m_comp_method);
-        
-        buf ~= m_extensions.serialize()[];
-        
-        return buf.move();
+                
+		auto vec = m_extensions.serialize();
+		buf ~= vec[];
+		return buf.move();
     }
 
 private:
