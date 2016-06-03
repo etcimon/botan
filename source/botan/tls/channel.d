@@ -698,11 +698,9 @@ protected:
     {
         if (auto active = activeState())
         {
-			auto client_data = active.clientFinished().verifyData();
-            Vector!ubyte buf = client_data[];
-			auto server_data = active.serverFinished().verifyData();
-            buf ~= server_data[];
-            return buf.move();
+			Vector!ubyte buf = active.clientFinished().verifyDataBytes();
+			buf ~= active.serverFinished().verifyDataBytes();
+			return buf.move();
         }
         
         return Vector!ubyte();
