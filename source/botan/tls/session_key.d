@@ -66,9 +66,8 @@ public:
             
             if (state.Version() != TLSProtocolVersion.SSL_V3)
                 salt ~= cast(ubyte[])MASTER_SECRET_MAGIC;
-            
-            salt ~= state.clientHello().random()[];
-            salt ~= state.serverHello().random()[];
+			salt ~= state.clientHello().randomBytes();
+			salt ~= state.serverHello().randomBytes();
             
             m_master_sec = prf.deriveKey(48, pre_master_secret, salt);
         }
@@ -76,8 +75,8 @@ public:
         SecureVector!ubyte salt;
         if (state.Version() != TLSProtocolVersion.SSL_V3)
             salt ~= cast(ubyte[])KEY_GEN_MAGIC;
-        salt ~= state.serverHello().random()[];
-        salt ~= state.clientHello().random()[];
+		salt ~= state.clientHello().randomBytes();
+		salt ~= state.serverHello().randomBytes();
         
         SymmetricKey keyblock = prf.deriveKey(prf_gen, m_master_sec, salt);
         

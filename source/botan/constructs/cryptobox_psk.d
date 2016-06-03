@@ -61,7 +61,8 @@ struct CryptoBox {
         storeBigEndian(CRYPTOBOX_MAGIC, output.ptr);
         output ~= cipher_key_salt[];
         output ~= mac_key_salt[];
-        output ~= cipher_iv.bitsOf()[];
+		auto vec = cipher_iv.bitsOf();
+        output ~= vec[];
         output ~= ctext[];
 
         mac.update(output);

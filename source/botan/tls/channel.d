@@ -465,8 +465,8 @@ public:
             
             Vector!ubyte salt;
             salt ~= label;
-            salt ~= active.clientHello().random()[];
-            salt ~= active.serverHello().random()[];
+			salt ~= active.clientHello().randomBytes();
+			salt ~= active.serverHello().randomBytes();
 
             if (context != "")
             {
@@ -490,7 +490,7 @@ public:
 	/// Returns the current session ID
 	const(ubyte[]) sessionId() const {
 		if (auto active = activeState()) {
-			return active.serverHello().sessionId()[];
+			return active.serverHello().sessionIdBytes();
 		}
 		return null;
 	}
@@ -698,8 +698,10 @@ protected:
     {
         if (auto active = activeState())
         {
-            Vector!ubyte buf = active.clientFinished().verifyData().dup;
-            buf ~= active.serverFinished().verifyData()[];
+			auto client_data = active.clientFinished().verifyData();
+            Vector!ubyte buf = client_data[];
+			auto server_data = active.serverFinished().verifyData();
+            buf ~= server_data[];
             return buf.move();
         }
         
