@@ -624,7 +624,7 @@ ushort chooseCiphersuite(in TLSPolicy policy,
     
     const bool have_srp = creds.attemptSrp("tls-server", client_hello.sniHostname());
     
-    const(ushort[]) client_suites = client_hello.ciphersuitesData();
+    ushort[] client_suites = cast(ushort[])client_hello.ciphersuitesData();
     
     const Vector!ushort server_suites = policy.ciphersuiteList(_version, have_srp);
     
@@ -633,7 +633,7 @@ ushort chooseCiphersuite(in TLSPolicy policy,
     
     const bool have_shared_ecc_curve = (policy.chooseCurve(client_hello.supportedEccCurves()) != "");
     
-    const(ushort[]) pref_list = server_suites[];
+    ushort[] pref_list = cast()server_suites[];
        
     if (!our_choice)
         pref_list = client_suites;
