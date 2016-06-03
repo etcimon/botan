@@ -25,6 +25,26 @@ import botan.utils.types;
 import std.conv : to;
 import std.array : Appender;
 
+/**
+  * An opaque type that identifies a message in this Pipe
+  */
+alias message_id = size_t;
+
+/**
+  * Exception if you use an invalid message as an argument to
+  * read, remaining, etc
+  */
+class InvalidMessageNumber : InvalidArgument
+{
+	/**
+      * Params:
+      *  where = the error occured
+      *  msg = the invalid message id that was used
+      */
+	this(in string where, message_id msg) {
+		super("Pipe:" ~ where ~ ": Invalid message number " ~ to!string(msg));
+	}
+}
 
 /**
 * This class represents pipe objects.
@@ -37,26 +57,7 @@ struct Pipe
 {
 public:
 
-    /**
-    * An opaque type that identifies a message in this Pipe
-    */
-    alias message_id = size_t;
-
-    /**
-    * Exception if you use an invalid message as an argument to
-    * read, remaining, etc
-    */
-    class InvalidMessageNumber : InvalidArgument
-    {
-        /**
-        * Params:
-        *  where = the error occured
-        *  msg = the invalid message id that was used
-        */
-        this(in string where, message_id msg) {
-            super("Pipe:" ~ where ~ ": Invalid message number " ~ to!string(msg));
-        }
-    }
+	alias message_id = size_t;
 
     /**
     * A meta-id for whatever the last message is

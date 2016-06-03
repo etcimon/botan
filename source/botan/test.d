@@ -11,7 +11,7 @@
 module botan.test;
 
 import botan.constants;
-static if (BOTAN_TEST):
+//static if (BOTAN_TEST):
 
 public import std.stdio : File, writeln;
 public import std.algorithm : sort, canFind;
