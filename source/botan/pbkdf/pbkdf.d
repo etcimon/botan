@@ -154,8 +154,8 @@ static if (BOTAN_HAS_TESTS && !SKIP_PBKDF_TEST) unittest {
                 const size_t outlen = to!size_t(vec["OutputLen"]);
                 const auto salt = hexDecode(vec["Salt"]);
                 const string pass = vec["Passphrase"];
-                
-                const auto key = pbkdf.deriveKey(outlen, pass, salt.ptr, salt.length, iterations).bitsOf();
+				auto octet_string = pbkdf.deriveKey(outlen, pass, salt.ptr, salt.length, iterations);
+                const auto key = octet_string.bitsOf();
                 return hexEncode(key);
             });
     };

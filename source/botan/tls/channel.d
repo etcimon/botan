@@ -689,8 +689,10 @@ protected:
 
     Vector!ubyte secureRenegotiationDataForClientHello() const
     {
-        if (auto active = activeState())
-            return active.clientFinished().verifyData().dup;
+        if (auto active = activeState()) {
+			auto verif_data = active.clientFinished().verifyDataBytes();
+            return Vector!ubyte(verif_data);
+		}
         return Vector!ubyte();
     }
 

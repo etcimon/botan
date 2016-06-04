@@ -263,7 +263,8 @@ void writeRecord(ref SecureVector!ubyte output,
         output.pushBack(get_byte!ushort(0, cast(ushort) rec_size));
         output.pushBack(get_byte!ushort(1, cast(ushort) rec_size));
         
-        aead.setAssociatedDataVec(cs.formatAd(seq, msg_type, _version, cast(ushort) msg_length));
+		const(SecureVector!ubyte)* format_ad = &cs.formatAd(seq, msg_type, _version, cast(ushort) msg_length);
+		aead.setAssociatedDataVec(*format_ad);
         
 		output ~= nonce.ptr[cs.nonceBytesFromHandshake() .. cs.nonceBytesFromHandshake() + cs.nonceBytesFromRecord()];
 		auto start_vec = aead.start(*nonce);
@@ -694,7 +695,8 @@ void decryptRecord(ref SecureVector!ubyte output,
 
         const size_t ptext_size = aead.outputLength(msg_length);
         
-        aead.setAssociatedDataVec(cs.formatAd(record_sequence, record_type, record_version, cast(ushort) ptext_size));
+		const(SecureVector!ubyte)* format_ad = &cs.formatAd(record_sequence, record_type, record_version, cast(ushort) ptext_size);
+        aead.setAssociatedDataVec(*format_ad);
         
         output ~= aead.start(*nonce);
         
@@ -742,7 +744,8 @@ void decryptRecord(ref SecureVector!ubyte output,
         const(ubyte)* plaintext_block = &record_contents[iv_size];
         const ushort plaintext_length = cast(ushort)(record_len - mac_pad_iv_size);
         
-        cs.mac().update(cs.formatAd(record_sequence, record_type, record_version, plaintext_length));
+		const(SecureVector!ubyte)* format_ad = &cs.formatAd(record_sequence, record_type, record_version, plaintext_length);
+        cs.mac().update(*format_ad);
         
         cs.mac().update(plaintext_block, plaintext_length);
         
