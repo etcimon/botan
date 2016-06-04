@@ -136,7 +136,9 @@ protected:
         SecureVector!ubyte T = SecureVector!ubyte(msg[m_my_key.length + CIPHER_LEN .. m_my_key.length + CIPHER_LEN + m_mac.outputLength]);
         
         SecureVector!ubyte vz = SecureVector!ubyte(msg[0 .. m_my_key.length]);
-        vz ~= m_ka.deriveKey(0, v).bitsOf();
+
+		auto derived_key = m_ka.deriveKey(0, v);
+        vz ~= derived_key.bitsOf();
         
         const size_t K_LENGTH = C.length + m_mac_keylen;
         OctetString K = m_kdf.deriveKey(K_LENGTH, vz);

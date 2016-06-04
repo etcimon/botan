@@ -950,7 +950,8 @@ public:
                 
                 auto ka = scoped!PKKeyAgreement(priv_key, "Raw");
                 
-                SecureVector!ubyte dh_secret = stripLeadingZeros(ka.deriveKey(0, counterparty_key.publicValue()).bitsOf());
+				auto octet_string = ka.deriveKey(0, counterparty_key.publicValue());
+                SecureVector!ubyte dh_secret = stripLeadingZeros(octet_string.bitsOf());
                 
                 if (kex_algo == "DH")
                     m_pre_master = dh_secret.move();

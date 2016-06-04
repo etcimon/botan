@@ -161,7 +161,7 @@ public:
     */
     bool opEquals(const ref OctetString other) const
     {
-        return (bitsOf() == other.bitsOf());
+        return (m_bits[] == other.m_bits[]);
     }
 
     /**
@@ -174,7 +174,7 @@ public:
     int opCmp(const ref OctetString other) const
     {
         if (this == other) return 0;
-        else if (bitsOf()[] < other.bitsOf()[])
+        else if (m_bits[] < other.m_bits[])
             return -1;
         else return 1;
     }
