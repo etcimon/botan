@@ -42,9 +42,9 @@ public:
     Vector!string allowedCiphers() const
     {
         return Vector!string([
-			"ChaCha20Poly1305",
+			"AES-128/GCM",
             "AES-256/GCM",
-            "AES-128/GCM",
+			"ChaCha20Poly1305",
             "AES-256/CCM",
             "AES-128/CCM",
             "AES-256/CCM-8",
@@ -104,9 +104,9 @@ public:
             //"ECDHE_PSK",
             //"DHE_PSK",
             //"PSK",
-            "ECDH",
+			"RSA",
+			"ECDH",
             "DH",
-            "RSA",
         ]);
     }
 
@@ -117,8 +117,8 @@ public:
     Vector!string allowedSignatureMethods() const
     {
         return Vector!string([
-            "ECDSA",
-            "RSA",
+			"RSA",
+			"ECDSA",
             "DSA",
             //""
         ]);

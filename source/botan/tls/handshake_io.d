@@ -43,7 +43,7 @@ public:
 
     abstract Vector!ubyte send(in HandshakeMessage msg);
 
-    abstract const(Vector!ubyte) format(const ref Vector!ubyte handshake_msg, HandshakeType handshake_type) const;
+    abstract Vector!ubyte format(const ref Vector!ubyte handshake_msg, HandshakeType handshake_type) const;
 
     abstract bool timeoutCheck();
 
@@ -85,12 +85,12 @@ public:
             return Vector!ubyte(); // not included in handshake hashes
         }
         
-        Vector!ubyte buf = format(msg_bits, msg.type()).dup;
+        Vector!ubyte buf = format(msg_bits, msg.type());
         m_send_hs(HANDSHAKE, buf);
         return buf.move();
     }
 
-    override const(Vector!ubyte) format(const ref Vector!ubyte msg, HandshakeType type) const
+    override Vector!ubyte format(const ref Vector!ubyte msg, HandshakeType type) const
     {
         Vector!ubyte send_buf = Vector!ubyte(4 + msg.length);
         
@@ -102,7 +102,7 @@ public:
         
         copyMem(send_buf.ptr+4, msg.ptr, msg.length);
         
-        return send_buf;
+        return send_buf.move();
     }
 
     override void addRecord(const ref Vector!ubyte record, RecordType record_type, ulong)
@@ -270,7 +270,7 @@ public:
 
         return (cast()no_fragment).move;
     }
-    override const(Vector!ubyte) format(const ref Vector!ubyte msg, HandshakeType type) const
+    override Vector!ubyte format(const ref Vector!ubyte msg, HandshakeType type) const
     {
         return formatWSeq(msg, type, cast(ushort) (m_in_message_seq - 1));
     }
