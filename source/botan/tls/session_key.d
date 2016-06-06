@@ -75,8 +75,8 @@ public:
         SecureVector!ubyte salt;
         if (state.Version() != TLSProtocolVersion.SSL_V3)
             salt ~= cast(ubyte[])KEY_GEN_MAGIC;
-		salt ~= state.clientHello().randomBytes();
 		salt ~= state.serverHello().randomBytes();
+		salt ~= state.clientHello().randomBytes();
         
         SymmetricKey keyblock = prf.deriveKey(prf_gen, m_master_sec, salt);
         
