@@ -66,6 +66,7 @@ public:
 	this(InternalDataWriter writer) 
     {
         m_send_hs = writer;
+		m_queue.reserve(128);
     }
 
     override TLSProtocolVersion initialRecordVersion() const

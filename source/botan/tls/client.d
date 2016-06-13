@@ -23,7 +23,7 @@ import memutils.dictionarylist;
 import botan.utils.types;
 
 /**
-* SSL/TLS Client
+* TLS Client
 */
 final class TLSClient : TLSChannel
 {

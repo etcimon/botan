@@ -27,7 +27,7 @@ struct TLSCiphersuite
 {
 public:
     /**
-    * Convert an SSL/TLS ciphersuite to algorithm fields
+    * Convert an TLS ciphersuite to algorithm fields
     * Params:
     *  suite = the ciphersuite code number
     * Returns: ciphersuite object

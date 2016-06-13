@@ -28,13 +28,13 @@ import botan.tls.record;
 
 package:
 /**
-* SSL/TLS Handshake State
+* TLS Handshake State
 */
 class HandshakeState
 {
 public:
     /*
-    * Initialize the SSL/TLS Handshake State
+    * Initialize the TLS Handshake State
     */
     this(HandshakeIO io, void delegate(in HandshakeMessage) msg_callback = null) 
     {
@@ -43,6 +43,7 @@ public:
         m_msg_callback = msg_callback;
         m_handshake_io = io;
         m_version = m_handshake_io.initialRecordVersion();
+		m_handshake_hash.reset();
     }
 
 	~this() { m_handshake_io.drop(); }
@@ -141,25 +142,14 @@ public:
         
         if (algo_name == "RSA")
         {
-            if (for_client_auth && this.Version() == TLSProtocolVersion.SSL_V3)
-            {
-                hash_algo = "Raw";
-            }
-            else if (!this.Version().supportsNegotiableSignatureAlgorithms())
-            {
-                hash_algo = "Parallel(MD5,SHA-160)";
-            }
+            hash_algo = "Parallel(MD5,SHA-160)";
             
             const string padding = "EMSA3(" ~ hash_algo ~ ")";
             return makePair(padding, IEEE_1363);
         }
         else if (algo_name == "DSA" || algo_name == "ECDSA")
         {
-            if (algo_name == "DSA" && for_client_auth && this.Version() == TLSProtocolVersion.SSL_V3)
-            {
-                hash_algo = "Raw";
-            }
-            else if (!this.Version().supportsNegotiableSignatureAlgorithms())
+            if (!this.Version().supportsNegotiableSignatureAlgorithms())
             {
                 hash_algo = "SHA-1";
             }
@@ -220,11 +210,7 @@ public:
 
     KDF protocolSpecificPrf() const
     {
-        if (Version() == TLSProtocolVersion.SSL_V3)
-        {
-            return getKdf("SSL3-PRF");
-        }
-        else if (Version().supportsCiphersuiteSpecificPrf())
+        if (Version().supportsCiphersuiteSpecificPrf())
         {
             const string prf_algo = ciphersuite().prfAlgo();
             
@@ -438,7 +424,6 @@ uint bitmaskForHandshakeType(HandshakeType type)
         * Same code point for both client hello styles
         */
         case CLIENT_HELLO:
-        case CLIENT_HELLO_SSLV2:
             return (1 << 2);
             
         case SERVER_HELLO:
@@ -497,9 +482,6 @@ string chooseHash(in string sig_algo,
 {
     if (!negotiated_version.supportsNegotiableSignatureAlgorithms())
     {
-        if (for_client_auth && negotiated_version == TLSProtocolVersion.SSL_V3)
-            return "Raw";
-        
         if (sig_algo == "RSA")
             return "Parallel(MD5,SHA-160)";
         

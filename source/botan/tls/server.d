@@ -108,13 +108,10 @@ protected:
         */
         if (type != HANDSHAKE_CCS && type != FINISHED && type != CERTIFICATE_VERIFY)
         {
-            if (type == CLIENT_HELLO_SSLV2)
-                state.hash().update(contents);
-            else
-                state.hash().update(state.handshakeIo().format(contents, type));
+            state.hash().update(state.handshakeIo().format(contents, type));
         }
         
-        if (type == CLIENT_HELLO || type == CLIENT_HELLO_SSLV2)
+        if (type == CLIENT_HELLO)
         {
             const bool initial_handshake = !active_state;
             
