@@ -545,8 +545,9 @@ protected:
 			const ushort mtu = 1280 - 40 - 8;
             io = new DatagramHandshakeIO(*m_sequence_numbers, &sendRecordUnderEpoch, mtu);
         }
-        else
+        else {
             io = new StreamHandshakeIO(&sendRecord);
+		}
 
         m_pending_state = newHandshakeState(io.release());
         

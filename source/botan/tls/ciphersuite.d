@@ -525,7 +525,16 @@ public:
 				}
 			} 
 			else {
-	            auto cipher_and_mode = splitter(cipherAlgo(), '/');
+				static string last_cipher_algo;
+				static Vector!string last_cipher_and_mode;
+				Vector!string cipher_and_mode;
+				if (last_cipher_algo == cipherAlgo())
+					cipher_and_mode = last_cipher_and_mode.dup;
+				else {
+					cipher_and_mode = splitter(cipherAlgo(), '/');
+					last_cipher_and_mode = cipher_and_mode.dup;
+					last_cipher_algo = cipherAlgo();
+				}
 	            assert(cipher_and_mode.length == 2, "Expected format for AEAD algo");
 	            if (!af.prototypeBlockCipher(cipher_and_mode[0]))
 	                return false;

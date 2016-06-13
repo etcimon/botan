@@ -384,7 +384,8 @@ protected:
 		logDebug("NextProtocol: ", nextProtocols[]);
 		*/
         Vector!ubyte buf;
-        
+		buf.reserve(512);
+
         buf.pushBack(m_version.majorVersion());
         buf.pushBack(m_version.minorVersion());
         buf ~= m_random[];
@@ -437,6 +438,7 @@ protected:
         
         m_comp_methods = reader.getRangeVector!ubyte(1, 1, 255);
         
+		m_extensions.reserve(8);
         m_extensions.deserialize(reader);
         
         if (offeredSuite(cast(ushort)(TLS_EMPTY_RENEGOTIATION_INFO_SCSV)))
@@ -565,7 +567,7 @@ public:
         m_random = makeHelloRandom(rng, policy);
         m_ciphersuite = ciphersuite;
         m_comp_method = compression;
-        
+		m_extensions.reserve(8);
         if (client_has_heartbeat && policy.negotiateHeartbeatSupport())
             m_extensions.add(new HeartbeatSupportIndicator(true));
         
@@ -607,6 +609,7 @@ public:
         
         m_comp_method = reader.get_byte();
         
+		m_extensions.reserve(8);
         m_extensions.deserialize(reader);
     }
 
@@ -617,7 +620,8 @@ protected:
     override Vector!ubyte serialize() const
     {
         Vector!ubyte buf;
-        
+		buf.reserve(512);
+
         buf.pushBack(m_version.majorVersion());
         buf.pushBack(m_version.minorVersion());
         buf ~= m_random[];
@@ -1161,15 +1165,24 @@ public:
     {
         m_names = ca_certs.move();
         m_cert_key_types = [ "RSA", "DSA", "ECDSA" ];
-        if (_version.supportsNegotiableSignatureAlgorithms())
-        {
-            Vector!string hashes = policy.allowedSignatureHashes();
-            Vector!string sigs = policy.allowedSignatureMethods();
-            
-            for (size_t i = 0; i != hashes.length; ++i)
-                for (size_t j = 0; j != sigs.length; ++j)
-                    m_supported_algos.pushBack(makePair(hashes[i], sigs[j]));
-        }
+		static Vector!( Pair!(string, string)  ) last_supported_algos;
+		static const(TLSPolicy) last_tls_policy;
+		if (policy is last_tls_policy)
+			m_supported_algos = last_supported_algos.dup;
+		else {
+			m_supported_algos.reserve(16);
+	        if (_version.supportsNegotiableSignatureAlgorithms())
+	        {
+	            Vector!string hashes = policy.allowedSignatureHashes();
+	            Vector!string sigs = policy.allowedSignatureMethods();
+	            
+	            for (size_t i = 0; i != hashes.length; ++i)
+	                for (size_t j = 0; j != sigs.length; ++j)
+	                    m_supported_algos.pushBack(makePair(hashes[i], sigs[j]));
+	        }
+			last_tls_policy = policy;
+			last_supported_algos = m_supported_algos.dup;
+		}
         
         hash.update(io.send(this));
     }
@@ -1235,16 +1248,16 @@ protected:
     override Vector!ubyte serialize() const
     {
         Vector!ubyte buf;
-        
+		buf.reserve(256);
         Vector!ubyte cert_types;
-        
+		cert_types.reserve(64);
         for (size_t i = 0; i != m_cert_key_types.length; ++i)
             cert_types.pushBack(certTypeNameToCode(m_cert_key_types[i]));
 
         appendTlsLengthValue(buf, cert_types, 1);
         
         if (!m_supported_algos.empty)
-            buf ~= new SignatureAlgorithms(m_supported_algos.dup).serialize();
+            buf ~= scoped!SignatureAlgorithms(m_supported_algos.dup).serialize();
         
         Vector!ubyte encoded_names;
         
