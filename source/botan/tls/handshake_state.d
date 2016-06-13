@@ -142,7 +142,10 @@ public:
         
         if (algo_name == "RSA")
         {
-            hash_algo = "Parallel(MD5,SHA-160)";
+			if (!this.Version().supportsNegotiableSignatureAlgorithms())
+			{
+            	hash_algo = "Parallel(MD5,SHA-160)";
+			}
             
             const string padding = "EMSA3(" ~ hash_algo ~ ")";
             return makePair(padding, IEEE_1363);
