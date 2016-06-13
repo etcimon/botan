@@ -1166,7 +1166,7 @@ public:
         m_names = ca_certs.move();
         m_cert_key_types = [ "RSA", "DSA", "ECDSA" ];
 		static Vector!( Pair!(string, string)  ) last_supported_algos;
-		static const(TLSPolicy) last_tls_policy;
+		static TLSPolicy last_tls_policy;
 		if (policy is last_tls_policy)
 			m_supported_algos = last_supported_algos.dup;
 		else {
@@ -1180,7 +1180,7 @@ public:
 	                for (size_t j = 0; j != sigs.length; ++j)
 	                    m_supported_algos.pushBack(makePair(hashes[i], sigs[j]));
 	        }
-			last_tls_policy = policy;
+			last_tls_policy = cast() policy;
 			last_supported_algos = m_supported_algos.dup;
 		}
         
@@ -1256,8 +1256,10 @@ protected:
 
         appendTlsLengthValue(buf, cert_types, 1);
         
-        if (!m_supported_algos.empty)
-            buf ~= scoped!SignatureAlgorithms(m_supported_algos.dup).serialize();
+        if (!m_supported_algos.empty) {
+			auto sig_algos = scoped!SignatureAlgorithms(m_supported_algos.dup);
+            buf ~= sig_algos.serialize();
+		}
         
         Vector!ubyte encoded_names;
         
