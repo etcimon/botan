@@ -84,8 +84,17 @@ AEADMode getAead(in string algo_spec, CipherDir direction)
 	}
     AlgorithmFactory af = globalState().algorithmFactory();
     
-    const Vector!string algo_parts = algo_spec.splitter('/');
-    if (algo_parts.empty)
+	static Vector!string last_algo_parts;
+	static string last_algo_spec;
+	Vector!string algo_parts;
+	if (last_algo_spec == algo_spec)
+		algo_parts = last_algo_parts.dup;
+	else {
+		algo_parts = algo_spec.splitter('/');
+		last_algo_spec = algo_spec;
+		last_algo_parts = algo_parts.dup;
+	}
+	if (algo_parts.empty)
         throw new InvalidAlgorithmName(algo_spec);
     
     if (algo_parts.length < 2)
@@ -95,7 +104,18 @@ AEADMode getAead(in string algo_spec, CipherDir direction)
     const BlockCipher cipher = af.prototypeBlockCipher(cipher_name);
     if (!cipher)
         return null;
-    const Vector!string mode_info = parseAlgorithmName(algo_parts[1]);
+
+	static Vector!string last_mode_info;
+	static string last_algo_part_1;
+	Vector!string mode_info;
+	if (last_algo_part_1 == algo_parts[1])
+		mode_info = last_mode_info.dup;
+	else {
+		mode_info = parseAlgorithmName(algo_parts[1]);
+		last_mode_info = mode_info.dup;
+		last_algo_part_1 = algo_parts[1];
+	}
+
     if (mode_info.empty)
         return null;
     

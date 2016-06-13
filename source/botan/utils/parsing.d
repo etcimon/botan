@@ -33,13 +33,15 @@ Vector!string parseAlgorithmName(in string scan_name)
     import std.array : Appender;
     if (scan_name.find('(') == -1 &&
         scan_name.find(')') == -1) {
-        Vector!string str;
-        str ~= scan_name;
+		Vector!string str = Vector!string(1);
+        str[0] = scan_name;
         return str.move();
     }
     string name = scan_name;
     Vector!ubyte substring;
+	substring.reserve(16);
     Vector!string elems;
+	elems.reserve(16);
     size_t level = 0;
     
     elems.pushBack(name[0 .. name.find('(')].idup);
@@ -105,9 +107,11 @@ Vector!string splitOnPred(in string str,
                          bool delegate(char) pred)
 {
     Vector!string elems;
+	elems.reserve(8);
     if (str == "") return elems.move();
     import std.array : Appender;
     Vector!ubyte substr;
+	substr.reserve(16);
     foreach(const char c; str)
     {
         if (pred(c))
@@ -136,7 +140,7 @@ string eraseChars(in string str, in char[] chars)
     import std.algorithm : canFind;
     import std.array : Appender;
     Appender!string output;
-    
+	output.reserve(16);
     foreach(const char c; str)
         if (!chars.canFind(c))
             output ~= c;
@@ -195,7 +199,7 @@ string stringJoin(const ref Vector!string strs, char delim)
 {
     import std.algorithm : joiner;
     import std.array : array;
-    return strs[].array.joiner(delim.to!string).to!string;
+    return strs[].joiner(delim.to!string).to!string;
 }
 
 /**
@@ -208,7 +212,9 @@ Vector!uint parseAsn1Oid(in string oid)
 {
     import std.array : Appender, array;
     Vector!char substring;
+	substring.reserve(16);
     Vector!uint oid_elems;
+	oid_elems.reserve(16);
 
     foreach (char c; oid)
     {

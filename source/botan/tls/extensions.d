@@ -500,7 +500,9 @@ public:
 
     override Vector!ubyte serialize() const
     {
-        Vector!ubyte buf = Vector!ubyte(2);
+		Vector!ubyte buf;
+		buf.reserve(m_curves.length * 2 + 2);
+		buf.length = 2;
         
         for (size_t i = 0; i != m_curves.length; ++i)
         {
@@ -523,6 +525,7 @@ public:
     this(ref TLSDataReader reader, ushort extension_size)
     {
         ushort len = reader.get_ushort();
+		m_curves.reserve(cast(size_t)len);
 		//logDebug("Got elliptic curves len: ", len, " ext size: ", extension_size);
         if (len + 2 != extension_size)
             throw new DecodingError("Inconsistent length field in elliptic curve list");
@@ -832,6 +835,8 @@ public:
             }
         }
     }
+
+	void reserve(size_t n) { m_extensions.extensions.reserve(n); }
 
     this(ref TLSDataReader reader) { deserialize(reader); }
 
