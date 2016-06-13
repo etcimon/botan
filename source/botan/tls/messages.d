@@ -364,8 +364,6 @@ public:
 		deserialized = true;
         if (type == CLIENT_HELLO)
             deserialize(buf);
-        else
-            deserializeSslv2(buf);
     }
 
 protected:
@@ -462,43 +460,6 @@ protected:
 		logDebug("sentFallback SCSV: ", sentFallbackSCSV());
 		logDebug("Secure renegotiation: ", secureRenegotiation());*/
 		//logDebug("NextProtocol: ", nextProtocols[]);
-    }
-
-    void deserializeSslv2(const ref Vector!ubyte buf)
-    {
-        if (buf.length < 12 || buf[0] != 1)
-            throw new DecodingError("ClientHello: SSLv2 hello corrupted");
-        
-        const size_t cipher_spec_len = make_ushort(buf[3], buf[4]);
-        const size_t m_session_id_len = make_ushort(buf[5], buf[6]);
-        const size_t challenge_len = make_ushort(buf[7], buf[8]);
-        
-        const size_t expected_size = (9 + m_session_id_len + cipher_spec_len + challenge_len);
-        
-        if (buf.length != expected_size)
-            throw new DecodingError("ClientHello: SSLv2 hello corrupted");
-        
-        if (m_session_id_len != 0 || cipher_spec_len % 3 != 0 ||
-            (challenge_len < 16 || challenge_len > 32))
-        {
-            throw new DecodingError("ClientHello: SSLv2 hello corrupted");
-        }
-        
-        m_version = TLSProtocolVersion(buf[1], buf[2]);
-        
-        for (size_t i = 9; i != 9 + cipher_spec_len; i += 3)
-        {
-            if (buf[i] != 0) // a SSLv2 cipherspec; ignore it
-                continue;
-            
-            m_suites.pushBack(make_ushort(buf[i+1], buf[i+2]));
-        }
-        
-        m_random.resize(challenge_len);
-        copyMem(m_random.ptr, &buf[9+cipher_spec_len+m_session_id_len], challenge_len);
-        
-        if (offeredSuite(cast(ushort)(TLS_EMPTY_RENEGOTIATION_INFO_SCSV)))
-            m_extensions.add(new RenegotiationExtension());
     }
 
 private:
@@ -608,10 +569,6 @@ public:
         if (client_has_heartbeat && policy.negotiateHeartbeatSupport())
             m_extensions.add(new HeartbeatSupportIndicator(true));
         
-        /*
-        * Even a client that offered SSLv3 and sent the SCSV will get an
-        * extension back. This is probably the right thing to do.
-        */
         if (client_has_secure_renegotiation)
             m_extensions.add(new RenegotiationExtension(reneg_info.move()));
         
@@ -741,16 +698,9 @@ public:
             
             try
             {
-                if (state.Version() == TLSProtocolVersion.SSL_V3)
-                {
-                    m_pre_master = decryptor.decrypt(contents);
-                }
-                else
-                {
-                    TLSDataReader reader = TLSDataReader("ClientKeyExchange", contents);
-                    m_pre_master = decryptor.decrypt(reader.getRange!ubyte(2, 0, 65535));
-                }
-                
+                TLSDataReader reader = TLSDataReader("ClientKeyExchange", contents);
+                m_pre_master = decryptor.decrypt(reader.getRange!ubyte(2, 0, 65535));
+
                 if (m_pre_master.length != 48 ||
                     client_version.majorVersion() != m_pre_master[0] ||
                     client_version.minorVersion() != m_pre_master[1])
@@ -1066,10 +1016,7 @@ public:
                 
                 Vector!ubyte encrypted_key = encryptor.encrypt(m_pre_master, rng);
                 
-                if (state.Version() == TLSProtocolVersion.SSL_V3)
-                    m_key_material = encrypted_key.move(); // no length field
-                else
-                    appendTlsLengthValue(m_key_material, encrypted_key, 2);
+                appendTlsLengthValue(m_key_material, encrypted_key, 2);
             }
             else
                 throw new TLSException(TLSAlert.HANDSHAKE_FAILURE,
@@ -1164,8 +1111,9 @@ protected:
     */
     override Vector!ubyte serialize() const
     {
-        Vector!ubyte buf = Vector!ubyte(3);
-        
+		Vector!ubyte buf;
+		buf.reserve(2048);
+		buf.length = 3;
         for (size_t i = 0; i != m_certs.length; ++i)
         {
             Vector!ubyte raw_cert = m_certs[i].BER_encode();
@@ -1342,13 +1290,6 @@ public:
         Pair!(string, SignatureFormat) format = state.understandSigFormat(*key, m_hash_algo, m_sig_algo, true);
         
         PKVerifier verifier = PKVerifier(*key, format.first, format.second);
-        if (state.Version() == TLSProtocolVersion.SSL_V3)
-        {
-            SecureVector!ubyte md5_sha = state.hash().finalSSL3(state.sessionKeys().masterSecret());
-
-            return verifier.verifyMessage(&md5_sha[16], md5_sha.length-16,
-            m_signature.ptr, m_signature.length);
-        }
         
         return verifier.verifyMessage(state.hash().getContents(), m_signature);
     }
@@ -1368,20 +1309,8 @@ public:
         
         PKSigner signer = PKSigner(priv_key, format.first, format.second);
         
-        if (state.Version() == TLSProtocolVersion.SSL_V3)
-        {
-            SecureVector!ubyte md5_sha = state.hash().finalSSL3(state.sessionKeys().masterSecret());
-            
-            if (priv_key.algoName == "DSA")
-                m_signature = signer.signMessage(&md5_sha[16], md5_sha.length-16, rng);
-            else
-                m_signature = signer.signMessage(md5_sha, rng);
-        }
-        else
-        {
-            m_signature = signer.signMessage(state.hash().getContents(), rng);
-        }
-        
+		m_signature = signer.signMessage(state.hash().getContents(), rng);
+                
         state.hash().update(io.send(this));
     }
 
@@ -1949,47 +1878,29 @@ SecureVector!ubyte stripLeadingZeros()(auto const ref SecureVector!ubyte input)
 /*
 * Compute the verifyData
 */
-Vector!ubyte finishedComputeVerify(in HandshakeState state,
-                                   ConnectionSide side)
+Vector!ubyte finishedComputeVerify(in HandshakeState state, ConnectionSide side)
 {
-    if (state.Version() == TLSProtocolVersion.SSL_V3)
-    {
-        __gshared immutable const(ubyte)[] SSL_CLIENT_LABEL = [ 0x43, 0x4C, 0x4E, 0x54 ];
-        __gshared immutable const(ubyte)[] SSL_SERVER_LABEL = [ 0x53, 0x52, 0x56, 0x52 ];
-        
-        HandshakeHash hash = state.hash().dup; // don't modify state
-
-        Vector!ubyte ssl3_finished;
-        
-        if (side == CLIENT)
-            hash.update(SSL_CLIENT_LABEL.ptr, SSL_CLIENT_LABEL.length);
-        else
-            hash.update(SSL_SERVER_LABEL.ptr, SSL_SERVER_LABEL.length);
-        
-        return unlock(hash.finalSSL3(state.sessionKeys().masterSecret()));
-    }
+    __gshared immutable const(ubyte)[] TLS_CLIENT_LABEL = [
+        0x63, 0x6C, 0x69, 0x65, 0x6E, 0x74, 0x20, 0x66, 0x69, 0x6E, 0x69,
+        0x73, 0x68, 0x65, 0x64 ];
+    
+    __gshared immutable const(ubyte)[] TLS_SERVER_LABEL = [
+        0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x20, 0x66, 0x69, 0x6E, 0x69,
+        0x73, 0x68, 0x65, 0x64 ];
+    
+    Unique!KDF prf = state.protocolSpecificPrf();
+    
+    Vector!ubyte input;
+	input.reserve(64);
+    if (side == CLIENT)
+        input ~= cast(ubyte[])TLS_CLIENT_LABEL;
     else
-    {
-        __gshared immutable const(ubyte)[] TLS_CLIENT_LABEL = [
-            0x63, 0x6C, 0x69, 0x65, 0x6E, 0x74, 0x20, 0x66, 0x69, 0x6E, 0x69,
-            0x73, 0x68, 0x65, 0x64 ];
-        
-        __gshared immutable const(ubyte)[] TLS_SERVER_LABEL = [
-            0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x20, 0x66, 0x69, 0x6E, 0x69,
-            0x73, 0x68, 0x65, 0x64 ];
-        
-        Unique!KDF prf = state.protocolSpecificPrf();
-        
-        Vector!ubyte input;
-        if (side == CLIENT)
-            input ~= cast(ubyte[])TLS_CLIENT_LABEL;
-        else
-            input ~= cast(ubyte[])TLS_SERVER_LABEL;
-        
-        auto vec = state.hash().flushInto(state.Version(), state.ciphersuite().prfAlgo());
-		input ~= vec[];
-		return unlock(prf.deriveKey(12, state.sessionKeys().masterSecret(), input));
-    }
+        input ~= cast(ubyte[])TLS_SERVER_LABEL;
+    
+    auto vec = state.hash().flushInto(state.Version(), state.ciphersuite().prfAlgo());
+	input ~= vec[];
+	return unlock(prf.deriveKey(12, state.sessionKeys().masterSecret(), input));
+
 }
 
 Vector!ubyte makeHelloRandom(RandomNumberGenerator rng, in TLSPolicy policy)

@@ -28,7 +28,6 @@ struct TLSProtocolVersion
 public:
     alias ushort VersionCode;
     enum : VersionCode {
-        SSL_V3              = 0x0300,
         TLS_V10             = 0x0301,
         TLS_V11             = 0x0302,
         TLS_V12             = 0x0303,
@@ -76,8 +75,7 @@ public:
     */
     bool knownVersion() const
     {
-        return (m_version == TLSProtocolVersion.SSL_V3 ||
-                m_version == TLSProtocolVersion.TLS_V10 ||
+        return (m_version == TLSProtocolVersion.TLS_V10 ||
                 m_version == TLSProtocolVersion.TLS_V11 ||
                 m_version == TLSProtocolVersion.TLS_V12 ||
                 m_version == TLSProtocolVersion.DTLS_V10 ||
@@ -101,10 +99,7 @@ public:
     {
         const ubyte maj = majorVersion();
         const ubyte min = minorVersion();
-        
-        if (maj == 3 && min == 0)
-            return "SSL v3";
-        
+                
         if (maj == 3 && min >= 1) // TLS v1.x
             return "TLS v1." ~ to!string(min-1);
         

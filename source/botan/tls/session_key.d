@@ -63,9 +63,8 @@ public:
         else
         {
             SecureVector!ubyte salt;
-            
-            if (state.Version() != TLSProtocolVersion.SSL_V3)
-                salt ~= cast(ubyte[])MASTER_SECRET_MAGIC;
+			salt.reserve(64);
+            salt ~= cast(ubyte[])MASTER_SECRET_MAGIC;
 			salt ~= state.clientHello().randomBytes();
 			salt ~= state.serverHello().randomBytes();
             
@@ -73,8 +72,8 @@ public:
         }
         
         SecureVector!ubyte salt;
-        if (state.Version() != TLSProtocolVersion.SSL_V3)
-            salt ~= cast(ubyte[])KEY_GEN_MAGIC;
+		salt.reserve(64);
+        salt ~= cast(ubyte[])KEY_GEN_MAGIC;
 		salt ~= state.serverHello().randomBytes();
 		salt ~= state.clientHello().randomBytes();
         

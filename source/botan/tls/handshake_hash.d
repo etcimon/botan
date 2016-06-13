@@ -60,52 +60,10 @@ public:
         return hash.finished();
     }
 
-    /**
-    * Return a SSLv3 Handshake Hash
-    */
-    SecureVector!ubyte finalSSL3()(auto const ref SecureVector!ubyte secret) const
-    {
-        const ubyte PAD_INNER = 0x36, PAD_OUTER = 0x5C;
-        
-        AlgorithmFactory af = globalState().algorithmFactory();
-        
-        Unique!HashFunction md5 = af.makeHashFunction("MD5");
-        Unique!HashFunction sha1 = af.makeHashFunction("SHA-1");
-        
-        md5.update(m_data);
-        sha1.update(m_data);
-        
-        md5.update(secret);
-        sha1.update(secret);
-        
-        foreach (size_t i; 0 .. 48)
-            md5.update(PAD_INNER);
-        foreach (size_t i; 0 .. 40)
-            sha1.update(PAD_INNER);
-        
-        SecureVector!ubyte inner_md5 = md5.finished(), inner_sha1 = sha1.finished();
-        
-        md5.update(secret);
-        sha1.update(secret);
-        
-        foreach (size_t i; 0 .. 48)
-            md5.update(PAD_OUTER);
-        foreach (size_t i; 0 .. 40)
-            sha1.update(PAD_OUTER);
-        
-        md5.update(inner_md5);
-        sha1.update(inner_sha1);
-        
-        SecureVector!ubyte output;
-        output ~= md5.finished();
-        output ~= sha1.finished();
-        return output;
-    }
-
     ref const(Vector!ubyte) getContents() const
     { return m_data; }
 
-    void reset() { m_data.clear(); }
+	void reset() { if (m_data.length == 0) m_data.reserve(2048); else m_data.clear(); }
 
     @property HandshakeHash dup() const 
     { 

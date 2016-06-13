@@ -20,7 +20,7 @@ import std.conv : to;
 
 alias ushort TLSAlertType;
 /**
-* SSL/TLS TLSAlert Message
+* TLS TLSAlert Message
 */
 struct TLSAlert
 {
@@ -36,7 +36,6 @@ public:
         RECORD_OVERFLOW                     = 22,
         DECOMPRESSION_FAILURE               = 30,
         HANDSHAKE_FAILURE                   = 40,
-        NO_CERTIFICATE                      = 41, // SSLv3 only
         BAD_CERTIFICATE                     = 42,
         UNSUPPORTED_CERTIFICATE             = 43,
         CERTIFICATE_REVOKED                 = 44,
@@ -103,8 +102,6 @@ public:
                 return "decompression_failure";
             case HANDSHAKE_FAILURE:
                 return "handshake_failure";
-            case NO_CERTIFICATE:
-                return "no_certificate";
             case BAD_CERTIFICATE:
                 return "bad_certificate";
             case UNSUPPORTED_CERTIFICATE:

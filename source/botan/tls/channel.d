@@ -763,7 +763,7 @@ private:
         if (length == 0)
             return;
         /*
-        * If using CBC mode without an explicit IV (SSL v3 or TLS v1.0),
+        * If using CBC mode without an explicit IV (TLS v1.0),
         * send a single ubyte of plaintext to randomize the (implicit) IV of
         * the following main block. If using a stream cipher, or TLS v1.1
         * or higher, this isn't necessary.

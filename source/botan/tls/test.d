@@ -303,7 +303,6 @@ static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
 	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     Unique!TLSCredentialsManager basic_creds = createCreds(*rng);
     
-    errors += basicTestHandshake(*rng, TLSProtocolVersion(TLSProtocolVersion.SSL_V3), *basic_creds, *default_policy);
     errors += basicTestHandshake(*rng, TLSProtocolVersion(TLSProtocolVersion.TLS_V10), *basic_creds, *default_policy);
     errors += basicTestHandshake(*rng, TLSProtocolVersion(TLSProtocolVersion.TLS_V11), *basic_creds, *default_policy);
     errors += basicTestHandshake(*rng, TLSProtocolVersion(TLSProtocolVersion.TLS_V12), *basic_creds, *default_policy);

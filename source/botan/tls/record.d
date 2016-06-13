@@ -53,7 +53,7 @@ public:
         m_start_time = Clock.currTime(UTC());
         m_implicit_nonce_size = suite.nonceBytesFromRecord();
         m_explicit_nonce_size = suite.nonceBytesFromHandshake();
-        m_is_ssl3 = _version == TLSProtocolVersion.SSL_V3;
+		m_ad.reserve(16);
         SymmetricKey mac_key, cipher_key;
         InitializationVector iv;
         
@@ -106,10 +106,7 @@ public:
         else
             throw new InvalidArgument("Unknown TLS cipher " ~ cipher_algo);
         
-        if (_version == TLSProtocolVersion.SSL_V3)
-            m_mac = af.makeMac("SSL3-MAC(" ~ mac_algo ~ ")");
-        else
-            m_mac = af.makeMac("HMAC(" ~ mac_algo ~ ")");
+        m_mac = af.makeMac("HMAC(" ~ mac_algo ~ ")");
         
         m_mac.setKey(mac_key);
     }
@@ -150,11 +147,8 @@ public:
             m_ad.pushBack(get_byte(i, seq));
         m_ad.pushBack(msg_type);
         
-        if (_version != TLSProtocolVersion.SSL_V3)
-        {
-            m_ad.pushBack(_version.majorVersion());
-            m_ad.pushBack(_version.minorVersion());
-        }
+        m_ad.pushBack(_version.majorVersion());
+        m_ad.pushBack(_version.minorVersion());
         
         m_ad.pushBack(get_byte(0, msg_length));
         m_ad.pushBack(get_byte(1, msg_length));
@@ -180,8 +174,6 @@ public:
 
     size_t nonceBytesFromHandshake() const { return m_explicit_nonce_size; }
 
-    bool cipherPaddingSingleByte() const { return m_is_ssl3; }
-
     bool cbcWithoutExplicitIv() const
     { return (m_block_size > 0) && (m_iv_size == 0); }
 
@@ -204,7 +196,6 @@ private:
     size_t m_explicit_nonce_size;
     size_t m_implicit_nonce_size;
     size_t m_iv_size;
-    bool m_is_ssl3;
 }
 
 /**
@@ -374,41 +365,6 @@ size_t readTLSRecord(ref SecureVector!ubyte readbuf,
             assert(readbuf.length == TLS_HEADER_SIZE, "Have an entire header");
     }
     
-    // Possible SSLv2 format client hello
-    if (!sequence_numbers && (readbuf[0] & 0x80) && (readbuf[2] == 1))
-    {
-        if (readbuf[3] == 0 && readbuf[4] == 2)
-            throw new TLSException(TLSAlert.PROTOCOL_VERSION, "TLSClient claims to only support SSLv2, rejecting");
-        
-        if (readbuf[3] >= 3) // SSLv2 mapped TLS hello, then?
-        {
-            const size_t record_len = make_ushort(readbuf[0], readbuf[1]) & 0x7FFF;
-            
-            if (size_t needed = fillBufferTo(readbuf,
-                                             input, input_sz, consumed,
-                                             record_len + 2))
-                return needed;
-            
-            assert(readbuf.length == (record_len + 2), "Have the entire SSLv2 hello");
-            
-            // Fake v3-style handshake message wrapper
-            record_version = TLSProtocolVersion(TLSProtocolVersion.TLS_V10);
-            record_sequence = 0;
-            record_type = HANDSHAKE;
-            
-            record.resize(4 + readbuf.length - 2);
-            
-            record[0] = CLIENT_HELLO_SSLV2;
-            record[1] = 0;
-            record[2] = readbuf[0] & 0x7F;
-            record[3] = readbuf[1];
-            copyMem(&record[4], &readbuf[2], readbuf.length - 2);
-            
-            readbuf.clear();
-            return 0;
-        }
-    }
-
     record_version = TLSProtocolVersion(readbuf[1], readbuf[2]);
 
     assert(!record_version.isDatagramProtocol(), "Expected TLS");
@@ -615,24 +571,12 @@ size_t fillBufferTo(ref SecureVector!ubyte readbuf, ref const(ubyte)* input,
 *
 * @fixme This should run in constant time
 */
-size_t tlsPaddingCheck(bool sslv3_padding, size_t block_size, const(ubyte)* record, in size_t record_len)
+size_t tlsPaddingCheck(size_t block_size, const(ubyte)* record, in size_t record_len)
 {
     const size_t padding_length = record[(record_len-1)];
 
     if (padding_length >= record_len)
         return 0;
-    
-    /*
-    * SSL v3 requires that the padding be less than the block size
-    * but not does specify the value of the padding bytes.
-    */
-    if (sslv3_padding)
-    {
-        if (padding_length > 0 && padding_length < block_size)
-            return (padding_length + 1);
-        else
-            return 0;
-    }
     
     /*
     * TLS v1.0 and up require all the padding bytes be the same value
@@ -722,9 +666,7 @@ void decryptRecord(ref SecureVector!ubyte output,
         {
             cbcDecryptRecord(record_contents, record_len, cs, bc);
             
-            pad_size = tlsPaddingCheck(cs.cipherPaddingSingleByte(),
-                                         cs.blockSize(),
-                                         record_contents, record_len);
+            pad_size = tlsPaddingCheck(cs.blockSize(), record_contents, record_len);
             
             padding_bad = (pad_size == 0);
         }

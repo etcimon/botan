@@ -1,5 +1,5 @@
 /**
-* SSL/TLS Protocol Constants
+* TLS Protocol Constants
 * 
 * Copyright:
 * (C) 2004-2010,2015 Jack Lloyd
@@ -15,7 +15,7 @@ static if (BOTAN_HAS_TLS):
 package:
 
 /**
-* Protocol Constants for SSL/TLS
+* Protocol Constants for TLS
 */
 alias SizeLimits = size_t;
 enum : SizeLimits {
@@ -44,7 +44,6 @@ alias HandshakeType = ubyte;
 enum : HandshakeType {
     HELLO_REQUEST         = 0,
     CLIENT_HELLO          = 1,
-    CLIENT_HELLO_SSLV2    = 253, // Not a wire value
     SERVER_HELLO          = 2,
     HELLO_VERIFY_REQUEST  = 3,
     NEW_SESSION_TICKET    = 4, // RFC 5077
