@@ -1257,7 +1257,7 @@ protected:
         appendTlsLengthValue(buf, cert_types, 1);
         
         if (!m_supported_algos.empty) {
-			auto sig_algos = scoped!SignatureAlgorithms(m_supported_algos.dup);
+			Unique!SignatureAlgorithms sig_algos = new SignatureAlgorithms(m_supported_algos.dup);
             buf ~= sig_algos.serialize();
 		}
         
