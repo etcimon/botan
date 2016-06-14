@@ -497,9 +497,6 @@ public:
 
     ~this()
     {
-
-		version(TLSGC) if (m_owner != Thread.getThis()) return;
-
         resetState();
     }
 
