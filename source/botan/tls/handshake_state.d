@@ -46,8 +46,6 @@ public:
 		m_handshake_hash.reset();
     }
 
-	~this() { m_handshake_io.drop(); }
-
     HandshakeIO handshakeIo() { return *m_handshake_io; }
 
     /**

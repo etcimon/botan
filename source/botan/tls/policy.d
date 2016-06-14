@@ -68,9 +68,9 @@ public:
     Vector!string allowedSignatureHashes() const
     {
         return Vector!string([
+			"SHA-256",
             "SHA-512",
             "SHA-384",
-            "SHA-256",
             "SHA-224",
             "SHA-1",
             "MD5",

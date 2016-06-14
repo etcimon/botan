@@ -1729,10 +1729,6 @@ protected:
         return buf.move();
     }
 
-	~this() {
-		// workaround for unknown segfault during GC collection
-		m_kex_key.drop();
-	}
 private:
     Unique!PrivateKey m_kex_key;
 	static if (BOTAN_HAS_SRP6)
