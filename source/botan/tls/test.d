@@ -116,6 +116,8 @@ public:
     override SymmetricKey psk(in string type, in string context, in string identity)
     { return super.psk(type, context, identity); }
 
+	override bool hasPsk() { return false; }
+
 public:
     X509Certificate m_server_cert, m_ca_cert;
     Unique!PrivateKey m_key;
