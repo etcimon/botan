@@ -203,7 +203,7 @@ protected:
             
             bool have_session_ticket_key = false;
             
-            try
+			if (m_creds.hasPsk()) try
             {
                 have_session_ticket_key = m_creds.psk("tls-server", "session-ticket", "").length > 0;
             }
@@ -255,8 +255,9 @@ protected:
                 
                 if (state.serverHello().supportsSessionTicket() && !state.newSessionTicket())
                 {
-                    try
+					if (m_creds.hasPsk()) try
                     {
+
                         const SymmetricKey ticket_key = m_creds.psk("tls-server", "session-ticket", "");
                         
                         state.newSessionTicket(new NewSessionTicket(state.handshakeIo(),

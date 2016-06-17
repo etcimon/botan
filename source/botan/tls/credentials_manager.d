@@ -238,6 +238,11 @@ public:
         return "";
     }
 
+	/// Override and return true to signal PSK usage
+	abstract bool hasPsk() {
+		return false;
+	}
+
     /**
     * Params:
     *  type = specifies the type of operation occuring
