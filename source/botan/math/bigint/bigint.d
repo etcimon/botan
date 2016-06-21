@@ -738,6 +738,7 @@ public:
     *  n = position in the register
     * Returns: value at position n
     */
+	pragma(inline, true)
     word wordAt(size_t n) const
     { return ((n < size()) ? m_reg[n] : 0); }
 
@@ -757,6 +758,7 @@ public:
     * Return the sign of the integer
     * Returns: the sign of the integer
     */
+	pragma(inline, true)
     Sign sign() const { return (m_signedness); }
 
     /**
@@ -804,9 +806,11 @@ public:
     * Give size of internal register
     * Returns: size of internal register in words
     */
+	pragma(inline, true)
     size_t size() const { return m_reg.length; }
 
     // ditto
+	pragma(inline, true)
     size_t length() const { return size(); }
 
     /**
@@ -829,6 +833,7 @@ public:
     * Give ubyte length of the integer
     * Returns: ubyte length of the represented integer value
     */
+	pragma(inline, true)
     size_t bytes() const
     {
         return (bits() + 7) / 8;

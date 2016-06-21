@@ -160,6 +160,12 @@ public:
 			const ubyte[] from_socket = m_read_fn(slice);
 			enforce(channel !is null, "Connection closed while reading from TLS Channel");
 			channel.receivedData(cast(const(ubyte)*)from_socket.ptr, from_socket.length);
+
+			if (from_socket.length == slice.length && m_readbuf.length < 64*1024) {
+				size_t next_len = m_readbuf.length * 2;
+				m_readbuf.destroy();
+				m_readbuf = Vector!ubyte(next_len);
+			}
         }
 
 		if (buf.length == 0) return null;

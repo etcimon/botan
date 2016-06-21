@@ -21,6 +21,7 @@ import std.bitmanip;
 *  input = the value to extract from
 * Returns: ubyte byte_num of input
 */
+pragma(inline, true)
 ubyte get_byte(T)(size_t byte_num, T input)
 {
     return cast(ubyte)(input >> ( ( T.sizeof - 1 - (byte_num & (T.sizeof - 1) ) ) << 3) );

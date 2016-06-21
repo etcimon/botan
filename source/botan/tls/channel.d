@@ -217,7 +217,10 @@ public:
                     if (alert_msg.type() == TLSAlert.NO_RENEGOTIATION)
                     m_pending_state.free();
                     
-                    m_alert_cb(alert_msg, null);
+					if (alert_msg.type() == TLSAlert.CLOSE_NOTIFY)
+						sendWarningAlert(TLSAlert.CLOSE_NOTIFY); // reply in kind
+
+					m_alert_cb(alert_msg, null);
                     
                     if (alert_msg.isFatal())
                     {
@@ -225,15 +228,7 @@ public:
                             auto entry = &active.serverHello().sessionId();
                             m_session_manager.removeEntry(*entry);
                         }
-                    }
-                            
-                    if (alert_msg.type() == TLSAlert.CLOSE_NOTIFY)
-                        sendWarningAlert(TLSAlert.CLOSE_NOTIFY); // reply in kind
-                                
-                    if (alert_msg.type() == TLSAlert.CLOSE_NOTIFY || alert_msg.isFatal())
-                    {
-                        resetState();
-                        return 0;
+						return 0;
                     }
                 }
                 else if (record_type != NO_RECORD)
@@ -332,8 +327,6 @@ public:
                 m_session_manager.removeEntry(*entry);
             }
         }
-        if (alert.type() == TLSAlert.CLOSE_NOTIFY || alert.isFatal())
-            resetState();
     }
 
     /**
