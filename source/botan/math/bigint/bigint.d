@@ -263,11 +263,11 @@ public:
             int relative_size = bigint_cmp(mutablePtr(), x_sw, y.ptr, y_sw);
             
             if (relative_size < 0)
-            {
-                SecureVector!word z = SecureVector!word(reg_size - 1);
-                bigint_sub3(z.ptr, y.ptr, reg_size - 1, mutablePtr(), x_sw);
-                m_reg[] = z;
-		        m_sig_words = z.length;
+			{               
+				SecureVector!word z = SecureVector!word(reg_size - 1);
+				bigint_sub3(z.ptr, y.ptr, reg_size - 1, mutablePtr(), x_sw);
+				m_reg[] = z;
+				m_sig_words = z.length;
                 setSign(y.sign());
             }
             else if (relative_size == 0)
@@ -426,13 +426,13 @@ public:
     {
         if (mod == 0)
             throw new DivideByZero();
-        
         if (isPowerOf2(mod))
         {
             word result = (wordAt(0) & (mod - 1));
             clear();
             growTo(2);
             m_reg[0] = result;
+			m_sig_words = size_t.max;
             return;
         }
         
@@ -447,6 +447,7 @@ public:
             m_reg[0] = mod - remainder;
         else
             m_reg[0] = remainder;
+		m_sig_words = size_t.max;
         
         setSign(Positive);
     }
@@ -531,6 +532,7 @@ public:
         import core.stdc.string : memset;
         if (!m_reg.empty){
             memset(mutablePtr(), 0, word.sizeof*m_reg.length);
+			m_sig_words = 0;
         }
     }
 
@@ -606,11 +608,7 @@ public:
     */
     bool isZero() const
     {
-        const size_t sw = sigWords();
-        foreach (size_t i; 0 .. sw)
-            if (m_reg[i] > 0)
-                return false;
-        return true;
+		return sigWords() == 0;
     }
 
     /**
@@ -624,7 +622,8 @@ public:
         const word mask = cast(word)(1) << (n % MP_WORD_BITS);
         if (which >= size()) growTo(which + 1);
         m_reg[which] |= mask;
-        m_sig_words = size_t.max;
+        if (which >= sigWords() - 1)
+			m_sig_words = size_t.max;
     }
 
     /**
@@ -658,7 +657,7 @@ public:
             clearMem(&m_reg[top_word+1], size() - (top_word + 1));
         
         m_reg[top_word] &= mask;
-        m_sig_words = size_t.max;
+		m_sig_words = top_word;
     }
 
     /**
@@ -821,7 +820,7 @@ public:
     {
         if (m_sig_words != size_t.max) return m_sig_words;
         const word* x = m_reg.ptr;
-        size_t sig = m_reg.length;
+        size_t sig = min(m_max_sig_words, m_reg.length);
 
         while (sig && (x[sig-1] == 0))
             sig--;
@@ -872,8 +871,11 @@ public:
     */
     void growTo(size_t n)
     {
-        if (n >= size())
+		m_max_sig_words = n;
+        if (n >= size()) {
+			if (m_reg.capacity < n) m_reg.reserve(n*2);
             m_reg.resize(roundUp!size_t(n, 8));
+		}
     }
 
     /**
@@ -1417,5 +1419,5 @@ private:
     SecureVector!word m_reg;
     Sign m_signedness = Positive;
     size_t m_sig_words = size_t.max;
-	
+	size_t m_max_sig_words = size_t.max;
 }

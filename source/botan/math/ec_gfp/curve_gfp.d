@@ -78,6 +78,29 @@ public:
 
 class CurveGFpMontgomery : CurveGFpRepr
 {
+
+	static if (BOTAN_HAS_ENGINE_OPENSSL) {
+		import deimos.openssl.bn;
+		~this() {
+			m_p_bn.d = null; m_p_bn.top = cast(int)0;
+			m_x_.d = null; m_x_.top = cast(int)0;
+			m_y_.d = null; m_y_.top = cast(int)0;
+			m_z_.d = null; m_z_.top = cast(int)0;
+			BN_free(m_z_);
+			BN_free(m_y_);
+			BN_free(m_x_);
+			BN_free(m_p_bn);
+			BN_CTX_free(m_ctx);
+			BN_MONT_CTX_free(m_mont);
+		}
+		BIGNUM* m_z_;
+		BIGNUM* m_x_;
+		BIGNUM* m_y_;
+		BIGNUM* m_p_bn;
+		BN_CTX* m_ctx;
+		BN_MONT_CTX* m_mont;
+	}
+
     this()(auto const ref BigInt p, auto const ref BigInt a, auto const ref BigInt b)
     {
         m_p = p.dup;
@@ -89,6 +112,17 @@ class CurveGFpMontgomery : CurveGFpRepr
         m_r2  = (r * r) % m_p;
         m_a_r = (m_a * r) % m_p;
         m_b_r = (m_b * r) % m_p;
+		static if (BOTAN_HAS_ENGINE_OPENSSL) {
+			m_z_ = BN_new();
+			m_x_ = BN_new();
+			m_y_ = BN_new();
+			m_p_bn = BN_new();
+			m_p_bn.d = cast(BN_ULONG*)m_p.ptr;
+			m_p_bn.top = cast(int)m_p.sigWords();
+			m_ctx = BN_CTX_new();
+			m_mont = BN_MONT_CTX_new();
+			BN_MONT_CTX_set(m_mont, m_p_bn, m_ctx);
+		}
     }
 
     override ref const(BigInt) getP() const { return m_p; }
@@ -133,17 +167,33 @@ class CurveGFpMontgomery : CurveGFpRepr
             return;
         }
 
-        const size_t output_size = 2*m_p_words + 1;
-        ws.resize(2*(m_p_words+2));
+		const size_t output_size = 2*m_p_words + 1;
+		
+		z.growTo(output_size);
+		z.clear();
 
-        z.growTo(output_size);
-        z.clear();
-        
-        bigint_monty_mul(z.mutablePtr(), output_size,
-            x.ptr, x.length, x.sigWords(),
-            y.ptr, y.length, y.sigWords(),
-            m_p.ptr, m_p_words, m_p_dash,
-            ws.ptr);
+		static if (BOTAN_HAS_ENGINE_OPENSSL) {
+			// about 2-3x faster than the optimized botan-math
+			CurveGFpMontgomery this_ = cast()this;
+			this_.m_x_.neg = cast(int)0;
+			this_.m_x_.d = cast(BN_ULONG*)x.ptr;
+			this_.m_x_.top = cast(int) x.sigWords();
+			this_.m_y_.neg = cast(int)0;
+			this_.m_y_.d = cast(BN_ULONG*)y.ptr;
+			this_.m_y_.top = cast(int) y.sigWords();
+			BN_CTX* ctx_ = BN_CTX_new();
+			scope(exit) BN_CTX_free(ctx_);
+			BN_mod_mul_montgomery(this_.m_z_, this_.m_x_, this_.m_y_, this_.m_mont, ctx_);
+			memcpy(cast(ubyte*)z.mutablePtr(), cast(ubyte*)this_.m_z_.d, cast(ubyte*)(this_.m_z_.top*word.sizeof));
+		}
+		else {
+			ws.resize(2*(m_p_words+2));	        
+	        bigint_monty_mul(z.mutablePtr(), output_size,
+	            x.ptr, x.length, x.sigWords(),
+	            y.ptr, y.length, y.sigWords(),
+	            m_p.ptr, m_p_words, m_p_dash,
+	            ws.ptr);
+		}
     }
 
     /**
@@ -160,16 +210,29 @@ class CurveGFpMontgomery : CurveGFpRepr
             z = 0;
             return;
         }
+		const size_t output_size = 2*m_p_words + 1;	
+		z.growTo(output_size);
+		z.clear();
+		static if (BOTAN_HAS_ENGINE_OPENSSL) {
+			// about 2-3x faster than the optimized botan-math
+			CurveGFpMontgomery this_ = cast()this;
+			this_.m_x_.neg = cast(int)0;
+			this_.m_x_.d = cast(BN_ULONG*)x.ptr;
+			this_.m_x_.top = cast(int) x.sigWords();
+			BN_CTX* ctx_ = BN_CTX_new();
+			scope(exit) BN_CTX_free(ctx_);
+			BN_mod_mul_montgomery(this_.m_z_, this_.m_x_, this_.m_x_, this_.m_mont, ctx_);
+			memcpy(cast(ubyte*)z.mutablePtr(), cast(ubyte*)this_.m_z_.d, cast(ubyte*)(this_.m_z_.top*word.sizeof));
+		}
+		else {
+	        ws.resize(2*(m_p_words+2));
+	        
 
-        const size_t output_size = 2*m_p_words + 1;
-        ws.resize(2*(m_p_words+2));
-        
-        z.growTo(output_size);
-        z.clear();
-        bigint_monty_sqr(z.mutablePtr(), output_size,
-            x.ptr, x.length, x.sigWords(),
-            m_p.ptr, m_p_words, m_p_dash,
-            ws.ptr);
+	        bigint_monty_sqr(z.mutablePtr(), output_size,
+	            x.ptr, x.length, x.sigWords(),
+	            m_p.ptr, m_p_words, m_p_dash,
+	            ws.ptr);
+		}
     }
 
     override Vector!char toVector() const

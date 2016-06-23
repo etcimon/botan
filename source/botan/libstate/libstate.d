@@ -97,6 +97,10 @@ public:
         m_algorithm_factory = new AlgorithmFactory;
         
         if (g_modexp_init) {
+			static if (BOTAN_HAS_ENGINE_OPENSSL) {
+				logTrace("Loading OpenSSL Engine");
+				algorithmFactory().addEngine(new OpenSSLEngine);
+			}
             algorithmFactory().addEngine(new CoreEngine);
             m_initialized = true;
             return;
