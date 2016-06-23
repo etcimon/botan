@@ -10,6 +10,7 @@ d:
 
 matrix:
   allow_failures:
+      - d: dmd-2.067.1
       - d: ldc-0.16.1
 
 script:
