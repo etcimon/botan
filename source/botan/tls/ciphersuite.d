@@ -128,8 +128,14 @@ public:
                 return TLSCiphersuite(0x00C4, "RSA", "DH", "Camellia-256", 32, 16, 0, "SHA-256", 32);
             case 0xC07D: // DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384
                 return TLSCiphersuite(0xC07D, "RSA", "DH", "Camellia-256/GCM", 32, 4, 8, "AEAD", 0, "SHA-384");
-			case 0xCC15: // DHE_RSA_WITH_CHACHA20_POLY1305_SHA256
+			case 0xCC15: // DHE_RSA_WITH_CHACHA20_POLY1305_OLD
 				return TLSCiphersuite(0xCC15, "RSA", "DH", "ChaCha20Poly1305", 32, 0, 0, "AEAD", 0, "SHA-256");
+			case 0xCCAA: // DHE_RSA_WITH_CHACHA20_POLY1305_SHA256
+				return TLSCiphersuite(0xCCAA, "RSA", "DH", "ChaCha20Poly1305", 32, 0, 0, "AEAD", 0, "SHA-256");
+			case 0xCC13: // TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_OLD
+				return TLSCiphersuite(0xCC13, "RSA", "ECDHE", "ChaCha20Poly1305", 32, 0, 0, "AEAD", 0, "SHA-256");
+			case 0xCCA8: // TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
+				return TLSCiphersuite(0xCCA8, "RSA", "ECDHE", "ChaCha20Poly1305", 32, 0, 0, "AEAD", 0, "SHA-256");
             case 0x009A: // DHE_RSA_WITH_SEED_CBC_SHA
                 return TLSCiphersuite(0x009A, "RSA", "DH", "SEED", 16, 16, 0, "SHA-1", 20);
             case 0x001B: // DH_anon_WITH_3DES_EDE_CBC_SHA
@@ -192,8 +198,10 @@ public:
                 return TLSCiphersuite(0xC073, "ECDSA", "ECDH", "Camellia-256", 32, 16, 0, "SHA-384", 48);
             case 0xC087: // ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384
                 return TLSCiphersuite(0xC087, "ECDSA", "ECDH", "Camellia-256/GCM", 32, 4, 8, "AEAD", 0, "SHA-384");
-			case 0xCC14: // ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
+			case 0xCC14: // ECDHE_ECDSA_WITH_CHACHA20_POLY1305_OLD
 				return TLSCiphersuite(0xCC14, "ECDSA", "ECDH", "ChaCha20Poly1305", 32, 0, 0, "AEAD", 0, "SHA-256");
+			case 0xCCA9: // ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 
+				return TLSCiphersuite(0xCCA9, "ECDSA", "ECDH", "ChaCha20Poly1305", 32, 0, 0, "AEAD", 0, "SHA-256");
             case 0xC007: // ECDHE_ECDSA_WITH_RC4_128_SHA
                 return TLSCiphersuite(0xC007, "ECDSA", "ECDH", "RC4", 16, 0, 0, "SHA-1", 20);
             case 0xC034: // ECDHE_PSK_WITH_3DES_EDE_CBC_SHA
