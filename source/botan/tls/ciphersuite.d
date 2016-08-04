@@ -242,8 +242,6 @@ public:
                 return TLSCiphersuite(0xC077, "RSA", "ECDH", "Camellia-256", 32, 16, 0, "SHA-384", 48);
             case 0xC08B: // ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384
                 return TLSCiphersuite(0xC08B, "RSA", "ECDH", "Camellia-256/GCM", 32, 4, 8, "AEAD", 0, "SHA-384");
-			case 0xCC13: // ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
-				return TLSCiphersuite(0xCC13, "RSA", "ECDH", "ChaCha20Poly1305", 32, 0, 0, "AEAD", 0, "SHA-256");
             case 0xC011: // ECDHE_RSA_WITH_RC4_128_SHA
                 return TLSCiphersuite(0xC011, "RSA", "ECDH", "RC4", 16, 0, 0, "SHA-1", 20);
             case 0xC017: // ECDH_anon_WITH_3DES_EDE_CBC_SHA

@@ -197,7 +197,7 @@ public:
      * client fingerprinting attacks. Set to false to disable, in
      * which case random bytes will be used instead.
      */
-    bool includeTimeInHelloRandom() const { return true; }
+    bool includeTimeInHelloRandom() const { return false; }
 
     /**
     * Allow servers to initiate a new handshake
