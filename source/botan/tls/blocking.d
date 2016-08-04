@@ -158,6 +158,8 @@ public:
 			}
 			else break;
 			const ubyte[] from_socket = m_read_fn(slice);
+			if (from_socket.length == 0)
+				break;
 			enforce(channel !is null, "Connection closed while reading from TLS Channel");
 			channel.receivedData(cast(const(ubyte)*)from_socket.ptr, from_socket.length);
 
