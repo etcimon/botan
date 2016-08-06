@@ -599,8 +599,8 @@ private:
                 ~ "AAAAAAAAAAAAAAAAAY2R5HHgmJzaJ99QWkU/K3Y1KU8t3yPjsSKsyZyenx4UAiEA"
                 ~ "/////////////////////2xhEHCZWtEARYQbCbdhuJMCAQE="
                 ~ "-----END EC PARAMETERS-----";
-        
-        return null;
+
+		return null;
     }
 
 }

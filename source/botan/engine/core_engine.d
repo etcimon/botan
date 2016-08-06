@@ -363,7 +363,7 @@ public:
         
         static if (BOTAN_HAS_CHACHA) {
             if (request.algoName == "ChaCha")
-                return new ChaCha;
+                return new ChaCha(request.argCount() == 1 ? request.arg(0).to!size_t : 20);
         }
         
         static if (BOTAN_HAS_SALSA20) {

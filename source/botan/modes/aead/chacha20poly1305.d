@@ -39,17 +39,20 @@ public:
 		
 		m_chacha.setIv(nonce, nonce_len);
 		
-		ubyte[64] zeros;
-		m_chacha.cipher1(zeros.ptr, zeros.length);
-		
-		m_poly1305.setKey(zeros.ptr, 32);
+		{
+			ubyte[64] zeros;
+			m_chacha.cipher1(zeros.ptr, zeros.length);
+			m_poly1305.setKey(zeros.ptr, 32);
+		}
 		// Remainder of output is discard
 		
 		m_poly1305.update(m_ad);
 		
 		if(cfrgVersion()) {
-			auto padding = Vector!ubyte(16 - m_ad.length % 16);
-			m_poly1305.update(padding);
+			if (m_ad.length % 16) {
+				ubyte[64] zeros;
+				m_poly1305.update(zeros.ptr, 16 - m_ad.length() % 16);
+			}
 		}
 		else {
 			updateLength(m_ad.length);
@@ -131,8 +134,11 @@ public:
 		update(buffer, offset);
 		if(cfrgVersion())
 		{
-			auto padding = Vector!ubyte(16 - m_ctext_len % 16);
-			m_poly1305.update(padding);
+			if (m_ctext_len % 16)
+			{
+				ubyte[16] zeros;
+				m_poly1305.update(zeros.ptr, 16-m_ctext_len%16);
+			}
 			updateLength(m_ad.length);
 		}
 		updateLength(m_ctext_len);
@@ -195,8 +201,11 @@ public:
 		}
 		
 		if(cfrgVersion()) {
-			for(size_t i = 0; i != 16 - m_ctext_len % 16; ++i)
-				m_poly1305.update(0);
+			if (m_ctext_len % 16)
+			{
+				ubyte[16] zeros;
+				m_poly1305.update(zeros.ptr, 16-m_ctext_len%16);
+			}
 			updateLength(m_ad.length);
 		}
 		

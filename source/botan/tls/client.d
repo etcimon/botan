@@ -428,6 +428,7 @@ public:
                                                  state.serverHello().compressionMethod(),
                                                  CLIENT,
                                                  state.serverHello().fragmentSize(),
+                                                 state.serverHello().supportsExtendedMasterSecret(),
                                                  getPeerCertChain(state),
                                                  session_ticket.move(),
                                                  m_info,

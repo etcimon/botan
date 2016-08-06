@@ -231,6 +231,7 @@ protected:
                                                   session_info.compressionMethod(),
                                                   session_info.fragmentSize(),
                                                   state.clientHello().secureRenegotiation(),
+                                                  state.clientHello().supportsExtendedMasterSecret(),
                                                   secureRenegotiationDataForServerHello(),
                                                   offer_new_session_ticket,
                                                   state.clientHello().supportsAlpn(),
@@ -313,6 +314,7 @@ protected:
                                         chooseCompression(m_policy, state.clientHello().compressionMethods()),
                                         state.clientHello().fragmentSize(),
                                         state.clientHello().secureRenegotiation(),
+                                        state.clientHello().supportsExtendedMasterSecret(),
                                         secureRenegotiationDataForServerHello(),
                                         state.clientHello().supportsSessionTicket() && have_session_ticket_key,
                                         state.clientHello().supportsAlpn(),
@@ -468,6 +470,7 @@ protected:
                                                      state.serverHello().compressionMethod(),
                                                      SERVER,
                                                      state.serverHello().fragmentSize(),
+                                                     state.serverHello().supportsExtendedMasterSecret(),
                                                      getPeerCertChain(state),
                                                      Vector!ubyte(),
                                                      TLSServerInformation(state.clientHello().sniHostname()),
@@ -604,6 +607,15 @@ bool checkForResume(ref TLSSession session_info,
         if (clientHello.sniHostname() != session_info.serverInfo().hostname())
             return false;
     }
+
+	if (clientHello.supportsExtendedMasterSecret() != session_info.supportsExtendedMasterSecret())
+	{
+		if (!session_info.supportsExtendedMasterSecret())
+			return false;
+		else {
+			throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "Client resumed extended ms session without sending extension");
+		}
+	}
 
     return true;
 }
