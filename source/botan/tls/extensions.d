@@ -33,6 +33,7 @@ enum : HandshakeExtensionType {
     TLSEXT_CLIENT_CERT_URL           = 2,
     TLSEXT_TRUSTED_CA_KEYS           = 3,
     TLSEXT_TRUNCATED_HMAC            = 4,
+	TLSEXT_STATUS_REQUEST            = 5,
 
     TLSEXT_CERTIFICATE_TYPES         = 9,
     TLSEXT_USABLE_ELLIPTIC_CURVES    = 10,
@@ -41,8 +42,14 @@ enum : HandshakeExtensionType {
     TLSEXT_SIGNATURE_ALGORITHMS      = 13,
     TLSEXT_HEARTBEAT_SUPPORT         = 15,
     TLSEXT_ALPN                      = 16,
+	TLSEXT_SIGNED_CERT_TIMESTAMP     = 18,
+	TLSEXT_EXTENDED_MASTER_SECRET    = 23,
 
     TLSEXT_SESSION_TICKET            = 35,
+
+	TLSEXT_NPN                       = 13172,
+
+	TLSEXT_CHANNEL_ID                = 30032,
 
     TLSEXT_SAFE_RENEGOTIATION        = 65281,
 }
@@ -67,6 +74,135 @@ public:
     * Returns: if we should encode this extension or not
     */
     abstract @property bool empty() const;
+}
+
+class NPN : Extension
+{
+	static HandshakeExtensionType staticType() { return TLSEXT_NPN; }
+	
+	override HandshakeExtensionType type() const { return staticType(); }
+	
+	override Vector!ubyte serialize() const
+	{
+		return Vector!ubyte();
+	}
+	
+	override @property bool empty() const { return false; }
+}
+
+/**
+ * OCSP Stapling
+*/
+class StatusRequest : Extension
+{
+	static HandshakeExtensionType staticType() { return TLSEXT_STATUS_REQUEST; }
+	
+	override HandshakeExtensionType type() const { return staticType(); }
+	
+	override Vector!ubyte serialize() const
+	{
+		Vector!ubyte buf;
+		buf.reserve(3);
+		buf.pushBack(0x01); // OCSP
+
+		// Responders
+		buf.pushBack(0x00);
+		buf.pushBack(0x00);
+
+		// Request Extensions
+		buf.pushBack(0x00);
+		buf.pushBack(0x00);
+		
+		return buf.move();
+	}
+	
+	override @property bool empty() const { return false; }
+}
+
+/**
+ * Extended master secret
+ */
+class ExtendedMasterSecret : Extension
+{
+	static HandshakeExtensionType staticType() { return TLSEXT_EXTENDED_MASTER_SECRET; }
+	
+	override HandshakeExtensionType type() const { return staticType(); }
+	
+	override Vector!ubyte serialize() const
+	{
+		return Vector!ubyte();
+	}
+	
+	override @property bool empty() const { return false; }
+
+	this(){}
+
+	this(ref TLSDataReader reader, ushort extension_size)
+	{
+		if (extension_size != 0)
+			throw new DecodingError("Invalid extended_master_secret extension");
+	}
+}
+
+/**
+* Signed Certificate Timestamp
+*/
+class SignedCertificateTimestamp : Extension
+{
+public:
+	static HandshakeExtensionType staticType() { return TLSEXT_SIGNED_CERT_TIMESTAMP; }
+	
+	override HandshakeExtensionType type() const { return staticType(); }
+	
+	override Vector!ubyte serialize() const
+	{
+		return Vector!ubyte();
+	}
+	
+	override @property bool empty() const { return false; }
+}
+
+/**
+* Channel ID
+*/
+class ChannelID : Extension
+{
+public:
+	static HandshakeExtensionType staticType() { return TLSEXT_CHANNEL_ID; }
+	
+	override HandshakeExtensionType type() const { return staticType(); }
+	
+	override Vector!ubyte serialize() const
+	{
+		return Vector!ubyte();
+	}
+	
+	override @property bool empty() const { return false; }
+}
+
+/**
+* EC Point formats (RFC 4492) only uncompressed supported.
+*/
+class SupportedPointFormats : Extension
+{
+public:
+	static HandshakeExtensionType staticType() { return TLSEXT_EC_POINT_FORMATS; }
+	
+	override HandshakeExtensionType type() const { return staticType(); }
+		
+	override Vector!ubyte serialize() const
+	{
+		Vector!ubyte buf;
+		buf.reserve(3);
+		buf.pushBack(0x01); // 1 point
+
+		//uncompressed
+		buf.pushBack(0x00);
+		
+		return buf.move();
+	}
+	
+	override @property bool empty() const { return false; }
 }
 
 /**
@@ -457,6 +593,8 @@ public:
                 return "brainpool384r1";
             case 28:
                 return "brainpool512r1";
+			case 29:
+				return "x25519";
             default:
                 return id.to!string; // something we don't know or support
         }
@@ -492,6 +630,8 @@ public:
             return 27;
         if (name == "brainpool512r1")
             return 28;
+		if (name == "x25519")
+			return 29;
         
         throw new InvalidArgument("name_to_curve_id unknown name " ~ name);
     }
@@ -899,6 +1039,9 @@ Extension makeExtension(ref TLSDataReader reader, ushort code, ushort size)
         case TLSEXT_SERVER_NAME_INDICATION:
             return new ServerNameIndicator(reader, size);
             
+		case TLSEXT_EXTENDED_MASTER_SECRET:
+			return new ExtendedMasterSecret(reader, size);
+
         case TLSEXT_MAX_FRAGMENT_LENGTH:
             return new MaximumFragmentLength(reader, size);
             

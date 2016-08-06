@@ -45,7 +45,8 @@ public:
         const size_t cipher_keylen = state.ciphersuite().cipherKeylen();
         const size_t mac_keylen = state.ciphersuite().macKeylen();
         const size_t cipher_nonce_bytes = state.ciphersuite().nonceBytesFromHandshake();
-        
+		const bool extended_master_secret = state.serverHello().supportsExtendedMasterSecret();
+
         const size_t prf_gen = 2 * (mac_keylen + cipher_keylen + cipher_nonce_bytes);
         
         __gshared immutable immutable(ubyte)[] MASTER_SECRET_MAGIC = [
@@ -54,6 +55,10 @@ public:
         __gshared immutable immutable(ubyte)[] KEY_GEN_MAGIC = [
             0x6B, 0x65, 0x79, 0x20, 0x65, 0x78, 0x70, 0x61, 0x6E, 0x73, 0x69, 0x6F, 0x6E ];
         
+		__gshared immutable immutable(ubyte)[] EXT_MASTER_SECRET_MAGIC = [
+		    0x65, 0x78, 0x74, 0x65, 0x6E, 0x64, 0x65, 0x64, 0x20,
+		    0x6D, 0x61, 0x73, 0x74, 0x65, 0x72, 0x20, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74 ];
+
         Unique!KDF prf = state.protocolSpecificPrf();
         
         if (resuming)
@@ -64,9 +69,19 @@ public:
         {
             SecureVector!ubyte salt;
 			salt.reserve(64);
-            salt ~= cast(ubyte[])MASTER_SECRET_MAGIC;
-			salt ~= state.clientHello().randomBytes();
-			salt ~= state.serverHello().randomBytes();
+
+			if (extended_master_secret)
+			{
+				   salt ~= cast(ubyte[])EXT_MASTER_SECRET_MAGIC;
+				   salt ~= state.hash().flushInto(state.Version(),
+				                                   state.ciphersuite().prfAlgo());
+			}
+			else
+			{
+				   salt ~= cast(ubyte[])MASTER_SECRET_MAGIC;
+				   salt ~= state.clientHello().random()[];
+				   salt ~= state.serverHello().random()[];
+			}
             
             m_master_sec = prf.deriveKey(48, pre_master_secret, salt);
         }

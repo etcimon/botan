@@ -35,6 +35,7 @@ import botan.utils.types;
 import botan.utils.get_byte;
 import memutils.hashmap;
 import std.string : toStringz;
+import std.algorithm;
 
 alias DataWriter = void delegate(in ubyte[]);
 alias OnClearData = void delegate(in ubyte[]);

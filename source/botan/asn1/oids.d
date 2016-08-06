@@ -120,6 +120,7 @@ public:
         addOidstr("1.3.6.1.4.1.25258.1.1", "RW");
         addOidstr("1.3.6.1.4.1.25258.1.2", "NR");
 		addOidstr("1.3.6.1.4.1.25258.1.4", "Curve25519");
+		addOidstr("1.3.6.1.4.1.11591.15.1", "Curve25519");
         // X9.62 ecPublicKey, valid for ECDSA and ECDH (RFC 3279 sec 2.3.5)
         addOidstr("1.2.840.10045.2.1", "ECDSA");
         

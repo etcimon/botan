@@ -233,10 +233,15 @@ public:
         return Vector!ubyte();
     }
 
-    bool supportsAlpn() const
-    {
-        return m_extensions.get!ApplicationLayerProtocolNotification() !is null;
-    }
+	bool supportsAlpn() const
+	{
+		return m_extensions.get!ApplicationLayerProtocolNotification() !is null;
+	}
+
+	bool supportsExtendedMasterSecret() const
+	{
+		return m_extensions.get!ExtendedMasterSecret() !is null;
+	}
 
     const(Vector!string) nextProtocols() const
     {
@@ -282,26 +287,39 @@ public:
          in string srp_identifier) 
     {
 		//logDebug("ClientHello with hostname: ", hostname);
+
         bool reneg_empty = reneg_info.empty;
         m_version = _version;
         m_random = makeHelloRandom(rng, policy);
         m_suites = policy.ciphersuiteList(m_version, (srp_identifier != ""));
         m_comp_methods = policy.compression();
-        m_extensions.add(new RenegotiationExtension(reneg_info.move()));
-        m_extensions.add(new SRPIdentifier(srp_identifier));
-        m_extensions.add(new ServerNameIndicator(hostname));
-        m_extensions.add(new SessionTicket());
-        m_extensions.add(new SupportedEllipticCurves(policy.allowedEccCurves()));
+
+		m_extensions.add(new RenegotiationExtension(reneg_info.move()));
+		m_extensions.add(new ServerNameIndicator(hostname));
+
+		m_extensions.add(new ExtendedMasterSecret);
+		m_extensions.add(new SessionTicket());
+
+		if (m_version.supportsNegotiableSignatureAlgorithms())
+			m_extensions.add(new SignatureAlgorithms(policy.allowedSignatureHashes(),
+					policy.allowedSignatureMethods()));
+		m_extensions.add(new StatusRequest);
+		m_extensions.add(new NPN);
+		m_extensions.add(new SignedCertificateTimestamp);
+
+		if (reneg_empty && !next_protocols.empty)
+			m_extensions.add(new ApplicationLayerProtocolNotification(next_protocols.move));
+		//m_extensions.add(new ChannelID);
+
+		m_extensions.add(new SupportedPointFormats);
+
+		m_extensions.add(new SupportedEllipticCurves(policy.allowedEccCurves()));
+
+        //m_extensions.add(new SRPIdentifier(srp_identifier));
 
         if (policy.negotiateHeartbeatSupport())
             m_extensions.add(new HeartbeatSupportIndicator(true));
         
-        if (m_version.supportsNegotiableSignatureAlgorithms())
-            m_extensions.add(new SignatureAlgorithms(policy.allowedSignatureHashes(),
-                                                     policy.allowedSignatureMethods()));
-
-        if (reneg_empty && !next_protocols.empty)
-            m_extensions.add(new ApplicationLayerProtocolNotification(next_protocols.move));
         assert(policy.acceptableProtocolVersion(_version), "Our policy accepts the version we are offering");
 
         if (policy.sendFallbackSCSV(_version))
@@ -333,7 +351,8 @@ public:
         
         if (!valueExists(m_comp_methods, session.compressionMethod()))
             m_comp_methods.pushBack(session.compressionMethod());
-        
+
+		m_extensions.add(new ExtendedMasterSecret);
         m_extensions.add(new RenegotiationExtension(reneg_info.move()));
         m_extensions.add(new SRPIdentifier(session.srpIdentifier()));
         m_extensions.add(new ServerNameIndicator(session.serverInfo().hostname()));
@@ -516,6 +535,11 @@ public:
         return 0;
     }
 
+	bool supportsExtendedMasterSecret() const
+	{
+		return m_extensions.get!ExtendedMasterSecret() !is null;
+	}
+
     bool supportsSessionTicket() const
     {
         return m_extensions.get!SessionTicket() !is null;
@@ -555,6 +579,7 @@ public:
          ubyte compression,
          size_t max_fragment_size,
          bool client_has_secure_renegotiation,
+         bool client_has_extended_master_secret,
          Vector!ubyte reneg_info,
          bool offer_session_ticket,
          bool client_has_alpn,
@@ -568,6 +593,10 @@ public:
         m_ciphersuite = ciphersuite;
         m_comp_method = compression;
 		m_extensions.reserve(8);
+
+		if (client_has_extended_master_secret)
+			m_extensions.add(new ExtendedMasterSecret);
+
         if (client_has_heartbeat && policy.negotiateHeartbeatSupport())
             m_extensions.add(new HeartbeatSupportIndicator(true));
         

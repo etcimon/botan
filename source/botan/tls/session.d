@@ -47,6 +47,7 @@ public:
          ubyte compression_method,
          ConnectionSide side,
          size_t fragment_size,
+         bool extended_master_secret,
          Vector!X509Certificate certs,
          Vector!ubyte ticket,
          in TLSServerInformation server_info,
@@ -64,6 +65,7 @@ public:
         m_peer_certs = certs.move();
         m_server_info = server_info;
         m_srp_identifier = srp_identifier;
+		m_extended_master_secret = extended_master_secret;
     }
 
     /**
@@ -98,6 +100,7 @@ public:
                 .decodeIntegerType(m_compression_method)
                 .decodeIntegerType(side_code)
                 .decodeIntegerType(m_fragment_size)
+				.decode(m_extended_master_secret)
                 .decode(m_master_secret, ASN1Tag.OCTET_STRING)
                 .decode(peer_cert_bits, ASN1Tag.OCTET_STRING)
                 .decode(server_hostname)
@@ -157,6 +160,7 @@ public:
                 .encode(cast(size_t)(m_compression_method))
                 .encode(cast(size_t)(m_connection_side))
                 .encode(cast(size_t)(m_fragment_size))
+				.encode(m_extended_master_secret)
                 .encode(m_master_secret, ASN1Tag.OCTET_STRING)
                 .encode(peer_cert_bits, ASN1Tag.OCTET_STRING)
                 .encode(ASN1String(m_server_info.hostname(), ASN1Tag.UTF8_STRING))
@@ -264,6 +268,8 @@ public:
     */
     size_t fragmentSize() const { return m_fragment_size; }
 
+	bool supportsExtendedMasterSecret() const { return m_extended_master_secret; }
+
     /**
     * Return the certificate chain of the peer (possibly empty)
     */
@@ -296,7 +302,7 @@ public:
 
 private:
 
-    enum { TLS_SESSION_PARAM_STRUCT_VERSION = 0x2994e301 }
+    enum { TLS_SESSION_PARAM_STRUCT_VERSION = 20160103 }
 
     SysTime m_start_time;
 
@@ -314,4 +320,5 @@ private:
     Vector!X509Certificate m_peer_certs;
     TLSServerInformation m_server_info; // optional
     string m_srp_identifier; // optional
+    bool m_extended_master_secret;
 }
