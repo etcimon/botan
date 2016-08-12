@@ -231,6 +231,11 @@ public:
 
     const(TLSProtocolVersion) Version() const { return m_version; }
 
+    void setOriginalHandshakeHash(SecureVector!ubyte orig_hs_hash)
+    {
+        m_orig_hs_hash = orig_hs_hash.move();
+    }
+
     void setVersion(in TLSProtocolVersion _version)
     {
         m_version = _version;
@@ -302,6 +307,12 @@ public:
         noteMessage(*m_client_verify);
     }
     
+    void channelID(ChannelID channel_id)
+    {
+        m_channel_id = channel_id;
+        noteMessage(*m_channel_id);
+    }
+    
     void newSessionTicket(NewSessionTicket new_session_ticket)
     {
         m_new_session_ticket = new_session_ticket;
@@ -347,6 +358,9 @@ public:
     const(CertificateVerify) clientVerify() const
     { return *m_client_verify; }
 
+    const(ChannelID) channelID() const
+    { return *m_channel_id; }
+
     const(NewSessionTicket) newSessionTicket() const
     { return *m_new_session_ticket; }
 
@@ -369,6 +383,8 @@ public:
     {
         m_session_keys = TLSSessionKeys(this, resume_master_secret, true);
     }
+
+    ref const(SecureVector!ubyte) originalHandshakeHash() const { return m_orig_hs_hash; }
 
     ref HandshakeHash hash() { return m_handshake_hash; }
 
@@ -393,6 +409,8 @@ private:
     TLSCiphersuite m_ciphersuite;
     TLSSessionKeys m_session_keys;
     HandshakeHash m_handshake_hash;
+    // Used to save the original handshake hash in the session for ChannelID Resumption
+    SecureVector!ubyte m_orig_hs_hash;
 
     Unique!ClientHello m_client_hello;
     Unique!ServerHello m_server_hello;
@@ -403,6 +421,7 @@ private:
     Unique!Certificate m_client_certs;
     Unique!ClientKeyExchange m_client_kex;
     Unique!CertificateVerify m_client_verify;
+    Unique!ChannelID m_channel_id;
     Unique!NewSessionTicket m_new_session_ticket;
     Unique!Finished m_server_finished;
     Unique!Finished m_client_finished;

@@ -753,7 +753,7 @@ PointGFp OS2ECP()(const(ubyte)* data, size_t data_len, auto const ref CurveGFp c
         const size_t l = (data_len - 1) / 2;
         
         // hybrid form
-        x = BigInt.decode(&data[1], l);
+        x = BigInt.decode(&data[1], l); 
         y = BigInt.decode(&data[l+1], l);
         
         const bool y_mod_2 = ((pc & 0x01) == 1);

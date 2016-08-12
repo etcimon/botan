@@ -255,7 +255,8 @@ public:
             
             while (frag_offset != msg_bits.length)
             {
-                const size_t frag_len =    std.algorithm.min(msg_bits.length - frag_offset, parts_size);
+                import std.algorithm : min;
+                const size_t frag_len = min(msg_bits.length - frag_offset, parts_size);
                 auto frag = formatFragment(cast(const(ubyte)*)&msg_bits[frag_offset],
                     frag_len,
                     cast(ushort)frag_offset,

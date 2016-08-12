@@ -11,7 +11,7 @@
 module botan.tls.policy;
 
 import botan.constants;
-static if (BOTAN_HAS_TLS):
+//static if (BOTAN_HAS_TLS):
 
 import botan.tls.version_;
 import botan.tls.ciphersuite;
@@ -26,6 +26,7 @@ import std.algorithm : uniq, sort;
 import std.array : array, Appender;
 import std.conv : to;
 import botan.utils.types;
+public import botan.tls.extensions;
 
 /**
 * TLSPolicy Base Class
@@ -34,6 +35,23 @@ import botan.utils.types;
 class TLSPolicy
 {
 public:
+	Vector!HandshakeExtensionType enabledExtensions() const {
+		return Vector!HandshakeExtensionType([TLSEXT_SAFE_RENEGOTIATION,
+				TLSEXT_SERVER_NAME_INDICATION,
+				TLSEXT_EC_POINT_FORMATS,
+				TLSEXT_USABLE_ELLIPTIC_CURVES,
+				TLSEXT_EXTENDED_MASTER_SECRET,
+				TLSEXT_SESSION_TICKET,
+				TLSEXT_SIGNATURE_ALGORITHMS,
+				TLSEXT_STATUS_REQUEST,
+				TLSEXT_NPN,
+				TLSEXT_SIGNED_CERT_TIMESTAMP,
+				TLSEXT_ALPN,
+				TLSEXT_CHANNEL_ID,
+				TLSEXT_SRP_IDENTIFIER,
+				TLSEXT_HEARTBEAT_SUPPORT,
+				TLSEXT_MAX_FRAGMENT_LENGTH]);
+	}
 
     /**
     * Returns a list of ciphers we are willing to negotiate, in

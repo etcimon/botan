@@ -376,9 +376,23 @@ public:
             state.handshakeIo().send(scoped!ChangeCipherSpec());
             
             changeCipherSpecWriter(CLIENT);
-            
+
+            // Setup channelID
+            bool supports_channel_id = state.clientHello().supportsChannelID() && state.serverHello().supportsChannelID();
+            if (supports_channel_id) {
+                state.channelID(new ChannelID(state.handshakeIo(),
+                        state.hash(),
+                        m_creds, 
+                        m_info.hostname, 
+                        state.hash().flushInto(state.Version(), state.ciphersuite().prfAlgo())
+                        ));
+            }
+
             state.clientFinished(new Finished(state.handshakeIo(), state, CLIENT));
-            
+
+            if (supports_channel_id)
+                state.setOriginalHandshakeHash(state.hash().flushInto(state.Version(), state.ciphersuite().prfAlgo()));
+
             if (state.serverHello().supportsSessionTicket())
                 state.setExpectedNext(NEW_SESSION_TICKET);
             else
@@ -395,6 +409,7 @@ public:
             state.setExpectedNext(FINISHED);
             
             changeCipherSpecReader(CLIENT);
+
         }
         else if (type == FINISHED)
         {
@@ -410,7 +425,25 @@ public:
                 state.handshakeIo().send(scoped!ChangeCipherSpec());
                 
                 changeCipherSpecWriter(CLIENT);
-                
+
+                // Setup Resumption ChannelID
+                if (state.clientHello().supportsChannelID() && state.serverHello().supportsChannelID()) 
+                {
+                    TLSSession sess;
+                    scope(exit) if (sess) sess.destroy();
+                    if (sessionManager() && sessionManager().loadFromSessionId(state.serverHello().sessionId(), sess))
+                    {
+                        state.setOriginalHandshakeHash(sess.originalHandshakeHash().dup());
+                        state.channelID(new ChannelID(state.handshakeIo(),
+                                state.hash(),
+                                m_creds, 
+                                m_info.hostname,
+                                state.hash().flushInto(state.Version(), state.ciphersuite().prfAlgo()),
+                                state.originalHandshakeHash().dup
+                                ));
+                    }
+                }
+                // todo: Else if the session was supposed to use it, fail?
                 state.clientFinished(new Finished(state.handshakeIo(), state, CLIENT));
             }
             
@@ -423,6 +456,7 @@ public:
 
             auto session_info =   new TLSSession(session_id.dup,
                                                  state.sessionKeys().masterSecret().dup,
+                                                 state.originalHandshakeHash().dup(),
                                                  state.serverHello().Version(),
                                                  state.serverHello().ciphersuite(),
                                                  state.serverHello().compressionMethod(),
@@ -481,6 +515,5 @@ public:
     
     // Used during session resumption
     SecureVector!ubyte resume_master_secret;
-    
     Unique!PublicKey server_public_key;
 }
