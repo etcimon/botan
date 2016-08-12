@@ -238,7 +238,18 @@ protected:
                                                   m_application_protocol,
                                                   state.clientHello().supportsHeartbeats(),
                                                   rng()));
-                
+
+                // Load ChannelID Original Handshake Hash
+                if (state.clientHello().supportsChannelID() && state.serverHello().supportsChannelID()) 
+                {
+                    TLSSession sess;
+                    scope(exit) if (sess) sess.destroy();
+                    if (sessionManager() && sessionManager().loadFromSessionId(state.clientHello().sessionId(), sess))
+                    {
+                        state.setOriginalHandshakeHash(sess.originalHandshakeHash().dup());
+                    }
+                }
+
                 secureRenegotiationCheck(state.serverHello());
                 
                 state.computeSessionKeys(session_info.masterSecret().dup);
@@ -323,7 +334,7 @@ protected:
                                         rng()
                     )
                 );
-                
+
                 secureRenegotiationCheck(state.serverHello());
                 
                 const string sig_algo = state.ciphersuite().sigAlgo();
@@ -444,9 +455,17 @@ protected:
         }
         else if (type == HANDSHAKE_CCS)
         {
+
+            if (state.originalHandshakeHash().length == 0)
+                state.setExpectedNext(FINISHED);
+            else state.setExpectedNext(CHANNEL_ID);
+
+            changeCipherSpecReader(SERVER);            
+        }
+        else if (type == CHANNEL_ID) {
+            // TODO: decode and verify
+
             state.setExpectedNext(FINISHED);
-            changeCipherSpecReader(SERVER);
-            
         }
         else if (type == FINISHED)
         {
@@ -459,12 +478,18 @@ protected:
             
             if (!state.serverFinished())
             {
+
                 // already sent finished if resuming, so this is a new session
                 
                 state.hash().update(state.handshakeIo().format(contents, type));
-                
+
+                // Save Handshake Hash for ChannelID validation
+                if (state.clientHello().supportsChannelID() && state.serverHello().supportsChannelID())
+                    state.setOriginalHandshakeHash(state.hash().flushInto(state.Version(), state.ciphersuite().prfAlgo()));
+
                 auto session_info =   new TLSSession(state.serverHello().sessionId().dup,
                                                      state.sessionKeys().masterSecret().dup,
+                                                     state.originalHandshakeHash().dup,
                                                      state.serverHello().Version(),
                                                      state.serverHello().ciphersuite(),
                                                      state.serverHello().compressionMethod(),

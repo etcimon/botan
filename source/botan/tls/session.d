@@ -42,6 +42,7 @@ public:
     */
     this(Vector!ubyte session_identifier,
          SecureVector!ubyte master_secret,
+         SecureVector!ubyte orig_hs_hash,
          TLSProtocolVersion _version,
          ushort ciphersuite,
          ubyte compression_method,
@@ -57,6 +58,7 @@ public:
         m_identifier = session_identifier.move();
         m_session_ticket = ticket.move();
         m_master_secret = master_secret.move();
+        m_orig_hs_hash = orig_hs_hash.move();
         m_version = _version;
         m_ciphersuite = ciphersuite;
         m_compression_method = compression_method;
@@ -102,6 +104,7 @@ public:
                 .decodeIntegerType(m_fragment_size)
 				.decode(m_extended_master_secret)
                 .decode(m_master_secret, ASN1Tag.OCTET_STRING)
+                .decode(m_orig_hs_hash, ASN1Tag.OCTET_STRING)
                 .decode(peer_cert_bits, ASN1Tag.OCTET_STRING)
                 .decode(server_hostname)
                 .decode(server_service)
@@ -162,6 +165,7 @@ public:
                 .encode(cast(size_t)(m_fragment_size))
 				.encode(m_extended_master_secret)
                 .encode(m_master_secret, ASN1Tag.OCTET_STRING)
+                .encode(m_orig_hs_hash, ASN1Tag.OCTET_STRING)
                 .encode(peer_cert_bits, ASN1Tag.OCTET_STRING)
                 .encode(ASN1String(m_server_info.hostname(), ASN1Tag.UTF8_STRING))
                 .encode(ASN1String(m_server_info.service(), ASN1Tag.UTF8_STRING))
@@ -268,7 +272,15 @@ public:
     */
     size_t fragmentSize() const { return m_fragment_size; }
 
+    /**
+    * Returns whether the session was negotiated with an extended master secret
+    */
 	bool supportsExtendedMasterSecret() const { return m_extended_master_secret; }
+
+    /**
+     * Get the original handshake hash (For ChannelID Resumption)
+     */
+    ref const(SecureVector!ubyte) originalHandshakeHash() const { return m_orig_hs_hash; }
 
     /**
     * Return the certificate chain of the peer (possibly empty)
@@ -302,7 +314,7 @@ public:
 
 private:
 
-    enum { TLS_SESSION_PARAM_STRUCT_VERSION = 20160103 }
+    enum { TLS_SESSION_PARAM_STRUCT_VERSION = 20160808 }
 
     SysTime m_start_time;
 
@@ -321,4 +333,5 @@ private:
     TLSServerInformation m_server_info; // optional
     string m_srp_identifier; // optional
     bool m_extended_master_secret;
+    SecureVector!ubyte m_orig_hs_hash;
 }

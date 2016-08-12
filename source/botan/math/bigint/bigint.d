@@ -1183,10 +1183,7 @@ public:
         const size_t n_bytes = n.bytes();
         if (n_bytes > bytes)
             throw new EncodingError("encode1363: n is too large to encode properly");
-		logDebug("n.bytes: ", n.bytes().to!string);
-		logDebug("N_bytes: ", n_bytes.to!string);
         const size_t leading_0s = bytes - n_bytes;
-		logDebug("Leading 0s: ", leading_0s.to!string);
         SecureVector!ubyte output = SecureVector!ubyte(bytes);
         encode(output.ptr + leading_0s, n, Binary);
         return output;

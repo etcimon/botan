@@ -11,23 +11,9 @@
 module botan.tls.extensions;
 
 import botan.constants;
-static if (BOTAN_HAS_TLS):
-package:
-
-import memutils.vector;
-import botan.tls.magic;
-import botan.utils.types;
-import memutils.hashmap;
-import botan.tls.reader;
-import botan.tls.exceptn;
-import botan.tls.alert;
-import botan.utils.types : Unique;
-import botan.utils.get_byte;
-import std.conv : to;
-import std.array : Appender;
-
-alias ushort HandshakeExtensionType;
-enum : HandshakeExtensionType {
+//static if (BOTAN_HAS_TLS):
+public alias ushort HandshakeExtensionType;
+public enum : HandshakeExtensionType {
     TLSEXT_SERVER_NAME_INDICATION    = 0,
     TLSEXT_MAX_FRAGMENT_LENGTH       = 1,
     TLSEXT_CLIENT_CERT_URL           = 2,
@@ -43,6 +29,7 @@ enum : HandshakeExtensionType {
     TLSEXT_HEARTBEAT_SUPPORT         = 15,
     TLSEXT_ALPN                      = 16,
 	TLSEXT_SIGNED_CERT_TIMESTAMP     = 18,
+	TLSEXT_PADDING                   = 21,
 	TLSEXT_EXTENDED_MASTER_SECRET    = 23,
 
     TLSEXT_SESSION_TICKET            = 35,
@@ -53,6 +40,20 @@ enum : HandshakeExtensionType {
 
     TLSEXT_SAFE_RENEGOTIATION        = 65281,
 }
+
+package:
+
+import memutils.vector;
+import botan.tls.magic;
+import botan.utils.types;
+import memutils.hashmap;
+import botan.tls.reader;
+import botan.tls.exceptn;
+import botan.tls.alert;
+import botan.utils.types : Unique;
+import botan.utils.get_byte;
+import std.conv : to;
+import std.array : Appender;
 
 /**
 * Base class representing a TLS extension of some kind
@@ -102,7 +103,7 @@ class StatusRequest : Extension
 	override Vector!ubyte serialize() const
 	{
 		Vector!ubyte buf;
-		buf.reserve(3);
+		buf.reserve(5);
 		buf.pushBack(0x01); // OCSP
 
 		// Responders
@@ -165,19 +166,102 @@ public:
 /**
 * Channel ID
 */
-class ChannelID : Extension
+class ChannelIDSupport : Extension
 {
 public:
-	static HandshakeExtensionType staticType() { return TLSEXT_CHANNEL_ID; }
-	
-	override HandshakeExtensionType type() const { return staticType(); }
-	
-	override Vector!ubyte serialize() const
-	{
-		return Vector!ubyte();
-	}
-	
-	override @property bool empty() const { return false; }
+    static HandshakeExtensionType staticType() { return TLSEXT_CHANNEL_ID; }
+    
+    override HandshakeExtensionType type() const { return staticType(); }
+    
+    override Vector!ubyte serialize() const
+    {
+        return Vector!ubyte();
+    }
+
+    this() {}
+
+    this(ref TLSDataReader reader, ushort extension_size)
+    {
+        /*
+        * This is used by the server to confirm that it supports Channel ID
+        */
+    }
+        
+    override @property bool empty() const { return false; }
+    
+}
+/**
+* Channel ID
+*/
+class EncryptedChannelID : Extension
+{
+    import botan.pubkey.pk_keys;
+    import botan.pubkey.algo.ecdsa;
+    import botan.math.bigint.bigint;
+public:
+    static HandshakeExtensionType staticType() { return TLSEXT_CHANNEL_ID; }
+    
+    override HandshakeExtensionType type() const { return staticType(); }
+  
+
+    this(PrivateKey pkey, SecureVector!ubyte hs_hash, SecureVector!ubyte orig_hs_hash) {
+        m_priv = pkey;
+        m_hs_hash = hs_hash.move();
+        m_orig_hs_hash = orig_hs_hash.move();
+    }
+    
+    this(ref TLSDataReader reader, ushort extension_size)
+    {
+        /*
+        * The (x,y) pubkey verifies the info and its hash will be saved and used as a machine identifier
+        */
+    }
+
+    override Vector!ubyte serialize() const
+    {
+        Vector!ubyte buf;
+        static string magic = "TLS Channel ID signature\x00";
+        static string resume_magic = "Resumption\x00";
+        buf.reserve(32*4);
+        SecureVector!ubyte concat = cast(ubyte[])magic;
+
+        if (m_orig_hs_hash.length > 0) {
+            concat.reserve(128);
+            concat ~= resume_magic;
+            concat ~= m_orig_hs_hash[];
+        }
+
+        concat ~= m_hs_hash[];
+        import botan.libstate.lookup;
+        Unique!HashFunction sha256 = retrieveHash("SHA-256").clone();
+        sha256.update(concat[]);
+        SecureVector!ubyte channel_id_hash = sha256.finished();
+        ECDSAPrivateKey ecdsa_priv = ECDSAPrivateKey(m_priv);
+        const BigInt x = ecdsa_priv.publicPoint().getAffineX();
+        const BigInt y = ecdsa_priv.publicPoint().getAffineY();
+        import std.algorithm : max;
+        size_t part_size = max(x.bytes(), y.bytes());
+        enforce(part_size <= 32);
+        Vector!ubyte bits = Vector!ubyte(64);
+        
+        x.binaryEncode(bits.ptr);
+        y.binaryEncode(bits.ptr + 32);
+
+        buf ~= bits[];
+        auto signer = scoped!ECDSASignatureOperation(ecdsa_priv);
+        import botan.rng.auto_rng : AutoSeededRNG;
+        auto rng = scoped!AutoSeededRNG();
+        auto sig = signer.sign(channel_id_hash.ptr, channel_id_hash.length, rng).unlock();
+        buf ~= sig;
+        return buf.move();
+    }
+
+    override @property bool empty() const { return false; }
+
+private:
+    PrivateKey m_priv;
+    SecureVector!ubyte m_orig_hs_hash;
+    SecureVector!ubyte m_hs_hash;
 }
 
 /**
@@ -193,8 +277,8 @@ public:
 	override Vector!ubyte serialize() const
 	{
 		Vector!ubyte buf;
-		buf.reserve(3);
-		buf.pushBack(0x01); // 1 point
+		buf.reserve(4);
+		buf.pushBack(0x01); // 1 point format
 
 		//uncompressed
 		buf.pushBack(0x00);
@@ -355,7 +439,7 @@ public:
         return buf.move();
     }
 
-    override @property bool empty() const { return false; } // always send this
+    override @property bool empty() const { return m_reneg_data.empty; }
 
 private:
     Vector!ubyte m_reneg_data;
@@ -565,6 +649,40 @@ public:
     {
         switch(id)
         {
+			/*
+			 * unsupported 
+			 */
+			case 1:
+				return "sect163k1";
+			case 2:
+				return "sect163r1";
+			case 3:
+				return "sect163r2";
+			case 4:
+				return "sect193r1";
+			case 5:
+				return "sect193r2";
+			case 6:
+				return "sect233k1";
+			case 7:
+				return "sect233r1";
+			case 8:
+				return "sect239k1";
+			case 9:
+				return "sect283k1";
+			case 10:
+				return "sect283r1";
+			case 11:
+				return "sect409k1";
+			case 12:
+				return "sect409r1";
+			case 13:
+				return "sect571k1";
+			case 14:
+				return "sect571r1";
+			/*
+			 * supported
+			 */
             case 15:
                 return "secp160k1";
             case 16:
@@ -595,6 +713,7 @@ public:
                 return "brainpool512r1";
 			case 29:
 				return "x25519";
+			
             default:
                 return id.to!string; // something we don't know or support
         }
@@ -602,6 +721,41 @@ public:
 
     static ushort nameToCurveId(in string name)
     {
+		/*
+		 * unsupported 
+		 */
+		if (name == "sect163k1")
+			return 1;
+		if (name == "sect163r1")
+			return 2;
+		if (name == "sect163r2")
+			return 3;
+		if (name == "sect193r1")
+			return 4;
+		if (name == "sect193r2")
+			return 5;
+		if (name == "sect233k1")
+			return 6;
+		if (name == "sect233r1")
+			return 7;
+		if (name == "sect239k1")
+			return 8;
+		if (name == "sect283k1")
+			return 9;
+		if (name == "sect283r1")
+			return 10;
+		if (name == "sect409k1")
+			return 11;
+		if (name == "sect409r1")
+			return 12;
+		if (name == "sect571k1")
+			return 13;
+		if (name == "sect571r1")
+			return 14;
+
+		/*
+		 * supported
+		 */
         if (name == "secp160k1")
             return 15;
         if (name == "secp160r1")
@@ -1065,7 +1219,10 @@ Extension makeExtension(ref TLSDataReader reader, ushort code, ushort size)
             
         case TLSEXT_SESSION_TICKET:
             return new SessionTicket(reader, size);
-            
+           
+		case TLSEXT_CHANNEL_ID:
+			return new ChannelIDSupport(reader, size);
+
         default:
             return null; // not known
     }

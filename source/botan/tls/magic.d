@@ -58,6 +58,7 @@ enum : HandshakeType {
     CERTIFICATE_URL       = 21,
     CERTIFICATE_STATUS    = 22,
 
+    CHANNEL_ID            = 203,
     HANDSHAKE_CCS         = 254, // Not a wire value
     HANDSHAKE_NONE        = 255  // Null value
 }

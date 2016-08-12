@@ -20,6 +20,7 @@ import botan.algo_base.symkey;
 import botan.tls.credentials_manager;
 import botan.cert.x509.x509path;
 import botan.utils.types;
+import botan.pubkey.algo.ecdsa;
 
 /**
 * Interface for a credentials manager.
@@ -242,6 +243,18 @@ public:
 	abstract bool hasPsk() {
 		return false;
 	}
+        
+    /// In TLSClient, identifies this machine with the server
+    PrivateKey channelPrivateKey(string hostname) const
+    {
+        import botan.rng.auto_rng;
+        static ECDSAPrivateKey[string] pkey_saved;
+        if (hostname !in pkey_saved) {
+            auto rng = scoped!AutoSeededRNG();
+            pkey_saved[hostname] = ECDSAPrivateKey(rng, ECGroup("secp256r1"));
+        }
+        return *pkey_saved[hostname];
+    }
 
     /**
     * Params:

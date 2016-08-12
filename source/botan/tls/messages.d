@@ -11,7 +11,7 @@
 module botan.tls.messages;
 
 import botan.constants;
-static if (BOTAN_HAS_TLS):
+//static if (BOTAN_HAS_TLS):
 package:
 
 import botan.tls.handshake_state;
@@ -262,6 +262,11 @@ public:
         return false;
     }
 
+    bool supportsChannelID() const
+    {
+        return m_extensions.get!ChannelIDSupport() !is null;
+    }
+
     void updateHelloCookie(in HelloVerifyRequest hello_verify)
     {
         if (!m_version.isDatagramProtocol())
@@ -290,40 +295,71 @@ public:
 
         bool reneg_empty = reneg_info.empty;
         m_version = _version;
+
+		assert(policy.acceptableProtocolVersion(_version), "Our policy accepts the version we are offering");
+
         m_random = makeHelloRandom(rng, policy);
         m_suites = policy.ciphersuiteList(m_version, (srp_identifier != ""));
         m_comp_methods = policy.compression();
 
-		m_extensions.add(new RenegotiationExtension(reneg_info.move()));
-		m_extensions.add(new ServerNameIndicator(hostname));
+		foreach (extension_; policy.enabledExtensions()) {
+			switch (extension_) {
+				case TLSEXT_SAFE_RENEGOTIATION:
+					m_extensions.add(new RenegotiationExtension(reneg_info.move()));
+					break;
+				case TLSEXT_SERVER_NAME_INDICATION:
+					m_extensions.add(new ServerNameIndicator(hostname));
+					break;
+				case TLSEXT_EC_POINT_FORMATS:
+					m_extensions.add(new SupportedPointFormats);
+					break;
+				case TLSEXT_USABLE_ELLIPTIC_CURVES:
+					m_extensions.add(new SupportedEllipticCurves(policy.allowedEccCurves()));
+					break;
+				case TLSEXT_EXTENDED_MASTER_SECRET:
+					m_extensions.add(new ExtendedMasterSecret);
+					break;
+				case TLSEXT_SESSION_TICKET:
+					m_extensions.add(new SessionTicket());
+					break;
+				case TLSEXT_SIGNATURE_ALGORITHMS:
+					if (m_version.supportsNegotiableSignatureAlgorithms())
+						m_extensions.add(new SignatureAlgorithms(policy.allowedSignatureHashes(),
+							policy.allowedSignatureMethods()));
+					break;
+				case TLSEXT_STATUS_REQUEST: //todo: Complete support
+					m_extensions.add(new StatusRequest);
+					break;
+				case TLSEXT_NPN:
+					m_extensions.add(new NPN);
+					break;
+				case TLSEXT_SIGNED_CERT_TIMESTAMP:
+					m_extensions.add(new SignedCertificateTimestamp);
+					break;
+				case TLSEXT_ALPN:
+					if (reneg_empty && !next_protocols.empty)
+						m_extensions.add(new ApplicationLayerProtocolNotification(next_protocols.move));
+					break;
+				case TLSEXT_CHANNEL_ID:
+                    m_extensions.add(new ChannelIDSupport);
+					break;
+				case TLSEXT_SRP_IDENTIFIER:
+					m_extensions.add(new SRPIdentifier(srp_identifier));
+					break;
+				case TLSEXT_HEARTBEAT_SUPPORT:
+					if (policy.negotiateHeartbeatSupport())
+	            		m_extensions.add(new HeartbeatSupportIndicator(true));
+					break;
+                default:
+                    break;
+			}
 
-		m_extensions.add(new ExtendedMasterSecret);
-		m_extensions.add(new SessionTicket());
-
-		if (m_version.supportsNegotiableSignatureAlgorithms())
-			m_extensions.add(new SignatureAlgorithms(policy.allowedSignatureHashes(),
-					policy.allowedSignatureMethods()));
-		m_extensions.add(new StatusRequest);
-		m_extensions.add(new NPN);
-		m_extensions.add(new SignedCertificateTimestamp);
-
-		if (reneg_empty && !next_protocols.empty)
-			m_extensions.add(new ApplicationLayerProtocolNotification(next_protocols.move));
-		//m_extensions.add(new ChannelID);
-
-		m_extensions.add(new SupportedPointFormats);
-
-		m_extensions.add(new SupportedEllipticCurves(policy.allowedEccCurves()));
-
-        //m_extensions.add(new SRPIdentifier(srp_identifier));
-
-        if (policy.negotiateHeartbeatSupport())
-            m_extensions.add(new HeartbeatSupportIndicator(true));
-        
-        assert(policy.acceptableProtocolVersion(_version), "Our policy accepts the version we are offering");
+		}
 
         if (policy.sendFallbackSCSV(_version))
             m_suites.pushBack(TLS_FALLBACK_SCSV);
+        else m_suites.pushBack(TLS_EMPTY_RENEGOTIATION_INFO_SCSV);
+
         hash.update(io.send(this));
     }
 
@@ -352,26 +388,69 @@ public:
         if (!valueExists(m_comp_methods, session.compressionMethod()))
             m_comp_methods.pushBack(session.compressionMethod());
 
-		m_extensions.add(new ExtendedMasterSecret);
-        m_extensions.add(new RenegotiationExtension(reneg_info.move()));
-        m_extensions.add(new SRPIdentifier(session.srpIdentifier()));
-        m_extensions.add(new ServerNameIndicator(session.serverInfo().hostname()));
-        m_extensions.add(new SessionTicket(session.sessionTicket().dup));
-        m_extensions.add(new SupportedEllipticCurves(policy.allowedEccCurves()));
+		foreach (extension_; policy.enabledExtensions()) {
+			switch (extension_) {
+				case TLSEXT_SAFE_RENEGOTIATION:
+					m_extensions.add(new RenegotiationExtension(reneg_info.move()));
+					break;
+				case TLSEXT_SERVER_NAME_INDICATION:
+					m_extensions.add(new ServerNameIndicator(session.serverInfo().hostname()));
+					break;
+				case TLSEXT_EC_POINT_FORMATS:
+					m_extensions.add(new SupportedPointFormats);
+					break;
+				case TLSEXT_USABLE_ELLIPTIC_CURVES:
+					m_extensions.add(new SupportedEllipticCurves(policy.allowedEccCurves()));
+					break;
+				case TLSEXT_EXTENDED_MASTER_SECRET:
+					m_extensions.add(new ExtendedMasterSecret);
+					break;
+				case TLSEXT_SESSION_TICKET:
+					m_extensions.add(new SessionTicket(session.sessionTicket().dup));
+					break;
+				case TLSEXT_SIGNATURE_ALGORITHMS:
+					if (m_version.supportsNegotiableSignatureAlgorithms())
+						m_extensions.add(new SignatureAlgorithms(policy.allowedSignatureHashes(),
+								policy.allowedSignatureMethods()));
+					break;
+				case TLSEXT_STATUS_REQUEST: //todo: Complete support
+					m_extensions.add(new StatusRequest);
+					break;
+				case TLSEXT_NPN:
+					m_extensions.add(new NPN);
+					break;
+				case TLSEXT_SIGNED_CERT_TIMESTAMP:
+					m_extensions.add(new SignedCertificateTimestamp);
+					break;
+				case TLSEXT_ALPN:
+					if (reneg_empty && !next_protocols.empty)
+						m_extensions.add(new ApplicationLayerProtocolNotification(next_protocols.move));
+					break;
+				case TLSEXT_CHANNEL_ID:
+                    m_extensions.add(new ChannelIDSupport);
+					break;
+				case TLSEXT_SRP_IDENTIFIER:
+					m_extensions.add(new SRPIdentifier(session.srpIdentifier()));
+					break;
+				case TLSEXT_HEARTBEAT_SUPPORT:
+					if (policy.negotiateHeartbeatSupport())
+						m_extensions.add(new HeartbeatSupportIndicator(true));
+					break;
+				case TLSEXT_MAX_FRAGMENT_LENGTH:
+					if (session.fragmentSize() != 0)
+						m_extensions.add(new MaximumFragmentLength(session.fragmentSize()));
+					break;
+                default:
+                    break;
+			}
+		}
+
         
-        if (policy.negotiateHeartbeatSupport())
-            m_extensions.add(new HeartbeatSupportIndicator(true));
-        
-        if (session.fragmentSize() != 0)
-            m_extensions.add(new MaximumFragmentLength(session.fragmentSize()));
-        
-        if (m_version.supportsNegotiableSignatureAlgorithms())
-            m_extensions.add(new SignatureAlgorithms(policy.allowedSignatureHashes(),
-                                                      policy.allowedSignatureMethods()));
-        
-        if (reneg_empty && !next_protocols.empty)
-            m_extensions.add(new ApplicationLayerProtocolNotification(next_protocols.move));
-        
+        if (policy.sendFallbackSCSV(m_version))
+            m_suites.pushBack(TLS_FALLBACK_SCSV);
+        else
+            m_suites.pushBack(TLS_EMPTY_RENEGOTIATION_INFO_SCSV);
+
         hash.update(io.send(this));
     }
 	bool deserialized;
@@ -424,7 +503,23 @@ protected:
         */
         
         auto vec = m_extensions.serialize();
-		buf ~= vec[];
+        // pad when between 256 and 511 (inclusive) bytes long
+        if ((buf.length+4) + vec.length <= 511 &&  (buf.length+4) + vec.length >= 256)
+        {
+            long pad = 512L - cast(long)vec.length - (cast(long)buf.length+4L) - 4L;
+            if (pad <= 0)
+                pad = 1;
+            ushort extn_size = cast(ushort)(vec.length+pad+4-2);
+            vec[0] = get_byte(0, extn_size);
+            vec[1] = get_byte(1, extn_size);
+            vec.pushBack(get_byte(0, cast(ushort) 21));
+            vec.pushBack(get_byte(1, cast(ushort) 21)); // padding extension identifier
+            vec.pushBack(get_byte(0, cast(ushort) pad));
+            vec.pushBack(get_byte(1, cast(ushort) pad));
+            foreach (i; 0 .. pad)
+                vec ~= cast(ubyte)0x00;
+        }
+        buf ~= vec[];
 
         return buf.move();
     }
@@ -550,6 +645,11 @@ public:
         return m_extensions.get!HeartbeatSupportIndicator() !is null;
     }
 
+    bool supportsChannelID() const
+    {
+        return m_extensions.get!ChannelIDSupport() !is null;
+    }
+
     bool peerCanSendHeartbeats() const
     {
         if (auto hb = m_extensions.get!HeartbeatSupportIndicator())
@@ -622,7 +722,7 @@ public:
     {
         if (buf.length < 38)
             throw new DecodingError("ServerHello: Packet corrupted");
-        
+
         TLSDataReader reader = TLSDataReader("ServerHello", buf);
         
         const ubyte major_version = reader.get_byte();
@@ -633,7 +733,7 @@ public:
         m_random = reader.getFixed!ubyte(32);
 
         m_session_id = reader.getRange!ubyte(1, 0, 32);
-        
+
         m_ciphersuite = reader.get_ushort();
         
         m_comp_method = reader.get_byte();
@@ -1805,7 +1905,47 @@ protected:
 }
 
 /**
-* New TLSSession Ticket Message
+ * New EncryptedExtensions Message used mainly for ChannelIDExtension
+ */
+final class ChannelID : HandshakeMessage
+{
+    override const(HandshakeType) type() const { return CHANNEL_ID; }
+
+    this(HandshakeIO io, 
+         ref HandshakeHash hash,
+         in TLSCredentialsManager creds, 
+         string hostname, 
+         SecureVector!ubyte hs_hash,
+         SecureVector!ubyte orig_hs_hash = SecureVector!ubyte())
+    {
+        m_channel_id = new EncryptedChannelID(creds.channelPrivateKey(hostname), hs_hash.move(), orig_hs_hash.move());
+        hash.update(io.send(this));
+    }
+
+    override Vector!ubyte serialize() const
+    {
+        Vector!ubyte buf;
+        buf.reserve(130);
+
+        const ushort extn_code = m_channel_id.type();
+        const Vector!ubyte extn_val = m_channel_id.serialize();
+        
+        buf.pushBack(get_byte(0, extn_code));
+        buf.pushBack(get_byte(1, extn_code));
+        
+        buf.pushBack(get_byte(0, cast(ushort) extn_val.length));
+        buf.pushBack(get_byte(1, cast(ushort) extn_val.length));
+        
+        buf ~= extn_val[];
+        return buf.move();
+    }
+
+private:
+    Unique!EncryptedChannelID m_channel_id;
+}
+
+/**
+* New TLS Session Ticket Message
 */
 final class NewSessionTicket : HandshakeMessage
 {
