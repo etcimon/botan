@@ -153,6 +153,7 @@ public:
     X509Certificate trustRoot() const
     {
         import std.range : back;
+        if (m_cert_path.length == 0) return X509Certificate.init;
         return m_cert_path[].back;
     }
 
@@ -298,7 +299,7 @@ PathValidationResult
     CertificateStore cert_store = cast(CertificateStore)*extra;
 	size_t i;
     // iterate until we reach a root or cannot find the issuer
-    while (!cert_path.back().isSelfSigned() && ++i < max_iterations)
+    while (!cert_path.back().isSelfSigned() && !cert_path.back().isCACert() && ++i < max_iterations)
     {
         X509Certificate cert = findIssuingCert(cert_path.back(), cert_store, certstores);
         if (!cert) {
@@ -371,6 +372,7 @@ X509Certificate findIssuingCert(in X509Certificate cert_,
 
     foreach (certstore; certstores[])
     {
+
         if (X509Certificate cert = certstore.findCert(issuer_dn, auth_key_id))
             return cert;
     }

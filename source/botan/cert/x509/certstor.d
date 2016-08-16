@@ -39,6 +39,7 @@ public:
 
     final bool certificateKnown(in X509Certificate cert) const
     {
+        if (!*cert) return false;
 		auto cert_ = findCert(cert.subjectDn(), cert.subjectKeyId());
 		if (!*cert_) return false;
         return cert_ != X509Certificate.init;
@@ -181,7 +182,6 @@ X509Certificate certSearch(in X509DN subject_dn,
         if (key_id.length)
         {
             const Vector!ubyte skid = cert.subjectKeyId();
-            
             if (skid.length && skid != key_id) // no match
                 continue;
         }

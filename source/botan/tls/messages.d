@@ -1913,7 +1913,7 @@ final class ChannelID : HandshakeMessage
 
     this(HandshakeIO io, 
          ref HandshakeHash hash,
-         in TLSCredentialsManager creds, 
+         TLSCredentialsManager creds, 
          string hostname, 
          SecureVector!ubyte hs_hash,
          SecureVector!ubyte orig_hs_hash = SecureVector!ubyte())

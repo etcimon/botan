@@ -290,32 +290,6 @@ class TestPolicy : TLSPolicy
 public:
     override bool acceptableProtocolVersion(TLSProtocolVersion) const { return true; }
 	override bool sendFallbackSCSV(in TLSProtocolVersion) const { return false; }
-
-	override Vector!ushort ciphersuiteList(TLSProtocolVersion _version, bool have_srp) const
-	{
-		return Vector!ushort(cast(ushort[])[0xCCA9, 0xCCA8, 0xCC14, 0xCC13, 0xC02B, 0xC02F, 0xC00A, 0xC014, 0xC009, 0xC013, 0x009C, 0x0035, 0x002F, 0x000A]);
-	}
-	override Vector!string allowedSignatureHashes() const
-	{
-		return Vector!string([
-				"SHA-512",
-				"SHA-384",
-				"SHA-256",
-				"SHA-224",
-				"SHA-1"
-			]);
-	}
-	override Vector!string allowedSignatureMethods() const
-	{
-		return Vector!string([
-				"RSA",
-				"ECDSA"
-			]);
-	}
-	override Vector!string allowedEccCurves() const
-	{
-		return Vector!string(["secp256r1","secp384r1"]);
-	}
 }
 
 static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest

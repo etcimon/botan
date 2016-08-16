@@ -245,7 +245,7 @@ public:
 	}
         
     /// In TLSClient, identifies this machine with the server
-    PrivateKey channelPrivateKey(string hostname) const
+    PrivateKey channelPrivateKey(string hostname)
     {
         import botan.rng.auto_rng;
         static ECDSAPrivateKey[string] pkey_saved;
