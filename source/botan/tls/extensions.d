@@ -11,7 +11,7 @@
 module botan.tls.extensions;
 
 import botan.constants;
-//static if (BOTAN_HAS_TLS):
+static if (BOTAN_HAS_TLS):
 public alias ushort HandshakeExtensionType;
 public enum : HandshakeExtensionType {
     TLSEXT_SERVER_NAME_INDICATION    = 0,

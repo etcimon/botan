@@ -11,7 +11,7 @@
 module botan.tls.messages;
 
 import botan.constants;
-//static if (BOTAN_HAS_TLS):
+static if (BOTAN_HAS_TLS):
 package:
 
 import botan.tls.handshake_state;

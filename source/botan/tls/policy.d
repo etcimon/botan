@@ -11,7 +11,7 @@
 module botan.tls.policy;
 
 import botan.constants;
-//static if (BOTAN_HAS_TLS):
+static if (BOTAN_HAS_TLS):
 
 import botan.tls.version_;
 import botan.tls.ciphersuite;

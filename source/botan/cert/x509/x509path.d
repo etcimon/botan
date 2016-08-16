@@ -299,7 +299,7 @@ PathValidationResult
     CertificateStore cert_store = cast(CertificateStore)*extra;
 	size_t i;
     // iterate until we reach a root or cannot find the issuer
-    while (!cert_path.back().isSelfSigned() && !cert_path.back().isCACert() && ++i < max_iterations)
+    while (!cert_path.back().isSelfSigned() && ++i < max_iterations)
     {
         X509Certificate cert = findIssuingCert(cert_path.back(), cert_store, certstores);
         if (!cert) {
