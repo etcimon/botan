@@ -1296,7 +1296,8 @@ public:
         m_cert_key_types = [ "RSA", "DSA", "ECDSA" ];
 		static Vector!( Pair!(string, string)  ) last_supported_algos;
 		static TLSPolicy last_tls_policy;
-		if (policy is last_tls_policy)
+        static TLSProtocolVersion last_version;
+		if (policy is last_tls_policy && _version == last_version)
 			m_supported_algos = last_supported_algos.dup;
 		else {
 			m_supported_algos.reserve(16);
@@ -1310,6 +1311,7 @@ public:
 	                    m_supported_algos.pushBack(makePair(hashes[i], sigs[j]));
 	        }
 			last_tls_policy = cast() policy;
+            last_version = _version;
 			last_supported_algos = m_supported_algos.dup;
 		}
         
