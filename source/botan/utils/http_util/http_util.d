@@ -26,8 +26,6 @@ version (Have_vibe_d) {
     import vibe.stream.operations : readAll;
 } else {*/
     import std.socket;
-    import std.stream;
-    import std.socketstream;
 //}
 // import string;
 
@@ -249,17 +247,17 @@ string httpTransact(in string hostname, in string message)
     } else {*/
         Socket socket = new TcpSocket(new InternetAddress(hostname, 80));
         scope(exit) socket.close();
-        SocketStream stream = new SocketStream(socket);
-        stream.writeString(message);
+        socket.send(message);
 
         Appender!string in_buf;
         // Skip HTTP header.
         while (true)
         {
-            auto line = stream.readLine();
-            if (!line.length)
+            char[1024] buffer;
+            auto n = socket.receive(buffer);
+            if (n <= 0)
                 break;
-            in_buf ~= line;
+            in_buf ~= buffer[0..n];
         }
         return in_buf.data;
  //   }
