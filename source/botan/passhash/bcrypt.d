@@ -12,7 +12,6 @@ module botan.passhash.bcrypt;
 
 import botan.constants;
 static if (BOTAN_HAS_BCRYPT && BOTAN_HAS_BLOWFISH):
-version(none):
 import botan.rng.rng;
 import botan.utils.loadstor;
 import botan.block.blowfish;
