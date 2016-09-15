@@ -77,8 +77,12 @@ string[] listDir(string dir_path)
     return files;
 }
 
+import std.datetime : StopWatch;
+StopWatch g_sw;
+
 size_t runTestsInDir(string dir, size_t delegate(string) fn)
 {
+
     assert(exists(cast(char[])dir), "Directory `" ~ dir ~ "` does not exist");
     logTrace("Running tests for directory: " ~ dir);
     import std.parallelism;
@@ -97,10 +101,12 @@ size_t runTestsInDir(string dir, size_t delegate(string) fn)
 
 void testReport(string name, size_t ran, size_t failed)
 {    
+	static long last_msecs;
     if (failed)
         logError(name, " ... ", failed, " / ", ran, " ************** FAILED ****************");
     else
-        logDebug(name, " ... PASSED (all of ", ran, " tests)");
+		logDebug(name, " ... PASSED (all of ", ran, " tests in ", g_sw.peek().msecs() - last_msecs, " msecs)");
+	last_msecs = g_sw.peek().msecs();
 }
 
 size_t runTestsBb(ref File src,
@@ -109,12 +115,14 @@ size_t runTestsBb(ref File src,
                   bool clear_between_cb,
                   size_t delegate(ref HashMap!(string, string)) cb)
 {
+
     if (src.eof || src.error)
     {
         logError("Could not open input file for " ~ name_key);
         return 1;
     }
-    
+	if (!g_sw.running)
+		g_sw.start();
     HashMap!(string, string) vars;
     vars[name_key] = name_key;
     size_t test_fails = 0, algo_fail = 0;
@@ -205,7 +213,7 @@ size_t runTests(string filename,
                  string delegate(ref HashMap!(string, string)) cb)
 {
     File vec = File(filename, "r");
-    
+
     if (vec.error || vec.eof)
     {
         logError("Failure opening " ~ filename);
