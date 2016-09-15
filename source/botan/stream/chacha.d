@@ -83,8 +83,6 @@ public:
         if (CPUID.hasSse2())
 			chachaSSE2x4(*cast(ubyte[64*4]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
 		else chachax4(*cast(ubyte[64*4]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
-        ++m_state[12];
-        m_state[13] += (m_state[12] == 0);
         
         m_position = 0;
     }
@@ -170,7 +168,7 @@ enum string CHACHA_QUARTER_ROUND(alias _a, alias _b, alias _c, alias _d) = q{
     %3$s += %4$s; %2$s ^= %3$s; %2$s = rotateLeft(%2$s, 7);
 }.format(__traits(identifier, _a), __traits(identifier, _b), __traits(identifier, _c), __traits(identifier, _d));
 
-private void chachax4(ref ubyte[64*4] output, uint[16] input, size_t rounds)
+private void chachax4(ref ubyte[64*4] output, ref uint[16] input, size_t rounds)
 {
 	assert(rounds % 2 == 0, "Valid rounds");
 	for(int i = 0; i < 4; i++)
@@ -220,7 +218,7 @@ private void chachax4(ref ubyte[64*4] output, uint[16] input, size_t rounds)
 /** SSE2 ChaCha
 *   (C) 2016 Jack Lloyd
 */
-private void chachaSSE2x4(ref ubyte[64*4] output, uint[16] input, size_t rounds)
+private void chachaSSE2x4(ref ubyte[64*4] output, ref uint[16] input, size_t rounds)
 {
 	import botan.utils.simd.emmintrin;
 	assert(rounds % 2 == 0, "Valid rounds");
@@ -457,6 +455,6 @@ private void chachaSSE2x4(ref ubyte[64*4] output, uint[16] input, size_t rounds)
 	_mm_storeu_si128(output_mm + 15, r3_3);
 		
 	input[12] += 4;
-	if(input[12] < 4)
+	if (input[12] < 4)
 		input[13]++;
 }
