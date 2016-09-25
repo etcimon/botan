@@ -53,6 +53,7 @@ import botan.tls.alert;
 import botan.utils.types : Unique;
 import botan.utils.get_byte;
 import std.conv : to;
+import std.exception : enforce;
 import std.array : Appender;
 
 /**
