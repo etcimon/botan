@@ -119,6 +119,7 @@ public:
         ubyte[] remaining = dest;
         while (remaining.length > 0) {
             dest = readBuf(remaining);
+			enforce(dest.length > 0, "readBuf returned 0 length");
             remaining = remaining[dest.length .. $];
 			//logDebug("remaining length: ", remaining.length);
         }
@@ -148,9 +149,9 @@ public:
 	            m_plaintext_override = null;
 	        }
 		}
-    
+
         // if there's nothing in the buffers, read some packets and process them
-        while (!m_slice && m_plaintext.empty && !isClosed)
+		while (!m_slice && m_plaintext.empty && !isClosed)
         {
 			ubyte[] slice;
 			if (m_readbuf.length > 0) {
@@ -167,7 +168,9 @@ public:
 				size_t next_len = m_readbuf.length * 2;
 				m_readbuf.destroy();
 				m_readbuf = Vector!ubyte(next_len);
+				// increase for next time
 			}
+
         }
 
 		if (buf.length == 0) return null;

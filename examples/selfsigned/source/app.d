@@ -28,11 +28,11 @@ const string ca_cert_file = "ca.crt";
 X509CertOptions caOpts()
 {
 	// Common Name/Country/Organization/OrgUnit
-	X509CertOptions opts = X509CertOptions("***REMOVED***.com/CA/***REMOVED*** Team/Security");
+	X509CertOptions opts = X509CertOptions("GlobecSys.com/CA/GlobecSys Team/Security");
     
-    opts.uri = "http://***REMOVED***.com";
-    opts.dns = "app.***REMOVED***.com";
-    opts.email = "info@***REMOVED***.com";
+    opts.uri = "http://globecsys.com";
+    opts.dns = "app.globecsys.com";
+    opts.email = "info@globecsys.com";
     opts.end = 15.yearsLater();
     opts.CAKey(1);
     
@@ -48,11 +48,11 @@ const size_t signed_cert_expiration_years = 5; // years
 // The certificate request must be signed by a CA Certificate to inherit trust/authority and become a valid certificate
 X509CertOptions reqOpts()
 {
-    X509CertOptions opts = X509CertOptions("***REMOVED***.com/CA/***REMOVED*** Team/Application Admin Mgmnt");
+    X509CertOptions opts = X509CertOptions("GlobecSys.com/CA/GlobecSys Team/Application Admin Mgmnt");
     
-    opts.uri = "https://app.***REMOVED***.com";
-    opts.dns = "app.***REMOVED***.com";
-    opts.email = "info@***REMOVED***.com";
+    opts.uri = "https://globecsys.com";
+    opts.dns = "globecsys.com";
+    opts.email = "info@globecsys.com";
     
     //opts.addExConstraint("PKIX.EmailProtection");
     opts.addExConstraint("PKIX.ServerAuth");

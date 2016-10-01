@@ -742,7 +742,8 @@ private:
 
     void sendRecord(ubyte record_type, const ref Vector!ubyte record)
     {
-        sendRecordArray(sequenceNumbers().currentWriteEpoch(), record_type, record.ptr, record.length);
+		if (auto seq = sequenceNumbers())
+	        sendRecordArray(seq.currentWriteEpoch(), record_type, record.ptr, record.length);
     }
 
     void sendRecordUnderEpoch(ushort epoch, ubyte record_type, const ref Vector!ubyte record)
