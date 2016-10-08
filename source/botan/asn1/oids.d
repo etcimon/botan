@@ -429,7 +429,7 @@ OIDMap globalOidMap(bool free = false)
 		map = null;
 		return null;
 	}
-	else if (!map) map = new OIDMap;
+	else if (!free && !map) map = new OIDMap;
     return map;
 }
 

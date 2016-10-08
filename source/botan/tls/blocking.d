@@ -87,8 +87,6 @@ public:
     */
     void doHandshake()
 	{
-		assert(!m_slice);
-        
         while (!m_closed && channel !is null && !channel.isActive())
         {
             ubyte[] readref = m_readbuf.ptr[0 .. m_readbuf.length];
@@ -102,24 +100,23 @@ public:
     * Number of bytes pending read in the plaintext buffer (bytes
     * readable without blocking)
     */
-	size_t pending() const { assert(!m_slice); return m_plaintext.length; }
+	size_t pending() const { return m_plaintext.length; }
 
 	/// Returns an array of pending data
 	const(ubyte)[] peek() {
-		assert(!m_slice);
 		return m_plaintext.length > 0 ? m_plaintext.peek : null;
 	}
 
     /// Reads until the destination ubyte array is full, utilizing internal buffers if necessary
     void read(ubyte[] dest) 
     {
+		enforce(dest.length > 0, "Empty destination array");
 		ubyte[] destlog = dest;
-		assert(!m_slice);
 		//logDebug("remaining length: ", dest.length);
         ubyte[] remaining = dest;
         while (remaining.length > 0) {
             dest = readBuf(remaining);
-			enforce(dest.length > 0, "readBuf returned 0 length");
+			enforce(dest.length > 0, "readBuf returned 0 length (connection closed)");
             remaining = remaining[dest.length .. $];
 			//logDebug("remaining length: ", remaining.length);
         }
@@ -132,7 +129,6 @@ public:
     */
 	ubyte[] readBuf(ubyte[] buf)
     {
-		assert(!m_slice);
 		m_reading = true;
 		scope(exit) m_reading = false;
 
@@ -141,30 +137,22 @@ public:
 			m_plaintext.read(buf[0 .. len]);
 			return buf[0 .. len];
 		}
-		else {
-	        // we can use our own buffer to optimize the scenarios where the application flushes it instantly
-	        m_plaintext_override = buf;
-	        scope(exit) {
-	            m_slice = null;
-	            m_plaintext_override = null;
-	        }
-		}
 
         // if there's nothing in the buffers, read some packets and process them
-		while (!m_slice && m_plaintext.empty && !isClosed)
+		while (m_plaintext.empty)
         {
 			ubyte[] slice;
 			if (m_readbuf.length > 0) {
 				slice = m_readbuf.ptr[0 .. m_readbuf.length];
 			}
-			else break;
 			const ubyte[] from_socket = m_read_fn(slice);
 			if (from_socket.length == 0)
-				break;
+				return null;
+
 			enforce(channel !is null, "Connection closed while reading from TLS Channel");
 			channel.receivedData(cast(const(ubyte)*)from_socket.ptr, from_socket.length);
 
-			if (from_socket.length == slice.length && m_readbuf.length < 64*1024) {
+			if (from_socket.length == slice.length && m_readbuf.length < 256*1024) {
 				size_t next_len = m_readbuf.length * 2;
 				m_readbuf.destroy();
 				m_readbuf = Vector!ubyte(next_len);
@@ -175,16 +163,6 @@ public:
 
 		if (buf.length == 0) return null;
 
-        // we *should* have something in the override if plaintext/offset is empty
-        if (m_plaintext.length == 0 && m_slice) {
-            buf = m_slice;
-			//logDebug("Read m_slice: ", buf); 
-            return buf;
-        }
-
-        assert(!m_slice, "Cannot have both a slice and extensible buffer contents");
-
-        // unless the override was too small or data was already pending
         const size_t returned = std.algorithm.min(buf.length, m_plaintext.length);
 		if (returned == 0) {
 			//logDebug("Destroyed return object");
@@ -249,23 +227,9 @@ private:
 
     void dataCb(in ubyte[] data)
     {
-		//logDebug("Plaintext: ", cast(ubyte[])data);
-        if (m_plaintext.length == 0 && m_plaintext_override && m_slice.length + data.length < m_plaintext_override.length) {
-            m_plaintext_override[m_slice.length .. m_slice.length + data.length] = data[0 .. $];
-            m_slice = m_plaintext_override[0 .. m_slice.length + data.length];
-			m_plaintext.destroy();
-            return;
-        }
-        else if (m_slice) {
-            // data too large, abandon the override optimization, copy all to the plaintext buffer
-			m_plaintext.capacity = 8192;
-			m_plaintext.put(m_slice);
-            m_plaintext_override = null;
-            m_slice = null;
-        }
 		if (m_plaintext.freeSpace < data.length) {
 			//logDebug("Growing m_plaintext from: ", m_plaintext.capacity, " to ", 8192 + m_plaintext.length + m_plaintext.freeSpace);
-			m_plaintext.capacity = 8192 + m_plaintext.length + m_plaintext.freeSpace;
+			m_plaintext.capacity = std.algorithm.max(8192, data.length + data.length % 8192) + m_plaintext.capacity;
 		}
 		m_plaintext.put(data);
     }
@@ -299,10 +263,6 @@ private:
 
     // Buffer
     CircularBuffer!(ubyte, 0, SecureMem) m_plaintext;
-
-    // Buffer optimization
-    ubyte[] m_plaintext_override;
-    ubyte[] m_slice;
 
 	Vector!ubyte m_readbuf;
 }
