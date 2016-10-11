@@ -45,13 +45,14 @@ public:
             length -= (m_buffer.length - m_position);
             input += (m_buffer.length - m_position);
             output += (m_buffer.length - m_position);
-
-			if (CPUID.hasSse2())
-				chachaSSE2x4(*cast(ubyte[64*4]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
-			else 
+			version(SIMD_SSE2) {
+				if (CPUID.hasSse2())
+					chachaSSE2x4(*cast(ubyte[64*4]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
+				else 
+					chachax4(*cast(ubyte[64*4]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
+			} else 
 				chachax4(*cast(ubyte[64*4]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
-                        
-            m_position = 0;
+			m_position = 0;
         }
         
         xorBuf(output, input, &m_buffer[m_position], length);
@@ -79,12 +80,12 @@ public:
 			m_state[14] = loadLittleEndian!uint(iv, 1);
 			m_state[15] = loadLittleEndian!uint(iv, 2);
 		}
-        
-        if (CPUID.hasSse2())
-			chachaSSE2x4(*cast(ubyte[64*4]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
-		else chachax4(*cast(ubyte[64*4]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
-        
-        m_position = 0;
+		version(SIMD_SSE2) {
+			if (CPUID.hasSse2())
+				chachaSSE2x4(*cast(ubyte[64*4]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
+			else chachax4(*cast(ubyte[64*4]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
+		} else chachax4(*cast(ubyte[64*4]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
+		m_position = 0;
     }
 
     override bool validIvLength(size_t iv_len) const
@@ -218,6 +219,7 @@ private void chachax4(ref ubyte[64*4] output, ref uint[16] input, size_t rounds)
 /** SSE2 ChaCha
 *   (C) 2016 Jack Lloyd
 */
+version(SIMD_SSE2)
 private void chachaSSE2x4(ref ubyte[64*4] output, ref uint[16] input, size_t rounds)
 {
 	import botan.utils.simd.emmintrin;
