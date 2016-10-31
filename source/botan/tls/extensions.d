@@ -801,8 +801,10 @@ public:
         for (size_t i = 0; i != m_curves.length; ++i)
         {
             const ushort id = nameToCurveId(m_curves[i]);
-            buf.pushBack(get_byte(0, id));
-            buf.pushBack(get_byte(1, id));
+			if (id > 0) {
+	            buf.pushBack(get_byte(0, id));
+	            buf.pushBack(get_byte(1, id));
+			}
         }
         
         buf[0] = get_byte(0, cast(ushort) (buf.length-2));

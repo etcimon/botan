@@ -72,11 +72,6 @@ void modexpInit() { g_modexp_init = true; }
 final class LibraryState
 {
 public:
-    shared static this()
-    {
-        gs_entropy_src_mutex = new Mutex;
-    }
-
 	~this() {
 		if (m_algorithm_factory)
 			m_algorithm_factory.destroy(); 
@@ -132,7 +127,8 @@ public:
         }
         
         algorithmFactory().addEngine(new CoreEngine);
-
+		if (!gs_entropy_src_mutex)
+			gs_entropy_src_mutex = new Mutex;
         synchronized(gs_entropy_src_mutex) {
             if (gs_sources.length == 0)
                 gs_sources = entropySources();

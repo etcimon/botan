@@ -217,7 +217,7 @@ public:
 static if (BOTAN_TEST):
 
 import botan.test;
-import botan.libstate.libstate;
+private import botan.libstate.libstate;
 import botan.algo_factory.algo_factory;
 import botan.codec.hex;
 import core.atomic;

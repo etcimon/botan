@@ -261,30 +261,26 @@ void checkSignature(ALLOC)(auto const ref Vector!(ubyte, ALLOC) tbs_response,
 import std.concurrency : Mutex;
 /// Checks the certificate online
 struct OnlineCheck {
-	shared(Mutex) mtx;
-	shared(size_t) id;
-	shared(OCSPResponse*) resp;
-	shared(const(X509Certificate)*) issuer;
-	shared(const(X509Certificate)*) subject;
-	shared(const(CertificateStore)*) trusted_roots;
+	size_t id;
+	OCSPResponse* resp;
+	const(X509Certificate)* issuer;
+	const(X509Certificate)* subject;
+	const(CertificateStore)* trusted_roots;
 
 	void run() {
 	    /// TODO: Test OCSP with correct BER Decoding
 	    logTrace("Checking OCSP online");
 		string responder_url;
-		synchronized(mtx) {
-			if (!issuer) {
-				*cast(OCSPResponse*)resp = OCSPResponse.init;
-				return;
-			}
-			responder_url = (*cast(X509Certificate*)issuer).ocspResponder();
+		if (!issuer) {
+			*cast(OCSPResponse*)resp = OCSPResponse.init;
+			return;
 		}
+		responder_url = (*cast(X509Certificate*)issuer).ocspResponder();
 	    logTrace("Responder url: ", responder_url.length);
 
 	    if (responder_url.length == 0) {
 	        logTrace("Aborting OCSP for ID#", id.to!string);
-	        synchronized(mtx)
-				*cast(OCSPResponse*)resp = OCSPResponse.init;
+	        *cast(OCSPResponse*)resp = OCSPResponse.init;
 	        return;
 	    }
 
@@ -296,7 +292,6 @@ struct OnlineCheck {
 	    res.throwUnlessOk();
 	    
 	    // Check the MIME type?
-		synchronized(mtx)
-	    	*cast(OCSPResponse*)resp = OCSPResponse(*(cast(CertificateStore*)trusted_roots), res._body());
+		*cast(OCSPResponse*)resp = OCSPResponse(*(cast(CertificateStore*)trusted_roots), res._body());
 	}
 }

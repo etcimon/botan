@@ -143,6 +143,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_PBKDF_TEST) unittest {
     import botan.test;
     import botan.codec.hex;
     import memutils.hashmap;
+	import botan.libstate.libstate;
     int total_tests;
     auto test = delegate(string input) {
         return runTests(input, "PBKDF", "Output", true,

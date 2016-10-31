@@ -33,12 +33,20 @@ struct Curve25519PublicKey
 {
 public:
 	enum algoName = "Curve25519";
+
+	/// Create a Curve25519 Public Key.
 	this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits) 
 	{
 		m_owned = true;
 		m_pub = new Curve25519PublicKeyImpl(alg_id, key_bits);
 	}
-	
+
+	/// Create a Curve25519 Public Key.
+	this(const ref Vector!ubyte pub) { m_owned = true; m_pub = new Curve25519PublicKeyImpl(pub); }
+
+	/// Create a Curve25519 Public Key.
+	this(const ref SecureVector!ubyte pub) { m_owned = true; m_pub = new Curve25519PublicKeyImpl(pub); }
+
 	this(PrivateKey pkey) { m_pub = cast(Curve25519PublicKeyImpl) pkey; }
 	this(PublicKey pkey) { m_pub = cast(Curve25519PublicKeyImpl) pkey; }
 	
@@ -89,7 +97,12 @@ public:
 		
 		sizeCheck(m_public.length, "public key");
 	}
-	
+
+	/// Create a Curve25519 Public Key.
+	this(const ref Vector!ubyte pub) { m_public = pub.dup(); }
+
+	this(const ref SecureVector!ubyte pub) { m_public = unlock(pub); }
+
 	/// Used for object casting to the right type in the factory.
 	final override @property string algoName() const { return "Curve25519"; }
 	
@@ -113,7 +126,7 @@ public:
 				.getContentsUnlocked();
 	}
 	
-	Vector!ubyte publicValue() const { return unlock(m_public); }
+	Vector!ubyte publicValue() const { return m_public.dup(); }
 	
 	override bool checkKey(RandomNumberGenerator rng, bool b) const { return true; }
 	
@@ -121,7 +134,7 @@ public:
 	
 protected:
 	this() { }
-	SecureVector!ubyte m_public;
+	Vector!ubyte m_public;
 }
 
 /**
@@ -217,19 +230,23 @@ void sizeCheck(size_t size, const string str)
 		throw new DecodingError("Invalid size " ~ size.to!string ~ " for Curve25519 " ~ str);
 }
 
+import std.exception : enforce;
 SecureVector!ubyte curve25519(const ref SecureVector!ubyte secret,
 	const(ubyte)* pubval)
 {
 	auto output = SecureVector!ubyte(32);
 	const int rc = curve25519Donna(output.ptr, secret.ptr, pubval);
-	assert(rc == 0, "Return value of curve25519Donna is ok");
+	enforce(rc == 0, "Return value of curve25519Donna is ok");
 	return output.move();
 }
 
-SecureVector!ubyte curve25519Basepoint(const ref SecureVector!ubyte secret)
+Vector!ubyte curve25519Basepoint(const ref SecureVector!ubyte secret)
 {
 	ubyte[32] basepoint; basepoint[0] = 9;
-	return curve25519(secret, cast(const(ubyte)*)basepoint.ptr);
+	Vector!ubyte ret = Vector!ubyte(32);
+	const int rc = curve25519Donna(ret.ptr, secret.ptr, basepoint.ptr);
+	enforce(rc == 0, "Return value of curve25519Donna is ok");
+	return ret.move();
 }
 
 static if (BOTAN_TEST):

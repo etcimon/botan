@@ -18,7 +18,7 @@ public import std.algorithm : sort, canFind;
 public import std.range : walkLength;
 public import std.string : indexOf, lastIndexOf;
 public import botan.utils.types;
-public import botan.libstate.libstate;
+private import botan.libstate.libstate;
 import memutils.hashmap;
 import std.file;
 import std.array;

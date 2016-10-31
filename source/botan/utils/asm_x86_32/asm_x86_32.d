@@ -135,12 +135,12 @@ else {
     
     string LOOP_UNTIL_EQ(string REG, int NUM, string LABEL) {
         return "cmpl  " ~ IMM(NUM) ~ ", " ~ REG ~ "\n"
-                "jne " ~ LABEL ~ "_LOOP\n";
+                ~ "jne " ~ LABEL ~ "_LOOP\n";
     }
     
     string LOOP_UNTIL_LT(REG, NUM, LABEL)() {
         return "cmpl " ~ IMM(NUM) ~ ", " ~ REG ~ "\n"    
-                "jge " ~ LABEL ~ "_LOOP\n";
+                ~ "jge " ~ LABEL ~ "_LOOP\n";
     }
     
     /*
@@ -148,12 +148,12 @@ else {
     */
     string JUMP_IF_ZERO(string REG, string LABEL)() {
         return "cmpl " ~ IMM(0) ~ ", " ~ REG ~ "\n"
-                "jz " ~ LABEL ~ "\n";
+                ~ "jz " ~ LABEL ~ "\n";
     }
     
     string JUMP_IF_LT(string REG, int NUM, string LABEL) {
         return "cmpl " ~ IMM(NUM) ~ ", " ~ REG ~ "\n"
-                "jl " ~ LABEL ~ "\n";
+                ~ "jl " ~ LABEL ~ "\n";
     }
     
     /*
@@ -203,7 +203,7 @@ else {
     string ADD(string TO, string FROM) { return "addl " ~ FROM ~ ", " ~ TO ~ "\n"; }
     string ADD_IMM(string TO, int NUM) { return ADD(TO, IMM(NUM)); }
     string ADD_W_CARRY(string TO1, string TO2, string FROM) { return "addl " ~ FROM ~ ", " ~ TO1 ~ "\n"
-                                                                      "adcl " ~ IMM(0) ~ ", " ~ TO2 ~ "\n"; }
+                                                                     ~ "adcl " ~ IMM(0) ~ ", " ~ TO2 ~ "\n"; }
     string SUB_IMM(string TO, int NUM) { return "subl " ~ IMM(NUM) ~ ", " ~ TO ~ "\n"; }
     string ADD2_IMM(string TO, string FROM, int NUM) { return "leal "  ~ NUM.to!string ~ "(" ~ FROM ~ ")" ~ ", " ~ TO ~ "\n"; }
     string ADD3_IMM(string TO, string FROM, int NUM) { return "leal " ~ NUM.to!string ~ "(" ~ TO ~ ", " ~ FROM ~ ", 1), " ~ TO ~ "\n"; }

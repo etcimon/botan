@@ -19,17 +19,6 @@ import std.stdio;
 import std.conv;
 import std.string;
 import std.array : Appender;
-/*
-version (Have_vibe_d) {
-    import vibe.core.net;
-    import vibe.core.stream;
-    import vibe.stream.operations : readAll;
-} else {*/
-    import std.socket;
-    import std.stream;
-    import std.socketstream;
-//}
-// import string;
 
 struct HTTPResponse
 {
@@ -82,6 +71,9 @@ HTTPResponse httpSync()(in string verb,
                    auto const ref Vector!ubyte _body,
                    size_t allowable_redirects)
 {
+	HashMapRef!(string, string) headers;
+	if (!tcp_message_handler)
+		throw new Exception("No HTTP Handler Defined");
     const auto protocol_host_sep = url.indexOf("://");
     if (protocol_host_sep == -1)
         throw new Exception("Invalid URL " ~ url);
@@ -124,7 +116,7 @@ HTTPResponse httpSync()(in string verb,
     outbuf ~= "Connection: close\r\r";
     outbuf ~= cast(string) _body[];
     
-    auto reply = httpTransact(hostname, outbuf.data);
+	auto reply = tcp_message_handler(hostname, outbuf.data);
 
     if (reply.length == 0)
         throw new Exception("No response");
@@ -155,7 +147,6 @@ HTTPResponse httpSync()(in string verb,
 
     reply = reply[idx + 1 .. $];
     
-    HashMapRef!(string, string) headers;
     string header_line;
     while (reply[0] != '\r')
     {
@@ -234,33 +225,4 @@ HTTPResponse POST_sync(ALLOC)(in string url, in string content_type,
     return httpSync("POST", url, content_type, _body, allowable_redirects);
 }
 
-
-
-string httpTransact(in string hostname, in string message)
-{
-
-/*    version (Have_vibe_d) {
-
-        TCPConnection stream = connectTCP(hostname, 80);
-        scope(exit) stream.close();
-        stream.write(message);
-        stream.finished();
-        return stream.readAll();
-    } else {*/
-        Socket socket = new TcpSocket(new InternetAddress(hostname, 80));
-        scope(exit) socket.close();
-        SocketStream stream = new SocketStream(socket);
-        stream.writeString(message);
-
-        Appender!string in_buf;
-        // Skip HTTP header.
-        while (true)
-        {
-            auto line = stream.readLine();
-            if (!line.length)
-                break;
-            in_buf ~= line;
-        }
-        return in_buf.data;
- //   }
-}
+string delegate(in string hostname, in string message) tcp_message_handler;

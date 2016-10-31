@@ -100,6 +100,13 @@ public:
     { 
 		if (m_trusted_hashes.length > 0)
 			return m_trusted_hashes;
+		if (m_def_trusted_hashes.length == 0) {
+			m_def_trusted_hashes.insert("SHA-160");		
+			m_def_trusted_hashes.insert("SHA-224");
+			m_def_trusted_hashes.insert("SHA-256");
+			m_def_trusted_hashes.insert("SHA-384");
+			m_def_trusted_hashes.insert("SHA-512");
+		}
 		return m_def_trusted_hashes;
 	}
 
@@ -113,17 +120,6 @@ private:
 	RBTree!string m_trusted_hashes;
     size_t m_minimum_key_strength = 80;
 
-	static this() {
-		m_def_trusted_hashes.insert("SHA-160");		
-		m_def_trusted_hashes.insert("SHA-224");
-		m_def_trusted_hashes.insert("SHA-256");
-		m_def_trusted_hashes.insert("SHA-384");
-		m_def_trusted_hashes.insert("SHA-512");
-	}
-	static ~this() {
-		m_def_trusted_hashes.clear();
-		m_def_trusted_hashes.destroy();
-	}
 	static RBTree!string m_def_trusted_hashes;
 }
 
@@ -423,12 +419,6 @@ Vector!( RBTreeRef!CertificateStatusCode )
     const bool self_signed_ee_cert = (cert_path.length == 1);
     
     X509Time current_time = X509Time(Clock.currTime(UTC()));
-    
-    Vector!( Thread ) ocsp_responses;
-
-	scope(exit) foreach (Thread thr; ocsp_responses[]) {
-		ThreadMem.free(thr);
-	}
 
     Vector!(OCSPResponse) ocsp_data = Vector!OCSPResponse(8);
     
@@ -452,22 +442,12 @@ Vector!( RBTreeRef!CertificateStatusCode )
         
         const CertificateStore* trusted = certstores.ptr;
         
-		Mutex mtx = new Mutex;
-
         if (i == 0 || restrictions.ocspAllIntermediates()) {
 
-			if (certstores.length > 1) {
-
-	            //version(Have_vibe_d)
-	            //    Tid id_ = runTask(&onlineCheck, cast(shared)Tid.getThis(), cast(shared)i, cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)trusted);
-	            //else
-				synchronized(mtx) {
-					ocsp_data.length = i + 1;
-		            OnlineCheck oc = OnlineCheck( cast(shared)mtx, cast(shared)i,  cast(shared)&ocsp_data[i], cast(shared)&issuer, cast(shared)&subject, cast(shared)trusted );
-					Thread thr = ThreadMem.alloc!Thread(&oc.run);
-					thr.start();
-					ocsp_responses ~= thr;
-				}
+			if (certstores.length >= 1) {
+				ocsp_data.length = i + 1;
+	            OnlineCheck oc = OnlineCheck(i,  &ocsp_data[i], &issuer, &subject, trusted );
+				oc.run();
 			}
         }
         // Check all certs for valid time range
@@ -511,35 +491,26 @@ Vector!( RBTreeRef!CertificateStatusCode )
         const X509Certificate subject = cert_path[i];
         const X509Certificate ca = cert_path[i+1];
         
-        logTrace("Checking response ", i+1, " of ", ocsp_responses.length);
-        if (i < ocsp_responses.length)
+		logTrace("Checking response ", i+1, " of ", ocsp_data.length);
+		try if (i < ocsp_data.length)
         {
-            try
-            {
-				ocsp_responses[i].join();
-				if (ocsp_data.length <= i) continue;
-				OCSPResponse ocsp = ocsp_data[i];
-                logTrace("Got response for ID#", i.to!string);
-                if (!ocsp || ocsp.empty)
-                    throw new Exception("OSCP.responder is undefined");
-                auto ocsp_status = ocsp.statusFor(ca, subject);
-                
-                status.insert(ocsp_status);
-                
-                logTrace("OCSP status: ", ocsp_status.to!string);
-                //std::cout << "OCSP status: " << statusString(ocsp_status) << "\n";
-                
-                // Either way we have a definitive answer, no need to check CRLs
-                if (ocsp_status == CertificateStatusCode.CERT_IS_REVOKED)
-                    return cert_status.move();
-                else if (ocsp_status == CertificateStatusCode.OCSP_RESPONSE_GOOD)
-                    continue;
-            }
-            catch(Exception e)
-            {
-                logTrace("OCSP error: " ~ e.msg ~ "");
-            }
-        }
+			if (ocsp_data.length <= i) continue;
+			OCSPResponse ocsp = ocsp_data[i];
+            logTrace("Got response for ID#", i.to!string);
+            if (ocsp !is null && !ocsp.empty)
+			{
+	            auto ocsp_status = ocsp.statusFor(ca, subject);
+	            
+	            status.insert(ocsp_status);
+	            
+	            logTrace("OCSP status: ", ocsp_status.to!string);
+	            //std::cout << "OCSP status: " << statusString(ocsp_status) << "\n";
+	            
+	            // Either way we have a definitive answer, no need to check CRLs
+	            if (ocsp_status == CertificateStatusCode.CERT_IS_REVOKED)
+	                return cert_status.move();
+			} else logTrace("OCSP not found");
+		} catch (Exception e) { logTrace("OSCP failed with ", e.msg); }
         
         const X509CRL crl = findCrlsFor(subject, certstores);
         

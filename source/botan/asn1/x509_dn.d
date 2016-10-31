@@ -224,9 +224,9 @@ public:
     /*
     * Compare two X509DNs for equality
     */
-    bool opEquals(in X509DN dn2) const
+    bool opEquals(in X509DNImpl dn2) const
     {
-        size_t i;        
+        size_t i;
 		foreach (const ref OID oid, const ref ASN1String str; m_dn_info) {
             i++;
             bool found;

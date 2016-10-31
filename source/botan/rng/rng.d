@@ -14,8 +14,9 @@ import botan.entropy.entropy_src;
 import botan.utils.exceptn;
 import core.sync.mutex;
 import botan.rng.hmac_rng;
-import botan.libstate.libstate;
 import botan.utils.types : Unique;
+import botan.libstate.libstate;
+import memutils.vector;
 
 /**
 * This class represents a random number (RNG) generator object.

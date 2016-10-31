@@ -325,7 +325,7 @@ protected:
     SecureVector!uint m_EK, m_DK;
 }
 
-static this() {
+shared static this() {
     logTrace("Loading AES SSSE3 ...");
 
     low_nibs = _mm_set1_epi8!(0x0F)();
@@ -348,20 +348,20 @@ static this() {
     sr = sr_;
 }
 
-immutable __m128i low_nibs;
+__gshared immutable __m128i low_nibs;
 
-immutable __m128i k_ipt1 ;
-immutable __m128i k_ipt2;
+__gshared immutable __m128i k_ipt1 ;
+__gshared immutable __m128i k_ipt2;
 
-immutable __m128i k_inv1;
-immutable __m128i k_inv2;
+__gshared immutable __m128i k_inv1;
+__gshared immutable __m128i k_inv2;
 
-immutable __m128i sb1u;
-immutable __m128i sb1t;
+__gshared immutable __m128i sb1u;
+__gshared immutable __m128i sb1t;
 
-immutable(__m128i)[4] mc_forward;
+__gshared immutable(__m128i)[4] mc_forward;
 
-immutable(__m128i)[4] sr;
+__gshared immutable(__m128i)[4] sr;
 
 package:
 

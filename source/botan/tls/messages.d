@@ -1055,31 +1055,48 @@ public:
                 
                 const ushort curve_id = reader.get_ushort();
                 
-                const string name = SupportedEllipticCurves.curveIdToName(curve_id);
+                const string curve_name = SupportedEllipticCurves.curveIdToName(curve_id);
                 
-                if (name == "")
+				if (curve_name == "")
                     throw new DecodingError("TLSServer sent unknown named curve " ~ to!string(curve_id));
 				{
 					Vector!string allowed_curves = policy.allowedEccCurves();
-					if(!(allowed_curves[]).canFind(name))
+					if(!(allowed_curves[]).canFind(curve_name))
 						throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "Server sent ECC curve prohibited by policy");
 				}
+				Vector!ubyte ecdh_key = reader.getRange!ubyte(1, 1, 255);
 
-                ECGroup group = ECGroup(name);
-                
-                Vector!ubyte ecdh_key = reader.getRange!ubyte(1, 1, 255);
-                
-                auto counterparty_key = ECDHPublicKey(group, OS2ECP(ecdh_key, group.getCurve()));
-                
-                auto priv_key = ECDHPrivateKey(rng, group);
+				Vector!ubyte our_ecdh_public;
 				SecureVector!ubyte ecdh_secret;
-				{
+
+				if (curve_name == "x25519") {
+					import botan.pubkey.algo.curve25519;
+					if (ecdh_key.length != 32)
+						throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "Invalid X25519 key size");
+					Curve25519PublicKey counterparty_key = Curve25519PublicKey(ecdh_key);
+					Curve25519PrivateKey priv_key = Curve25519PrivateKey(rng);
+
 					auto ka = scoped!PKKeyAgreement(priv_key, "Raw");
 					auto public_value = counterparty_key.publicValue();
 					auto derived_key = ka.deriveKey(0, public_value);
-					ecdh_secret = derived_key.bitsOf();
-				}
 
+					ecdh_secret = derived_key.bitsOf();
+					our_ecdh_public = priv_key.publicValue();
+
+				} else {
+					ECGroup group = ECGroup(curve_name);
+	                
+	                
+	                auto counterparty_key = ECDHPublicKey(group, OS2ECP(ecdh_key, group.getCurve()));	                
+	                auto priv_key = ECDHPrivateKey(rng, group);
+					
+					auto ka = scoped!PKKeyAgreement(priv_key, "Raw");
+					auto public_value = counterparty_key.publicValue();
+					auto derived_key = ka.deriveKey(0, public_value);
+
+					ecdh_secret = derived_key.bitsOf();
+					our_ecdh_public = priv_key.publicValue();
+				}
                 if (kex_algo == "ECDH")
                     m_pre_master = ecdh_secret.move();
                 else
@@ -1088,7 +1105,7 @@ public:
                     appendTlsLengthValue(m_pre_master, psk.bitsOf(), 2);
                 }
                 
-                appendTlsLengthValue(m_key_material, priv_key.publicValue(), 1);
+				appendTlsLengthValue(m_key_material, our_ecdh_public, 1);
             }
             else if (kex_algo == "SRP_SHA")
             {
@@ -1765,26 +1782,29 @@ public:
             
             if (curve_name == "")
                 throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "Could not agree on an ECC curve with the client");
+			const ushort named_curve_id = SupportedEllipticCurves.nameToCurveId(curve_name);
+			if (named_curve_id == 0)
+				throw new InternalError("TLS does not support ECC with " ~ curve_name);
+			Vector!ubyte ecdh_public_val;
 
-            ECGroup ec_group = ECGroup(curve_name);
-            
-            auto ecdh = ECDHPrivateKey(rng, ec_group);
-            
-            const string ecdh_domain_oid = ecdh.domain().getOid();
-            const string domain = OIDS.lookup(OID(ecdh_domain_oid));
-            
-            if (domain == "")
-                throw new InternalError("Could not find name of ECDH domain " ~ ecdh_domain_oid);
-            
-            const ushort named_curve_id = SupportedEllipticCurves.nameToCurveId(domain);
-            
+			if (curve_name == "x25519") {
+				import botan.pubkey.algo.curve25519;
+				Curve25519PrivateKey x25519 = Curve25519PrivateKey(rng);
+				ecdh_public_val = x25519.publicValue();
+				m_kex_key = x25519.release();
+			} else {
+	            ECGroup ec_group = ECGroup(curve_name);	            
+	            auto ecdh = ECDHPrivateKey(rng, ec_group);
+				ecdh_public_val = ecdh.publicValue();
+	            
+				m_kex_key = ecdh.release();
+			}
             m_params.pushBack(3); // named curve
             m_params.pushBack(get_byte(0, named_curve_id));
             m_params.pushBack(get_byte(1, named_curve_id));
             
-            appendTlsLengthValue(m_params, ecdh.publicValue(), 1);
+            appendTlsLengthValue(m_params, ecdh_public_val, 1);
             
-            m_kex_key = ecdh.release();
         }
         else if (kex_algo == "SRP_SHA")
         {
