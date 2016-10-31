@@ -175,11 +175,10 @@ public:
         static if (is(T == class)) {
             if (!obj)
                 obj = new T();
-        }
+		}
         else static if (__traits(compiles, { T t = T(); }())) {
             if (obj is T.init) obj = T();
-        }
-        //logTrace("Decode obj: ", T.stringof);
+		}
         obj.decodeFrom(this);
         return this;
     }

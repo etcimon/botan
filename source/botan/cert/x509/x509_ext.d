@@ -912,7 +912,7 @@ final class CRLDistributionPoints : CertificateExtension
 {
 public:
     alias DistributionPoint = RefCounted!DistributionPointImpl;
-    final class DistributionPointImpl : ASN1Object
+    final static class DistributionPointImpl : ASN1Object
     {
     public:
         override void encodeInto(ref DEREncoder) const
