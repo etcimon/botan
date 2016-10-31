@@ -148,6 +148,7 @@ public:
     Vector!string allowedEccCurves() const
     {
         return Vector!string([
+			"x25519",
             "brainpool512r1",
             "brainpool384r1",
             "brainpool256r1",
