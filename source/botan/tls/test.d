@@ -12,6 +12,7 @@ module botan.tls.test;
 import botan.constants;
 static if (BOTAN_TEST && BOTAN_HAS_TLS):
 
+import botan.math.bigint.bigint;
 import botan.test;
 import botan.rng.auto_rng;
 import botan.tls.server;
