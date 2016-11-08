@@ -13,6 +13,7 @@ module botan.tls.blocking;
 import botan.constants;
 static if (BOTAN_HAS_TLS):
 
+import std.exception : enforce;
 import botan.tls.client;
 import botan.tls.server;
 import botan.rng.rng;

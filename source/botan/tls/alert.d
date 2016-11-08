@@ -197,7 +197,7 @@ public:
     *  type_code = the type of alert
     *  fatal = specifies if this is a fatal alert
     */
-    this(TLSAlertType type_code = NULL_ALERT, bool fatal = false)
+    this(TLSAlertType type_code, bool fatal = false)
     {
         m_fatal = fatal;
         m_type_code = type_code;

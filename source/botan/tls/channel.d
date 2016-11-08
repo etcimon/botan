@@ -12,7 +12,6 @@ module botan.tls.channel;
 
 import botan.constants;
 static if (BOTAN_HAS_TLS):
-package:
 
 public import botan.cert.x509.x509cert;
 public import botan.tls.policy;

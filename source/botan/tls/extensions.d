@@ -10,6 +10,7 @@
 */
 module botan.tls.extensions;
 
+import std.exception : enforce;
 import botan.constants;
 static if (BOTAN_HAS_TLS):
 public alias ushort HandshakeExtensionType;
