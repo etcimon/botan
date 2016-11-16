@@ -53,6 +53,11 @@ public:
 				TLSEXT_MAX_FRAGMENT_LENGTH]);
 	}
 
+	/// Returns a list of EC Point Formats supported, only 0x00 (Uncompressed) is supported at the moment.
+	Vector!ubyte ecPointFormats() const {
+		return Vector!ubyte([cast(ubyte)0x00b]); // uncompressed
+	}
+
     /**
     * Returns a list of ciphers we are willing to negotiate, in
     * order of preference.

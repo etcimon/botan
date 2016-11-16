@@ -301,6 +301,7 @@ public:
         m_random = makeHelloRandom(rng, policy);
         m_suites = policy.ciphersuiteList(m_version, (srp_identifier != ""));
         m_comp_methods = policy.compression();
+		Vector!ubyte fmts = policy.ecPointFormats();
 
 		foreach (extension_; policy.enabledExtensions()) {
 			switch (extension_) {
@@ -311,7 +312,7 @@ public:
 					m_extensions.add(new ServerNameIndicator(hostname));
 					break;
 				case TLSEXT_EC_POINT_FORMATS:
-					m_extensions.add(new SupportedPointFormats);
+					m_extensions.add(new SupportedPointFormats(fmts.move()));
 					break;
 				case TLSEXT_USABLE_ELLIPTIC_CURVES:
 					m_extensions.add(new SupportedEllipticCurves(policy.allowedEccCurves()));
@@ -350,6 +351,9 @@ public:
 					if (policy.negotiateHeartbeatSupport())
 	            		m_extensions.add(new HeartbeatSupportIndicator(true));
 					break;
+				case TLSEXT_PADDING:
+					m_has_padding = true;
+					break;
                 default:
                     break;
 			}
@@ -381,7 +385,8 @@ public:
         m_session_id = session.sessionId().dup;
         m_random = makeHelloRandom(rng, policy);
         m_suites = policy.ciphersuiteList(m_version, (session.srpIdentifier() != ""));
-        m_comp_methods = policy.compression();
+		m_comp_methods = policy.compression();
+		Vector!ubyte fmts = policy.ecPointFormats();
         if (!valueExists(m_suites, session.ciphersuiteCode()))
             m_suites.pushBack(session.ciphersuiteCode());
         
@@ -397,7 +402,7 @@ public:
 					m_extensions.add(new ServerNameIndicator(session.serverInfo().hostname()));
 					break;
 				case TLSEXT_EC_POINT_FORMATS:
-					m_extensions.add(new SupportedPointFormats);
+					m_extensions.add(new SupportedPointFormats(fmts.move()));
 					break;
 				case TLSEXT_USABLE_ELLIPTIC_CURVES:
 					m_extensions.add(new SupportedEllipticCurves(policy.allowedEccCurves()));
@@ -439,6 +444,9 @@ public:
 				case TLSEXT_MAX_FRAGMENT_LENGTH:
 					if (session.fragmentSize() != 0)
 						m_extensions.add(new MaximumFragmentLength(session.fragmentSize()));
+					break;
+				case TLSEXT_PADDING:
+					m_has_padding = true;
 					break;
                 default:
                     break;
@@ -504,7 +512,7 @@ protected:
         
         auto vec = m_extensions.serialize();
         // pad when between 256 and 511 (inclusive) bytes long
-        if ((buf.length+4) + vec.length <= 511 &&  (buf.length+4) + vec.length >= 256)
+		if (m_has_padding && (buf.length+4) + vec.length <= 511 &&  (buf.length+4) + vec.length >= 256)
         {
             long pad = 512L - cast(long)vec.length - (cast(long)buf.length+4L) - 4L;
             if (pad <= 0)
@@ -579,6 +587,7 @@ protected:
     }
 
 private:
+	bool m_has_padding;
     TLSProtocolVersion m_version;
     Vector!ubyte m_session_id;
     Vector!ubyte m_random;

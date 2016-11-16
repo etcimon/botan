@@ -274,20 +274,27 @@ public:
 	static HandshakeExtensionType staticType() { return TLSEXT_EC_POINT_FORMATS; }
 	
 	override HandshakeExtensionType type() const { return staticType(); }
-		
+
+	this(Vector!ubyte formats = Vector!ubyte([cast(ubyte)0x00])) {
+		m_formats = formats.dup();
+	}
+
 	override Vector!ubyte serialize() const
 	{
 		Vector!ubyte buf;
 		buf.reserve(4);
-		buf.pushBack(0x01); // 1 point format
+		buf.pushBack(cast(ubyte)m_formats.length); // 1 point format
 
-		//uncompressed
-		buf.pushBack(0x00);
+		foreach (fmt; m_formats[]) {
+			buf.pushBack(fmt);
+		}
 		
 		return buf.move();
 	}
 	
 	override @property bool empty() const { return false; }
+
+	private Vector!ubyte m_formats;
 }
 
 /**
