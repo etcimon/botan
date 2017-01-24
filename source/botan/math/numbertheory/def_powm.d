@@ -47,7 +47,7 @@ public:
         m_g[1] = RefCounted!BigInt(base_2);
         
         for (size_t i = 2; i != m_g.length; ++i)
-            m_g[i] = RefCounted!BigInt(m_reducer.multiply(*(m_g[i-1]), *(m_g[0])));
+            m_g[i] = RefCounted!BigInt(m_reducer.multiply(*(m_g[i-1]), *(m_g[1])));
     }
 
     /*

@@ -144,10 +144,14 @@ public:
 			{
             	hash_algo = "Parallel(MD5,SHA-160)";
 			}
-            
+
             const string padding = "EMSA3(" ~ hash_algo ~ ")";
             return makePair(padding, IEEE_1363);
         }
+		else if (algo_name == "RSA-PSS") {
+			const string padding = "PSSR(" ~ hash_algo ~ ")";
+			return makePair(padding, IEEE_1363);
+		}
         else if (algo_name == "DSA" || algo_name == "ECDSA")
         {
             if (!this.Version().supportsNegotiableSignatureAlgorithms())
@@ -186,11 +190,17 @@ public:
         }
         
         if (sig_algo == "RSA")
-        {
-            const string padding = "EMSA3(" ~ hash_algo ~ ")";
-            
-            return makePair(padding, IEEE_1363);
-        }
+		{
+			const string padding = "EMSA3(" ~ hash_algo ~ ")";
+			
+			return makePair(padding, IEEE_1363);
+		}
+		else if (sig_algo == "RSA-PSS")
+		{
+			const string padding = "PSSR(" ~ hash_algo ~ ")";
+			
+			return makePair(padding, IEEE_1363);
+		}
         else if (sig_algo == "DSA" || sig_algo == "ECDSA")
         {
             const string padding = "EMSA1(" ~ hash_algo ~ ")";

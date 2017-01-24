@@ -134,6 +134,13 @@ private:
     Vector!ubyte m_cookie;
 }
 
+enum GreaseType : size_t {
+	CIPHER = 0,
+	ELLIPTIC_CURVE,
+	EXTENSION_FIRST,
+	EXTENSION_LAST
+};
+
 /**
 * TLSClient Hello Message
 */
@@ -147,7 +154,15 @@ public:
     ref const(Vector!ubyte) random() const { return m_random; }
 
 	const(ubyte[]) randomBytes() const { return m_random[]; }
-	
+
+	private const(ushort) grease(GreaseType idx) const {
+		if (!m_grease) return 0;
+		ushort ret = *cast(ushort*) m_random[idx*2 .. (idx+1)*2].ptr;
+		ret = (ret & 0xf0) | 0x0a;
+		ret |= ret << 8;
+		return ret;
+	}
+
 	ref const(Vector!ubyte) sessionId() const { return m_session_id; }
 	
 	const(ubyte[]) sessionIdBytes() const { return m_session_id[]; }
@@ -299,8 +314,15 @@ public:
 		assert(policy.acceptableProtocolVersion(_version), "Our policy accepts the version we are offering");
 
         m_random = makeHelloRandom(rng, policy);
-        m_suites = policy.ciphersuiteList(m_version, (srp_identifier != ""));
+		m_suites.reserve(16);
+		m_grease = policy.allowClientHelloGrease();
+		if (m_grease) {
+			m_suites ~= grease(GreaseType.CIPHER);
+			m_extensions.grease(grease(GreaseType.EXTENSION_FIRST), grease(GreaseType.EXTENSION_LAST));
+		}
+		m_suites ~= policy.ciphersuiteList(m_version, (srp_identifier != ""));
         m_comp_methods = policy.compression();
+
 		Vector!ubyte fmts = policy.ecPointFormats();
 
 		foreach (extension_; policy.enabledExtensions()) {
@@ -315,7 +337,7 @@ public:
 					m_extensions.add(new SupportedPointFormats(fmts.move()));
 					break;
 				case TLSEXT_USABLE_ELLIPTIC_CURVES:
-					m_extensions.add(new SupportedEllipticCurves(policy.allowedEccCurves()));
+					m_extensions.add(new SupportedEllipticCurves(policy.allowedEccCurves(), grease(GreaseType.ELLIPTIC_CURVE)));
 					break;
 				case TLSEXT_EXTENDED_MASTER_SECRET:
 					m_extensions.add(new ExtendedMasterSecret);
@@ -384,7 +406,13 @@ public:
         m_version = session.Version();
         m_session_id = session.sessionId().dup;
         m_random = makeHelloRandom(rng, policy);
-        m_suites = policy.ciphersuiteList(m_version, (session.srpIdentifier() != ""));
+		m_suites.reserve(16);
+		m_grease = policy.allowClientHelloGrease();
+		if (m_grease) {
+			m_suites ~= grease(GreaseType.CIPHER);
+			m_extensions.grease(grease(GreaseType.EXTENSION_FIRST), grease(GreaseType.EXTENSION_LAST));
+		}
+        m_suites ~= policy.ciphersuiteList(m_version, (session.srpIdentifier() != ""));
 		m_comp_methods = policy.compression();
 		Vector!ubyte fmts = policy.ecPointFormats();
         if (!valueExists(m_suites, session.ciphersuiteCode()))
@@ -405,7 +433,7 @@ public:
 					m_extensions.add(new SupportedPointFormats(fmts.move()));
 					break;
 				case TLSEXT_USABLE_ELLIPTIC_CURVES:
-					m_extensions.add(new SupportedEllipticCurves(policy.allowedEccCurves()));
+					m_extensions.add(new SupportedEllipticCurves(policy.allowedEccCurves(), grease(GreaseType.ELLIPTIC_CURVE)));
 					break;
 				case TLSEXT_EXTENDED_MASTER_SECRET:
 					m_extensions.add(new ExtendedMasterSecret);
@@ -587,6 +615,7 @@ protected:
     }
 
 private:
+	bool m_grease;
 	bool m_has_padding;
     TLSProtocolVersion m_version;
     Vector!ubyte m_session_id;

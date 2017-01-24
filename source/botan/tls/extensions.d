@@ -723,7 +723,7 @@ public:
 				return "x25519";
 			
             default:
-                return id.to!string; // something we don't know or support
+                return ""; // something we don't know or support
         }
     }
 
@@ -806,7 +806,12 @@ public:
 		buf.reserve(m_curves.length * 2 + 2);
 		buf.length = 2;
         
-        for (size_t i = 0; i != m_curves.length; ++i)
+		if (m_grease > 0) {
+			buf.pushBack(get_byte(0, m_grease));
+			buf.pushBack(get_byte(1, m_grease));
+		}
+		
+		for (size_t i = 0; i != m_curves.length; ++i)
         {
             const ushort id = nameToCurveId(m_curves[i]);
 			if (id > 0) {
@@ -821,9 +826,10 @@ public:
         return buf.move();
     }
 
-    this(Vector!string curves) 
+    this(Vector!string curves, const ushort grease = 0) 
     {
         m_curves = curves.move();
+		m_grease = grease;
     }
 
     this(ref TLSDataReader reader, ushort extension_size)
@@ -853,6 +859,7 @@ public:
     override @property bool empty() const { return m_curves.empty; }
 private:
     Vector!string m_curves;
+	ushort m_grease;
 }
 
 /**
@@ -921,6 +928,8 @@ public:
                 return "DSA";
             case 3:
                 return "ECDSA";
+			case 8:
+				return "RSA-PSS";
             default:
                 return "";
         }
@@ -937,6 +946,9 @@ public:
         if (name == "ECDSA")
             return 3;
         
+		if (name == "RSA-PSS")
+			return 8;
+
         throw new InternalError("Unknown sig ID " ~ name ~ " for signature_algorithms");
     }
 
@@ -953,13 +965,18 @@ public:
         {
             try
             {
-                const ubyte hash_code = hashAlgoCode(m_supported_algos[i].first);
-                const ubyte sig_code = sigAlgoCode(m_supported_algos[i].second);
-                
-                buf.pushBack(hash_code);
-                buf.pushBack(sig_code);
-            }
-            catch (Exception)
+				const ubyte hash_code = hashAlgoCode(m_supported_algos[i].first);
+				const ubyte sig_code = sigAlgoCode(m_supported_algos[i].second);
+				if (sig_code == 8) { // RSA-PSS
+					if (hash_code < 4) continue;
+					buf.pushBack(sig_code);
+					buf.pushBack(hash_code);
+				} else {
+					buf.pushBack(hash_code);
+					buf.pushBack(sig_code);
+				}
+			}
+			catch (Exception)
             {}
         }
         
@@ -988,8 +1005,14 @@ public:
         
         while (len)
         {
-            const string hash_code = hashAlgoName(reader.get_byte());
-            const string sig_code = sigAlgoName(reader.get_byte());
+			ubyte hash_byte = reader.get_byte();
+			ubyte sig_byte = reader.get_byte();
+			if (hash_byte == 8) { // RSA-PSS
+				import std.algorithm : swap;
+				swap(hash_byte, sig_byte);
+			}
+            const string hash_code = hashAlgoName(hash_byte);
+            const string sig_code = sigAlgoName(sig_byte);
             
             len -= 2;
             
@@ -1087,6 +1110,14 @@ public:
     {
         Vector!ubyte buf = Vector!ubyte(2); // 2 bytes for length field
         
+		// grease first
+		if (m_grease_first > 0) {
+			buf.pushBack(get_byte(0, m_grease_first));
+			buf.pushBack(get_byte(1, m_grease_first));
+			buf.pushBack(cast(ubyte)0);
+			buf.pushBack(cast(ubyte)0);
+		}
+
         foreach (const ref Extension extn; m_extensions.extensions[])
         {
             if (extn.empty)
@@ -1104,7 +1135,19 @@ public:
             buf ~= extn_val[];
         }
         
-        const ushort extn_size = cast(ushort) (buf.length - 2);
+		// grease last
+		if (m_grease_last > 0) {
+			ushort grease_last = m_grease_last;
+			if (m_grease_first == m_grease_last)
+				grease_last ^= 0x1010;
+			buf.pushBack(get_byte(0, grease_last));
+			buf.pushBack(get_byte(1, grease_last));
+			buf.pushBack(cast(ubyte) 0);
+			buf.pushBack(cast(ubyte) 1);
+			buf.pushBack(cast(ubyte) 0);
+		}
+		
+		const ushort extn_size = cast(ushort) (buf.length - 2);
         
         buf[0] = get_byte(0, extn_size);
         buf[1] = get_byte(1, extn_size);
@@ -1140,12 +1183,19 @@ public:
         }
     }
 
+	void grease(const ushort first, const ushort last) {
+		m_grease_first = first;
+		m_grease_last = last;
+	}
+
 	void reserve(size_t n) { m_extensions.extensions.reserve(n); }
 
     this(ref TLSDataReader reader) { deserialize(reader); }
 
 private:
 	HandshakeExtensions m_extensions;
+	ushort m_grease_first;
+	ushort m_grease_last;
 }
 
 private struct HandshakeExtensions {

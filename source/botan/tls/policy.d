@@ -302,17 +302,28 @@ public:
     {
         return _version == latestSupportedVersion(_version.isDatagramProtocol());
     }
-
-    /**
+	
+	/**
      * Allows policy to reject any ciphersuites which are undesirable
      * for whatever reason without having to reimplement ciphersuite_list
      */
-    bool acceptableCiphersuite(in TLSCiphersuite) const
-    {
-        return true;
-    }
+	bool acceptableCiphersuite(in TLSCiphersuite) const
+	{
+		return true;
+	}
+	
+	/**
+     * Apply GREASE to TLS extensibility draft-davidben-tls-grease-01.
+     * This will add 2 extensions of distinct types 0x?a?a (1 empty at the beginning and 1 with 1 byte at the end)
+     * It will also add an invalid ciphersuite of type 0x?a?a and an invalid ECC curve of type 0x?a?a
+     * These are purposely invalid and the client will fail and close the connection if the server accepts them
+     */
+	bool allowClientHelloGrease() const
+	{
+		return false;
+	}
 
-    /**
+	/**
     * Returns: true if servers should choose the ciphersuite matching
     *            their highest preference, rather than the clients.
     *            Has no effect on client side.
