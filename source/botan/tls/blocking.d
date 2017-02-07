@@ -115,9 +115,10 @@ public:
 		ubyte[] destlog = dest;
 		//logDebug("remaining length: ", dest.length);
         ubyte[] remaining = dest;
+		int i;
         while (remaining.length > 0) {
             dest = readBuf(remaining);
-			enforce(dest.length > 0, "readBuf returned 0 length (connection closed)");
+			enforce(++i < 1000 && dest.length > 0, "readBuf returned 0 length (connection closed)");
             remaining = remaining[dest.length .. $];
 			//logDebug("remaining length: ", remaining.length);
         }
