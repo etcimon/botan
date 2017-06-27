@@ -22,8 +22,4 @@ matrix:
       - d: gdc
 
 script:
-  - dub test :base
-  - dub test :compression
-  - dub test :passhash
-  - dub test :tls
   - dub test
