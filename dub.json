@@ -7,14 +7,7 @@
     "targetType": "staticLibrary",
     "targetPath": "build",
 
-    "dependencies": {
-        ":base": "*",
-        ":compression": "*",
-        ":passhash": "*",
-        ":tls": "*"
-    },
 
-    "sourcePaths": [],
     "sourceFiles": ["source/botan/all.d"],
 
     "configurations": [
@@ -26,16 +19,12 @@
         {"name": "hash", "subConfigurations": {":base": "hash"}}
     ],
 
-    "subPackages": [
-        {
-            "name": "base",
-            "dependencies": {
-                "memutils": { "version": "~>0.4.8" },
+    "dependencies": {"memutils": { "version": "~>0.4.8" },
 				"botan-math": { "version": "~>1.0.2" } 
             }, 
-            "targetPath": "build",
-            "workingDirectory": "build",
-            "sourcePaths": [
+    "targetPath": "build",
+    "workingDirectory": "build",
+    "sourcePaths": [
                 "source/botan/algo_base",
                 "source/botan/algo_factory",
                 "source/botan/asn1",
@@ -61,7 +50,10 @@
                 "source/botan/selftest",
                 "source/botan/simd",
                 "source/botan/stream",
-                "source/botan/utils"
+                "source/botan/utils",
+		"source/botan/compression",
+		"source/botan/passhash",
+		"source/botan/tls"
             ],
             "sourceFiles": [
                 "source/botan/constants.d",
@@ -181,31 +173,7 @@
                         "Locking_Allocator", "HMAC", "Entropy_Win32", "Entropy_Rdrand", "SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24"
                     ]
                 }
-            ],
-        },
-        {
-            "name": "compression",
-            "description": "",
-            "dependencies": {"botan:base": "*"},
-            "targetPath": "build",
-            "workingDirectory": "build",
-            "sourcePaths": ["source/botan/compression"]
-        },
-        {
-            "name": "passhash",
-            "description": "",
-            "dependencies": {"botan:base": "*"},
-            "targetPath": "build",
-            "workingDirectory": "build",
-            "sourcePaths": ["source/botan/passhash"]
-        },
-        {
-            "name": "tls",
-            "description": "",
-            "dependencies": {"botan:base": "*"},
-            "targetPath": "build",
-            "workingDirectory": "build",
-            "sourcePaths": ["source/botan/tls"]
-        }
+            
+        
     ]
 }
