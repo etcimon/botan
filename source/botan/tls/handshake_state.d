@@ -114,7 +114,7 @@ public:
     const(Pair!(string, SignatureFormat))
         understandSigFormat(in PublicKey key, string hash_algo, string sig_algo, bool for_client_auth) const
     {
-        const string algo_name = key.algoName;
+        string algo_name = key.algoName;
         
         /*
         FIXME: This should check what was sent against the client hello
@@ -130,7 +130,8 @@ public:
                 throw new DecodingError("Counterparty did not send hash/sig IDS");
             
             if (sig_algo != algo_name)
-                throw new DecodingError("Counterparty sent inconsistent key and sig types");
+				algo_name = sig_algo;
+                //throw new DecodingError("Counterparty sent inconsistent key and sig types");
         }
         else
         {

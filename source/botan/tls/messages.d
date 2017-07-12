@@ -1770,10 +1770,17 @@ public:
         {
             if (_version.supportsNegotiableSignatureAlgorithms())
             {
-                m_hash_algo = SignatureAlgorithms.hashAlgoName(reader.get_byte());
-                m_sig_algo = SignatureAlgorithms.sigAlgoName(reader.get_byte());
+				ubyte hash_byte = reader.get_byte();
+				ubyte sig_byte = reader.get_byte();
+				if (hash_byte == 8) {
+					m_hash_algo = SignatureAlgorithms.hashAlgoName(sig_byte);
+					m_sig_algo = SignatureAlgorithms.sigAlgoName(hash_byte);
+				}
+				else {
+	                m_hash_algo = SignatureAlgorithms.hashAlgoName(hash_byte);
+	                m_sig_algo = SignatureAlgorithms.sigAlgoName(sig_byte);
+				}
             }
-            
             m_signature = reader.getRange!ubyte(2, 0, 65535);
         }
         

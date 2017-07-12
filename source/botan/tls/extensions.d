@@ -990,9 +990,22 @@ public:
 
     this()(auto const ref Vector!string hashes, auto const ref Vector!string sigs)
     {
-        for (size_t i = 0; i != hashes.length; ++i)
-            for (size_t j = 0; j != sigs.length; ++j)
-                m_supported_algos.pushBack(makePair(hashes[i], sigs[j]));
+		if (hashes[0] != "SHA-512") {
+			for (size_t j = 0; j != sigs.length; ++j)
+	        	for (size_t i = 0; i != hashes.length; ++i) 
+					if (hashes[i] != "SHA-1")
+		                m_supported_algos.pushBack(makePair(hashes[i], sigs[j]));
+
+			for (size_t j = 0; j != sigs.length; ++j) 
+				for (size_t i = 0; i != hashes.length; ++i) 
+					if (hashes[i] == "SHA-1" && sigs[j] != "RSA-PSS")
+						m_supported_algos.pushBack(makePair(hashes[i], sigs[j]));
+		} else {
+			for (size_t i = 0; i != hashes.length; ++i) 
+				for (size_t j = 0; j != sigs.length; ++j)
+					m_supported_algos.pushBack(makePair(hashes[i], sigs[j]));
+		}
+		
     }
     
     this(ref TLSDataReader reader,
@@ -1007,7 +1020,7 @@ public:
         {
 			ubyte hash_byte = reader.get_byte();
 			ubyte sig_byte = reader.get_byte();
-			if (hash_byte == 8) { // RSA-PSS
+			if (hash_byte == 0x08) { // RSA-PSS
 				import std.algorithm : swap;
 				swap(hash_byte, sig_byte);
 			}
