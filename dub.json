@@ -119,28 +119,6 @@
                     }
                 }, 
                 {
-                    "name": "32mscoff",
-                    "versions": [
-                        "CanTest", "Serpent_x86_32", "MD4_x86_32", "MD5_x86_32", "SHA1_x86_32",
-                        "SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24", "PBKDF1", "PBKDF2", "CTR_BE", "HMAC", "POLY1305",
-                        "EMSA1", "EMSA1_BSI", "EMSA_X931", "EMSA_PKCS1", "EMSA_PSSR", "EMSA_RAW", "EME_OAEP", "EME_PKCS1v15", "PBE_PKCSv20", 
-                        "Self_Tests", "ECB", "CBC", "XTS", "OFB", "CFB", 
-                        "AEAD_FILTER", "AEAD_CCM", "AEAD_EAX", "AEAD_OCB", "AEAD_GCM", "AEAD_SIV", "AEAD_CHACHA20_POLY1305", 
-                        "RFC6979", "RSA", "RW", "DLIES", "DSA", "ECDSA", "ElGamal", "GOST_3410",  "Curve25519",
-                        "Nyberg_Rueppel", "Diffie_Hellman", "ECDH", "AES", "Blowfish", "Camellia", "CAST", "Cascade", "DES", "GOST_28147", "IDEA", 
-                        "KASUMI", "LION", "MARS", "MISTY1", "NOEKEON", "RC2", "RC5", "RC6", "SAFER", "SEED", "Serpent", "TEA", "Twofish", "Threefish", 
-                        "XTEA", "Adler32",  "CRC32", "GOST_3411", "HAS_160", "Keccak", "MD2",  "RIPEMD_128", "RIPEMD_160", 
-                        "SHA2_64", "Skein_512", "Tiger", "Whirlpool", "ParallelHash", "Comb4P", "CBC_MAC", "CMAC", "SSL3_MAC", 
-                        "ANSI_X919_MAC", "RC4", "ChaCha", "Salsa20", "Serpent_SIMD",  "SIMD_Scalar",
-                        "Noekeon_SIMD", "XTEA_SIMD", "Engine_ASM", "Engine_AES_ISA",
-                        "Entropy_HRTimer", "Entropy_Rdrand", "Entropy_DevRand", "Entropy_EGD", "Entropy_UnixProc", "Entropy_CAPI", 
-                        "Entropy_Win32", "Entropy_ProcWalk", "X931_RNG", "HMAC_DRBG", "KDF1", "KDF2", "SSL_V3_PRF", "TLS_V10_PRF", "TLS_V12_PRF", "X942_PRF",
-                        "TLS", "X509", "PUBKEY", "FPE_FE1", "RFC3394", "PassHash9", "BCrypt", "SRP6", "TSS", "CryptoBox", "CryptoBox_PSK"
-                    ],
-                    "dflags-windows-x86": ["-m32mscoff"],
-                    "subConfigurations": { "memutils": "32mscoff", "botan-math": "32mscoff" }
-                },
-                {
                     "name": "lite",
                     "versions": [
                         "Locking_Allocator", "SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24", "PBKDF1", "PBKDF2", "CTR_BE", "HMAC", 
