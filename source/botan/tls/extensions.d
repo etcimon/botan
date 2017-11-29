@@ -990,7 +990,7 @@ public:
 
     this()(auto const ref Vector!string hashes, auto const ref Vector!string sigs)
     {
-		if (hashes[0] != "SHA-512") {
+		if (hashes[0] != "SHA-512" && hashes[0] != "SHA-256") {
 			for (size_t j = 0; j != sigs.length; ++j)
 	        	for (size_t i = 0; i != hashes.length; ++i) 
 					if (hashes[i] != "SHA-1")
