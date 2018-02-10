@@ -38,16 +38,16 @@ public:
             
             foreach (size_t j; 0 .. 16)
             {
-                R0 += (R1 & ~R3) + (R2 & R3) + m_K[4*j];
+                R0 += (R1 & ~cast(int)R3) + (R2 & R3) + m_K[4*j];
                 R0 = rotateLeft(R0, 1);
                 
-                R1 += (R2 & ~R0) + (R3 & R0) + m_K[4*j + 1];
+                R1 += (R2 & ~cast(int)R0) + (R3 & R0) + m_K[4*j + 1];
                 R1 = rotateLeft(R1, 2);
                 
-                R2 += (R3 & ~R1) + (R0 & R1) + m_K[4*j + 2];
+                R2 += (R3 & ~cast(int)R1) + (R0 & R1) + m_K[4*j + 2];
                 R2 = rotateLeft(R2, 3);
                 
-                R3 += (R0 & ~R2) + (R1 & R2) + m_K[4*j + 3];
+                R3 += (R0 & ~cast(int)R2) + (R1 & R2) + m_K[4*j + 3];
                 R3 = rotateLeft(R3, 5);
                 
                 if (j == 4 || j == 10)
@@ -81,16 +81,16 @@ public:
             foreach (size_t j; 0 .. 16)
             {
                 R3 = rotateRight(R3, 5);
-                R3 -= (R0 & ~R2) + (R1 & R2) + m_K[63 - (4*j + 0)];
+                R3 -= (R0 & ~cast(int)R2) + (R1 & R2) + m_K[63 - (4*j + 0)];
                 
                 R2 = rotateRight(R2, 3);
-                R2 -= (R3 & ~R1) + (R0 & R1) + m_K[63 - (4*j + 1)];
+                R2 -= (R3 & ~cast(int)R1) + (R0 & R1) + m_K[63 - (4*j + 1)];
                 
                 R1 = rotateRight(R1, 2);
-                R1 -= (R2 & ~R0) + (R3 & R0) + m_K[63 - (4*j + 2)];
+                R1 -= (R2 & ~cast(int)R0) + (R3 & R0) + m_K[63 - (4*j + 2)];
                 
                 R0 = rotateRight(R0, 1);
-                R0 -= (R1 & ~R3) + (R2 & R3) + m_K[63 - (4*j + 3)];
+                R0 -= (R1 & ~cast(int)R3) + (R2 & R3) + m_K[63 - (4*j + 3)];
                 
                 if (j == 4 || j == 10)
                 {

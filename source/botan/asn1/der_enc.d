@@ -216,7 +216,7 @@ public:
         if (n < 0)
         {
             foreach (size_t i; 0 .. m_contents.length)
-                m_contents[i] = ~m_contents[i];
+                m_contents[i] = ~cast(int)m_contents[i];
             for (size_t i = m_contents.length; i > 0; --i)
                 if (++(m_contents[i-1]))
                     break;
