@@ -277,7 +277,7 @@ public:
                     if (obj.value[i-1]--)
                         break;
                 foreach (size_t i; 0 .. obj.value.length)
-                    obj.value[i] = ~obj.value[i];
+                    obj.value[i] = ~cast(int)obj.value[i];
             }
             output = BigInt(obj.value.ptr, obj.value.length);
             if (negative)

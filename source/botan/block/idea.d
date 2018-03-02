@@ -81,8 +81,8 @@ protected:
         }
         
         m_DK[51] = mul_inv(m_EK[3]);
-        m_DK[50] = -m_EK[2];
-        m_DK[49] = -m_EK[1];
+        m_DK[50] = -cast(int)m_EK[2];
+        m_DK[49] = -cast(int)m_EK[1];
         m_DK[48] = mul_inv(m_EK[0]);
         
         for (size_t i = 1, j = 4, counter = 47; i != 8; ++i, j += 6)
@@ -90,16 +90,16 @@ protected:
             m_DK[counter--] = m_EK[j+1];
             m_DK[counter--] = m_EK[j];
             m_DK[counter--] = mul_inv(m_EK[j+5]);
-            m_DK[counter--] = -m_EK[j+3];
-            m_DK[counter--] = -m_EK[j+4];
+            m_DK[counter--] = -cast(int)m_EK[j+3];
+            m_DK[counter--] = -cast(int)m_EK[j+4];
             m_DK[counter--] = mul_inv(m_EK[j+2]);
         }
         
         m_DK[5] = m_EK[47];
         m_DK[4] = m_EK[46];
         m_DK[3] = mul_inv(m_EK[51]);
-        m_DK[2] = -m_EK[50];
-        m_DK[1] = -m_EK[49];
+        m_DK[2] = -cast(int)m_EK[50];
+        m_DK[1] = -cast(int)m_EK[49];
         m_DK[0] = mul_inv(m_EK[48]);
     }
 
@@ -124,7 +124,7 @@ ushort mul(ushort x, ushort y) pure
     const ushort r_1 = cast(const ushort) ((P_lo - P_hi) + (P_lo < P_hi));
     const ushort r_2 = cast(const ushort) (1 - x - y);
     
-    return cast(const ushort) ((r_1 & P_mask) | (r_2 & ~P_mask));
+    return cast(const ushort) ((r_1 & P_mask) | (r_2 & ~cast(int)P_mask));
 }
 
 /*
