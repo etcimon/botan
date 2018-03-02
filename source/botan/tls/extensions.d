@@ -960,8 +960,10 @@ public:
     override Vector!ubyte serialize() const
     {
         Vector!ubyte buf = Vector!ubyte(2);
-        
-        for (size_t i = 0; i != m_supported_algos.length; ++i)
+        if (m_signature_algos_override.length > 0) {
+            buf ~= cast(ubyte[])m_signature_algos_override[];
+        }
+        else for (size_t i = 0; i != m_supported_algos.length; ++i)
         {
             try
             {
@@ -988,8 +990,10 @@ public:
 
     override @property bool empty() const { return false; }
 
-    this()(auto const ref Vector!string hashes, auto const ref Vector!string sigs)
+    this()(auto const ref Vector!string hashes, auto const ref Vector!string sigs, auto const ref Vector!ubyte sig_algos)
     {
+        m_signature_algos_override[] = cast(ubyte[])sig_algos[];
+
 		if (hashes[0] != "SHA-512" && hashes[0] != "SHA-256") {
 			for (size_t j = 0; j != sigs.length; ++j)
 	        	for (size_t i = 0; i != hashes.length; ++i) 
@@ -1044,6 +1048,7 @@ public:
 
 private:
     Vector!( Pair!(string, string) ) m_supported_algos;
+    Vector!ubyte m_signature_algos_override;
 }
 
 /**

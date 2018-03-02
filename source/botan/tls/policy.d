@@ -330,6 +330,12 @@ public:
     */
     bool serverUsesOwnCiphersuitePreferences() const { return true; }
 
+    // Allows override of signature algorithms, providing raw bytes
+    Vector!ubyte signatureAlgorithms() const
+    {
+        return Vector!ubyte();
+    }
+
     /**
     * Return allowed ciphersuites, in order of preference
     */

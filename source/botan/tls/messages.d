@@ -324,10 +324,11 @@ public:
         m_comp_methods = policy.compression();
 
 		Vector!ubyte fmts = policy.ecPointFormats();
-
+        bool has_safe_reneg;
 		foreach (extension_; policy.enabledExtensions()) {
 			switch (extension_) {
 				case TLSEXT_SAFE_RENEGOTIATION:
+                    has_safe_reneg = true;
 					m_extensions.add(new RenegotiationExtension(reneg_info.move()));
 					break;
 				case TLSEXT_SERVER_NAME_INDICATION:
@@ -348,7 +349,7 @@ public:
 				case TLSEXT_SIGNATURE_ALGORITHMS:
 					if (m_version.supportsNegotiableSignatureAlgorithms())
 						m_extensions.add(new SignatureAlgorithms(policy.allowedSignatureHashes(),
-							policy.allowedSignatureMethods()));
+							policy.allowedSignatureMethods(), policy.signatureAlgorithms()));
 					break;
 				case TLSEXT_STATUS_REQUEST: //todo: Complete support
 					m_extensions.add(new StatusRequest);
@@ -384,7 +385,8 @@ public:
 
         if (policy.sendFallbackSCSV(_version))
             m_suites.pushBack(TLS_FALLBACK_SCSV);
-        else m_suites.pushBack(TLS_EMPTY_RENEGOTIATION_INFO_SCSV);
+        else if (has_safe_reneg)
+            m_suites.pushBack(TLS_EMPTY_RENEGOTIATION_INFO_SCSV);
 
         hash.update(io.send(this));
     }
@@ -420,10 +422,11 @@ public:
         
         if (!valueExists(m_comp_methods, session.compressionMethod()))
             m_comp_methods.pushBack(session.compressionMethod());
-
+        bool has_safe_reneg;
 		foreach (extension_; policy.enabledExtensions()) {
 			switch (extension_) {
 				case TLSEXT_SAFE_RENEGOTIATION:
+                    has_safe_reneg = true;
 					m_extensions.add(new RenegotiationExtension(reneg_info.move()));
 					break;
 				case TLSEXT_SERVER_NAME_INDICATION:
@@ -444,7 +447,7 @@ public:
 				case TLSEXT_SIGNATURE_ALGORITHMS:
 					if (m_version.supportsNegotiableSignatureAlgorithms())
 						m_extensions.add(new SignatureAlgorithms(policy.allowedSignatureHashes(),
-								policy.allowedSignatureMethods()));
+								policy.allowedSignatureMethods(), policy.signatureAlgorithms()));
 					break;
 				case TLSEXT_STATUS_REQUEST: //todo: Complete support
 					m_extensions.add(new StatusRequest);
@@ -484,7 +487,7 @@ public:
         
         if (policy.sendFallbackSCSV(m_version))
             m_suites.pushBack(TLS_FALLBACK_SCSV);
-        else
+        else if (has_safe_reneg)
             m_suites.pushBack(TLS_EMPTY_RENEGOTIATION_INFO_SCSV);
 
         hash.update(io.send(this));
