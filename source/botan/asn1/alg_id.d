@@ -98,7 +98,7 @@ public:
     /*
      * Make a copy of another AlgorithmIdentifier
      */
-    this(const ref AlgorithmIdentifier other) {
+    this(const AlgorithmIdentifierImpl other) {
         m_oid = OID(other.m_oid);
         m_parameters = Vector!ubyte(other.m_parameters[]);
     }
