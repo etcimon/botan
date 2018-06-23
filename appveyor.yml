@@ -6,19 +6,31 @@ environment:
     arch: x64
   - DC: dmd
     DVersion: nightly
-    arch: x86
+    arch: x86_mscoff
   - DC: dmd
     DVersion: beta
     arch: x64
   - DC: dmd
     DVersion: beta
-    arch: x86
+    arch: x86_mscoff
   - DC: dmd
     DVersion: stable
     arch: x64
   - DC: dmd
     DVersion: stable
-    arch: x86
+    arch: x86_mscoff
+  - DC: dmd
+    DVersion: 2.076.0
+    arch: x64
+  - DC: dmd
+    DVersion: 2.076.0
+    arch: x86_mscoff
+  - DC: dmd
+    DVersion: 2.074.0
+    arch: x64
+  - DC: dmd
+    DVersion: 2.074.0
+    arch: x86_mscoff
   - DC: ldc
     DVersion: beta
     arch: x64
@@ -55,15 +67,15 @@ install:
             $version = $env:DVersion;
             if($version -eq "stable") {
                 $latest = (Invoke-WebRequest "https://ldc-developers.github.io/LATEST").toString().replace("`n","").replace("`r","");
-                $url = "https://github.com/ldc-developers/ldc/releases/download/v$($latest)/ldc2-$($latest)-win64-msvc.zip";
+                $url = "https://github.com/ldc-developers/ldc/releases/download/v$($latest)/ldc2-$($latest)-windows-x64.7z";
             }elseif($version -eq "beta") {
                 $latest = (Invoke-WebRequest "https://ldc-developers.github.io/LATEST_BETA").toString().replace("`n","").replace("`r","");
-                $url = "https://github.com/ldc-developers/ldc/releases/download/v$($latest)/ldc2-$($latest)-win64-msvc.zip";
+                $url = "https://github.com/ldc-developers/ldc/releases/download/v$($latest)/ldc2-$($latest)-windows-x64.7z";
             } else {
                 $latest = $version;
-                $url = "https://github.com/ldc-developers/ldc/releases/download/v$($version)/ldc2-$($version)-win64-msvc.zip";
+                $url = "https://github.com/ldc-developers/ldc/releases/download/v$($version)/ldc2-$($version)-windows-x64.7z";
             }
-            $env:PATH += ";C:\ldc2-$($latest)-win64-msvc\bin";
+            $env:PATH += ";C:\ldc2-$($latest)-windows-x64\bin";
             $env:DC = "ldc2";
             return $url;
         }
@@ -84,10 +96,10 @@ install:
               echo "downloading ...";
               $url = ResolveLatestLDC;
               echo $url;
-              Invoke-WebRequest $url -OutFile "c:\ldc.zip";
+              Invoke-WebRequest $url -OutFile "c:\ldc.7z";
               echo "finished.";
               pushd c:\\;
-              7z x ldc.zip > $null;
+              7z x ldc.7z > $null;
               popd;
             }
         }
