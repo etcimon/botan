@@ -234,8 +234,8 @@ public:
     this()
     {
         streamp().opaque = cast(void*)alloc();
-        streamp().zalloc = &CompressionAllocInfo.malloc!uint;
-        streamp().zfree = &CompressionAllocInfo.free;
+        streamp().zalloc = cast(typeof(streamp().zalloc))&CompressionAllocInfo.malloc!uint;
+        streamp().zfree = cast(typeof(streamp().zfree))&CompressionAllocInfo.free;
     }
     
     override uint runFlag() const { return Z_NO_FLUSH; }

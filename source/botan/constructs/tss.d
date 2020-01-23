@@ -40,7 +40,7 @@ public:
     *  identifier = the 16 ubyte share identifier
     *  rng = the random number generator to use
     */
-    static Vector!RTSS split(ubyte M, ubyte N,
+    static auto split(ubyte M, ubyte N,
                              const(ubyte)* S, size_t S_len,
                              in ubyte[16] identifier,
                              RandomNumberGenerator rng)

@@ -258,7 +258,7 @@ void checkSignature(ALLOC)(auto const ref Vector!(ubyte, ALLOC) tbs_response,
 }
 
 //version(Have_vibe_d) import vibe.core.concurrency : Tid, send; else 
-import std.concurrency : Mutex;
+import core.sync.mutex : Mutex;
 /// Checks the certificate online
 struct OnlineCheck {
 	size_t id;
