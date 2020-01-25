@@ -31,6 +31,7 @@ import botan.codec.pem;
 import botan.utils.types;
 import botan.utils.exceptn;
 import botan.utils.mem_ops;
+import memutils.utils;
 
 alias PKCS10Request = RefCounted!PKCS10RequestImpl;
 

@@ -19,6 +19,7 @@ import botan.utils.parsing;
 import botan.utils.bit_ops;
 import botan.utils.types;
 import std.algorithm;
+import memutils.utils;
 
 import botan.utils.types;
 

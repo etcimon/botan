@@ -22,6 +22,7 @@ import botan.math.bigint.bigint;
 import botan.asn1.oids;
 import botan.utils.types;
 import std.datetime;
+import memutils.utils;
 
 alias CRLEntry = RefCounted!CRLEntryImpl;
 

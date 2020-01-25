@@ -12,8 +12,9 @@
 module botan.filters.data_src;
 
 import botan.constants;
-import memutils.vector;
+import memutils.allocators;
 import memutils.utils;
+import memutils.vector;
 import botan.utils.types;
 import std.stdio;
 import botan.utils.exceptn;

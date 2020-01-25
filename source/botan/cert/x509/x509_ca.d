@@ -32,6 +32,7 @@ import botan.rng.rng;
 import std.datetime;
 import std.algorithm;
 import botan.utils.mem_ops;
+import memutils.utils;
 
 alias X509CA = RefCounted!X509CAImpl;
 

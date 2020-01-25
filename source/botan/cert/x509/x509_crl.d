@@ -24,6 +24,7 @@ import botan.math.bigint.bigint;
 import botan.asn1.oids;
 import botan.asn1.asn1_time;
 import botan.utils.types;
+import memutils.utils;
 
 alias X509CRL = RefCounted!X509CRLImpl;
 

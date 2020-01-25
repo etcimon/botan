@@ -25,6 +25,11 @@ alias AlgorithmIdentifier = RefCounted!AlgorithmIdentifierImpl;
 */
 final class AlgorithmIdentifierImpl : ASN1Object
 {
+    override ulong toHash() const nothrow @trusted {
+        ulong ret;
+        try ret = (cast()this).m_oid.toHash(); catch(Throwable e) {}
+        return ret;
+    }
 public:
     alias EncodingOption = bool;
     enum : EncodingOption { USE_NULL_PARAM }
