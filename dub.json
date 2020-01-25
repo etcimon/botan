@@ -9,7 +9,7 @@
 
 
 
-    "dependencies": {"memutils": { "version": "~>0.4.8" },
+    "dependencies": {"memutils": { "version": "~>1.0.1" },
 				"botan-math": { "version": "~>1.0.2" } 
             }, 
     "workingDirectory": "build",
