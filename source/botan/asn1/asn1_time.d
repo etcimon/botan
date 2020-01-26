@@ -179,7 +179,7 @@ public:
         m_minute    = (params.length >= 5) ? to!uint(params[4]) : 0;
         m_second    = (params.length == 6) ? to!uint(params[5]) : 0;
 
-        foreach(string param; params[]) delete param;
+        foreach(string param; params[]) destroy(param);
 
         m_tag = (m_year >= 2050) ? ASN1Tag.GENERALIZED_TIME : ASN1Tag.UTC_TIME;
         
@@ -239,7 +239,7 @@ public:
         m_second  = (params.length == 6) ? to!uint(params[5]) : 0;
         m_tag     = spec_tag;
         
-        foreach(string param; params[]) delete param;
+        foreach(string param; params[]) destroy(param);
 
         if (spec_tag == ASN1Tag.UTC_TIME)
         {

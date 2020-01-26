@@ -23,6 +23,9 @@ import memutils.hashmap;
 import std.file;
 import std.array;
 import std.exception;
+import std.datetime.stopwatch : StopWatch;
+import std.datetime.date;
+import std.datetime.interval;
 
 @property bool ok(File f) { return f.isOpen && !f.eof() && !f.error(); }
 
@@ -77,7 +80,6 @@ string[] listDir(string dir_path)
     return files;
 }
 
-import std.datetime : StopWatch;
 StopWatch g_sw;
 
 size_t runTestsInDir(string dir, size_t delegate(string) fn)
@@ -105,8 +107,8 @@ void testReport(string name, size_t ran, size_t failed)
     if (failed)
         logError(name, " ... ", failed, " / ", ran, " ************** FAILED ****************");
     else
-		logDebug(name, " ... PASSED (all of ", ran, " tests in ", g_sw.peek().msecs() - last_msecs, " msecs)");
-	last_msecs = g_sw.peek().msecs();
+		logDebug(name, " ... PASSED (all of ", ran, " tests in ", g_sw.peek().total!"msecs" - last_msecs, " msecs)");
+	last_msecs = g_sw.peek().total!"msecs";
 }
 
 size_t runTestsBb(ref File src,
