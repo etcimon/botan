@@ -78,7 +78,7 @@ public:
     */
     final size_t readByte(ref ubyte output)
     {
-        return read(&output, 1);
+        return read(cast(ubyte*)&output, 1);
     }
 
 
@@ -92,7 +92,7 @@ public:
     */
     final size_t peekByte(ref ubyte output) const
     {
-        return peek(&output, 1, 0);
+        return peek(cast(ubyte*)&output, 1, 0);
     }
 
 

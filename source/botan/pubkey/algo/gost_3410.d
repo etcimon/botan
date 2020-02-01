@@ -115,7 +115,7 @@ public:
         BigInt x = BigInt(bits.ptr, part_size);
         BigInt y = BigInt(&bits[part_size], part_size);
         
-        PointGFp public_point = PointGFp(domain_params.getCurve(), x, y);
+        PointGFp public_point = PointGFp(domain_params.getCurve(), &x, &y);
 		m_owned = true;
         m_pub = new ECPublicKey(Options(), domain_params, public_point);
         assert(public_point.onTheCurve(), "Loaded GOST 34.10 public key is on the curve");
@@ -207,13 +207,15 @@ public:
         if (e == 0)
             e = 1;
         
-        PointGFp k_times_P = (*m_base_point) * k;
+        PointGFp k_times_P = (*m_base_point) * &k;
         
         assert(k_times_P.onTheCurve(), "GOST 34.10 k*g is on the curve");
         
         BigInt r = k_times_P.getAffineX() % (*m_order);
         
-        BigInt s = (r*(*m_x) + k*e) % (*m_order);
+        auto s_0 = r * m_x;
+        s_0 += k * &e;
+        BigInt s = s_0 % m_order;
         
         if (r == 0 || s == 0)
             throw new InvalidState("GOST 34.10: r == 0 || s == 0");
@@ -247,9 +249,10 @@ public:
     this(in ECPublicKey gost) 
     {
         assert(gost.algoName == GOST3410PublicKey.algoName);
-        m_base_point = &gost.domain().getBasePoint();
-        m_public_point = &gost.publicPoint();
-        m_order = &gost.domain().getOrder();
+        m_ec_publickey = gost;
+        m_base_point = &m_ec_publickey.domain().getBasePoint();
+        m_public_point = &m_ec_publickey.publicPoint();
+        m_order = &m_ec_publickey.domain().getOrder();
     }
 
     override size_t messageParts() const { return 2; }
@@ -277,13 +280,13 @@ public:
         if (e == 0)
             e = 1;
         
-        BigInt v = inverseMod(e, (*m_order));
+        BigInt v = inverseMod(&e, m_order);
         
         BigInt z1 = (s*v) % (*m_order);
         BigInt z2 = (-r*v) % (*m_order);
         
-        PointGFp R = PointGFp.multiExponentiate(*m_base_point, z1,
-                                                *m_public_point, z2);
+        PointGFp R = PointGFp.multiExponentiate(*m_base_point, &z1,
+                                                *m_public_point, &z2);
         
         if (R.isZero())
             return false;
@@ -292,6 +295,7 @@ public:
     }
    // const ~this() { destroy(cast(GOST3410VerificationOperation)this); }
 private:
+    const ECPublicKey m_ec_publickey;
     const PointGFp* m_base_point;
     const PointGFp* m_public_point;
     const BigInt* m_order;

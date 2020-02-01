@@ -253,7 +253,7 @@ public:
             auto rng = scoped!AutoSeededRNG();
             pkey_saved[hostname] = ECDSAPrivateKey(rng, ECGroup("secp256r1"));
         }
-        return *pkey_saved[hostname];
+        return cast(PrivateKey) pkey_saved[hostname];
     }
 
     /**

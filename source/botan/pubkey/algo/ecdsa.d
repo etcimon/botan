@@ -167,10 +167,12 @@ public:
             
             while (k >= *m_order)
                 k.randomize(rng, m_order.bits() - 1);
-            PointGFp k_times_P = (*m_base_point) * k;
+            PointGFp k_times_P = *m_base_point * &k;
             assert(k_times_P.onTheCurve());
             r = m_mod_order.reduce(k_times_P.getAffineX());
-            s = m_mod_order.multiply(inverseMod(k, *m_order), mulAdd(*m_x, r, m));
+            auto s_0 = inverseMod(&k, m_order);
+            auto s_1 = mulAdd(m_x, &r, &m);
+            s = m_mod_order.multiply(&s_0, &s_1);
 
         }
         
@@ -239,10 +241,10 @@ public:
             return false;
         }
         
-        BigInt w = inverseMod(s, *m_order);
+        BigInt w = inverseMod(&s, m_order);
 		BigInt u1 = m_mod_order.reduce(e * w);
 		BigInt u2 = m_mod_order.reduce(r * w);
-		PointGFp R = PointGFp.multiExponentiate(*m_base_point, u1, *m_public_point, u2);
+		PointGFp R = PointGFp.multiExponentiate(*m_base_point, &u1, *m_public_point, &u2);
         if (R.isZero()) 
             return false;
 		BigInt v = m_mod_order.reduce(R.getAffineX());
@@ -549,7 +551,7 @@ size_t testCreateAndVerify(RandomNumberGenerator rng)
     BigInt bi_a_secp = BigInt.decode( sv_a_secp.ptr, sv_a_secp.length );
     BigInt bi_b_secp = BigInt.decode( sv_b_secp.ptr, sv_b_secp.length );
     BigInt bi_order_g = BigInt.decode( sv_order_g.ptr, sv_order_g.length );
-    CurveGFp curve = CurveGFp(bi_p_secp, bi_a_secp, bi_b_secp);
+    CurveGFp curve = CurveGFp(&bi_p_secp, &bi_a_secp, &bi_b_secp);
     PointGFp p_G = OS2ECP( sv_G_secp_comp, curve );
     auto bi = BigInt(1);
     ECGroup dom_params = ECGroup(curve, p_G, bi_order_g, bi);
@@ -766,7 +768,7 @@ size_t eccPointMul(in string group_id,
     const BigInt X = BigInt(X_s);
     const BigInt Y = BigInt(Y_s);
     
-    PointGFp p = group.getBasePoint() * m;
+    PointGFp p = group.getBasePoint() * &m;
     
     size_t fails = 0;
     

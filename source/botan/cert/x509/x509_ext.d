@@ -117,6 +117,7 @@ public:
         {
             OID oid = OID();
             Vector!ubyte value;
+            value.reserve(12);
             bool critical;
             
             sequence.startCons(ASN1Tag.SEQUENCE)

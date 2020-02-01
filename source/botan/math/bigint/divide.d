@@ -23,7 +23,7 @@ import botan.constants;
 *  q = will be set to x / y
 *  r = will be set to x % y
 */
-void divide()(auto const ref BigInt x, auto const ref BigInt y_arg, ref BigInt q, ref BigInt r)
+void divide(const(BigInt)* x, const(BigInt)* y_arg, BigInt* q, BigInt* r)
 {
     /*
     * Solve x = q * y + r
@@ -34,8 +34,8 @@ void divide()(auto const ref BigInt x, auto const ref BigInt y_arg, ref BigInt q
     BigInt y = y_arg.dup;
     const size_t y_words = y.sigWords();
     
-    r = x.dup;
-    q = 0;
+    *r = x.dup;
+    *q = 0;
     
     r.setSign(BigInt.Positive);
     y.setSign(BigInt.Positive);
@@ -44,8 +44,8 @@ void divide()(auto const ref BigInt x, auto const ref BigInt y_arg, ref BigInt q
     
     if (compare == 0)
     {
-        q = 1;
-        r = 0;
+        *q = 1;
+        *r = 0;
     }
     else if (compare > 0)
     {
@@ -53,7 +53,7 @@ void divide()(auto const ref BigInt x, auto const ref BigInt y_arg, ref BigInt q
         word y_top = y.wordAt(y.sigWords()-1);
         while (y_top < MP_WORD_TOP_BIT) { y_top <<= 1; ++shifts; }
         y <<= shifts;
-        r <<= shifts;
+        *r <<= shifts;
         
         const size_t n = r.sigWords() - 1, t = y_words - 1;
         
@@ -66,15 +66,15 @@ void divide()(auto const ref BigInt x, auto const ref BigInt y_arg, ref BigInt q
         
         if (n <= t)
         {
-            while (r > y) { r -= y; ++q; }
-            r >>= shifts;
+            while (*r > y) { *r -= y; ++(*q); }
+            *r >>= shifts;
             signFixup(x, y_arg, q, r);
             return;
         }
         
         BigInt temp = y << (MP_WORD_BITS * (n-t));
         
-        while (r >= temp) { r -= temp; q_words[n-t] += 1; }
+        while (*r >= temp) { *r -= temp; q_words[n-t] += 1; }
         
         for (size_t j = n; j != t; --j)
         {
@@ -93,15 +93,17 @@ void divide()(auto const ref BigInt x, auto const ref BigInt y_arg, ref BigInt q
             }
 			auto y_1 = (y * q_words[j-t-1]);
 			auto j_t_1 = (j-t-1);
-            r -= y_1 << (MP_WORD_BITS * j_t_1);
+            y_1 <<= (MP_WORD_BITS * j_t_1);
+            *r -= y_1;
             
             if (r.isNegative())
             {
-                r += y << (MP_WORD_BITS * (j-t-1));
+                y <<= (MP_WORD_BITS * (j-t-1));
+                *r += y;
                 q_words[j-t-1] -= 1;
             }
         }
-        r >>= shifts;
+        *r >>= shifts;
     }
     
     signFixup(x, y_arg, q, r);
@@ -111,12 +113,12 @@ private:
 /*
 * Handle signed operands, if necessary
 */
-void signFixup(const ref BigInt x, const ref BigInt y, ref BigInt q, ref BigInt r)
+void signFixup(const(BigInt)* x, const(BigInt)* y, BigInt* q, BigInt* r)
 {
     if (x.sign() == BigInt.Negative)
     {
         q.flipSign();
-        if (r.isNonzero()) { --q; r = y.abs() - r; }
+        if (r.isNonzero()) { --*q; *r = y.abs() - *r; }
     }
     if (y.sign() == BigInt.Negative)
         q.flipSign();

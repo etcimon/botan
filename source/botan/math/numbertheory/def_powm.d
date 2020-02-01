@@ -30,7 +30,7 @@ public:
     /*
     * Set the exponent
     */
-    override void setExponent(const ref BigInt e)
+    override void setExponent(const(BigInt)* e)
     {
         m_exp = e.dup;
     }
@@ -38,16 +38,17 @@ public:
     /*
     * Set the base
     */
-    override void setBase(const ref BigInt base)
+    override void setBase(const(BigInt)* base)
     {
         m_window_bits = PowerMod.windowBits(m_exp.bits(), base.bits(), m_hints);
         auto base_2 = base.dup;
         m_g.resize(1 << m_window_bits);
-        m_g[0] = RefCounted!BigInt(1);
-        m_g[1] = RefCounted!BigInt(base_2);
+        m_g[0] = new BigInt(1);
+        m_g[1] = base_2;
         
-        for (size_t i = 2; i != m_g.length; ++i)
-            m_g[i] = RefCounted!BigInt(m_reducer.multiply(*(m_g[i-1]), *(m_g[1])));
+        for (size_t i = 2; i != m_g.length; ++i) {
+            m_g[i] = m_reducer.multiply(m_g[i-1], m_g[1]).dup;
+        }
     }
 
     /*
@@ -62,11 +63,11 @@ public:
         for (size_t i = exp_nibbles; i > 0; --i)
         {
             foreach (size_t j; 0 .. m_window_bits)
-                x = m_reducer.square(x);
+                x = m_reducer.square(&x);
             
             const uint nibble = m_exp.getSubstring(m_window_bits*(i-1), m_window_bits);
             
-            x = m_reducer.multiply(x, *(m_g[nibble]));
+            x = m_reducer.multiply(&x, m_g[nibble]);
         }
         return x.move();
     }
@@ -82,25 +83,19 @@ public:
         return ret;
     }
 
-    this()(auto const ref BigInt n, PowerMod.UsageHints _hints)
+    this(const(BigInt)* n, PowerMod.UsageHints _hints)
     {
-        m_reducer = ModularReducer(n);
+        m_reducer = ModularReducer(*n);
         m_hints = _hints;
         m_window_bits = 0;
     }
-
-	~this() {
-		foreach (ref RefCounted!BigInt bi; m_g[]) {
-			(*bi).destroy();
-		}
-	}
 
 private:
     this() { }
     ModularReducer m_reducer;
     BigInt m_exp;
     size_t m_window_bits;
-    Vector!(RefCounted!BigInt) m_g;
+    Vector!(BigInt*) m_g;
     PowerMod.UsageHints m_hints;
 }
 
@@ -113,7 +108,7 @@ public:
     /*
     * Set the exponent
     */
-    override void setExponent(const ref BigInt exp)
+    override void setExponent(const(BigInt)* exp)
     {
         m_exp = exp.dup;
         m_exp_bits = exp.bits();
@@ -122,7 +117,7 @@ public:
     /*
     * Set the base
     */
-    override void setBase(const ref BigInt base)
+    override void setBase(const(BigInt)* base)
     {
         m_window_bits = PowerMod.windowBits(m_exp.bits(), base.bits(), m_hints);
         m_g.resize((1 << m_window_bits));
@@ -135,14 +130,21 @@ public:
         bigint_monty_mul(z.mutablePtr(), z.length, m_g[0].ptr, m_g[0].length, m_g[0].sigWords(), m_R2_mod.ptr, 
                          m_R2_mod.length, m_R2_mod.sigWords(), m_modulus.ptr, m_mod_words, m_mod_prime, workspace.ptr);
         
-        m_g[0] = RefCounted!BigInt(z.dup);
+        auto z_0 = z.dup;
+        m_g[0] = RefCounted!BigInt(&z_0);
         
-        m_g[1] = (base >= m_modulus) ? RefCounted!BigInt(base % m_modulus) : RefCounted!BigInt(base.dup);
+        auto base_0 = (*base).dup;
+        if (base_0 >= &m_modulus) {
+            auto base_modulo = base_0 % &m_modulus;
+            m_g[1] = RefCounted!BigInt(&base_modulo);
+        }
+        else m_g[1] = RefCounted!BigInt(&base_0);
         
         bigint_monty_mul(z.mutablePtr(), z.length, m_g[1].ptr, m_g[1].length, m_g[1].sigWords(), m_R2_mod.ptr, 
                          m_R2_mod.length, m_R2_mod.sigWords(), m_modulus.ptr, m_mod_words, m_mod_prime, workspace.ptr);
         
-        m_g[1] = RefCounted!BigInt(z.dup);
+        auto z_1 = z.dup;
+        m_g[1] = RefCounted!BigInt(&z_1);
         
         const BigInt* x = &*(m_g[1]);
         const size_t x_sig = x.sigWords();
@@ -157,8 +159,8 @@ public:
                              y.ptr, y.length, y_sig,
                              m_modulus.ptr, m_mod_words, m_mod_prime,
                              workspace.ptr);
-            
-            m_g[i] = RefCounted!BigInt(z.dup);
+            auto z_dup = z.dup;
+            m_g[i] = RefCounted!BigInt(&z_dup);
         }
     }
 
@@ -223,7 +225,7 @@ public:
     /*
     * Montgomery_Exponentiator Constructor
     */
-    this()(auto const ref BigInt mod, PowerMod.UsageHints hints)
+    this(const(BigInt)* mod, PowerMod.UsageHints hints)
     {
         m_modulus = mod.dup;
         m_mod_words = m_modulus.sigWords();
@@ -240,12 +242,6 @@ public:
 		auto r_mod_temp = (m_R_mod * m_R_mod);
         m_R2_mod = r_mod_temp % m_modulus;
     }
-
-	~this() {
-		foreach (ref RefCounted!BigInt bi; m_g[]) {
-			(*bi).destroy();
-		}
-	}
 
 private:
     this() { }

@@ -100,7 +100,7 @@ public:
             auto bi = BigInt(2);
             x_arg = BigInt.randomInteger(rng, bi, grp.getQ() - 1);
         }
-        BigInt y1 = powerMod(grp.getG(), x_arg, grp.getP());
+        BigInt y1 = powerMod(&grp.getG(), &x_arg, &grp.getP());
 
 		m_owned = true;
         m_priv = new DLSchemePrivateKey(Options(), grp.move, y1.move, x_arg.move);
@@ -116,7 +116,7 @@ public:
 		m_owned = true;
         m_priv = new DLSchemePrivateKey(Options(), alg_id, key_bits);
        
-        m_priv.setY(powerMod(m_priv.groupG(), m_priv.m_x, m_priv.groupP()));
+        m_priv.setY(powerMod(&m_priv.groupG(), &m_priv.m_x, &m_priv.groupP()));
         
         m_priv.loadCheck(rng);
     }
@@ -149,10 +149,11 @@ public:
     this(in DLSchemePrivateKey nr)
     {
         assert(nr.algoName == NRPublicKey.algoName);
-        m_q = &nr.groupQ();
-        m_x = &nr.getX();
-        m_powermod_g_p = FixedBasePowerMod(nr.groupG(), nr.groupP());
-        m_mod_q = ModularReducer(nr.groupQ());
+        m_nr = nr;
+        m_q = &m_nr.groupQ();
+        m_x = &m_nr.getX();
+        m_powermod_g_p = FixedBasePowerMod(m_nr.groupG(), m_nr.groupP());
+        m_mod_q = ModularReducer(m_nr.groupQ());
     }
 
     override SecureVector!ubyte sign(const(ubyte)* msg, size_t msg_len, RandomNumberGenerator rng)
@@ -172,8 +173,8 @@ public:
             do
                 k.randomize(rng, m_q.bits());
             while (k >= *m_q);
-            
-            c = m_mod_q.reduce((*m_powermod_g_p)(k) + f);
+            FixedBasePowerModImpl powermod_g_p = m_powermod_g_p;
+            c = m_mod_q.reduce(powermod_g_p(&k) + &f);
             d = m_mod_q.reduce(k - (*m_x) * c);
         }
         
@@ -182,7 +183,8 @@ public:
         d.binaryEncode(&output[output.length - d.bytes()]);
         return output;
     }
-private:
+private: 
+    const DLSchemePrivateKey m_nr;
     const BigInt* m_q;
     const BigInt* m_x;
     FixedBasePowerMod m_powermod_g_p;
@@ -206,6 +208,7 @@ public:
     this(in DLSchemePublicKey nr) 
     {
         assert(nr.algoName == NRPublicKey.algoName);
+        m_nr = nr;
         m_q = &nr.groupQ();
         m_y = &nr.getY();
         m_p = &nr.groupP();
@@ -262,7 +265,8 @@ public:
 						import memutils.utils;
 						FixedBasePowerModImpl powermod_y_p = ThreadMem.alloc!FixedBasePowerModImpl(*cast(const BigInt*)y, *cast(const BigInt*)p);
 						scope(exit) ThreadMem.free(powermod_y_p);
-						synchronized(cast()mtx) ret.load( powermod_y_p(*cast(BigInt*)c2) );
+                        auto ret_1 = powermod_y_p(c2);
+						synchronized(cast()mtx) ret.load( &ret_1 );
 					}
 				} catch (Exception e) { logDebug("Error: ", e.toString()); }
 
@@ -273,13 +277,15 @@ public:
 
 		Unique!Thread thr = new Thread(&handler.run);
 		thr.start();
-        BigInt g_d = (*m_powermod_g_p)(d);
+        FixedBasePowerModImpl powermod_g_p = m_powermod_g_p;
+        BigInt g_d = powermod_g_p(&d);
 		thr.join();
 		BigInt i;
 		synchronized(mutex) i = m_mod_p.multiply(g_d, res);
         return BigInt.encodeLocked(m_mod_q.reduce(c - i));
     }
 private:
+    const DLSchemePublicKey m_nr;
     const BigInt* m_q;
     const BigInt* m_y;
     const BigInt* m_p;

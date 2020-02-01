@@ -141,7 +141,7 @@ public:
                 .decode(m_certid)
                 .getNext(cert_status)
                 .decode(m_thisupdate)
-                .decodeOptional(*m_nextupdate, (cast(ASN1Tag) 0),
+                .decodeOptional(m_nextupdate, (cast(ASN1Tag) 0),
                                  ASN1Tag.CONTEXT_SPECIFIC | ASN1Tag.CONSTRUCTED)
                 .decodeOptional(extensions, (cast(ASN1Tag)1),
                                  ASN1Tag.CONTEXT_SPECIFIC | ASN1Tag.CONSTRUCTED)

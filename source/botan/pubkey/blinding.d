@@ -31,8 +31,8 @@ public:
         if (!m_reducer.initialized()) 
             return i.dup;
 
-        m_e = m_reducer.square(m_e);
-        m_d = m_reducer.square(m_d);
+        m_e = m_reducer.square(&m_e);
+        m_d = m_reducer.square(&m_d);
         return m_reducer.multiply(i, m_e);
     }
 

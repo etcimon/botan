@@ -99,7 +99,7 @@ public:
             auto bi = BigInt(2);
             x_arg = BigInt.randomInteger(rng, bi, dl_group.getQ() - 1);
         }
-        BigInt y1 = powerMod(dl_group.getG(), x_arg, dl_group.getP());
+        BigInt y1 = powerMod(&dl_group.getG(), &x_arg, &dl_group.getP());
         
 		m_owned = true;
         m_priv = new DLSchemePrivateKey(Options(), dl_group.move, y1.move, x_arg.move);
@@ -191,11 +191,11 @@ public:
 						modexpInit(); // enable quick path for powermod
 						BigInt* ret = cast(BigInt*) res2;
 						{ import memutils.utils;
-							FixedBasePowerModImpl powermod_g_p = ThreadMem.alloc!FixedBasePowerModImpl((*cast(const BigInt*)g), (*cast(const BigInt*)p));
+							FixedBasePowerModImpl powermod_g_p = ThreadMem.alloc!FixedBasePowerModImpl(g, p);
 							scope(exit) ThreadMem.free(powermod_g_p);
-							BigInt _res = (cast(ModularReducer*)mod_q).reduce(powermod_g_p(*cast(BigInt*)k2));
+							BigInt _res = (cast(ModularReducer*)mod_q).reduce(powermod_g_p(k2));
 							//logDebug("Got: ", _res.bytes());
-							synchronized(cast()mtx) ret.load(_res);
+							synchronized(cast()mtx) ret.load(&_res);
 						}
 					}
 					catch (Exception e) { logDebug("Error: ", e.toString()); }
@@ -205,10 +205,10 @@ public:
 			auto handler = Handler(cast(shared) mutex, cast(shared)&m_mod_q, cast(shared)m_g, cast(shared)m_p, cast(shared)&k, cast(shared)&res);
 			Unique!Thread thr = new Thread(&handler.run);
 			thr.start();
-            s = inverseMod(k, *m_q);
+            s = inverseMod(&k, m_q);
 			thr.join();
 			synchronized(mutex) r = res.dup;
-			BigInt s_arg = mulAdd(*m_x, r, i);
+			BigInt s_arg = mulAdd(m_x, &r, &i);
             s = m_mod_q.multiply(s, s_arg);
         }
         
@@ -272,7 +272,7 @@ public:
         if (r <= 0 || r >= *q || s <= 0 || s >= *q)
             return false;
         
-        s = inverseMod(s, *q);
+        s = inverseMod(&s, q);
 
         BigInt s_i;
 		s_i.reserve(max(m_g.bytes() + m_g.bytes() % 128, m_y.bytes() + m_y.bytes() % 128));
@@ -298,11 +298,11 @@ public:
 					BigInt* ret = cast(BigInt*) s_i2;
 					{
 						import memutils.utils;
-						FixedBasePowerModImpl powermod_g_p = ThreadMem.alloc!FixedBasePowerModImpl(*cast(const BigInt*)g2, *cast(const BigInt*)p2);
+						FixedBasePowerModImpl powermod_g_p = ThreadMem.alloc!FixedBasePowerModImpl(g2, p2);
 						scope(exit) ThreadMem.free(powermod_g_p);
-						auto mult = (*cast(ModularReducer*)mod_q).multiply(*cast(BigInt*)s2, *cast(BigInt*)i2);
-						BigInt _res = powermod_g_p(mult);
-						synchronized(cast()mtx) ret.load(_res);
+						auto mult = mod_q.multiply(s2, i2);
+						BigInt _res = powermod_g_p(&mult);
+						synchronized(cast()mtx) ret.load(&_res);
 					}
 				} catch (Exception e) {
 					logDebug("Got error: ", e.toString);
@@ -313,8 +313,9 @@ public:
 		auto handler = Handler(cast(shared) mutex, cast(shared)&m_mod_q, cast(shared)m_g, cast(shared)m_p, cast(shared)&s, cast(shared)&i, cast(shared)&s_i);
 		Unique!Thread thr = new Thread(&handler.run);
 		thr.start();
-		auto mult = m_mod_q.multiply(s, r);
-        BigInt s_r = (*m_powermod_y_p)(mult.move);
+		auto mult = m_mod_q.multiply(&s, &r);
+        FixedBasePowerModImpl powermod_y_p = m_powermod_y_p;
+        BigInt s_r = powermod_y_p.opCall(&mult);
 		thr.join();
         synchronized(mutex) s = m_mod_p.multiply(s_i, s_r);
         auto r2 = m_mod_q.reduce(s.move);
@@ -378,7 +379,7 @@ size_t dsaSigKat(string p,
     DLGroup group = DLGroup(p_bn, q_bn, g_bn);
     auto privkey = DSAPrivateKey(*rng, group.move(), x_bn.move());
     
-    auto pubkey = DSAPublicKey(*privkey);
+    auto pubkey = DSAPublicKey(privkey);
     
     const string padding = "EMSA1(" ~ hash ~ ")";
     PKVerifier verify = PKVerifier(*pubkey, padding);

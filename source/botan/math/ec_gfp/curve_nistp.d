@@ -23,7 +23,7 @@ import botan.utils.mem_ops;
 
 abstract class CurveGFpNIST : CurveGFpRepr
 {
-    this()(size_t p_bits, auto const ref BigInt a, auto const ref BigInt b)
+    this()(size_t p_bits, BigInt* a, BigInt* b)
     {
         m_a = a.dup;
         m_b = b.dup;
@@ -40,12 +40,12 @@ abstract class CurveGFpNIST : CurveGFpRepr
 
     override size_t getPWords() const { return m_p_words; }
 
-    override void toCurveRep(ref BigInt x, ref SecureVector!word ws) const
+    override void toCurveRep(BigInt* x, SecureVector!word* ws) const
     {
         redc(x, ws);
     }
     
-    override void fromCurveRep(ref BigInt x, ref SecureVector!word ws) const
+    override void fromCurveRep(BigInt* x, SecureVector!word* ws) const
     {
         redc(x, ws);
     }
@@ -58,11 +58,12 @@ abstract class CurveGFpNIST : CurveGFpRepr
     *  x = first multiplicand
     *  y = second multiplicand
     */
-    override void curveMul(ref BigInt z, const ref BigInt x, const ref BigInt y, ref SecureVector!word ws) const
+    override void curveMul(BigInt* z, const(BigInt)* x, const(BigInt)* y, SecureVector!word* ws) const
     {
         if (x.isZero() || y.isZero())
         {
-            z = 0;
+            BigInt zero = BigInt(0);
+            z.swap(&zero);
             return;
         }
         
@@ -87,11 +88,12 @@ abstract class CurveGFpNIST : CurveGFpRepr
     *  z = output
     *  x = multiplicand
     */
-    override void curveSqr(ref BigInt z, const ref BigInt x, ref SecureVector!word ws) const
+    override void curveSqr(BigInt* z, BigInt* x, SecureVector!word* ws) const
     {
         if (x.isZero())
         {
-            z = 0;
+            BigInt zero = BigInt(0);
+            z.swap(&zero);
             return;
         }
         
@@ -122,8 +124,16 @@ abstract class CurveGFpNIST : CurveGFpRepr
         return ret.move();
     }
     
+    override void swap(CurveGFpRepr other_) {
+        auto other = cast(CurveGFpNIST) other_;
+        m_a.swap(&other.m_a);
+        m_b.swap(&other.m_b);
+        import std.algorithm.mutation : swap;
+        swap(m_p_words, other.m_p_words);
+    }
+
 protected:
-    abstract void redc(ref BigInt x, ref SecureVector!word ws) const;
+    abstract void redc(BigInt* x, SecureVector!word* ws) const;
 
     abstract size_t maxRedcSubstractions() const;
 private:
@@ -139,7 +149,7 @@ private:
 class CurveGFpP521 : CurveGFpNIST
 {
 public:
-    this()(auto const ref BigInt a, auto const ref BigInt b)
+    this()(BigInt* a, BigInt* b)
     {
 		if (prime is BigInt.init)
 			prime = BigInt("0x1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
@@ -149,7 +159,7 @@ public:
 
     override ref const(BigInt) getP() const { return prime; }
 
-    override void redc(ref BigInt x, ref SecureVector!word ws) const
+    override void redc(BigInt* x, SecureVector!word* ws) const
     {
         const size_t p_words = getPWords();
         

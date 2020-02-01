@@ -170,7 +170,7 @@ public:
                     .endCons()
                     .verifyEnd();
             
-            m_curve = CurveGFp(p, a, b);
+            m_curve = CurveGFp(&p, &a, &b);
             m_base_point = OS2ECP(sv_base_point, m_curve);
         }
         else if (obj.type_tag == ASN1Tag.NULL_TAG)

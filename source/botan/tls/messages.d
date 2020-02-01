@@ -921,8 +921,8 @@ public:
             {
 				static if (BOTAN_HAS_SRP6) {
 	                SRP6ServerSession srp = cast(SRP6ServerSession) state.serverKex().serverSrpParams();
-	                
-	                m_pre_master = srp.step2(BigInt.decode(reader.getRange!ubyte(2, 0, 65535))).bitsOf();
+	                auto param_a = BigInt.decode(reader.getRange!ubyte(2, 0, 65535));
+	                m_pre_master = srp.step2(&param_a).bitsOf();
 				}
 				else {
 					throw new InternalError("ClientKeyExchange: Unknown kex type " ~ kex_algo);

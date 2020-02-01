@@ -40,7 +40,7 @@ import std.conv : to;
 /*
 * Multiply-Add Operation
 */
-BigInt mulAdd()(auto const ref BigInt a, auto const ref BigInt b, auto const ref BigInt c)
+BigInt mulAdd(const(BigInt)* a, const(BigInt)* b, const(BigInt)* c)
 {
     if (c.isNegative() || c.isZero())
         throw new InvalidArgument("mulAdd: Third argument must be > 0");
@@ -72,7 +72,7 @@ BigInt mulAdd()(auto const ref BigInt a, auto const ref BigInt b, auto const ref
 *  c = an integer
 * Returns: (a-b)*c
 */
-BigInt subMul()(auto const ref BigInt a, auto const ref BigInt b, auto const ref BigInt c)
+BigInt subMul(const(BigInt)* a, const(BigInt)* b, const(BigInt)* c)
 {
     if (a.isNegative() || b.isNegative())
         throw new InvalidArgument("subMul: First two arguments must be >= 0");
@@ -89,7 +89,7 @@ BigInt subMul()(auto const ref BigInt a, auto const ref BigInt b, auto const ref
 *  n = an integer
 * Returns: absolute value of n
 */
- BigInt abs()(auto const ref BigInt n) { return n.abs(); }
+ BigInt abs(const(BigInt)* n) { return n.abs(); }
 
 /**
 * Compute the greatest common divisor
@@ -98,23 +98,23 @@ BigInt subMul()(auto const ref BigInt a, auto const ref BigInt b, auto const ref
 *  b = positive integer y
 * Returns: gcd(x,y)
 */
-BigInt gcd()(auto const ref BigInt a, auto const ref BigInt b)
+BigInt gcd(const(BigInt)* a, const(BigInt)* b)
 {
     if (a.isZero() || b.isZero()) return BigInt(0);
-    if (a == 1 || b == 1)         return BigInt(1);
+    if (*a == 1 || *b == 1)         return BigInt(1);
     
     BigInt x = a.dup, y = b.dup;
     x.setSign(BigInt.Positive);
     y.setSign(BigInt.Positive);
-    size_t shift = std.algorithm.min(lowZeroBits(x), lowZeroBits(y));
+    size_t shift = std.algorithm.min(lowZeroBits(&x), lowZeroBits(&y));
     
     x >>= shift;
     y >>= shift;
     
     while (x.isNonzero())
     {
-        x >>= lowZeroBits(x);
-        y >>= lowZeroBits(y);
+        x >>= lowZeroBits(&x);
+        y >>= lowZeroBits(&y);
         if (x >= y) { x -= y; x >>= 1; }
         else         { y -= x; y >>= 1; }
     }
@@ -129,9 +129,9 @@ BigInt gcd()(auto const ref BigInt a, auto const ref BigInt b)
 *  b = a positive integer y
 * Returns: z, smallest integer such that z % x == 0 and z % y == 0
 */
-BigInt lcm()(auto const ref BigInt a, auto const ref BigInt b)
+BigInt lcm(const(BigInt)* a, const(BigInt)* b)
 {
-	auto a_b = (a * b);
+	auto a_b = (*a * b);
 	auto gcd_a_b = gcd(a, b);
     return a_b/gcd_a_b;
 }
@@ -142,7 +142,7 @@ BigInt lcm()(auto const ref BigInt a, auto const ref BigInt b)
 *  x = an integer
 * Returns: (x*x)
 */
-BigInt square()(auto const ref BigInt x)
+BigInt square(const(BigInt)* x)
 {
     const size_t x_sw = x.sigWords();
     
@@ -160,7 +160,7 @@ BigInt square()(auto const ref BigInt x)
 *  mod = a positive integer modulus
 * Returns: y st (x*y) % modulus == 1
 */
-BigInt inverseMod()(auto const ref BigInt n, auto const ref BigInt mod)
+BigInt inverseMod(const(BigInt)* n, const(BigInt)* mod)
 {
     if (mod.isZero())
         throw new BigInt.DivideByZero();
@@ -181,7 +181,7 @@ BigInt inverseMod()(auto const ref BigInt n, auto const ref BigInt mod)
     
     while (u.isNonzero())
     {
-        const size_t u_zero_bits = lowZeroBits(u);
+        const size_t u_zero_bits = lowZeroBits(&u);
         u >>= u_zero_bits;
         foreach (size_t i; 0 .. u_zero_bits)
         {
@@ -190,7 +190,7 @@ BigInt inverseMod()(auto const ref BigInt n, auto const ref BigInt mod)
             A >>= 1; B >>= 1;
         }
         
-        const size_t v_zero_bits = lowZeroBits(v);
+        const size_t v_zero_bits = lowZeroBits(&v);
         v >>= v_zero_bits;
         foreach (size_t i; 0 .. v_zero_bits)
         {
@@ -223,8 +223,31 @@ BigInt inverseMod()(auto const ref BigInt n, auto const ref BigInt mod)
 *  n = is an odd integer > 1
 * Returns: (n / m)
 */
-int jacobi()(auto const ref BigInt a, auto const ref BigInt n)
+int jacobi(T, U)(T b, U m)
 {
+    import std.traits;
+    static if (!is(T == BigInt) && !isPointer!T) {
+        BigInt a;
+        a.swap(&b);
+    }
+    else static if (!is(T == BigInt) && isPointer!T) {
+        BigInt a;
+        a.swap(b);
+    } else {
+        alias a = b;
+    }
+    static if (!is(U == BigInt) && !isPointer!U) {
+        BigInt n;
+        n.swap(&m);
+    }
+    else static if (!is(U == BigInt) && isPointer!U) {
+        BigInt n;
+        n.swap(m);
+    }
+    else {
+        alias n = m;
+    }
+
     if (a.isNegative())
         throw new InvalidArgument("jacobi: first argument must be non-negative");
     if (n.isEven() || n < 2)
@@ -245,7 +268,7 @@ int jacobi()(auto const ref BigInt a, auto const ref BigInt n)
         if (x.isZero())
             return 0;
         
-        size_t shifts = lowZeroBits(x);
+        size_t shifts = lowZeroBits(&x);
         x >>= shifts;
         if (shifts % 2)
         {
@@ -269,7 +292,7 @@ int jacobi()(auto const ref BigInt a, auto const ref BigInt n)
 *  mod = a positive modulus m
 * Returns: (b^x) % m
 */
-BigInt powerMod()(auto const ref BigInt base, auto const ref BigInt exp, auto const ref BigInt mod)
+BigInt powerMod(const(BigInt)* base, const(BigInt)* exp, const(BigInt)* mod)
 {
 	auto pow_mod = scoped!PowerMod(mod);
 
@@ -297,9 +320,31 @@ BigInt powerMod()(auto const ref BigInt base, auto const ref BigInt exp, auto co
 /*
 * Shanks-Tonnelli algorithm
 */
-BigInt ressol()(auto const ref BigInt a, auto const ref BigInt p)
+BigInt ressol(T, U)(T b, U u)
 {
-    
+    import std.traits;
+    static if (!is(T == BigInt) && !isPointer!T) {
+        BigInt a;
+        a.swap(&b);
+    }
+    else static if (!is(T == BigInt) && isPointer!T) {
+        BigInt a;
+        a.swap(b);
+    } else {
+        alias a = b;
+    }
+    static if (!is(U == BigInt) && !isPointer!U) {
+        BigInt p;
+        p.swap(&u);
+    }
+    else static if (!is(U == BigInt) && isPointer!U) {
+        BigInt p;
+        p.swap(u);
+    }
+    else {
+        alias p = u;
+    }
+
     if (a == 0)
         return BigInt(0);
 	else if (a < 0)
@@ -311,15 +356,17 @@ BigInt ressol()(auto const ref BigInt a, auto const ref BigInt p)
 		throw new InvalidArgument("ressol(): prime must be > 1");
 	else if(p.isEven())
 	   throw new InvalidArgument("ressol(): invalid prime");
-    if (jacobi(a, p) != 1) { // not a quadratic residue
+    if (jacobi(&a, &p) != 1) { // not a quadratic residue
         auto bi = -BigInt(1);
         return bi.move();
     }
     
-    if (p % 4 == 3)
-        return powerMod(a, ((p+1) >> 2), p);
-    
-    size_t s = lowZeroBits(p - 1);
+    if (p % 4 == 3) {
+        auto p_mod = ((p+1) >> 2);       
+        return powerMod(&a, &p_mod, &p);
+    }
+    auto s_diff = p - 1;
+    size_t s = lowZeroBits(&s_diff);
     BigInt q = p >> s;
     
     q -= 1;
@@ -327,19 +374,20 @@ BigInt ressol()(auto const ref BigInt a, auto const ref BigInt p)
     
     ModularReducer mod_p = ModularReducer(p);
     
-    BigInt r = powerMod(a, q, p);
-    BigInt n = mod_p.multiply(a, mod_p.square(r));
-    r = mod_p.multiply(r, a);
+    BigInt r = powerMod(&a, &q, &p);
+    auto r_1 = mod_p.square(&r);
+    BigInt n = mod_p.multiply(&a, &r_1);
+    r = mod_p.multiply(&r, &a);
     
     if (n == 1)
         return r.move();
     
     // find random non quadratic residue z
     BigInt z = 2;
-    while (jacobi(z, p) == 1) // while z quadratic residue
+    while (jacobi(&z, &p) == 1) // while z quadratic residue
         ++z;
-    
-    BigInt c = powerMod(z, (q << 1) + 1, p);
+    auto c_0 = (q << 1) + 1;
+    BigInt c = powerMod(&z, &c_0, &p);
     
     while (n > 1)
     {
@@ -348,18 +396,18 @@ BigInt ressol()(auto const ref BigInt a, auto const ref BigInt p)
         size_t i = 0;
         while (q != 1)
         {
-            q = mod_p.square(q);
+            q = mod_p.square(&q);
 			++i;
 			if (i >= s) {
 				auto bi = -BigInt(1);
 				return bi.move();
 			}
         }        
-
-        c = powerMod(c, BigInt.powerOf2(s-i-1), p);
-        r = mod_p.multiply(r, c);
-        c = mod_p.square(c);
-        n = mod_p.multiply(n, c);
+        auto c_1 = BigInt.powerOf2(s-i-1);
+        c = powerMod(&c, &c_1, &p);
+        r = mod_p.multiply(&r, &c);
+        c = mod_p.square(&c);
+        n = mod_p.multiply(&n, &c);
         s = i;
     }
     
@@ -417,7 +465,7 @@ word montyInverse(word input)
 *            value of n such that 2^n divides x evenly. Returns zero if
 *            n is less than or equal to zero.
 */
-size_t lowZeroBits()(auto const ref BigInt n)
+size_t lowZeroBits(const(BigInt)* n)
 {
     size_t low_zero = 0;
     
@@ -449,16 +497,16 @@ size_t lowZeroBits()(auto const ref BigInt n)
 *  is_random = true if n was randomly chosen by us
 * Returns: true if all primality tests passed, otherwise false
 */
-bool isPrime()(auto const ref BigInt n, RandomNumberGenerator rng, size_t prob = 56, bool is_random = false)
+bool isPrime(const(BigInt)* n, RandomNumberGenerator rng, size_t prob = 56, bool is_random = false)
 {
     import std.range : assumeSorted, SortedRange, empty;
-    if (n == 2)
+    if (*n == 2)
         return true;
-    if (n <= 1 || n.isEven())
+    if (*n <= 1 || n.isEven())
         return false;
     
     // Fast path testing for small numbers (<= 65521)
-    if (n <= PRIMES[PRIME_TABLE_SIZE-1])
+    if (*n <= PRIMES[PRIME_TABLE_SIZE-1])
     {
         const ushort num = cast(ushort) n.wordAt(0);
         auto r = assumeSorted(PRIMES[0..$]);
@@ -466,31 +514,31 @@ bool isPrime()(auto const ref BigInt n, RandomNumberGenerator rng, size_t prob =
     }
 
     const size_t test_iterations = mrTestIterations(n.bits(), prob, is_random);
-    const BigInt n_minus_1 = n - 1;
-    const size_t s = lowZeroBits(n_minus_1);
+    const BigInt n_minus_1 = *n - 1;
+    const size_t s = lowZeroBits(&n_minus_1);
     FixedExponentPowerModImpl pow_mod = ThreadMem.alloc!FixedExponentPowerModImpl(n_minus_1 >> s, n);
 	scope(exit) ThreadMem.free(pow_mod);
-    ModularReducer reducer = ModularReducer(n);
+    ModularReducer reducer = ModularReducer(*n);
     
     foreach (size_t i; 0 .. test_iterations)
     {
         auto bi = BigInt(2);
         const BigInt a = BigInt.randomInteger(rng, bi, n_minus_1);
-        BigInt y = pow_mod(a);
-        if (mrWitness(y, reducer, n_minus_1, s))
+        BigInt y = pow_mod(&a);
+        if (mrWitness(y, reducer, &n_minus_1, s))
             return false;
     }
     
     return true;
 }
 
-bool quickCheckPrime(const ref BigInt n, RandomNumberGenerator rng)
+bool quickCheckPrime(const(BigInt)* n, RandomNumberGenerator rng)
 { return isPrime(n, rng, 32); }
 
-bool checkPrime(const ref BigInt n, RandomNumberGenerator rng)
+bool checkPrime(const(BigInt)* n, RandomNumberGenerator rng)
 { return isPrime(n, rng, 56); }
 
-bool verifyPrime(const ref BigInt n, RandomNumberGenerator rng)
+bool verifyPrime(const(BigInt)* n, RandomNumberGenerator rng)
 { return isPrime(n, rng, 80); }
 
 /**
@@ -504,8 +552,8 @@ bool verifyPrime(const ref BigInt n, RandomNumberGenerator rng)
 *  modulo = the modulus equiv should be checked against
 * Returns: random prime with the specified criteria
 */
-BigInt randomPrime()(RandomNumberGenerator rng,
-                     size_t bits, const ref BigInt coprime,
+BigInt randomPrime(RandomNumberGenerator rng,
+                     size_t bits, const(BigInt)* coprime,
                      size_t equiv = 1, size_t modulo = 2)
 {
     if (bits <= 1)
@@ -517,7 +565,7 @@ BigInt randomPrime()(RandomNumberGenerator rng,
     else if (bits == 4)
         return ((rng.nextByte() % 2) ? BigInt(11) : BigInt(13));
     
-    if (coprime <= 0)
+    if (*coprime <= 0)
         throw new InvalidArgument("randomPrime: coprime must be > 0");
     if (modulo % 2 == 1 || modulo == 0)
         throw new InvalidArgument("randomPrime: Invalid modulo value");
@@ -563,21 +611,21 @@ BigInt randomPrime()(RandomNumberGenerator rng,
             }
 			auto one = BigInt(1);
 			auto p_1 = p - one;
-			auto gcd_coprime = gcd(p_1, coprime);
+			auto gcd_coprime = gcd(&p_1, coprime);
             if (!passes_sieve || gcd_coprime != one)
                 continue;
-            if (isPrime(p, rng, 64, true))
+            if (isPrime(&p, rng, 64, true))
                 return p.move;
         }
     }
 }
 
 /// ditto
-BigInt randomPrime()(RandomNumberGenerator rng,
+BigInt randomPrime(RandomNumberGenerator rng,
     size_t bits, const BigInt coprime = BigInt(1),
     size_t equiv = 1, size_t modulo = 2)
 {
-    return randomPrime(rng, bits, coprime, equiv, modulo);
+    return randomPrime(rng, bits, &coprime, equiv, modulo);
 }
 
 /**
@@ -595,7 +643,7 @@ BigInt randomSafePrime(RandomNumberGenerator rng, size_t bits)
     BigInt p;
     do
         p = (randomPrime(rng, bits - 1) << 1) + 1;
-    while (!isPrime(p, rng, 64, true));
+    while (!isPrime(&p, rng, 64, true));
     return p;
 }
 
@@ -660,7 +708,7 @@ bool generateDsaPrimes()(RandomNumberGenerator rng,
     struct Seed
     {
     public:
-        this()(auto const ref Vector!ubyte s) { m_seed = s.dup(); }
+        this(const(Vector!ubyte)* s) { m_seed = s.dup(); }
         
         ref T opCast(T : Vector!ubyte)() { return m_seed; }
         
@@ -678,13 +726,13 @@ bool generateDsaPrimes()(RandomNumberGenerator rng,
         Vector!ubyte m_seed;
     }
     
-    Seed seed = Seed(seed_c);
+    Seed seed = Seed(&seed_c);
     
     q_out.binaryDecode(hash.process(seed));
     q_out.setBit(qbits-1);
     q_out.setBit(0);
     
-    if (!isPrime(q_out, rng))
+    if (!isPrime(&q_out, rng))
         return false;
     
     const size_t n = (pbits-1) / (HASH_SIZE * 8), b = (pbits-1) % (HASH_SIZE * 8);
@@ -706,7 +754,7 @@ bool generateDsaPrimes()(RandomNumberGenerator rng,
         
         p_out = X - (X % (q_out*2) - 1);
         
-        if (p_out.bits() == pbits && isPrime(p_out, rng))
+        if (p_out.bits() == pbits && isPrime(&p_out, rng))
             return true;
     }
     return false;
@@ -735,7 +783,7 @@ bool fips1863ValidSize(size_t pbits, size_t qbits)
 * the common case for crypto, so worth special casing. See note 14.64
 * in Handbook of Applied Cryptography for more details.
 */
-BigInt inverseModOddModulus(const ref BigInt n, const ref BigInt mod)
+BigInt inverseModOddModulus(const(BigInt)* n, const(BigInt)* mod)
 {
     BigInt u = mod.dup;
     BigInt v = n.dup;
@@ -744,7 +792,7 @@ BigInt inverseModOddModulus(const ref BigInt n, const ref BigInt mod)
     
     while (u.isNonzero())
     {
-        const size_t u_zero_bits = lowZeroBits(u);
+        const size_t u_zero_bits = lowZeroBits(&u);
         u >>= u_zero_bits;
         foreach (size_t i; 0 .. u_zero_bits)
         {
@@ -753,7 +801,7 @@ BigInt inverseModOddModulus(const ref BigInt n, const ref BigInt mod)
             B >>= 1;
         }
         
-        const size_t v_zero_bits = lowZeroBits(v);
+        const size_t v_zero_bits = lowZeroBits(&v);
         v >>= v_zero_bits;
         foreach (size_t i; 0 .. v_zero_bits)
         {
@@ -777,14 +825,14 @@ BigInt inverseModOddModulus(const ref BigInt n, const ref BigInt mod)
 
 bool mrWitness(T : ModularReducer)(ref BigInt y,
                                    auto ref T reducer_n,
-                                   const ref BigInt n_minus_1, size_t s)
+                                   const(BigInt)* n_minus_1, size_t s)
 {
     if (y == 1 || y == n_minus_1)
         return false;
     
     foreach (size_t i; 1 .. s)
     {
-        y = reducer_n.square(y);
+        y = reducer_n.square(&y);
         
         if (y == 1) // found a non-trivial square root
             return true;

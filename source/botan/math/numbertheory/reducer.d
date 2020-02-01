@@ -15,6 +15,8 @@ static if (BOTAN_HAS_PUBLIC_KEY_CRYPTO):
 
 import botan.math.numbertheory.numthry;
 import botan.math.mp.mp_core;
+import botan.math.bigint.bigint;
+import std.traits : isPointer;
 
 /**
 * Modular Reducer (using Barrett's technique)
@@ -34,7 +36,7 @@ public:
         if (x.cmp(m_modulus, false) < 0)
         {
             if (x.isNegative())
-                return x + m_modulus; // make positive
+                return x + &m_modulus; // make positive
             return x.move;
         }
         else if (x.cmp(m_modulus_2, false) < 0)
@@ -81,9 +83,70 @@ public:
     *  y = integer
     * Returns: (x * y) % p
     */
-    BigInt multiply()(auto const ref BigInt x, auto const ref BigInt y) const
+    BigInt multiply(T, U)(T* x, U* y) const
+        if (!isPointer!U && !isPointer!T)
     { 
-        return reduce(x * y);
+        return reduce((*x) * (*y));
+    }
+
+    BigInt multiply(T, U)(T x, U* y) const
+        if (!isPointer!U && !isPointer!T)
+    { 
+        return reduce((x) * (*y));
+    }
+    
+    BigInt multiply(T, U)(T* x, U y) const
+        if (!isPointer!U && !isPointer!T)
+    { 
+        return reduce((*x) * (y));
+    }
+    BigInt multiply(T, U)(T** x, U* y) const
+        if (!isPointer!U && !isPointer!T)
+    { 
+        return multiply(*x, y);
+    }
+    BigInt multiply(T, U)(T* x, U** y) const
+        if (!isPointer!U && !isPointer!T)
+    { 
+        return multiply(x, *y);
+    }
+
+    /**
+    * Multiply mod p
+    * Params:
+    *  x = integer
+    *  y = integer
+    * Returns: (x * y) % p
+    */
+    BigInt multiply(T, U)(ref T x, ref U y) const
+        if (!isPointer!U && !isPointer!T)
+    { 
+        return multiply(&x, &y);
+    }
+
+    /**
+    * Multiply mod p
+    * Params:
+    *  x = integer
+    *  y = integer
+    * Returns: (x * y) % p
+    */
+    BigInt multiply(T, U)(in T x, in U y) const
+        if (!isPointer!U && !isPointer!T)
+    { 
+        return multiply(&x, &y);
+    }
+    /**
+    * Multiply mod p
+    * Params:
+    *  x = integer
+    *  y = integer
+    * Returns: (x * y) % p
+    */
+    BigInt multiply(T, U)(shared(T*) x, shared(U*) y) shared const
+        if (!isPointer!U && !isPointer!T)
+    { 
+        return (cast()this).multiply(cast(T*)x, cast(U*)y);
     }
 
     /**
@@ -92,7 +155,7 @@ public:
     *  x = integer
     * Returns: (x * x) % p
     */
-    BigInt square()(auto const ref BigInt x) const
+    BigInt square()(const(BigInt)* x) const
     {
         return reduce(x.square());
     }
@@ -103,7 +166,7 @@ public:
     *  x = integer
     * Returns: (x * x * x) % p
     */
-    BigInt cube()(auto const ref BigInt x) const
+    BigInt cube()(const(BigInt)* x) const
     { return multiply(x, this.square(x)); }
 
     bool initialized() const { return (m_mod_words != 0); }
@@ -116,7 +179,7 @@ public:
             throw new InvalidArgument("ModularReducer: modulus must be positive");
         m_modulus = mod.dup;
         m_mod_words = m_modulus.sigWords();
-        m_modulus_2 = .square(m_modulus);
+        m_modulus_2 = .square(&m_modulus);
 		auto po2 = BigInt.powerOf2(2 * MP_WORD_BITS * m_mod_words);
         m_mu = po2 / m_modulus;
     }

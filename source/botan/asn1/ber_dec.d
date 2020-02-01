@@ -176,9 +176,9 @@ public:
             if (!obj)
                 obj = new T();
 		}
-        else static if (__traits(compiles, { T t = T(); }())) {
-            if (obj is T.init) obj = T();
-		}
+        
+        if (obj is T.init) obj = T();
+        
         obj.decodeFrom(this);
         return this;
     }
@@ -587,7 +587,7 @@ public:
     this(const(ubyte)* data, size_t length)
     {
         m_pushed = BERObject.init;
-        m_source = cast(DataSource)DataSourceMemory(data, length);
+        m_source = cast(DataSource) DataSourceMemory(data, length);
         m_owns = true;
         m_pushed.type_tag = m_pushed.class_tag = ASN1Tag.NO_OBJECT;
         m_parent = null;

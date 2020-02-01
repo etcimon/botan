@@ -107,9 +107,9 @@ public:
         
         const size_t prob = (strong) ? 56 : 10;
         
-        if (!isPrime(m_p, rng, prob))
+        if (!isPrime(&m_p, rng, prob))
             return false;
-        if ((m_q > 0) && !isPrime(m_q, rng, prob))
+        if ((m_q > 0) && !isPrime(&m_q, rng, prob))
             return false;
         return true;
     }
@@ -295,7 +295,7 @@ public:
             
             m_q = randomPrime(rng, qbits);
             BigInt X;
-            while (m_p.bits() != pbits || !isPrime(m_p, rng))
+            while (m_p.bits() != pbits || !isPrime(&m_p, rng))
             {
                 X.randomize(rng, pbits);
                 m_p = X - (X % (m_q*2) - 1);
@@ -413,7 +413,8 @@ private:
 
         foreach (size_t i; 0 .. PRIME_TABLE_SIZE)
         {
-            BigInt g = powerMod(BigInt(PRIMES[i]), e, p);
+            auto g_0 = BigInt(PRIMES[i]);
+            BigInt g = powerMod(&g_0, &e, &p);
             if (g > 1)
                 return g.move;
         }

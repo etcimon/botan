@@ -83,7 +83,7 @@ public:
     {
         m_require_revocation_information = require_rev;
         m_ocsp_all_intermediates = ocsp_all_intermediates;
-        m_trusted_hashes.insert((*trusted_hashes)[]);
+        m_trusted_hashes.insert(trusted_hashes[]);
         m_minimum_key_strength = minimum_key_strength;
     }
 
@@ -428,11 +428,11 @@ Vector!( RBTreeRef!CertificateStatusCode )
         e.clear(); // touch
     }
 
-    //logTrace("Cert path size: ", cert_path.length);
+    logTrace("Cert path size: ", cert_path.length);
 
     foreach (size_t i; 0 .. cert_path.length)
     {
-        auto status = &*(cert_status[i]);
+        auto status = cert_status[i];
         
         const bool at_self_signed_root = (i == cert_path.length - 1);
         
@@ -486,7 +486,7 @@ Vector!( RBTreeRef!CertificateStatusCode )
     {
         logTrace("Checking status ", i);
 
-        auto status = &*(cert_status[i]);
+        auto status = cert_status[i];
         
         const X509Certificate subject = cert_path[i];
         const X509Certificate ca = cert_path[i+1];

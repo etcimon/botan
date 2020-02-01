@@ -103,7 +103,7 @@ public:
 
     static if (BOTAN_HAS_PUBLIC_KEY_CRYPTO):
 
-    ModularExponentiator modExp(const ref BigInt n, PowerMod.UsageHints hints) const
+    ModularExponentiator modExp(const(BigInt)* n, PowerMod.UsageHints hints) const
     {
         return m_engine.modExp(n, hints);
     }

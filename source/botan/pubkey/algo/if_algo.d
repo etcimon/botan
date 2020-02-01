@@ -166,16 +166,18 @@ public:
         
         if (m_d == 0)
         {
-            BigInt inv_for_d = lcm(m_p - 1, m_q - 1);
+            auto mp_minus_1 = m_p - 1;
+            auto mq_minus_1 = m_q - 1;
+            BigInt inv_for_d = lcm(&mp_minus_1, &mq_minus_1);
             if (m_e.isEven())
                 inv_for_d >>= 1;
             
-            m_d = inverseMod(m_e, inv_for_d);
+            m_d = inverseMod(&m_e, &inv_for_d);
         }
         
         m_d1 = m_d % (m_p - 1);
         m_d2 = m_d % (m_q - 1);
-        m_c = inverseMod(m_q, m_p);
+        m_c = inverseMod(&m_q, &m_p);
 
         loadCheck(rng);
 
@@ -199,12 +201,12 @@ public:
         if (m_n < 35 || m_n.isEven() || m_e < 2 || m_d < 2 || m_p < 3 || m_q < 3 || p_q != m_n)
             return false;
         
-        if (m_d1 != m_d % (m_p - 1) || m_d2 != m_d % (m_q - 1) || m_c != inverseMod(m_q, m_p))
+        if (m_d1 != m_d % (m_p - 1) || m_d2 != m_d % (m_q - 1) || m_c != inverseMod(&m_q, &m_p))
             return false;
         
         const size_t prob = (strong) ? 56 : 12;
         
-        if (!isPrime(m_p, rng, prob) || !isPrime(m_q, rng, prob))
+        if (!isPrime(&m_p, rng, prob) || !isPrime(&m_q, rng, prob))
             return false;
         return true;
     }

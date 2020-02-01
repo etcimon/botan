@@ -40,7 +40,9 @@ struct RSAOptions {
 
         if (!strong)
             return true;
-        if ((privkey.getE() * privkey.getD()) % lcm(privkey.getP() - 1, privkey.getQ() - 1) != 1)
+        auto p_minus_1 = privkey.getP() - 1;
+        auto q_minus_1 = privkey.getQ() - 1;
+        if ((privkey.getE() * privkey.getD()) % lcm(&p_minus_1, &q_minus_1) != 1)
             return false;
         
         return signatureConsistencyCheck(rng, privkey, "EMSA4(SHA-1)");
@@ -134,14 +136,15 @@ public:
 
         do
         {
-            p = randomPrime(rng, (bits + 1) / 2, e);
-            q = randomPrime(rng, bits - p.bits(), e);
+            p = randomPrime(rng, (bits + 1) / 2, &e);
+            q = randomPrime(rng, bits - p.bits(), &e);
             n = p * q;
         } while (n.bits() != bits);
 		auto one = BigInt(1);
 		auto p_1 = p - one;
 		auto q_1 = q - one;
-        d = inverseMod(e, lcm(p_1, q_1));
+        auto d_0 = lcm(&p_1, &q_1);
+        d = inverseMod(&e, &d_0);
 
 		m_owned = true;
         m_priv = new IFSchemePrivateKey(Options(), rng, p.move(), q.move(), e.move(), d.move(), n.move());
@@ -170,8 +173,9 @@ public:
         this(pkey.m_priv, rng);
     }
 
-    this(in IFSchemePrivateKey rsa, RandomNumberGenerator rng) 
+    this(in IFSchemePrivateKey rsa_, RandomNumberGenerator rng) 
     {
+        rsa = rsa_;
         assert(rsa.algoName == RSAPublicKey.algoName);
         m_n = &rsa.getN();
         m_q = &rsa.getQ();
@@ -182,8 +186,9 @@ public:
         m_powermod_d2_q = FixedExponentPowerMod(rsa.getD2(), rsa.getQ());
         m_mod_p = ModularReducer(rsa.getP());
         BigInt k = BigInt(rng, m_n.bits() - 1);
-        auto e = (*m_powermod_e_n)(k);
-        m_blinder = Blinder(e, inverseMod(k, *m_n), *m_n);
+        FixedExponentPowerModImpl powermod_e_n = cast(FixedExponentPowerModImpl) m_powermod_e_n;
+        auto e = powermod_e_n.opCall(&k);
+        m_blinder = Blinder(e, inverseMod(&k, m_n), *m_n);
     }
     override size_t messageParts() const { return 1; }
     override size_t messagePartSize() const { return 0; }
@@ -212,8 +217,8 @@ public:
     {
         BigInt m = BigInt(msg, msg_len);
         BigInt x = m_blinder.unblind(privateOp(m_blinder.blind(m)));
-        
-        assert(m == (*m_powermod_e_n)(x), "RSA decrypt passed consistency check");
+        FixedExponentPowerModImpl powermod_e_n = cast(FixedExponentPowerModImpl) m_powermod_e_n;
+        assert(m == powermod_e_n.opCall(&x), "RSA decrypt passed consistency check");
         
         return BigInt.encodeLocked(x);
     }
@@ -249,8 +254,8 @@ private:
 						import memutils.utils;
 						FixedExponentPowerModImpl powermod_d1_p = ThreadMem.alloc!FixedExponentPowerModImpl(*cast(const BigInt*)d1, *cast(const BigInt*)p);
 						scope(exit) ThreadMem.free(powermod_d1_p);
-						BigInt _res = powermod_d1_p( *cast(const BigInt*) m2);
-						synchronized(cast()mtx) ret.load(_res);
+						BigInt _res = powermod_d1_p( cast(const BigInt*) m2);
+						synchronized(cast()mtx) ret.load(&_res);
 					}
 				} catch (Exception e) { logDebug("Error: ", e.toString()); }
 			}
@@ -259,13 +264,15 @@ private:
 		auto handler = Handler(cast(shared)mutex, cast(shared)m_d1, cast(shared)m_p, cast(shared)&m, cast(shared)&j1);
 		Unique!Thread thr = new Thread(&handler.run);
 		thr.start();
-        BigInt j2 = (cast(FixedExponentPowerModImpl)*m_powermod_d2_q)(m);
+        FixedExponentPowerModImpl powermod_d2_q = cast(FixedExponentPowerModImpl)m_powermod_d2_q;
+        BigInt j2 = powermod_d2_q.opCall(&m);
 		thr.join();
 		BigInt j3;
-		synchronized(mutex) j3 = m_mod_p.reduce(subMul(j1, j2, *m_c));
-        return mulAdd(j3, *m_q, j2);
+		synchronized(mutex) j3 = m_mod_p.reduce(subMul(&j1, &j2, m_c));
+        return mulAdd(&j3, m_q, &j2);
     }
 
+    const IFSchemePrivateKey rsa;
     const BigInt* m_n;
     const BigInt* m_q;
     const BigInt* m_c;
@@ -293,8 +300,9 @@ public:
     this(in IFSchemePublicKey rsa)
     {
         assert(rsa.algoName == RSAPublicKey.algoName);
-        m_n = &rsa.getN();
-        m_powermod_e_n = FixedExponentPowerMod(rsa.getE(), rsa.getN());
+        m_rsa = rsa;
+        m_n = &m_rsa.getN();
+        m_powermod_e_n = FixedExponentPowerMod(m_rsa.getE(), m_rsa.getN());
     }
     override size_t messageParts() const { return 1; }
     override size_t messagePartSize() const { return 0; }
@@ -323,9 +331,11 @@ private:
     {
         if (m >= *m_n)
             throw new InvalidArgument("RSA public op - input is too large");
-        return (cast(FixedExponentPowerModImpl)*m_powermod_e_n)(m);
+        FixedExponentPowerModImpl powermod_e_n = cast(FixedExponentPowerModImpl) m_powermod_e_n;
+        return powermod_e_n.opCall(&m);
     }
 
+    const IFSchemePublicKey m_rsa;
     const BigInt* m_n;
     FixedExponentPowerMod m_powermod_e_n;
 }

@@ -206,7 +206,7 @@ public:
         if (!strong)
             return true;
         
-        if (m_y != powerMod(*g, m_x, *p)) 
+        if (m_y != powerMod(g, &m_x, p)) 
         {        
             return false;
         }
@@ -230,7 +230,7 @@ public:
         BERDecoder(key_bits).decode(m_x);
         DLGroup grp;
         grp.BER_decode(alg_id.parameters, options.format);
-        BigInt y = powerMod(grp.getG(), m_x, grp.getP());
+        BigInt y = powerMod(&grp.getG(), &m_x, &grp.getP());
         super(options, grp.move, y.move);
     }
 

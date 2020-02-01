@@ -22,7 +22,7 @@ import botan.math.numbertheory.reducer;
 import botan.math.mp.mp_core;
 import std.algorithm : max, swap;
 import std.conv : to;
-
+import std.traits : isPointer;
 /**
 * Exception thrown if you try to convert a zero point to an affine
 * coordinate
@@ -70,27 +70,27 @@ public:
         auto b1 = BigInt(1);
         m_coord_y = b1.move;
         m_coord_z = BigInt(0);
-        m_curve.toRep(m_coord_x, m_ws_ref);
-        m_curve.toRep(m_coord_y, m_ws_ref);
-        m_curve.toRep(m_coord_z, m_ws_ref);
+        m_curve.toRep(&m_coord_x, m_ws_ref);
+        m_curve.toRep(&m_coord_y, m_ws_ref);
+        m_curve.toRep(&m_coord_z, m_ws_ref);
     }
 
 
     /**
     * Move Constructor
     */
-    this()(auto ref PointGFp other)
+    this()(PointGFp* other)
     {
         m_curve = CurveGFp.init;
-        this.swap(other);
+        swap(other);
     }
 
     /**
     * Move Assignment
     */
-    ref PointGFp opAssign(PointGFp other)
+    ref PointGFp opAssign(PointGFp* other)
     {
-        this.swap(other);
+        swap(other);
         return this;
     }
 
@@ -101,11 +101,11 @@ public:
     *  x = affine x coordinate
     *  y = affine y coordinate
     */
-    this(const ref CurveGFp curve, const ref BigInt x, const ref BigInt y)
+    this(const ref CurveGFp curve, const BigInt* x, const BigInt* y)
     { 
-		if (x <= 0 || x >= curve.getP())
+		if (*x <= 0 || *x >= curve.getP())
 			throw new InvalidArgument("Invalid PointGFp affine x");
-		if (y <= 0 || y >= curve.getP())
+		if (*y <= 0 || *y >= curve.getP())
 			throw new InvalidArgument("Invalid PointGFp affine y");
         m_curve = curve.dup;
         //m_ws.resize(2 * (curve.getPWords() + 2));
@@ -113,9 +113,9 @@ public:
         m_coord_y = y.dup;
         auto bi = BigInt(1);
         m_coord_z = bi.move;
-        m_curve.toRep(m_coord_x, m_ws_ref);
-        m_curve.toRep(m_coord_y, m_ws_ref);
-        m_curve.toRep(m_coord_z, m_ws_ref);
+        m_curve.toRep(&m_coord_x, m_ws_ref);
+        m_curve.toRep(&m_coord_y, m_ws_ref);
+        m_curve.toRep(&m_coord_z, m_ws_ref);
     }
 
     /**
@@ -124,11 +124,17 @@ public:
     *  rhs = the PointGFp to add to the local value
     * Returns: resulting PointGFp
     */
-    void opOpAssign(string op)(const ref PointGFp rhs)
-        if (op == "+")
+    void opOpAssign(string op, T)(T* rhs)
+        if (op == "+" && !isPointer!T)
     {
         Vector!(RefCounted!BigInt) ws = Vector!(RefCounted!BigInt)(9);
-        add(rhs, ws);
+        add(rhs, &ws);
+    }
+
+    void opOpAssign(string op, T)(T rhs)
+        if (op == "+" && !isPointer!T)
+    {
+        this.opOpAssign!op(&rhs);
     }
 
     /**
@@ -140,11 +146,12 @@ public:
     void opOpAssign(string op)(const ref PointGFp rhs)
         if (op == "-")
     {
-        
-        if (isZero())
-            this.swap( PointGFp(rhs.dup).negate() );
-        else
-            this += PointGFp(rhs.dup).negate();
+        auto tdup = rhs.dup;
+        if (isZero()) {
+            auto tmp = PointGFp(&tdup).negate();
+            this.swap( &tmp );
+        } else
+            this += PointGFp(&tdup).negate();
         
     }
 
@@ -154,10 +161,13 @@ public:
     *  scalar = the PointGFp to multiply with this
     * Returns: resulting PointGFp
     */
-    void opOpAssign(string op)(auto const ref BigInt scalar)
-        if (op == "*")
+    void opOpAssign(string op, T)(T scalar)
+        if (op == "*" && !isPointer!T)
     {
-        this.swap(this * scalar);
+        import std.traits : isNumeric;
+        static if (isNumeric!T)
+            this.swap(this * BigInt(scalar));
+        else this.swap(this * &scalar);
     }
 
     /**
@@ -166,7 +176,7 @@ public:
     *  scalar = the scalar value
     * Returns: scalar*point on the curve
     */
-    PointGFp opBinary(string op)(auto const ref BigInt scalar) const
+    PointGFp opBinary(string op, T)(T scalar) const
         if (op == "*")
     {
         const PointGFp* point = &this;
@@ -182,7 +192,7 @@ public:
 		    PointGFp result = point.dup;
 	    
 		    if (value == 2)
-			        result.mult2(ws);
+			        result.mult2(&ws);
 		    if (scalar.isNegative())
 			        result.negate();
 	    
@@ -203,13 +213,13 @@ public:
             
             if (bit_set)
             {
-                x1.add(x2, ws);
-                x2.mult2(ws);
+                x1.add(&x2, &ws);
+                x2.mult2(&ws);
             }
             else
             {
-                x2.add(x1, ws);
-                x1.mult2(ws);
+                x2.add(&x1, &ws);
+                x1.mult2(&ws);
             }
             
             --bits_left;
@@ -231,8 +241,8 @@ public:
     *  z2 = a scalar
     * Returns: (p1 * z1 + p2 * z2)
     */
-    static PointGFp multiExponentiate(const ref PointGFp p1, const ref BigInt z1,
-                                      const ref PointGFp p2, const ref BigInt z2)
+    static PointGFp multiExponentiate(const ref PointGFp p1, const BigInt* z1,
+                                      const ref PointGFp p2, const BigInt* z2)
     {
         const PointGFp p3 = p1 + p2;
         
@@ -243,17 +253,17 @@ public:
         
         while (bits_left)
         {
-            H.mult2(ws);
+            H.mult2(&ws);
             
             const bool z1_b = z1.getBit(bits_left - 1);
             const bool z2_b = z2.getBit(bits_left - 1);
             
             if (z1_b == true && z2_b == true)
-                H.add(p3, ws);
+                H.add(&p3, &ws);
             else if (z1_b)
-                H.add(p1, ws);
+                H.add(&p1, &ws);
             else if (z2_b)
-                H.add(p2, ws);
+                H.add(&p2, &ws);
             
             --bits_left;
         }
@@ -268,11 +278,11 @@ public:
     * Negate this point
     * Returns: this
     */
-    ref PointGFp negate()
+    PointGFp negate()
     {
         if (!isZero())
             m_coord_y = m_curve.getP() - m_coord_y;
-        return this;
+        return this.dup;
     }
 
     /**
@@ -290,11 +300,12 @@ public:
         if (isZero())
             throw new IllegalTransformation("Cannot convert zero point to affine");
                 
-        BigInt z2 = curveSqr(m_coord_z);
-        m_curve.fromRep(z2, m_ws_ref);
-        z2 = inverseMod(z2, m_curve.getP());
+        BigInt z2 = curveSqr(cast(BigInt*)&m_coord_z);
+        m_curve.fromRep(&z2, m_ws_ref);
+        auto p = m_curve.getP().dup;
+        z2 = inverseMod(&z2, &p);
         
-        return curveMult(z2, m_coord_x);
+        return curveMult(&z2, cast(BigInt*)&m_coord_x);
     }
 
     /**
@@ -306,10 +317,11 @@ public:
         if (isZero())
             throw new IllegalTransformation("Cannot convert zero point to affine");
                 
-        BigInt z3 = curveMult(m_coord_z, curveSqr(m_coord_z));
-        z3 = inverseMod(z3, m_curve.getP());
-        m_curve.toRep(z3, m_ws_ref);
-        return curveMult(z3, m_coord_y);
+        auto sqr_1 = curveSqr(&m_coord_z);
+        BigInt z3 = curveMult(&m_coord_z, &sqr_1);
+        z3 = inverseMod(&z3, &m_curve.getP());
+        m_curve.toRep(&z3, m_ws_ref);
+        return curveMult(&z3, &m_coord_y);
     }
 
     /**
@@ -336,23 +348,30 @@ public:
             return true;
         }
 
-        BigInt y2 = m_curve.fromRep(curveSqr(m_coord_y), m_ws_ref);
-        BigInt x3 = curveMult(m_coord_x, curveSqr(m_coord_x));        
-        BigInt ax = curveMult(m_coord_x, m_curve.getARep());        
-        BigInt z2 = curveSqr(m_coord_z);
+        auto y2 = cast(BigInt)curveSqr(&m_coord_y);
+        m_curve.fromRep(&y2, m_ws_ref);
+        auto x3_0 = curveSqr(&m_coord_x);
+        BigInt x3 = curveMult(&m_coord_x, &x3_0);        
+        BigInt ax = curveMult(&m_coord_x, &m_curve.getARep());        
+        BigInt z2 = curveSqr(&m_coord_z);
         
         if (m_coord_z == z2) // Is z equal to 1 (in Montgomery form)?
         {
-            if (y2 != m_curve.fromRep(x3 + ax + m_curve.getBRep(), m_ws_ref)) {
+            auto y2_0 = x3 + &ax + &m_curve.getBRep();
+            m_curve.fromRep(&y2_0, m_ws_ref);
+            if (y2 != y2_0) {
                 return false;
             }
         }
         
-        BigInt z3 = curveMult(m_coord_z, z2);        
-        BigInt ax_z4 = curveMult(ax, curveSqr(z2));
-        BigInt b_z6 = curveMult(m_curve.getBRep(), curveSqr(z3));
-        
-        if (y2 != m_curve.fromRep(x3 + ax_z4 + b_z6, m_ws_ref)) {
+        BigInt z3 = curveMult(&m_coord_z, &z2);  
+        auto z2_sqr = curveSqr(&z2);      
+        BigInt ax_z4 = curveMult(&ax, &z2_sqr);
+        auto z3_sqr = curveSqr(&z3);
+        BigInt b_z6 = curveMult(&m_curve.getBRep(), &z3_sqr);
+        auto y2_1 = x3 + &ax_z4 + &b_z6;
+        m_curve.fromRep(&y2_1, m_ws_ref);
+        if (y2 != y2_1) {
             return false;
         }
         return true;
@@ -364,13 +383,21 @@ public:
     * Params:
     *  other = the object to swap values with
     */
-    void swap()(auto ref PointGFp other)
+    void swap(T)(T* other)
+        if (!isPointer!T)
     {
-        m_curve.swap(other.m_curve);
-        m_coord_x.swap(other.m_coord_x);
-        m_coord_y.swap(other.m_coord_y);
-        m_coord_z.swap(other.m_coord_z);
-        m_ws.swap(other.m_ws);
+        m_curve.swap(&other.m_curve);
+        m_coord_x.swap(&other.m_coord_x);
+        m_coord_y.swap(&other.m_coord_y);
+        m_coord_z.swap(&other.m_coord_z);
+        import std.algorithm.mutation : swap;
+        swap(m_ws, other.m_ws);
+    }
+    
+    void swap(T)(T other)
+        if (!isPointer!T)
+    {
+        this.swap(&other);
     }
 
     @property PointGFp dup() const
@@ -407,10 +434,10 @@ private:
     *   x = first multiplicand
     *   y = second multiplicand
     */
-    BigInt curveMult()(auto const ref BigInt x, auto const ref BigInt y) const
+    BigInt curveMult()(const(BigInt)* x, const(BigInt*) y) const
     {
         BigInt z = BigInt(0);
-        m_curve.mul(z, x, y, m_ws_ref);
+        m_curve.mul(&z, x, y, m_ws_ref);
         return z.move();
     }
     
@@ -421,7 +448,7 @@ private:
     *   x = first multiplicand
     *   y = second multiplicand
     */
-    void curveMult()(ref BigInt z, auto const ref BigInt x, auto const ref BigInt y) const
+    void curveMult()(BigInt* z, const(BigInt)* x, const(BigInt*) y) const
     {
         m_curve.mul(z, x, y, m_ws_ref);
     }
@@ -431,10 +458,11 @@ private:
     * Params:
     *   x = multiplicand
     */
-    BigInt curveSqr()(auto const ref BigInt x) const
+    BigInt curveSqr()(const(BigInt)* x_) const
     {
         BigInt z;
-        m_curve.sqr(z, x, m_ws_ref);
+        BigInt x = x_.dup;
+        m_curve.sqr(&z, &x, m_ws_ref);
         return z.move();
     }
 
@@ -444,9 +472,12 @@ private:
     *   z = output
     *   x = multiplicand
     */
-    void curveSqr()(ref BigInt z, auto const ref BigInt x) const
+    void curveSqr(T, U)(T* z_, U* x_) const
+        if (!isPointer!T && !isPointer!U)
     {
-        m_curve.sqr(z, x, m_ws_ref);
+        BigInt z = z_.dup;
+        BigInt x = x_.dup;
+        m_curve.sqr(&z, &x, m_ws_ref);
     }
 
     /**
@@ -454,7 +485,8 @@ private:
     * Params:
     *  workspace = temp space, at least 11 elements
     */
-    void add()(auto const ref PointGFp rhs, ref Vector!(RefCounted!BigInt) ws_bn)
+    void add(T, U)(T* rhs, U* ws_bn)
+        if (!isPointer!U && !isPointer!T)
     {
         if (isZero())
         {
@@ -467,25 +499,29 @@ private:
             return;
         
         const BigInt* p = &m_curve.getP();
+        auto rhs_x = cast(BigInt*) &rhs.m_coord_x;
+        auto rhs_y = cast(BigInt*) &rhs.m_coord_y;
+        auto rhs_z = cast(BigInt*) &rhs.m_coord_z;
+        auto rhs_z2 = cast(BigInt*) &*((*ws_bn)[0]);
+        auto U1 = cast(BigInt*) &*((*ws_bn)[1]);
+        auto S1 = cast(BigInt*) &*((*ws_bn)[2]);
         
-        BigInt* rhs_z2 = &*ws_bn[0];
-        BigInt* U1 = &*ws_bn[1];
-        BigInt* S1 = &*ws_bn[2];
+        auto lhs_z2 = cast(BigInt*) &*((*ws_bn)[3]);
+        auto U2 = cast(BigInt*) &*((*ws_bn)[4]);
+        auto S2 = cast(BigInt*) &*((*ws_bn)[5]);
         
-        BigInt* lhs_z2 = &*ws_bn[3];
-        BigInt* U2 = &*ws_bn[4];
-        BigInt* S2 = &*ws_bn[5];
+        auto H = cast(BigInt*) &*((*ws_bn)[6]);
+        auto r = cast(BigInt*) &*((*ws_bn)[7]);
         
-        BigInt* H = &*ws_bn[6];
-        BigInt* r = &*ws_bn[7];
+        curveSqr(rhs_z2, rhs_z);
+        curveMult(U1, &m_coord_x, rhs_z2);
+        auto mult_1 = curveMult(rhs_z, rhs_z2);
+        curveMult(S1, &m_coord_y, &mult_1);
         
-        curveSqr(*rhs_z2, rhs.m_coord_z);
-        curveMult(*U1, m_coord_x, *rhs_z2);
-        curveMult(*S1, m_coord_y, curveMult(rhs.m_coord_z, *rhs_z2));
-        
-        curveSqr(*lhs_z2, m_coord_z);
-        curveMult(*U2, rhs.m_coord_x, *lhs_z2);
-        curveMult(*S2, rhs.m_coord_y, curveMult(m_coord_z, *lhs_z2));
+        curveSqr(lhs_z2, &m_coord_z);
+        curveMult(U2, rhs_x, lhs_z2);
+        auto mult_2 = curveMult(&m_coord_z, lhs_z2);
+        curveMult(S2, rhs_y, &mult_2);
         
         *H = U2.dup;
         *H -= *U1;
@@ -509,13 +545,13 @@ private:
             return;
         }
         
-        curveSqr(*U2, *H);
+        curveSqr(U2, H);
         
-        curveMult(*S2, *U2, *H);
+        curveMult(S2, U2, H);
         
-        *U2 = curveMult(*U1, *U2);
+        *U2 = curveMult(U1, U2);
         
-        curveSqr(m_coord_x, *r);
+        curveSqr(&m_coord_x, r);
         m_coord_x -= *S2;
         m_coord_x -= (*U2 << 1);
         while (m_coord_x.isNegative())
@@ -525,12 +561,13 @@ private:
         if (U2.isNegative())
             *U2 += *p;
         
-        curveMult(m_coord_y, *r, *U2);
-        m_coord_y -= curveMult(*S1, *S2);
+        curveMult(&m_coord_y, r, U2);
+        m_coord_y -= curveMult(S1, S2);
         if (m_coord_y.isNegative())
             m_coord_y += *p;
         
-        curveMult(m_coord_z, curveMult(m_coord_z, rhs.m_coord_z), *H);
+        auto mult_3 = curveMult(&m_coord_z, rhs_z);
+        curveMult(&m_coord_z, &mult_3, H);
     }
 
 
@@ -539,7 +576,8 @@ private:
     * Params:
     *  workspace = temp space, at least 9 elements
     */
-    void mult2(ref Vector!(RefCounted!BigInt) ws_bn)
+    void mult2(T)(T* ws_bn)
+        if (!isPointer!T)
     {
         if (isZero())
             return;
@@ -551,38 +589,40 @@ private:
         
         const BigInt* p = &m_curve.getP();
         
-        BigInt* y_2 = &*ws_bn[0];
-        BigInt* S = &*ws_bn[1];
-        BigInt* z4 = &*ws_bn[2];
-        BigInt* a_z4 = &*ws_bn[3];
-        BigInt* M = &*ws_bn[4];
-        BigInt* U = &*ws_bn[5];
-        BigInt* x = &*ws_bn[6];
-        BigInt* y = &*ws_bn[7];
-        BigInt* z = &*ws_bn[8];
+        auto y_2 = cast(BigInt*) &*((*ws_bn)[0]);
+        auto S = cast(BigInt*) &*((*ws_bn)[1]);
+        auto z4 = cast(BigInt*) &*((*ws_bn)[2]);
+        auto a_z4 = cast(BigInt*) &*((*ws_bn)[3]);
+        auto M = cast(BigInt*) &*((*ws_bn)[4]);
+        auto U = cast(BigInt*) &*((*ws_bn)[5]);
+        auto x = cast(BigInt*) &*((*ws_bn)[6]);
+        auto y = cast(BigInt*) &*((*ws_bn)[7]);
+        auto z = cast(BigInt*) &*((*ws_bn)[8]);
         
-        curveSqr(*y_2, m_coord_y);
+        curveSqr(y_2, &m_coord_y);
         
-        curveMult(*S, m_coord_x, *y_2);
+        curveMult(S, &m_coord_x, y_2);
         *S <<= 2; // * 4
         while (*S >= *p)
             *S -= *p;
         
-        curveSqr(*z4, curveSqr(m_coord_z));
-        curveMult(*a_z4, m_curve.getARep(), *z4);
+        auto sqr_1 = cast(BigInt) curveSqr(&m_coord_z);
+        curveSqr(z4, &sqr_1);
+        auto a_rep = m_curve.getARep().dup;
+        curveMult(a_z4, &a_rep, z4);
         
-        *M = curveSqr(m_coord_x);
+        *M = curveSqr(&m_coord_x);
         *M *= 3;
         *M += *a_z4;
         while (*M >= *p)
             *M -= *p;
         
-        curveSqr(*x, *M);
+        curveSqr(x, M);
         *x -= (*S << 1);
         while (x.isNegative())
             *x += *p;
         
-        curveSqr(*U, *y_2);
+        curveSqr(U, y_2);
         *U <<= 3;
         while (*U >= *p)
             *U -= *p;
@@ -591,12 +631,12 @@ private:
         while (S.isNegative())
             *S += *p;
         
-        curveMult(*y, *M, *S);
+        curveMult(y, M, S);
         *y -= *U;
         if (y.isNegative())
             *y += *p;
         
-        curveMult(*z, m_coord_y, m_coord_z);
+        curveMult(z, &m_coord_y, &m_coord_z);
         *z <<= 1;
         if (*z >= *p)
             *z -= *p;
@@ -625,7 +665,7 @@ public:
         if (op == "+")
     {
         PointGFp ret = this.dup;
-        ret += rhs;
+        ret += &rhs;
         return ret;
     }
     
@@ -667,7 +707,7 @@ public:
     }
 
     public PointGFp move() {
-        return PointGFp(this);
+        return PointGFp(&this);
     }
 
     CurveGFp m_curve;
@@ -738,7 +778,7 @@ PointGFp OS2ECP()(const(ubyte)* data, size_t data_len, auto const ref CurveGFp c
         x = BigInt.decode(&data[1], data_len - 1);
         
         const bool y_mod_2 = ((pc & 0x01) == 1);
-        y = decompressPoint(y_mod_2, x, curve);
+        y = decompressPoint(y_mod_2, &x, curve);
     }
     else if (pc == 4)
     {
@@ -758,12 +798,12 @@ PointGFp OS2ECP()(const(ubyte)* data, size_t data_len, auto const ref CurveGFp c
         
         const bool y_mod_2 = ((pc & 0x01) == 1);
         
-        if (decompressPoint(y_mod_2, x, curve) != y)
+        if (decompressPoint(y_mod_2, &x, curve) != y)
             throw new IllegalPoint("OS2ECP: Decoding error in hybrid format");
     }
     else
         throw new InvalidArgument("OS2ECP: Unknown format type " ~ to!string(pc));
-    PointGFp result = PointGFp(curve, x, y);
+    PointGFp result = PointGFp(curve, &x, &y);
     if (!result.onTheCurve())
         throw new IllegalPoint("OS2ECP: Decoded point was not on the curve");
     return result.move();
@@ -775,11 +815,11 @@ PointGFp OS2ECP(Alloc)(auto const ref Vector!( ubyte, Alloc ) data, auto const r
 private:
 
 BigInt decompressPoint(bool yMod2,
-                       ref BigInt x,
+                       BigInt* x,
                        const ref CurveGFp curve)
 {
-    BigInt xpow3 = x * x * x;
-
+    BigInt xpow3 = *x * x;
+    xpow3 *= x;
     const BigInt* p = &curve.getP();
 
     BigInt g = curve.getA() * x;
@@ -787,7 +827,7 @@ BigInt decompressPoint(bool yMod2,
     g += curve.getB();
     g = g % (*p);
     
-    BigInt z = ressol(g, *p);
+    BigInt z = ressol(&g, p);
     
     if (z < 0)
         throw new IllegalPoint("error during EC point decompression");

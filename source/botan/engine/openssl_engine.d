@@ -102,7 +102,7 @@ public:
 	/*
     * Return the OpenSSL-based modular exponentiator
     */
-    ModularExponentiator modExp(const ref BigInt n, PowerMod.UsageHints) const
+    ModularExponentiator modExp(const(BigInt)* n, PowerMod.UsageHints) const
     {
         return new OpenSSLModularExponentiator(n);
     }

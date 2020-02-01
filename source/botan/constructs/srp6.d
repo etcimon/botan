@@ -26,7 +26,7 @@ struct SRP6KeyPair {
     BigInt privkey;
     SymmetricKey pubkey;
 
-    this()(auto ref BigInt priv, SymmetricKey pub) {
+    this(BigInt* priv, SymmetricKey pub) {
         privkey = priv.move();
         pubkey = pub;
     }
@@ -63,21 +63,19 @@ SRP6KeyPair
     if (B <= 0 || B >= *p)
         throw new Exception("Invalid SRP parameter from server");
     
-    BigInt k = hashSeq(hash_id, p_bytes, *p, *g);
+    BigInt k = hashSeq(hash_id, p_bytes, p, g);    
+    BigInt a = BigInt(rng, 256);    
+    BigInt A = powerMod(g, &a, p);    
+    BigInt u = hashSeq(hash_id, p_bytes, &A, &B);    
+    BigInt x = computeX(hash_id, identifier, password, salt);    
+    BigInt ref_1 = (B - (k * powerMod(g, &x, p))) % (*p);
+    auto ref_2_2 = (u * &x);
+    BigInt ref_2 = (a + &ref_2_2);
+    BigInt S = powerMod(&ref_1, &ref_2, p);
     
-    BigInt a = BigInt(rng, 256);
+    SymmetricKey Sk = SymmetricKey(BigInt.encode1363(&S, p_bytes));
     
-    BigInt A = powerMod(*g, a, *p);
-    
-    BigInt u = hashSeq(hash_id, p_bytes, A, B);
-    
-    BigInt x = computeX(hash_id, identifier, password, salt);
-    
-    BigInt S = powerMod((B - (k * powerMod(*g, x, *p))) % (*p), (a + (u * x)), *p);
-    
-    SymmetricKey Sk = SymmetricKey(BigInt.encode1363(S, p_bytes));
-    
-    return SRP6KeyPair(A, Sk);
+    return SRP6KeyPair(&A, Sk);
 }
 
 
@@ -99,7 +97,7 @@ BigInt generateSrp6Verifier(in string identifier,
     BigInt x = computeX(hash_id, identifier, password, salt);
     
     DLGroup group = DLGroup(group_id);
-    return powerMod(group.getG(), x, group.getP());
+    return powerMod(&group.getG(), &x, &group.getP());
 }
 
 
@@ -160,11 +158,12 @@ public:
         
         m_p_bytes = p.bytes();
         
-        BigInt k = hashSeq(hash_id, m_p_bytes, *p, *g);
+        BigInt k = hashSeq(hash_id, m_p_bytes, p, g);
         
         BigInt b = BigInt(rng, 256);
         
-        m_B = (v*k + powerMod(*g, b, *p)) % (*p);
+        auto m_B0 = powerMod(g, &b, p);
+        m_B = (v*k + &m_B0) % (*p);
         
         m_v = v.dup;
         m_b = b.move();
@@ -180,14 +179,14 @@ public:
     *  A = the client's value
     * Returns: shared symmetric key
     */
-    SymmetricKey step2()(auto const ref BigInt A)
+    SymmetricKey step2(const(BigInt)* A)
     {
-        if (A <= 0 || A >= m_p)
+        if (*A <= 0 || *A >= m_p)
             throw new Exception("Invalid SRP parameter from client");
         
-        BigInt u = hashSeq(m_hash_id, m_p_bytes, A, m_B);
-        
-        BigInt S = powerMod(A * powerMod(m_v, u, m_p), m_b, m_p);
+        BigInt u = hashSeq(m_hash_id, m_p_bytes, A, &m_B);
+        auto ref_1 = (*A * powerMod(&m_v, &u, &m_p));
+        BigInt S = powerMod(&ref_1, &m_b, &m_p);
         
         return SymmetricKey(BigInt.encode1363(S, m_p_bytes));
     }
@@ -200,10 +199,10 @@ private:
 
 private:
     
-BigInt hashSeq()(in string hash_id,
+BigInt hashSeq(in string hash_id,
                  size_t pad_to,
-                 auto const ref BigInt in1,
-                 auto const ref BigInt in2)
+                 const(BigInt)* in1,
+                 const(BigInt)* in2)
 {
     Unique!HashFunction hash_fn = globalState().algorithmFactory().makeHashFunction(hash_id);
     

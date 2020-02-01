@@ -98,7 +98,7 @@ size_t checkAdd(const ref Vector!string args)
     BigInt b = BigInt(args[1]);
     BigInt c = BigInt(args[2]);
     
-    BigInt d = a + b;
+    BigInt d = a + &b;
     BigInt e = a.dup;
 
     e += b;
@@ -106,7 +106,7 @@ size_t checkAdd(const ref Vector!string args)
     if (results("+", a, b, c, d, e))
         return 1;
     
-    d = b + a;
+    d = b + &a;
     e = b.dup;
     e += a;
     
@@ -165,8 +165,8 @@ size_t checkSqr(const ref Vector!string args)
     a.growTo(64);
     b.growTo(64);
     
-    BigInt c = square(a);
-    BigInt d = a * a;
+    BigInt c = square(&a);
+    BigInt d = a * &a;
     
     return results("sqr", a, a, b, c, d);
 }
@@ -250,7 +250,7 @@ size_t checkPowmod(const ref Vector!string args)
     BigInt m = BigInt(args[2]);
     BigInt c = BigInt(args[3]);
     
-    BigInt r = powerMod(a, b, m);
+    BigInt r = powerMod(&a, &b, &m);
     
     if (c != r)
     {
@@ -271,7 +271,7 @@ size_t isPrimeTest(const ref Vector!string args, RandomNumberGenerator rng)
     BigInt n = BigInt(args[0]);
     bool should_be_prime = cast(bool)(args[1] == "1");
     
-    bool isPrime = isPrime(n, rng);
+    bool isPrime = isPrime(&n, rng);
     
     if (isPrime != should_be_prime)
     {

@@ -100,7 +100,7 @@ public:
     *  hints = any use hints
     * Returns: newly allocated object, or NULL
     */
-    ModularExponentiator modExp(const ref BigInt n, PowerMod.UsageHints hints) const;
+    ModularExponentiator modExp(const(BigInt)* n, PowerMod.UsageHints hints) const;
 
 
     /**

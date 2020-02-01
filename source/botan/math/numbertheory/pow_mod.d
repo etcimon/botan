@@ -27,8 +27,8 @@ alias FixedBasePowerMod = RefCounted!FixedBasePowerModImpl;
 interface ModularExponentiator
 {
 public:
-    void setBase(const ref BigInt);
-    void setExponent(const ref BigInt);
+    void setBase(const(BigInt)*);
+    void setExponent(const(BigInt)*);
     BigInt execute() const;
     ModularExponentiator copy() const;
 }
@@ -93,10 +93,10 @@ public:
     /*
     * Set the modulus
     */
-    void setModulus()(auto const ref BigInt n, UsageHints hints = NO_HINTS)
+    void setModulus(const(BigInt)* n, UsageHints hints = NO_HINTS)
     {
         m_core.free();
-        if (n != 0)
+        if (*n != 0)
         {
             AlgorithmFactory af = globalState().algorithmFactory();
 
@@ -114,7 +114,7 @@ public:
     /*
     * Set the base
     */
-    void setBase()(auto const ref BigInt b)
+    void setBase(const(BigInt)* b)
     {
 
         if (b.isZero() || b.isNegative())
@@ -129,7 +129,7 @@ public:
     /*
     * Set the exponent
     */
-    void setExponent()(auto const ref BigInt e)
+    void setExponent(const(BigInt)* e)
     {
         if (e.isNegative())
             throw new InvalidArgument("PowerMod.setExponent: arg must be > 0");
@@ -149,7 +149,7 @@ public:
         return m_core.execute();
     }
 
-    this()(auto const ref BigInt n, UsageHints hints = NO_HINTS)
+    this(const(BigInt)* n, UsageHints hints = NO_HINTS)
     {
         setModulus(n, hints);
     }
@@ -170,14 +170,18 @@ private:
 class FixedExponentPowerModImpl : PowerMod
 {
 public:
-    BigInt opCall()(auto const ref BigInt b)
+    BigInt opCall(const(BigInt)* b)
     { setBase(b); return execute(); }
+    BigInt opCall(const BigInt b) const
+    { (cast()this).setBase(&b); return (cast()this).execute(); }
+    BigInt opCall(shared(BigInt*) e)
+    { setBase(cast(BigInt*)e); return execute(); }
 
     /*
     * FixedExponentPowerMod Constructor
     */
-    this()(auto const ref BigInt e,
-           auto const ref BigInt n,
+    this(const(BigInt)* e,
+           const(BigInt)* n,
            UsageHints hints = NO_HINTS)
     { 
         super(n, UsageHints(hints | EXP_IS_FIXED | chooseExpHints(e, n)));
@@ -193,13 +197,17 @@ public:
 class FixedBasePowerModImpl : PowerMod
 {
 public:
-    BigInt opCall()(auto const ref BigInt e)
+    BigInt opCall(const(BigInt)* e)
     { setExponent(e); return execute(); }
+    BigInt opCall(const BigInt e) const
+    { (cast()this).setExponent(&e); return (cast()this).execute(); }
+    BigInt opCall(shared(BigInt*) e)
+    { setExponent(cast(BigInt*)e); return execute(); }
 
     /*
     * FixedBasePowerMod Constructor
     */
-    this()(auto const ref BigInt b, auto const ref BigInt n, UsageHints hints = NO_HINTS)
+    this(const(BigInt)* b, const(BigInt)* n, UsageHints hints = NO_HINTS)
     {
         super(n, UsageHints(hints | BASE_IS_FIXED | chooseBaseHints(b, n)));
         setBase(b);
@@ -211,9 +219,9 @@ public:
 /*
 * Choose potentially useful hints
 */
-PowerMod.UsageHints chooseBaseHints()(auto const ref BigInt b, auto const ref BigInt n)
+PowerMod.UsageHints chooseBaseHints(const(BigInt)* b, const(BigInt)* n)
 {
-    if (b == 2)
+    if (*b == 2)
         return cast(PowerMod.UsageHints)(PowerMod.BASE_IS_2 | PowerMod.BASE_IS_SMALL);
     
     const size_t b_bits = b.bits();
@@ -230,7 +238,7 @@ PowerMod.UsageHints chooseBaseHints()(auto const ref BigInt b, auto const ref Bi
 /*
 * Choose potentially useful hints
 */
-PowerMod.UsageHints chooseExpHints()(auto const ref BigInt e, auto const ref BigInt n)
+PowerMod.UsageHints chooseExpHints(const(BigInt)* e, const(BigInt)* n)
 {
     const size_t e_bits = e.bits();
     const size_t n_bits = n.bits();

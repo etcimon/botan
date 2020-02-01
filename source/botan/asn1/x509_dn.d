@@ -79,7 +79,7 @@ public:
             while (rdn.moreItems())
             {
                 OID oid;
-                ASN1String str = ASN1String();
+                ASN1String str;
                 
                 rdn.startCons(ASN1Tag.SEQUENCE)
                         .decode(oid)

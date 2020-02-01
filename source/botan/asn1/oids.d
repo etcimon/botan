@@ -22,7 +22,8 @@ struct OIDS {
 private static:
     void addOidstr(string oidstr, string name)
     {
-        addOid(OID(oidstr), name);
+        auto oid_str = OID(oidstr);
+        addOid(oid_str, name);
     }    
     
     void addOid(in OID oid, in string name)

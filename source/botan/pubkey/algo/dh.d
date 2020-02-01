@@ -90,7 +90,7 @@ public:
 		m_owned = true;
         m_priv = new DLSchemePrivateKey(Options(), alg_id, key_bits);
         if (m_priv.getY() == 0)
-            m_priv.setY(powerMod(m_priv.groupG(), m_priv.getX(), m_priv.groupP()));
+            m_priv.setY(powerMod(&m_priv.groupG(), &m_priv.getX(), &m_priv.groupP()));
         m_priv.loadCheck(rng);
     }
 
@@ -112,7 +112,7 @@ public:
             x_arg_0 = true;
             x_arg.randomize(rng, 2 * dlWorkFactor(p.bits()));
         }
-        BigInt y1 = powerMod(grp.getG(), x_arg, *p);
+        BigInt y1 = powerMod(&grp.getG(), &x_arg, p);
         
 		m_owned = true;
         m_priv = new DLSchemePrivateKey(Options(), grp.move, y1.move, x_arg.move);
@@ -152,7 +152,7 @@ public:
         m_p = &dh.groupP();
         m_powermod_x_p = FixedExponentPowerMod(dh.getX(), *m_p);
         BigInt k = BigInt(rng, m_p.bits() - 1);
-        auto d = (*m_powermod_x_p)(inverseMod(k, *m_p));
+        auto d = (*m_powermod_x_p)(inverseMod(&k, m_p));
         m_blinder = Blinder(k, d, *m_p);
     }
 

@@ -40,16 +40,16 @@ struct FPE {
     *  key = a random key
     *  tweak = will modify the ciphertext (think of as an IV)
     */
-    static BigInt fe1Encrypt(const ref BigInt n0, const ref BigInt X0,
+    static BigInt fe1Encrypt(const(BigInt)* n0, const(BigInt)* X0,
                              in SymmetricKey key,
                              const ref Vector!ubyte tweak)
     {
         Unique!FPEEncryptor F = new FPEEncryptor(key, n0, tweak);
         
         BigInt a, b;
-        factor(n0.dup, a, b);
+        factor(n0.dup, &a, &b);
         
-        const size_t r = rounds(a, b);
+        const size_t r = rounds(&a, &b);
         
         BigInt X = X0.dup;
         
@@ -57,9 +57,9 @@ struct FPE {
         {
             BigInt L = X / b;
             BigInt R = X % b;
-            
-            BigInt W = (L + (*F)(i, R)) % a;
-            X = a * R + W;
+            auto W_0 = F(i, &R);
+            BigInt W = (L + &W_0) % a;
+            X = (a * R) + &W;
         }
         
         return X;
@@ -74,14 +74,14 @@ struct FPE {
     *  key = is the key used for encryption
     *  tweak = the same tweak used for encryption
     */
-    static BigInt fe1Decrypt(const ref BigInt n0, const ref BigInt X0, in SymmetricKey key, const ref Vector!ubyte tweak)
+    static BigInt fe1Decrypt(const(BigInt)* n0, const(BigInt)* X0, in SymmetricKey key, const ref Vector!ubyte tweak)
     {
         auto F = scoped!FPEEncryptor(key, n0, tweak);
         
         BigInt a, b;
-        factor(n0.dup, a, b);
+        factor(n0.dup, &a, &b);
         
-        const size_t r = rounds(a, b);
+        const size_t r = rounds(&a, &b);
         
         BigInt X = X0.dup;
         
@@ -89,9 +89,9 @@ struct FPE {
         {
             BigInt W = X % a;
             BigInt R = X / a;
-            
-            BigInt L = (W - F(r-i-1, R)) % a;
-            X = b * L + R;
+            auto L_0 = F(r-i-1, &R);
+            BigInt L = (W - &L_0) % a;
+            X = (b * L) + &R;
         }
         
         return X;
@@ -113,35 +113,35 @@ __gshared immutable size_t MAX_N_BYTES = 128/8;
 * Want a >= b since the safe number of rounds is 2+log_a(b); if a >= b
 * then this is always 3
 */
-void factor(BigInt n, ref BigInt a, ref BigInt b)
+void factor(BigInt n, BigInt* a, BigInt* b)
 {
-    a = 1;
-    b = 1;
+    *a = 1;
+    *b = 1;
     
-    size_t n_low_zero = lowZeroBits(n);
+    size_t n_low_zero = lowZeroBits(&n);
     
-    a <<= (n_low_zero / 2);
-    b <<= n_low_zero - (n_low_zero / 2);
+    *a <<= (n_low_zero / 2);
+    *b <<= n_low_zero - (n_low_zero / 2);
     n >>= n_low_zero;
     
     foreach (size_t i; 0 .. PRIME_TABLE_SIZE)
     {
         while (n % PRIMES[i] == 0)
         {
-            a *= PRIMES[i];
-            if (a > b)
+            *a *= PRIMES[i];
+            if (*a > b)
                 swap(a, b);
             n /= PRIMES[i];
         }
     }
     
-    if (a > b)
+    if (*a > b)
         swap(a, b);
-    a *= n;
-    if (a < b)
+    *a *= n;
+    if (*a < b)
         swap(a, b);
     
-    if (a <= 1 || b <= 1)
+    if (*a <= 1 || *b <= 1)
         throw new Exception("Could not factor n for use in FPE");
 }
 
@@ -151,7 +151,7 @@ void factor(BigInt n, ref BigInt a, ref BigInt b)
 * so 3 rounds is safe. The FPE factorization routine should always
 * return a >= b, so just confirm that and return 3.
 */
-size_t rounds(const ref BigInt a, const ref BigInt b)
+size_t rounds(const(BigInt)* a, const(BigInt)* b)
 {
     if (a < b)
         throw new LogicError("FPE rounds: a < b");
@@ -164,7 +164,7 @@ size_t rounds(const ref BigInt a, const ref BigInt b)
 final class FPEEncryptor
 {
 public:
-    this()(in SymmetricKey key, auto const ref BigInt n, const ref Vector!ubyte tweak)
+    this()(in SymmetricKey key, const(BigInt)* n, const ref Vector!ubyte tweak)
     {
 
         m_mac = new HMAC(new SHA256);
@@ -185,7 +185,7 @@ public:
     }
 
     
-    BigInt opCall(size_t round_no, const ref BigInt R)
+    BigInt opCall(size_t round_no, const(BigInt)* R)
     {
         SecureVector!ubyte r_bin = BigInt.encodeLocked(R);
 
