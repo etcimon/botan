@@ -186,7 +186,7 @@ public:
         m_powermod_d2_q = FixedExponentPowerMod(rsa.getD2(), rsa.getQ());
         m_mod_p = ModularReducer(rsa.getP());
         BigInt k = BigInt(rng, m_n.bits() - 1);
-        FixedExponentPowerModImpl powermod_e_n = cast(FixedExponentPowerModImpl) m_powermod_e_n;
+        FixedExponentPowerModImpl powermod_e_n = cast(FixedExponentPowerModImpl) *m_powermod_e_n;
         auto e = powermod_e_n.opCall(&k);
         m_blinder = Blinder(e, inverseMod(&k, m_n), *m_n);
     }
@@ -217,7 +217,7 @@ public:
     {
         BigInt m = BigInt(msg, msg_len);
         BigInt x = m_blinder.unblind(privateOp(m_blinder.blind(m)));
-        FixedExponentPowerModImpl powermod_e_n = cast(FixedExponentPowerModImpl) m_powermod_e_n;
+        FixedExponentPowerModImpl powermod_e_n = cast(FixedExponentPowerModImpl) *m_powermod_e_n;
         assert(m == powermod_e_n.opCall(&x), "RSA decrypt passed consistency check");
         
         return BigInt.encodeLocked(x);
@@ -264,7 +264,7 @@ private:
 		auto handler = Handler(cast(shared)mutex, cast(shared)m_d1, cast(shared)m_p, cast(shared)&m, cast(shared)&j1);
 		Unique!Thread thr = new Thread(&handler.run);
 		thr.start();
-        FixedExponentPowerModImpl powermod_d2_q = cast(FixedExponentPowerModImpl)m_powermod_d2_q;
+        FixedExponentPowerModImpl powermod_d2_q = cast(FixedExponentPowerModImpl)*m_powermod_d2_q;
         BigInt j2 = powermod_d2_q.opCall(&m);
 		thr.join();
 		BigInt j3;
@@ -331,7 +331,7 @@ private:
     {
         if (m >= *m_n)
             throw new InvalidArgument("RSA public op - input is too large");
-        FixedExponentPowerModImpl powermod_e_n = cast(FixedExponentPowerModImpl) m_powermod_e_n;
+        FixedExponentPowerModImpl powermod_e_n = cast(FixedExponentPowerModImpl) *m_powermod_e_n;
         return powermod_e_n.opCall(&m);
     }
 

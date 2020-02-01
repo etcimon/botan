@@ -387,7 +387,7 @@ PBKDF engineGetAlgo(T : PBKDF)(Engine engine,
                                AlgorithmFactory af)
 { return engine.findPbkdf(request, af); }
 
-@pragma(inline)
+pragma(inline)
 const(T) factoryPrototype(T)(in string algo_spec,
                              in string provider,
                              ref Vector!( Engine ) engines,

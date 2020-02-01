@@ -152,7 +152,8 @@ public:
         m_p = &dh.groupP();
         m_powermod_x_p = FixedExponentPowerMod(dh.getX(), *m_p);
         BigInt k = BigInt(rng, m_p.bits() - 1);
-        auto d = (*m_powermod_x_p)(inverseMod(&k, m_p));
+        auto powermod_x_p = cast(FixedExponentPowerModImpl) *m_powermod_x_p;
+        auto d = powermod_x_p(inverseMod(&k, m_p));
         m_blinder = Blinder(k, d, *m_p);
     }
 
@@ -160,10 +161,11 @@ public:
     {
         BigInt input = BigInt.decode(w, w_len);
         
-        if (input <= 1 || input >= *m_p - 1)
+        if (input <= 1 || input >= (*m_p) - 1)
             throw new InvalidArgument("DH agreement - invalid key provided");
         
-        const BigInt r = m_blinder.unblind((*m_powermod_x_p)(m_blinder.blind(input)));
+        auto powermod_x_p = cast(FixedExponentPowerModImpl) *m_powermod_x_p;
+        const BigInt r = m_blinder.unblind(powermod_x_p(m_blinder.blind(input)));
         
         return BigInt.encode1363(r, m_p.bytes());
     }
