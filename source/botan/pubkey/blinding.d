@@ -33,7 +33,7 @@ public:
 
         m_e = m_reducer.square(&m_e);
         m_d = m_reducer.square(&m_d);
-        return m_reducer.multiply(i, m_e);
+        return m_reducer.multiply(&i, &m_e);
     }
 
     /*
@@ -43,7 +43,7 @@ public:
     {
         if (!m_reducer.initialized())
             return i.dup;
-        return m_reducer.multiply(i, m_d);
+        return m_reducer.multiply(&i, &m_d);
     }
 
     bool initialized() const { return m_reducer.initialized(); }

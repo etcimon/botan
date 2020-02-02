@@ -48,9 +48,9 @@ PointGFp createRandomPoint(RandomNumberGenerator rng, const ref CurveGFp curve)
 
         BigInt x3 = mod_p.multiply(&x, &x_2);
         
-        BigInt ax = mod_p.multiply(curve.getA(), x);
+        BigInt ax = mod_p.multiply(&curve.getA(), &x);
 
-        BigInt bx3 = mod_p.multiply(curve.getB(), x3);
+        BigInt bx3 = mod_p.multiply(&curve.getB(), &x3);
         
         BigInt y = mod_p.reduce(ax + &bx3);
         

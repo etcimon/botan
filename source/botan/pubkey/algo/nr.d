@@ -281,7 +281,7 @@ public:
         BigInt g_d = powermod_g_p(&d);
 		thr.join();
 		BigInt i;
-		synchronized(mutex) i = m_mod_p.multiply(g_d, res);
+		synchronized(mutex) i = m_mod_p.multiply(&g_d, &res);
         return BigInt.encodeLocked(m_mod_q.reduce(c - i));
     }
 private:

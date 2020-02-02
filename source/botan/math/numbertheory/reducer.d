@@ -83,70 +83,9 @@ public:
     *  y = integer
     * Returns: (x * y) % p
     */
-    BigInt multiply(T, U)(T* x, U* y) const
-        if (!isPointer!U && !isPointer!T)
+    BigInt multiply(const(BigInt)* x, const(BigInt)* y) const
     { 
-        return reduce((*x) * (*y));
-    }
-
-    BigInt multiply(T, U)(T x, U* y) const
-        if (!isPointer!U && !isPointer!T)
-    { 
-        return reduce((x) * (*y));
-    }
-    
-    BigInt multiply(T, U)(T* x, U y) const
-        if (!isPointer!U && !isPointer!T)
-    { 
-        return reduce((*x) * (y));
-    }
-    BigInt multiply(T, U)(T** x, U* y) const
-        if (!isPointer!U && !isPointer!T)
-    { 
-        return multiply(*x, y);
-    }
-    BigInt multiply(T, U)(T* x, U** y) const
-        if (!isPointer!U && !isPointer!T)
-    { 
-        return multiply(x, *y);
-    }
-
-    /**
-    * Multiply mod p
-    * Params:
-    *  x = integer
-    *  y = integer
-    * Returns: (x * y) % p
-    */
-    BigInt multiply(T, U)(ref T x, ref U y) const
-        if (!isPointer!U && !isPointer!T)
-    { 
-        return multiply(&x, &y);
-    }
-
-    /**
-    * Multiply mod p
-    * Params:
-    *  x = integer
-    *  y = integer
-    * Returns: (x * y) % p
-    */
-    BigInt multiply(T, U)(in T x, in U y) const
-        if (!isPointer!U && !isPointer!T)
-    { 
-        return multiply(&x, &y);
-    }
-    /**
-    * Multiply mod p
-    * Params:
-    *  x = integer
-    *  y = integer
-    * Returns: (x * y) % p
-    */
-    BigInt multiply(T, U)(shared(T*) x, shared(U*) y) shared const
-        if (!isPointer!U && !isPointer!T)
-    { 
-        return (cast()this).multiply(cast(T*)x, cast(U*)y);
+        return reduce((*x) * y);
     }
 
     /**

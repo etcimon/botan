@@ -209,7 +209,7 @@ public:
 			thr.join();
 			synchronized(mutex) r = res.dup;
 			BigInt s_arg = mulAdd(m_x, &r, &i);
-            s = m_mod_q.multiply(s, s_arg);
+            s = m_mod_q.multiply(&s, &s_arg);
         }
         
         SecureVector!ubyte output = SecureVector!ubyte(2*m_q.bytes());
@@ -300,7 +300,7 @@ public:
 						import memutils.utils;
 						FixedBasePowerModImpl powermod_g_p = ThreadMem.alloc!FixedBasePowerModImpl(g2, p2);
 						scope(exit) ThreadMem.free(powermod_g_p);
-						auto mult = mod_q.multiply(s2, i2);
+						auto mult = (cast(ModularReducer*)mod_q).multiply(cast(BigInt*)&s2, cast(BigInt*)&i2);
 						BigInt _res = powermod_g_p(&mult);
 						synchronized(cast()mtx) ret.load(&_res);
 					}
@@ -317,7 +317,7 @@ public:
         FixedBasePowerModImpl powermod_y_p = m_powermod_y_p;
         BigInt s_r = powermod_y_p.opCall(&mult);
 		thr.join();
-        synchronized(mutex) s = m_mod_p.multiply(s_i, s_r);
+        synchronized(mutex) s = m_mod_p.multiply(cast(BigInt*)&s_i, cast(BigInt*)&s_r);
         auto r2 = m_mod_q.reduce(s.move);
         return (r2 == r);
     }

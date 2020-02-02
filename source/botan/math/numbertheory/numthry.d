@@ -28,6 +28,7 @@ import botan.utils.rounding;
 import botan.algo_factory.algo_factory : AlgorithmFactory;
 import botan.constants;
 import std.conv : to;
+import std.traits : isPointer;
 
 /**
 * Fused multiply-add
@@ -186,7 +187,7 @@ BigInt inverseMod(const(BigInt)* n, const(BigInt)* mod)
         foreach (size_t i; 0 .. u_zero_bits)
         {
             if (A.isOdd() || B.isOdd())
-            { A += n; B -= mod; }
+            { A += *n; B -= *mod; }
             A >>= 1; B >>= 1;
         }
         
@@ -195,7 +196,7 @@ BigInt inverseMod(const(BigInt)* n, const(BigInt)* mod)
         foreach (size_t i; 0 .. v_zero_bits)
         {
             if (C.isOdd() || D.isOdd())
-            { C += n; D -= mod; }
+            { C += *n; D -= *mod; }
             C >>= 1; D >>= 1;
         }
         
@@ -206,8 +207,8 @@ BigInt inverseMod(const(BigInt)* n, const(BigInt)* mod)
     if (v != 1)
         return BigInt(0); // no modular inverse
     
-    while (D.isNegative()) D += mod;
-    while (D >= mod) D -= mod;
+    while (D.isNegative()) D += *mod;
+    while (D >= *mod) D -= *mod;
     
     return D.move();
 }
@@ -223,37 +224,14 @@ BigInt inverseMod(const(BigInt)* n, const(BigInt)* mod)
 *  n = is an odd integer > 1
 * Returns: (n / m)
 */
-int jacobi(T, U)(T b, U m)
+int jacobi(const(BigInt)* a, const(BigInt)* n)
 {
-    import std.traits;
-    static if (!is(T == BigInt) && !isPointer!T) {
-        BigInt a;
-        a.swap(&b);
-    }
-    else static if (!is(T == BigInt) && isPointer!T) {
-        BigInt a;
-        a.swap(b);
-    } else {
-        alias a = b;
-    }
-    static if (!is(U == BigInt) && !isPointer!U) {
-        BigInt n;
-        n.swap(&m);
-    }
-    else static if (!is(U == BigInt) && isPointer!U) {
-        BigInt n;
-        n.swap(m);
-    }
-    else {
-        alias n = m;
-    }
-
     if (a.isNegative())
         throw new InvalidArgument("jacobi: first argument must be non-negative");
-    if (n.isEven() || n < 2)
+    if (n.isEven() || (*n) < 2)
         throw new InvalidArgument("jacobi: second argument must be odd and > 1");
     
-    BigInt x = a.dup, y = n.dup;
+    BigInt x = (*a).dup, y = (*n).dup;
     int J = 1;
     
     while (y > 1)
@@ -320,74 +298,51 @@ BigInt powerMod(const(BigInt)* base, const(BigInt)* exp, const(BigInt)* mod)
 /*
 * Shanks-Tonnelli algorithm
 */
-BigInt ressol(T, U)(T b, U u)
+BigInt ressol(const(BigInt)* a, const(BigInt)* p)
 {
-    import std.traits;
-    static if (!is(T == BigInt) && !isPointer!T) {
-        BigInt a;
-        a.swap(&b);
-    }
-    else static if (!is(T == BigInt) && isPointer!T) {
-        BigInt a;
-        a.swap(b);
-    } else {
-        alias a = b;
-    }
-    static if (!is(U == BigInt) && !isPointer!U) {
-        BigInt p;
-        p.swap(&u);
-    }
-    else static if (!is(U == BigInt) && isPointer!U) {
-        BigInt p;
-        p.swap(u);
-    }
-    else {
-        alias p = u;
-    }
-
-    if (a == 0)
+    if (*a == 0)
         return BigInt(0);
-	else if (a < 0)
+	else if (*a < 0)
 		throw new InvalidArgument("ressol(): a to solve for must be positive");
 
-    if (p == 2)
+    if (*p == 2)
         return a.dup;
-	else if (p <= 1)
+	else if (*p <= 1)
 		throw new InvalidArgument("ressol(): prime must be > 1");
 	else if(p.isEven())
 	   throw new InvalidArgument("ressol(): invalid prime");
-    if (jacobi(&a, &p) != 1) { // not a quadratic residue
+    if (jacobi(a, p) != 1) { // not a quadratic residue
         auto bi = -BigInt(1);
         return bi.move();
     }
     
-    if (p % 4 == 3) {
-        auto p_mod = ((p+1) >> 2);       
-        return powerMod(&a, &p_mod, &p);
+    if ((*p) % 4 == 3) {
+        auto p_mod = (((*p)+1) >> 2);       
+        return powerMod(a, &p_mod, p);
     }
-    auto s_diff = p - 1;
+    auto s_diff = (*p) - 1;
     size_t s = lowZeroBits(&s_diff);
-    BigInt q = p >> s;
+    BigInt q = (*p) >> s;
     
     q -= 1;
     q >>= 1;
     
-    ModularReducer mod_p = ModularReducer(p);
+    ModularReducer mod_p = ModularReducer(*p);
     
-    BigInt r = powerMod(&a, &q, &p);
+    BigInt r = powerMod(a, &q, p);
     auto r_1 = mod_p.square(&r);
-    BigInt n = mod_p.multiply(&a, &r_1);
-    r = mod_p.multiply(&r, &a);
+    BigInt n = mod_p.multiply(a, &r_1);
+    r = mod_p.multiply(&r, a);
     
     if (n == 1)
         return r.move();
     
     // find random non quadratic residue z
     BigInt z = 2;
-    while (jacobi(&z, &p) == 1) // while z quadratic residue
+    while (jacobi(&z, p) == 1) // while z quadratic residue
         ++z;
     auto c_0 = (q << 1) + 1;
-    BigInt c = powerMod(&z, &c_0, &p);
+    BigInt c = powerMod(&z, &c_0, p);
     
     while (n > 1)
     {
@@ -404,7 +359,7 @@ BigInt ressol(T, U)(T b, U u)
 			}
         }        
         auto c_1 = BigInt.powerOf2(s-i-1);
-        c = powerMod(&c, &c_1, &p);
+        c = powerMod(&c, &c_1, p);
         r = mod_p.multiply(&r, &c);
         c = mod_p.square(&c);
         n = mod_p.multiply(&n, &c);
@@ -514,17 +469,17 @@ bool isPrime(const(BigInt)* n, RandomNumberGenerator rng, size_t prob = 56, bool
     }
 
     const size_t test_iterations = mrTestIterations(n.bits(), prob, is_random);
-    const BigInt n_minus_1 = *n - 1;
+    const BigInt n_minus_1 = (*n) - 1;
     const size_t s = lowZeroBits(&n_minus_1);
-    FixedExponentPowerModImpl pow_mod = ThreadMem.alloc!FixedExponentPowerModImpl(n_minus_1 >> s, n);
-	scope(exit) ThreadMem.free(pow_mod);
+    auto left_shift = n_minus_1 >> s;
+    auto pow_mod = FixedExponentPowerModImpl(cast(BigInt*)&left_shift, cast(BigInt*)&n);
     ModularReducer reducer = ModularReducer(*n);
     
     foreach (size_t i; 0 .. test_iterations)
     {
         auto bi = BigInt(2);
         const BigInt a = BigInt.randomInteger(rng, bi, n_minus_1);
-        BigInt y = pow_mod(&a);
+        BigInt y = cast(BigInt)pow_mod.opCall(cast(BigInt*)&a);
         if (mrWitness(y, reducer, &n_minus_1, s))
             return false;
     }
@@ -797,7 +752,7 @@ BigInt inverseModOddModulus(const(BigInt)* n, const(BigInt)* mod)
         foreach (size_t i; 0 .. u_zero_bits)
         {
             if (B.isOdd())
-            { B -= mod; }
+            { B -= *mod; }
             B >>= 1;
         }
         
@@ -806,7 +761,7 @@ BigInt inverseModOddModulus(const(BigInt)* n, const(BigInt)* mod)
         foreach (size_t i; 0 .. v_zero_bits)
         {
             if (D.isOdd())
-            { D -= mod; }
+            { D -= *mod; }
             D >>= 1;
         }
         
@@ -817,8 +772,8 @@ BigInt inverseModOddModulus(const(BigInt)* n, const(BigInt)* mod)
     if (v != 1)
         return BigInt(0); // no modular inverse
     
-    while (D.isNegative()) D += mod;
-    while (D >= mod) D -= mod;
+    while (D.isNegative()) D += *mod;
+    while (D >= *mod) D -= *mod;
     
     return D.move();
 }

@@ -167,7 +167,8 @@ public:
         FixedBasePowerModImpl powermod_g_p = m_powermod_g_p;
         FixedBasePowerModImpl powermod_y_p = m_powermod_y_p;
         BigInt a = powermod_g_p.opCall(&k);
-        BigInt b = m_mod_p.multiply(&m, powermod_y_p(&k));
+        auto powermod_res = powermod_y_p(&k);
+        BigInt b = m_mod_p.multiply(&m, &powermod_res);
         
         SecureVector!ubyte output = SecureVector!ubyte(2*p.bytes());
         a.binaryEncode(&output[p.bytes() - a.bytes()]);
@@ -229,7 +230,8 @@ public:
         a = m_blinder.blind(a);
         FixedExponentPowerModImpl powermod_x_p = m_powermod_x_p;
         auto r_0 = powermod_x_p(&a);
-        BigInt r = m_mod_p.multiply(&b, inverseMod(&r_0, p));
+        auto inv_res = inverseMod(&r_0, p);
+        BigInt r = m_mod_p.multiply(&b, &inv_res);
         
         return BigInt.encodeLocked(m_blinder.unblind(r));
     }

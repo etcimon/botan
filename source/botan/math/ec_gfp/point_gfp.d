@@ -485,8 +485,7 @@ private:
     * Params:
     *  workspace = temp space, at least 11 elements
     */
-    void add(T, U)(T* rhs, U* ws_bn)
-        if (!isPointer!U && !isPointer!T)
+    void add(const(PointGFp)* rhs, const(Vector!(RefCounted!BigInt))* ws_bn)
     {
         if (isZero())
         {
@@ -576,8 +575,7 @@ private:
     * Params:
     *  workspace = temp space, at least 9 elements
     */
-    void mult2(T)(T* ws_bn)
-        if (!isPointer!T)
+    void mult2(const(Vector!(RefCounted!BigInt))* ws_bn)
     {
         if (isZero())
             return;
