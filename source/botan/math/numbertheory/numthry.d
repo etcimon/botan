@@ -472,7 +472,7 @@ bool isPrime(const(BigInt)* n, RandomNumberGenerator rng, size_t prob = 56, bool
     const BigInt n_minus_1 = (*n) - 1;
     const size_t s = lowZeroBits(&n_minus_1);
     auto left_shift = n_minus_1 >> s;
-    auto pow_mod = FixedExponentPowerModImpl(cast(BigInt*)&left_shift, cast(BigInt*)&n);
+    auto pow_mod = scoped!FixedExponentPowerModImpl(cast(BigInt*)&left_shift, cast(BigInt*)n);
     ModularReducer reducer = ModularReducer(*n);
     
     foreach (size_t i; 0 .. test_iterations)

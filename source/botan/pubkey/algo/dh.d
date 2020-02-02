@@ -149,11 +149,11 @@ public:
     this(in DLSchemePrivateKey dh, RandomNumberGenerator rng) 
     {
         assert(dh.algoName == DHPublicKey.algoName);
-        m_p = &dh.groupP();
-        m_powermod_x_p = FixedExponentPowerMod(dh.getX(), *m_p);
+        m_dh = dh;
+        m_p = &m_dh.groupP();
+        m_powermod_x_p = FixedExponentPowerMod(&m_dh.getX(), m_p);
         BigInt k = BigInt(rng, m_p.bits() - 1);
-        auto powermod_x_p = cast(FixedExponentPowerModImpl) *m_powermod_x_p;
-        auto d = powermod_x_p(inverseMod(&k, m_p));
+        auto d = (*m_powermod_x_p)(inverseMod(&k, m_p));
         m_blinder = Blinder(k, d, *m_p);
     }
 
@@ -171,6 +171,7 @@ public:
     }
 
 private:
+    const DLSchemePrivateKey m_dh;
     const BigInt* m_p;
 
     FixedExponentPowerMod m_powermod_x_p;

@@ -191,9 +191,8 @@ public:
 						modexpInit(); // enable quick path for powermod
 						BigInt* ret = cast(BigInt*) res2;
 						{ import memutils.utils;
-							FixedBasePowerModImpl powermod_g_p = ThreadMem.alloc!FixedBasePowerModImpl(g, p);
-							scope(exit) ThreadMem.free(powermod_g_p);
-							BigInt _res = (cast(ModularReducer*)mod_q).reduce(powermod_g_p(k2));
+							FixedBasePowerMod powermod_g_p = FixedBasePowerMod(cast(const(BigInt)*)g, cast(const(BigInt)*)p);
+							BigInt _res = (cast(ModularReducer*)mod_q).reduce(powermod_g_p(cast(const(BigInt*))k2));
 							//logDebug("Got: ", _res.bytes());
 							synchronized(cast()mtx) ret.load(&_res);
 						}
@@ -298,9 +297,8 @@ public:
 					BigInt* ret = cast(BigInt*) s_i2;
 					{
 						import memutils.utils;
-						FixedBasePowerModImpl powermod_g_p = ThreadMem.alloc!FixedBasePowerModImpl(g2, p2);
-						scope(exit) ThreadMem.free(powermod_g_p);
-						auto mult = (cast(ModularReducer*)mod_q).multiply(cast(BigInt*)&s2, cast(BigInt*)&i2);
+						FixedBasePowerModImpl powermod_g_p = FixedBasePowerMod(cast(const(BigInt)*)g2, cast(const(BigInt)*)p2);
+						auto mult = (cast(ModularReducer*)mod_q).multiply(cast(const(BigInt)*)s2, cast(const(BigInt)*)i2);
 						BigInt _res = powermod_g_p(&mult);
 						synchronized(cast()mtx) ret.load(&_res);
 					}
@@ -317,7 +315,7 @@ public:
         FixedBasePowerModImpl powermod_y_p = m_powermod_y_p;
         BigInt s_r = powermod_y_p.opCall(&mult);
 		thr.join();
-        synchronized(mutex) s = m_mod_p.multiply(cast(BigInt*)&s_i, cast(BigInt*)&s_r);
+        synchronized(mutex) s = m_mod_p.multiply(cast(const(BigInt)*)&s_i, cast(const(BigInt)*)&s_r);
         auto r2 = m_mod_q.reduce(s.move);
         return (r2 == r);
     }

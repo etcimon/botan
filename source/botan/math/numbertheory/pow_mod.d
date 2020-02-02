@@ -240,8 +240,8 @@ PowerMod.UsageHints chooseBaseHints(const(BigInt)* b, const(BigInt)* n)
 */
 PowerMod.UsageHints chooseExpHints(const(BigInt)* e, const(BigInt)* n)
 {
-    const size_t e_bits = e.bits();
     const size_t n_bits = n.bits();
+    const size_t e_bits = e.bits();
 
     if (e_bits < n_bits / 32)
         return PowerMod.BASE_IS_SMALL;
