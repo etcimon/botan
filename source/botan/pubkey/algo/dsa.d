@@ -180,7 +180,7 @@ public:
 
 			struct Handler {
 				shared(Mutex) mtx;
-				shared(ModularReducer*)mod_q;
+				shared(ModularReducer*) mod_q;
 				shared(const BigInt*) g;
 				shared(const BigInt*) p;
 				shared(BigInt*) k2;
@@ -191,8 +191,8 @@ public:
 						modexpInit(); // enable quick path for powermod
 						BigInt* ret = cast(BigInt*) res2;
 						{ import memutils.utils;
-							FixedBasePowerMod powermod_g_p = FixedBasePowerMod(cast(const(BigInt)*)g, cast(const(BigInt)*)p);
-							BigInt _res = (cast(ModularReducer*)mod_q).reduce(powermod_g_p(cast(const(BigInt*))k2));
+							auto powermod_g_p = scoped!FixedBasePowerModImpl(cast(const(BigInt)*)g, cast(const(BigInt)*)p);
+							BigInt _res = (cast(ModularReducer)*mod_q).reduce(powermod_g_p(cast(BigInt*)k2));
 							//logDebug("Got: ", _res.bytes());
 							synchronized(cast()mtx) ret.load(&_res);
 						}

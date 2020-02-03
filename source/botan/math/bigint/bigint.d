@@ -392,7 +392,8 @@ public:
     void opOpAssign(string op)(const(BigInt)* y)
         if (op == "*")
     {
-        const size_t x_sw = sigWords(), y_sw = y.sigWords();
+        const size_t x_sw = sigWords();
+        const size_t y_sw = y.sigWords();
         setSign((sign() == y.sign()) ? Positive : Negative);
         
         if (x_sw == 0 || y_sw == 0)
@@ -1385,7 +1386,8 @@ public:
         if (op == "*")
     {
         const BigInt* x = &this;
-        const size_t x_sw = x.sigWords(), y_sw = y.sigWords();
+        const size_t x_sw = x.sigWords();
+        const size_t y_sw = y.sigWords();
         
         BigInt z = BigInt(BigInt.Positive, x.length + y.length);
         

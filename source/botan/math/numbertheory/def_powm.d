@@ -41,13 +41,13 @@ public:
     override void setBase(const(BigInt)* base)
     {
         m_window_bits = PowerMod.windowBits(m_exp.bits(), base.bits(), m_hints);
-        auto base_2 = base.dup;
         m_g.resize(1 << m_window_bits);
-        m_g[0] = new BigInt(1);
-        m_g[1] = base_2;
-        
+        auto base_2 = base.dup;
+        m_g[0] = RefCounted!BigInt(1);
+        m_g[1] = RefCounted!BigInt(&base_2);
         for (size_t i = 2; i != m_g.length; ++i) {
-            m_g[i] = m_reducer.multiply(m_g[i-1], m_g[1]).dup;
+            auto mg_0 = m_reducer.multiply(&*m_g[i-1], &*m_g[1]);
+            m_g[i] = RefCounted!BigInt(&mg_0);
         }
     }
 
@@ -66,8 +66,8 @@ public:
                 x = m_reducer.square(&x);
             
             const uint nibble = m_exp.getSubstring(m_window_bits*(i-1), m_window_bits);
-            
-            x = m_reducer.multiply(&x, m_g[nibble]);
+          
+            x = m_reducer.multiply(&x, &* m_g[nibble]);
         }
         return x.move();
     }
@@ -89,13 +89,12 @@ public:
         m_hints = _hints;
         m_window_bits = 0;
     }
-
 private:
     this() { }
     ModularReducer m_reducer;
     BigInt m_exp;
     size_t m_window_bits;
-    Vector!(BigInt*) m_g;
+    Vector!(RefCounted!BigInt) m_g;
     PowerMod.UsageHints m_hints;
 }
 
