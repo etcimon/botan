@@ -58,8 +58,8 @@ struct FPE {
             BigInt L = X / b;
             BigInt R = X % b;
             auto W_0 = F(i, &R);
-            BigInt W = (L + &W_0) % a;
-            X = (a * R) + &W;
+            BigInt W = (L + W_0) % a;
+            X = (a * R) + W;
         }
         
         return X;
@@ -90,8 +90,8 @@ struct FPE {
             BigInt W = X % a;
             BigInt R = X / a;
             auto L_0 = F(r-i-1, &R);
-            BigInt L = (W - &L_0) % a;
-            X = (b * L) + &R;
+            BigInt L = (W - L_0) % a;
+            X = (b * L) + R;
         }
         
         return X;

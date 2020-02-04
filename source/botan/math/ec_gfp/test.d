@@ -52,7 +52,7 @@ PointGFp createRandomPoint(RandomNumberGenerator rng, const ref CurveGFp curve)
 
         BigInt bx3 = mod_p.multiply(&curve.getB(), &x3);
         
-        BigInt y = mod_p.reduce(ax + &bx3);
+        BigInt y = mod_p.reduce(ax + bx3);
         
         if (ressol(&y, p) > 0)
             return PointGFp(curve, &x, &y);
@@ -109,17 +109,17 @@ size_t testPointTurnOnSpRedMul()
     mixin( CHECK_MESSAGE( `r1 == r2`, "error with mult2 after extra turn on sp red mul" ) );
     mixin( CHECK_MESSAGE( `r1.getAffineX() == r2.getAffineX()`, "error with mult2 after extra turn on sp red mul" ) );
     mixin( CHECK(` r1.getAffineX() != 0 `) );
-    r1 += &p_G;
-    r2 += &p_G2;
+    r1 += p_G;
+    r2 += p_G2;
     
     mixin( CHECK_MESSAGE( `r1 == r2`, "error with op+= after extra turn on sp red mul" ) );
     
-    r1 += &p_G;
-    r2 += &p_G2;
+    r1 += p_G;
+    r2 += p_G2;
     
     mixin( CHECK_MESSAGE( `r1 == r2`, "error with op+= after extra turn on sp red mul for both operands" ) );
-    r1 += &p_G;
-    r2 += &p_G2;
+    r1 += p_G;
+    r2 += p_G2;
     
     mixin( CHECK_MESSAGE( `r1 == r2`, "error with op+= after extra turn on sp red mul for both operands" ) );
     return fails;
@@ -341,7 +341,7 @@ size_t testAddPoint()
     p_G *= BigInt(2);
     PointGFp p1 = p_G.dup;
     
-    p1 += &p0;
+    p1 += p0;
     auto bi1 = BigInt("704859595002530890444080436569091156047721708633");
     auto bi2 = BigInt("1147993098458695153857594941635310323215433166682");
     PointGFp expected = PointGFp(secp160r1, &bi1, &bi2);
@@ -815,7 +815,7 @@ size_t randomizedTest(RandomNumberGenerator rng, const ref ECGroup group)
 	auto b2 = BigInt(2);
     const BigInt a = BigInt.randomInteger(rng, b2, group.getOrder());
     const BigInt b = BigInt.randomInteger(rng, b2, group.getOrder());
-    const BigInt c = a + &b;
+    const BigInt c = a + b;
     
     const PointGFp P = group.getBasePoint() * &a;
     const PointGFp Q = group.getBasePoint() * &b;

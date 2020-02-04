@@ -69,8 +69,8 @@ SRP6KeyPair
     BigInt u = hashSeq(hash_id, p_bytes, &A, &B);    
     BigInt x = computeX(hash_id, identifier, password, salt);    
     BigInt ref_1 = (B - (k * powerMod(g, &x, p))) % (*p);
-    auto ref_2_2 = (u * &x);
-    BigInt ref_2 = (a + &ref_2_2);
+    auto ref_2_2 = (u * x);
+    BigInt ref_2 = (a + ref_2_2);
     BigInt S = powerMod(&ref_1, &ref_2, p);
     
     SymmetricKey Sk = SymmetricKey(BigInt.encode1363(&S, p_bytes));
@@ -163,7 +163,7 @@ public:
         BigInt b = BigInt(rng, 256);
         
         auto m_B0 = powerMod(g, &b, p);
-        m_B = (v*k + &m_B0) % (*p);
+        m_B = (v*k + m_B0) % (*p);
         
         m_v = v.dup;
         m_b = b.move();

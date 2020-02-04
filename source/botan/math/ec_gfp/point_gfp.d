@@ -124,17 +124,12 @@ public:
     *  rhs = the PointGFp to add to the local value
     * Returns: resulting PointGFp
     */
-    void opOpAssign(string op, T)(T* rhs)
-        if (op == "+" && !isPointer!T)
+    void opOpAssign(string op)(const ref PointGFp rhs)
+        if (op == "+")
     {
         Vector!(RefCounted!BigInt) ws = Vector!(RefCounted!BigInt)(9);
-        add(rhs, &ws);
-    }
 
-    void opOpAssign(string op, T)(T rhs)
-        if (op == "+" && !isPointer!T)
-    {
-        this.opOpAssign!op(&rhs);
+        add(rhs, ws);
     }
 
     /**
@@ -150,8 +145,10 @@ public:
         if (isZero()) {
             auto tmp = PointGFp(&tdup).negate();
             this.swap( &tmp );
-        } else
-            this += PointGFp(&tdup).negate();
+        } else {
+            auto tmp = PointGFp(&tdup).negate();
+            this += tmp;
+        }
         
     }
 
@@ -192,7 +189,7 @@ public:
 		    PointGFp result = point.dup;
 	    
 		    if (value == 2)
-			        result.mult2(&ws);
+			        result.mult2(ws);
 		    if (scalar.isNegative())
 			        result.negate();
 	    
@@ -213,13 +210,13 @@ public:
             
             if (bit_set)
             {
-                x1.add(&x2, &ws);
-                x2.mult2(&ws);
+                x1.add(x2, ws);
+                x2.mult2(ws);
             }
             else
             {
-                x2.add(&x1, &ws);
-                x1.mult2(&ws);
+                x2.add(x1, ws);
+                x1.mult2(ws);
             }
             
             --bits_left;
@@ -253,17 +250,17 @@ public:
         
         while (bits_left)
         {
-            H.mult2(&ws);
+            H.mult2(ws);
             
             const bool z1_b = z1.getBit(bits_left - 1);
             const bool z2_b = z2.getBit(bits_left - 1);
             
             if (z1_b == true && z2_b == true)
-                H.add(&p3, &ws);
+                H.add(p3, ws);
             else if (z1_b)
-                H.add(&p1, &ws);
+                H.add(p1, ws);
             else if (z2_b)
-                H.add(&p2, &ws);
+                H.add(p2, ws);
             
             --bits_left;
         }
@@ -357,7 +354,7 @@ public:
         
         if (m_coord_z == z2) // Is z equal to 1 (in Montgomery form)?
         {
-            auto y2_0 = x3 + &ax + &m_curve.getBRep();
+            auto y2_0 = x3 + ax + m_curve.getBRep();
             m_curve.fromRep(&y2_0, m_ws_ref);
             if (y2 != y2_0) {
                 return false;
@@ -369,7 +366,7 @@ public:
         BigInt ax_z4 = curveMult(&ax, &z2_sqr);
         auto z3_sqr = curveSqr(&z3);
         BigInt b_z6 = curveMult(&m_curve.getBRep(), &z3_sqr);
-        auto y2_1 = x3 + &ax_z4 + &b_z6;
+        auto y2_1 = x3 + ax_z4 + b_z6;
         m_curve.fromRep(&y2_1, m_ws_ref);
         if (y2 != y2_1) {
             return false;
@@ -485,7 +482,7 @@ private:
     * Params:
     *  workspace = temp space, at least 11 elements
     */
-    void add(const(PointGFp)* rhs, const(Vector!(RefCounted!BigInt))* ws_bn)
+    void add(const ref PointGFp rhs, ref const(Vector!(RefCounted!BigInt)) ws_bn)
     {
         if (isZero())
         {
@@ -496,34 +493,35 @@ private:
         }
         else if (rhs.isZero())
             return;
-        
         const BigInt* p = &m_curve.getP();
-        auto rhs_x = cast(BigInt*) &rhs.m_coord_x;
-        auto rhs_y = cast(BigInt*) &rhs.m_coord_y;
         auto rhs_z = cast(BigInt*) &rhs.m_coord_z;
-        auto rhs_z2 = cast(BigInt*) &*((*ws_bn)[0]);
-        auto U1 = cast(BigInt*) &*((*ws_bn)[1]);
-        auto S1 = cast(BigInt*) &*((*ws_bn)[2]);
+        auto rhs_z2 = cast(BigInt*) &*(ws_bn[0]);
+        auto U1 = cast(BigInt*) &*(ws_bn[1]);
+        auto S1 = cast(BigInt*) &*(ws_bn[2]);
         
-        auto lhs_z2 = cast(BigInt*) &*((*ws_bn)[3]);
-        auto U2 = cast(BigInt*) &*((*ws_bn)[4]);
-        auto S2 = cast(BigInt*) &*((*ws_bn)[5]);
+        auto lhs_z2 = cast(BigInt*) &*(ws_bn[3]);
+        auto U2 = cast(BigInt*) &*(ws_bn[4]);
+        auto S2 = cast(BigInt*) &*(ws_bn[5]);
         
-        auto H = cast(BigInt*) &*((*ws_bn)[6]);
-        auto r = cast(BigInt*) &*((*ws_bn)[7]);
-        
-        curveSqr(rhs_z2, rhs_z);
+        auto H = cast(BigInt*) &*(ws_bn[6]);
+        auto r = cast(BigInt*) &*(ws_bn[7]);
+        *U2 = BigInt(0);
+        logTrace("U2: ", U2.toString(), ", H: ", H.toString());
+        curveSqr(rhs_z2, &rhs.m_coord_z);
         curveMult(U1, &m_coord_x, rhs_z2);
-        auto mult_1 = curveMult(rhs_z, rhs_z2);
-        curveMult(S1, &m_coord_y, &mult_1);
+        auto mult_0 = curveMult(&rhs.m_coord_z, rhs_z2);
+        curveMult(S1, &m_coord_y, &mult_0);
         
         curveSqr(lhs_z2, &m_coord_z);
-        curveMult(U2, rhs_x, lhs_z2);
-        auto mult_2 = curveMult(&m_coord_z, lhs_z2);
-        curveMult(S2, rhs_y, &mult_2);
+        curveMult(U2, &rhs.m_coord_x, lhs_z2);
+        auto mult_1 = curveMult(&m_coord_z, lhs_z2);
+        curveMult(S2, &rhs.m_coord_y, &mult_1);
+        logTrace("U2: ", U2.toString(), ", H: ", H.toString());
         
         *H = U2.dup;
         *H -= *U1;
+        logTrace("U2: ", U2.toString(), ", H: ", H.toString());
+
         if (H.isNegative())
             *H += *p;
         
@@ -534,6 +532,7 @@ private:
         
         if (H.isZero())
         {
+            logTrace("Got H: ", H.toString());
             if (r.isZero())
             {
                 mult2(ws_bn);
@@ -575,7 +574,7 @@ private:
     * Params:
     *  workspace = temp space, at least 9 elements
     */
-    void mult2(const(Vector!(RefCounted!BigInt))* ws_bn)
+    void mult2(ref const(Vector!(RefCounted!BigInt)) ws_bn)
     {
         if (isZero())
             return;
@@ -584,18 +583,18 @@ private:
             this = PointGFp(m_curve); // setting myself to zero
             return;
         }
-        
+        logTrace("Got x = ", (ws_bn[6]));
         const BigInt* p = &m_curve.getP();
         
-        auto y_2 = cast(BigInt*) &*((*ws_bn)[0]);
-        auto S = cast(BigInt*) &*((*ws_bn)[1]);
-        auto z4 = cast(BigInt*) &*((*ws_bn)[2]);
-        auto a_z4 = cast(BigInt*) &*((*ws_bn)[3]);
-        auto M = cast(BigInt*) &*((*ws_bn)[4]);
-        auto U = cast(BigInt*) &*((*ws_bn)[5]);
-        auto x = cast(BigInt*) &*((*ws_bn)[6]);
-        auto y = cast(BigInt*) &*((*ws_bn)[7]);
-        auto z = cast(BigInt*) &*((*ws_bn)[8]);
+        auto y_2 = cast(BigInt*) &*(ws_bn[0]);
+        auto S = cast(BigInt*) &*(ws_bn[1]);
+        auto z4 = cast(BigInt*) &*(ws_bn[2]);
+        auto a_z4 = cast(BigInt*) &*(ws_bn[3]);
+        auto M = cast(BigInt*) &*(ws_bn[4]);
+        auto U = cast(BigInt*) &*(ws_bn[5]);
+        auto x = cast(BigInt*) &*(ws_bn[6]);
+        auto y = cast(BigInt*) &*(ws_bn[7]);
+        auto z = cast(BigInt*) &*(ws_bn[8]);
         
         curveSqr(y_2, &m_coord_y);
         
@@ -642,6 +641,7 @@ private:
         m_coord_x = (*x).dup;
         m_coord_y = (*y).dup;
         m_coord_z = (*z).dup;
+        
     }
 public:
     // relational operators
@@ -663,7 +663,7 @@ public:
         if (op == "+")
     {
         PointGFp ret = this.dup;
-        ret += &rhs;
+        ret += rhs;
         return ret;
     }
     

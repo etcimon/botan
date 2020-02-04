@@ -36,7 +36,7 @@ public:
         if (x.cmp(m_modulus, false) < 0)
         {
             if (x.isNegative())
-                return x + &m_modulus; // make positive
+                return x + m_modulus; // make positive
             return x.move;
         }
         else if (x.cmp(m_modulus_2, false) < 0)

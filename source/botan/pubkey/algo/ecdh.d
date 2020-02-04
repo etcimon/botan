@@ -118,10 +118,11 @@ public:
 
     this(in ECPrivateKey key) 
     {
-        m_curve = &key.domain().getCurve();
-        m_cofactor = &key.domain().getCofactor();
-        auto order_ = &key.domain().getOrder();
-        auto private_value = &key.privateValue();
+        m_priv = key;
+        m_curve = &m_priv.domain().getCurve();
+        m_cofactor = &m_priv.domain().getCofactor();
+        auto order_ = &m_priv.domain().getOrder();
+        auto private_value = &m_priv.privateValue();
         m_l_times_priv = inverseMod(m_cofactor, order_) * private_value;
     }
 
@@ -137,6 +138,7 @@ public:
                                   m_curve.getP().bytes());
     }
 private:
+    const ECPrivateKey m_priv;
     const CurveGFp* m_curve;
     const BigInt* m_cofactor;
     BigInt m_l_times_priv;

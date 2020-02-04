@@ -1323,11 +1323,17 @@ public:
         return z.move();
     }
 
+    BigInt opBinary(string op)(ref const(BigInt) y) const
+        if (op == "+")
+    {
+        return opBinary!"+"(&y);
+    }
+
     BigInt opBinary(string op)(in word y) const
         if (op == "+")
     {
         auto y_ = BigInt(y);
-        return this + &y_;
+        return this + y_;
     }
 
     /*

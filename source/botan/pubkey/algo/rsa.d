@@ -182,12 +182,11 @@ public:
         m_c = &rsa.getC();
         m_d1 = &rsa.getD1();
         m_p = &rsa.getP();
-        m_powermod_e_n = FixedExponentPowerMod(rsa.getE(), rsa.getN());
-        m_powermod_d2_q = FixedExponentPowerMod(rsa.getD2(), rsa.getQ());
+        m_powermod_e_n = FixedExponentPowerMod(&rsa.getE(), &rsa.getN());
+        m_powermod_d2_q = FixedExponentPowerMod(&rsa.getD2(), &rsa.getQ());
         m_mod_p = ModularReducer(rsa.getP());
         BigInt k = BigInt(rng, m_n.bits() - 1);
-        FixedExponentPowerModImpl powermod_e_n = cast(FixedExponentPowerModImpl) *m_powermod_e_n;
-        auto e = powermod_e_n.opCall(&k);
+        auto e = (cast()*m_powermod_e_n)(cast()&k);
         m_blinder = Blinder(e, inverseMod(&k, m_n), *m_n);
     }
     override size_t messageParts() const { return 1; }
@@ -252,9 +251,8 @@ private:
 					BigInt* ret = cast(BigInt*) j1_2;
 					{
 						import memutils.utils;
-						FixedExponentPowerModImpl powermod_d1_p = ThreadMem.alloc!FixedExponentPowerModImpl(*cast(const BigInt*)d1, *cast(const BigInt*)p);
-						scope(exit) ThreadMem.free(powermod_d1_p);
-						BigInt _res = powermod_d1_p( cast(const BigInt*) m2);
+						FixedExponentPowerMod powermod_d1_p = FixedExponentPowerMod(cast(BigInt*)d1, cast(BigInt*)p);
+						BigInt _res =(cast()*powermod_d1_p)( cast(BigInt*) m2);
 						synchronized(cast()mtx) ret.load(&_res);
 					}
 				} catch (Exception e) { logDebug("Error: ", e.toString()); }
@@ -302,7 +300,7 @@ public:
         assert(rsa.algoName == RSAPublicKey.algoName);
         m_rsa = rsa;
         m_n = &m_rsa.getN();
-        m_powermod_e_n = FixedExponentPowerMod(m_rsa.getE(), m_rsa.getN());
+        m_powermod_e_n = FixedExponentPowerMod(&m_rsa.getE(), &m_rsa.getN());
     }
     override size_t messageParts() const { return 1; }
     override size_t messagePartSize() const { return 0; }
@@ -331,8 +329,7 @@ private:
     {
         if (m >= *m_n)
             throw new InvalidArgument("RSA public op - input is too large");
-        FixedExponentPowerModImpl powermod_e_n = cast(FixedExponentPowerModImpl) *m_powermod_e_n;
-        return powermod_e_n.opCall(&m);
+        return (cast()*m_powermod_e_n)(cast(BigInt*)&m);
     }
 
     const IFSchemePublicKey m_rsa;

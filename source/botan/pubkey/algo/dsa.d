@@ -241,11 +241,12 @@ public:
     this(in DLSchemePublicKey dsa) 
     {
         assert(dsa.algoName == DSAPublicKey.algoName);
-        m_q = &dsa.groupQ();
-        m_y = &dsa.getY();
-        m_g = &dsa.groupG();
-        m_p = &dsa.groupP();
-        m_powermod_y_p = FixedBasePowerMod(*m_y, *m_p);
+        m_dsa = dsa;
+        m_q = &m_dsa.groupQ();
+        m_y = &m_dsa.getY();
+        m_g = &m_dsa.groupG();
+        m_p = &m_dsa.groupP();
+        m_powermod_y_p = FixedBasePowerMod(m_y, m_p);
         m_mod_p = ModularReducer(*m_p);
         m_mod_q = ModularReducer(*m_q);
     }
@@ -297,9 +298,9 @@ public:
 					BigInt* ret = cast(BigInt*) s_i2;
 					{
 						import memutils.utils;
-						FixedBasePowerModImpl powermod_g_p = FixedBasePowerMod(cast(const(BigInt)*)g2, cast(const(BigInt)*)p2);
+						auto powermod_g_p = FixedBasePowerMod(cast(const(BigInt)*)g2, cast(const(BigInt)*)p2);
 						auto mult = (cast(ModularReducer*)mod_q).multiply(cast(const(BigInt)*)s2, cast(const(BigInt)*)i2);
-						BigInt _res = powermod_g_p(&mult);
+						BigInt _res = (cast(FixedBasePowerModImpl)powermod_g_p)(cast(BigInt*)&mult);
 						synchronized(cast()mtx) ret.load(&_res);
 					}
 				} catch (Exception e) {
@@ -311,9 +312,9 @@ public:
 		auto handler = Handler(cast(shared) mutex, cast(shared)&m_mod_q, cast(shared)m_g, cast(shared)m_p, cast(shared)&s, cast(shared)&i, cast(shared)&s_i);
 		Unique!Thread thr = new Thread(&handler.run);
 		thr.start();
-		auto mult = m_mod_q.multiply(&s, &r);
-        FixedBasePowerModImpl powermod_y_p = m_powermod_y_p;
-        BigInt s_r = powermod_y_p.opCall(&mult);
+        BigInt s_r_0 = (cast(ModularReducer)m_mod_q).multiply(&s, &r);
+        FixedBasePowerModImpl powermod_y_p = cast(FixedBasePowerModImpl)m_powermod_y_p;
+        BigInt s_r = powermod_y_p(&s_r_0);
 		thr.join();
         synchronized(mutex) s = m_mod_p.multiply(cast(const(BigInt)*)&s_i, cast(const(BigInt)*)&s_r);
         auto r2 = m_mod_q.reduce(s.move);
@@ -321,6 +322,7 @@ public:
     }
 
 private:
+    const DLSchemePublicKey m_dsa;
     const BigInt* m_q;
     const BigInt* m_y;
     const BigInt* m_g;

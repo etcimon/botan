@@ -174,7 +174,7 @@ public:
                 k.randomize(rng, m_q.bits());
             while (k >= *m_q);
             FixedBasePowerModImpl powermod_g_p = m_powermod_g_p;
-            c = m_mod_q.reduce(powermod_g_p(&k) + &f);
+            c = m_mod_q.reduce(powermod_g_p(&k) + f);
             d = m_mod_q.reduce(k - (*m_x) * c);
         }
         

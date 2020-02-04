@@ -98,7 +98,7 @@ size_t checkAdd(const ref Vector!string args)
     BigInt b = BigInt(args[1]);
     BigInt c = BigInt(args[2]);
     
-    BigInt d = a + &b;
+    BigInt d = a + b;
     BigInt e = a.dup;
 
     e += b;
@@ -106,7 +106,7 @@ size_t checkAdd(const ref Vector!string args)
     if (results("+", a, b, c, d, e))
         return 1;
     
-    d = b + &a;
+    d = b + a;
     e = b.dup;
     e += a;
     

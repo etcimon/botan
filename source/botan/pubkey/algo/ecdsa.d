@@ -144,9 +144,10 @@ public:
     this(in ECPrivateKey ecdsa)
     {
         assert(ecdsa.algoName == ECDSAPublicKey.algoName);
-        m_base_point = &ecdsa.domain().getBasePoint();
-        m_order = &ecdsa.domain().getOrder();
-        m_x = &ecdsa.privateValue();
+        m_ecdsa = ecdsa;
+        m_base_point = &m_ecdsa.domain().getBasePoint();
+        m_order = &m_ecdsa.domain().getOrder();
+        m_x = &m_ecdsa.privateValue();
         m_mod_order = ModularReducer(*m_order);
     }
 
@@ -187,6 +188,7 @@ public:
     override size_t maxInputBits() const { return m_order.bits(); }
 
 private:
+    const ECPrivateKey m_ecdsa;
     const PointGFp* m_base_point;
     const BigInt* m_order;
     const BigInt* m_x;
@@ -210,9 +212,10 @@ public:
     this(in ECPublicKey ecdsa) 
     {
         assert(ecdsa.algoName == ECDSAPublicKey.algoName);
-        m_base_point = &ecdsa.domain().getBasePoint();
-        m_public_point = &ecdsa.publicPoint();
-        m_order = &ecdsa.domain().getOrder();
+        m_pubkey = ecdsa;
+        m_base_point = &m_pubkey.domain().getBasePoint();
+        m_public_point = &m_pubkey.publicPoint();
+        m_order = &m_pubkey.domain().getOrder();
 		m_mod_order = *m_order;
     }
 
@@ -241,17 +244,20 @@ public:
             return false;
         }
         
+        logTrace("ECDSA Verification milestone");
         BigInt w = inverseMod(&s, m_order);
 		BigInt u1 = m_mod_order.reduce(e * w);
 		BigInt u2 = m_mod_order.reduce(r * w);
 		PointGFp R = PointGFp.multiExponentiate(*m_base_point, &u1, *m_public_point, &u2);
         if (R.isZero()) 
             return false;
+        logTrace("ECDSA Verification milestone 2");
 		BigInt v = m_mod_order.reduce(R.getAffineX());
         return (v == r);
     }
 
 private:
+    const ECPublicKey m_pubkey;
     const PointGFp* m_base_point;
     const PointGFp* m_public_point;
     const BigInt* m_order;

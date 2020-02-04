@@ -238,7 +238,7 @@ public:
 		BigInt j3;
 		synchronized(mutex) j3 = m_mod_p.reduce(subMul(&j1, &j2, m_c));
         BigInt r = m_blinder.unblind(mulAdd(&j3, m_q, &j2));        
-        BigInt cmp2 = *m_n - &r;
+        BigInt cmp2 = *m_n - r;
         BigInt min_val = r.move();
         if (cmp2 < min_val)
             min_val = cmp2.move();
