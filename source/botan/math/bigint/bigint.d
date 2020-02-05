@@ -251,31 +251,43 @@ public:
     *  other = BigInt to swap values with
     */
     void swap(T)(T other_) nothrow
+        if (!isPointer!T && isNumeric!T)
     {
-        import std.algorithm.mutation : swap;
-        try static if (isNumeric!T) {
+        try {
+            import std.algorithm.mutation : swap;
             BigInt other = BigInt(other_);
             m_reg.swap(cast()other.m_reg);
-            Sign other_sign = cast(Sign)other.m_signedness;
-            other.m_signedness = m_signedness;
-            m_signedness = other_sign;
-            
-        }
-        else {
-            static assert(__traits(hasMember, T, "m_reg"));       
-	    	m_reg.swap(cast()other_.m_reg[]);
-            Sign other_sign = cast(Sign)other_.m_signedness;
-            static if (!isPointer!T) (cast(BigInt*)&other_).m_signedness = m_signedness;
-            else (cast(BigInt*)other_).m_signedness = m_signedness;
-            m_signedness = other_sign;
-            
-        }
-        catch(Throwable e) {}
+            m_signedness = cast(Sign)other.m_signedness;
+        } catch(Throwable e) {}
     }
 
-    void swapReg(SecureVector!word* reg)
+    void swap(BigInt* other_) nothrow
     {
-        m_reg.swap(*reg);
+        try {
+            import std.algorithm.mutation : swap;   
+            m_reg.swap(cast()other_.m_reg[]);
+            m_signedness = cast(Sign)other_.m_signedness;
+            
+        } catch(Throwable e) {}
+    }
+
+    void swap(ref BigInt other_) nothrow
+    {
+        try {
+            import std.algorithm.mutation : swap;     
+            m_reg.swap(cast()other_.m_reg[]);
+            m_signedness = cast(Sign)other_.m_signedness;
+            
+        } catch(Throwable e) {}
+    }
+
+    void swap(BigInt other_) nothrow
+    {
+        swap(other_);
+    }
+    void swapReg(ref SecureVector!word reg)
+    {
+        m_reg.swap(reg);
     }
 
     /**

@@ -40,12 +40,12 @@ abstract class CurveGFpNIST : CurveGFpRepr
 
     override size_t getPWords() const { return m_p_words; }
 
-    override void toCurveRep(BigInt* x, SecureVector!word* ws) const
+    override void toCurveRep(BigInt* x, ref SecureVector!word ws) const
     {
         redc(x, ws);
     }
     
-    override void fromCurveRep(BigInt* x, SecureVector!word* ws) const
+    override void fromCurveRep(BigInt* x, ref SecureVector!word ws) const
     {
         redc(x, ws);
     }
@@ -58,7 +58,7 @@ abstract class CurveGFpNIST : CurveGFpRepr
     *  x = first multiplicand
     *  y = second multiplicand
     */
-    override void curveMul(BigInt* z, const(BigInt)* x, const(BigInt)* y, SecureVector!word* ws) const
+    override void curveMul(BigInt* z, const(BigInt)* x, const(BigInt)* y, ref SecureVector!word ws) const
     {
         if (x.isZero() || y.isZero())
         {
@@ -88,7 +88,7 @@ abstract class CurveGFpNIST : CurveGFpRepr
     *  z = output
     *  x = multiplicand
     */
-    override void curveSqr(BigInt* z, BigInt* x, SecureVector!word* ws) const
+    override void curveSqr(BigInt* z, BigInt* x, ref SecureVector!word ws) const
     {
         if (x.isZero())
         {
@@ -133,7 +133,7 @@ abstract class CurveGFpNIST : CurveGFpRepr
     }
 
 protected:
-    abstract void redc(BigInt* x, SecureVector!word* ws) const;
+    abstract void redc(BigInt* x, ref SecureVector!word ws) const;
 
     abstract size_t maxRedcSubstractions() const;
 private:
@@ -159,7 +159,7 @@ public:
 
     override ref const(BigInt) getP() const { return prime; }
 
-    override void redc(BigInt* x, SecureVector!word* ws) const
+    override void redc(BigInt* x, ref SecureVector!word ws) const
     {
         const size_t p_words = getPWords();
         

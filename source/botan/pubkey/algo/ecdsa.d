@@ -246,9 +246,13 @@ public:
         
         logTrace("ECDSA Verification milestone");
         BigInt w = inverseMod(&s, m_order);
+        logTrace("ECDSA Verification milestone2");
 		BigInt u1 = m_mod_order.reduce(e * w);
+        logTrace("ECDSA Verification milestone3");
 		BigInt u2 = m_mod_order.reduce(r * w);
+        logTrace("ECDSA Verification milestone4");
 		PointGFp R = PointGFp.multiExponentiate(*m_base_point, &u1, *m_public_point, &u2);
+        logTrace("ECDSA Verification milestone5");
         if (R.isZero()) 
             return false;
         logTrace("ECDSA Verification milestone 2");
@@ -356,7 +360,7 @@ static if (BOTAN_HAS_X509_CERTIFICATES)
 size_t testDecodeEcdsaX509()
 {
     X509Certificate cert = X509Certificate("../test_data/ecc/CSCA.CSCA.csca-germany.1.crt");
-    //logDebug(cert.toString());
+    logDebug(cert.toString());
     size_t fails = 0;
     
     mixin( CHECK_MESSAGE( `OIDS.lookup(cert.signatureAlgorithm().oid) == "ECDSA/EMSA1(SHA-224)"`, "error reading signature algorithm from x509 ecdsa certificate" ) );

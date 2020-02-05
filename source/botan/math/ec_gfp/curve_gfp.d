@@ -41,15 +41,15 @@ public:
     /// Returns toCurveRep(getB())
     abstract ref const(BigInt) getBRep() const;
 
-    abstract void toCurveRep(BigInt* x, SecureVector!word* ws) const;
+    abstract void toCurveRep(BigInt* x, ref SecureVector!word ws) const;
 
-    abstract void fromCurveRep(BigInt* x, SecureVector!word* ws) const;
+    abstract void fromCurveRep(BigInt* x, ref SecureVector!word ws) const;
 
-    abstract void curveMul(BigInt* z, const(BigInt)* x, const(BigInt)* y, SecureVector!word* ws) const;
+    abstract void curveMul(BigInt* z, const(BigInt)* x, const(BigInt)* y, ref SecureVector!word ws) const;
 
-    abstract void curveSqr(BigInt* z, BigInt* x, SecureVector!word* ws) const;
+    abstract void curveSqr(BigInt* z, BigInt* x, ref SecureVector!word ws) const;
 
-    void normalize(BigInt* x, SecureVector!word* ws, size_t bound) const {
+    void normalize(BigInt* x, ref SecureVector!word ws, size_t bound) const {
         const(BigInt)* p = &getP();
         
         while(x.isNegative())
@@ -139,13 +139,13 @@ class CurveGFpMontgomery : CurveGFpRepr
 
     override size_t getPWords() const { return m_p_words; }
 
-    override void toCurveRep(BigInt* x, SecureVector!word* ws) const
+    override void toCurveRep(BigInt* x, ref SecureVector!word ws) const
     {
         const BigInt tx = x.dup;
         curveMul(x, &tx, &m_r2, ws);
     }
 
-    override void fromCurveRep(BigInt* x, SecureVector!word* ws) const
+    override void fromCurveRep(BigInt* x, ref SecureVector!word ws) const
     {
         const BigInt tx = x.dup;
         BigInt bi = BigInt(1);
@@ -160,13 +160,13 @@ class CurveGFpMontgomery : CurveGFpRepr
     *  x = first multiplicand
     *  y = second multiplicand
     */
-    override void curveMul(BigInt* z, const(BigInt)* x, const(BigInt)* y, SecureVector!word* ws) const
+    override void curveMul(BigInt* z, const(BigInt)* x, const(BigInt)* y, ref SecureVector!word ws) const
     {
         
         if (x.isZero() || y.isZero())
         {
             BigInt zero = BigInt(0);
-            z.swap(&zero);
+            z.swap(zero);
             return;
         }
 
@@ -206,7 +206,7 @@ class CurveGFpMontgomery : CurveGFpRepr
     *  z = output
     *  x = multiplicand
     */
-    override void curveSqr(BigInt* z, BigInt* x, SecureVector!word* ws) const
+    override void curveSqr(BigInt* z, BigInt* x, ref SecureVector!word ws) const
     {
         if (x.isZero())
         {
@@ -231,7 +231,6 @@ class CurveGFpMontgomery : CurveGFpRepr
 		else {
 	        ws.resize(2*(m_p_words+2));
 	        
-
 	        bigint_monty_sqr(z.mutablePtr(), output_size,
 	            x.ptr, x.length, x.sigWords(),
 	            m_p.ptr, m_p_words, m_p_dash,
@@ -331,17 +330,27 @@ struct CurveGFp
     */
     ref const(BigInt) getBRep() const { return m_repr.getBRep(); }
 
-    void toRep()(BigInt* x, SecureVector!word* ws) const
+    void toRep()(BigInt* x, SecureVector!word ws) const
+    { 
+        m_repr.toCurveRep(x, ws); 
+    }
+
+    void toRep()(BigInt* x, ref SecureVector!word ws) const
     { 
         m_repr.toCurveRep(x, ws); 
     }
     
-    void fromRep(BigInt* x, SecureVector!word* ws) const 
+    void fromRep(BigInt* x, SecureVector!word ws) const 
+    { 
+        m_repr.fromCurveRep(x, ws);
+    }
+
+    void fromRep(BigInt* x, ref SecureVector!word ws) const 
     { 
         m_repr.fromCurveRep(x, ws);
     }
     
-    BigInt fromRep()(const(BigInt)* x, SecureVector!word* ws) const
+    BigInt fromRep()(const(BigInt)* x, ref SecureVector!word ws) const
     { 
         BigInt xt = x.dup;
         m_repr.fromCurveRep(&xt, ws);
@@ -392,24 +401,24 @@ struct CurveGFp
 
     // TODO: fromRep taking && ref
 
-    void mul()(BigInt* z, const(BigInt)* x, const(BigInt*) y, SecureVector!word* ws) const
+    void mul()(BigInt* z, const(BigInt)* x, const(BigInt*) y, SecureVector!word ws) const
     {
         m_repr.curveMul(z, x, y, ws);
     }
 
-    BigInt mul()(const(BigInt)* x, const(BigInt*) y, SecureVector!word* ws) const
+    BigInt mul()(const(BigInt)* x, const(BigInt*) y, SecureVector!word ws) const
     {
         BigInt z;
         m_repr.curveMul(z, x, y, ws);
         return z.move;
     }
 
-    void sqr()(BigInt* z, BigInt* x, SecureVector!word* ws) const
+    void sqr()(BigInt* z, BigInt* x, SecureVector!word ws) const
     {
         m_repr.curveSqr(z, x, ws);
     }
 
-    BigInt sqr()(BigInt* x, SecureVector!word* ws) const
+    BigInt sqr()(BigInt* x, SecureVector!word ws) const
     {
         BigInt z;
         m_repr.curveSqr(z, x, ws);
@@ -421,7 +430,7 @@ struct CurveGFp
      * @param bound if greater than zero, assume that no more than bound
      * additions or subtractions are required to move x into range.
      */
-    void normalize(BigInt* x, SecureVector!word* ws, size_t bound = 0) const
+    void normalize(BigInt* x, ref SecureVector!word ws, size_t bound = 0) const
     {
         m_repr.normalize(x, ws, bound);
     }

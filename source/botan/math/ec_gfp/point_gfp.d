@@ -247,11 +247,10 @@ public:
         size_t bits_left = max(z1.bits(), z2.bits());
         
         Vector!(RefCounted!BigInt) ws = Vector!(RefCounted!BigInt)(9);
-        
+        logTrace("got ws with capacity: ", ws.capacity.to!string);
         while (bits_left)
         {
             H.mult2(ws);
-            
             const bool z1_b = z1.getBit(bits_left - 1);
             const bool z2_b = z2.getBit(bits_left - 1);
             
@@ -298,7 +297,7 @@ public:
             throw new IllegalTransformation("Cannot convert zero point to affine");
                 
         BigInt z2 = curveSqr(cast(BigInt*)&m_coord_z);
-        m_curve.fromRep(&z2, m_ws_ref);
+        m_curve.fromRep(&z2, m_ws_const.move());
         auto p = m_curve.getP().dup;
         z2 = inverseMod(&z2, &p);
         
@@ -317,7 +316,7 @@ public:
         auto sqr_1 = curveSqr(&m_coord_z);
         BigInt z3 = curveMult(&m_coord_z, &sqr_1);
         z3 = inverseMod(&z3, &m_curve.getP());
-        m_curve.toRep(&z3, m_ws_ref);
+        m_curve.toRep(&z3, m_ws_const.move());
         return curveMult(&z3, &m_coord_y);
     }
 
@@ -346,7 +345,7 @@ public:
         }
 
         auto y2 = cast(BigInt)curveSqr(&m_coord_y);
-        m_curve.fromRep(&y2, m_ws_ref);
+        m_curve.fromRep(&y2, m_ws_const.move());
         auto x3_0 = curveSqr(&m_coord_x);
         BigInt x3 = curveMult(&m_coord_x, &x3_0);        
         BigInt ax = curveMult(&m_coord_x, &m_curve.getARep());        
@@ -355,7 +354,7 @@ public:
         if (m_coord_z == z2) // Is z equal to 1 (in Montgomery form)?
         {
             auto y2_0 = x3 + ax + m_curve.getBRep();
-            m_curve.fromRep(&y2_0, m_ws_ref);
+            m_curve.fromRep(&y2_0, m_ws_const.move());
             if (y2 != y2_0) {
                 return false;
             }
@@ -367,7 +366,7 @@ public:
         auto z3_sqr = curveSqr(&z3);
         BigInt b_z6 = curveMult(&m_curve.getBRep(), &z3_sqr);
         auto y2_1 = x3 + ax_z4 + b_z6;
-        m_curve.fromRep(&y2_1, m_ws_ref);
+        m_curve.fromRep(&y2_1, m_ws_const.move());
         if (y2 != y2_1) {
             return false;
         }
@@ -434,7 +433,7 @@ private:
     BigInt curveMult()(const(BigInt)* x, const(BigInt*) y) const
     {
         BigInt z = BigInt(0);
-        m_curve.mul(&z, x, y, m_ws_ref);
+        m_curve.mul(&z, x, y, m_ws_const.move());
         return z.move();
     }
     
@@ -447,7 +446,7 @@ private:
     */
     void curveMult()(BigInt* z, const(BigInt)* x, const(BigInt*) y) const
     {
-        m_curve.mul(z, x, y, m_ws_ref);
+        m_curve.mul(z, x, y, m_ws_const.move());
     }
 
     /**
@@ -459,7 +458,7 @@ private:
     {
         BigInt z;
         BigInt x = x_.dup;
-        m_curve.sqr(&z, &x, m_ws_ref);
+        m_curve.sqr(&z, &x, m_ws_const.move());
         return z.move();
     }
 
@@ -474,7 +473,7 @@ private:
     {
         BigInt z = z_.dup;
         BigInt x = x_.dup;
-        m_curve.sqr(&z, &x, m_ws_ref);
+        m_curve.sqr(&z, &x, m_ws_const.move());
     }
 
     /**
@@ -506,7 +505,7 @@ private:
         auto H = cast(BigInt*) &*(ws_bn[6]);
         auto r = cast(BigInt*) &*(ws_bn[7]);
         *U2 = BigInt(0);
-        logTrace("U2: ", U2.toString(), ", H: ", H.toString());
+        logTrace("ws: ", ws_bn.ptr[0 .. ws_bn.length].to!string);
         curveSqr(rhs_z2, &rhs.m_coord_z);
         curveMult(U1, &m_coord_x, rhs_z2);
         auto mult_0 = curveMult(&rhs.m_coord_z, rhs_z2);
@@ -516,11 +515,9 @@ private:
         curveMult(U2, &rhs.m_coord_x, lhs_z2);
         auto mult_1 = curveMult(&m_coord_z, lhs_z2);
         curveMult(S2, &rhs.m_coord_y, &mult_1);
-        logTrace("U2: ", U2.toString(), ", H: ", H.toString());
         
         *H = U2.dup;
         *H -= *U1;
-        logTrace("U2: ", U2.toString(), ", H: ", H.toString());
 
         if (H.isNegative())
             *H += *p;
@@ -532,7 +529,6 @@ private:
         
         if (H.isZero())
         {
-            logTrace("Got H: ", H.toString());
             if (r.isZero())
             {
                 mult2(ws_bn);
@@ -583,7 +579,6 @@ private:
             this = PointGFp(m_curve); // setting myself to zero
             return;
         }
-        logTrace("Got x = ", (ws_bn[6]));
         const BigInt* p = &m_curve.getP();
         
         auto y_2 = cast(BigInt*) &*(ws_bn[0]);
@@ -711,7 +706,8 @@ public:
     CurveGFp m_curve;
     BigInt m_coord_x, m_coord_y, m_coord_z;
     SecureVector!word m_ws; // workspace for Montgomery
-    @property SecureVector!word* m_ws_ref() const { return cast(mutable)&m_ws; }
+    @property ref SecureVector!word m_ws_ref() { return m_ws; }
+    @property SecureVector!word m_ws_const() const { return m_ws.dup; }
     alias mutable = SecureVector!word*;
 }
 
