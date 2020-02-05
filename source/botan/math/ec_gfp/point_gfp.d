@@ -454,11 +454,10 @@ private:
     * Params:
     *   x = multiplicand
     */
-    BigInt curveSqr()(const(BigInt)* x_) const
+    BigInt curveSqr()(const(BigInt)* x) const
     {
         BigInt z;
-        BigInt x = x_.dup;
-        m_curve.sqr(&z, &x, m_ws_const.move());
+        m_curve.sqr(&z, x, m_ws_const.move());
         return z.move();
     }
 
@@ -468,12 +467,10 @@ private:
     *   z = output
     *   x = multiplicand
     */
-    void curveSqr(T, U)(T* z_, U* x_) const
+    void curveSqr(T, U)(T* z, U* x) const
         if (!isPointer!T && !isPointer!U)
     {
-        BigInt z = z_.dup;
-        BigInt x = x_.dup;
-        m_curve.sqr(&z, &x, m_ws_const.move());
+        m_curve.sqr(z, x, m_ws_const.move());
     }
 
     /**
@@ -481,7 +478,7 @@ private:
     * Params:
     *  workspace = temp space, at least 11 elements
     */
-    void add(const ref PointGFp rhs, ref const(Vector!(RefCounted!BigInt)) ws_bn)
+    void add(const ref PointGFp rhs, ref Vector!(RefCounted!BigInt) ws_bn)
     {
         if (isZero())
         {
@@ -494,7 +491,7 @@ private:
             return;
         const BigInt* p = &m_curve.getP();
         auto rhs_z = cast(BigInt*) &rhs.m_coord_z;
-        auto rhs_z2 = cast(BigInt*) &*(ws_bn[0]);
+        auto rhs_z2 = cast(BigInt*)&*(ws_bn[0]);
         auto U1 = cast(BigInt*) &*(ws_bn[1]);
         auto S1 = cast(BigInt*) &*(ws_bn[2]);
         
@@ -505,7 +502,6 @@ private:
         auto H = cast(BigInt*) &*(ws_bn[6]);
         auto r = cast(BigInt*) &*(ws_bn[7]);
         *U2 = BigInt(0);
-        logTrace("ws: ", ws_bn.ptr[0 .. ws_bn.length].to!string);
         curveSqr(rhs_z2, &rhs.m_coord_z);
         curveMult(U1, &m_coord_x, rhs_z2);
         auto mult_0 = curveMult(&rhs.m_coord_z, rhs_z2);
@@ -570,7 +566,7 @@ private:
     * Params:
     *  workspace = temp space, at least 9 elements
     */
-    void mult2(ref const(Vector!(RefCounted!BigInt)) ws_bn)
+    void mult2(ref Vector!(RefCounted!BigInt) ws_bn)
     {
         if (isZero())
             return;
@@ -580,7 +576,7 @@ private:
             return;
         }
         const BigInt* p = &m_curve.getP();
-        
+        logTrace("");
         auto y_2 = cast(BigInt*) &*(ws_bn[0]);
         auto S = cast(BigInt*) &*(ws_bn[1]);
         auto z4 = cast(BigInt*) &*(ws_bn[2]);

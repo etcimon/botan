@@ -47,7 +47,7 @@ public:
 
     abstract void curveMul(BigInt* z, const(BigInt)* x, const(BigInt)* y, ref SecureVector!word ws) const;
 
-    abstract void curveSqr(BigInt* z, BigInt* x, ref SecureVector!word ws) const;
+    abstract void curveSqr(BigInt* z, const(BigInt)* x, ref SecureVector!word ws) const;
 
     void normalize(BigInt* x, ref SecureVector!word ws, size_t bound) const {
         const(BigInt)* p = &getP();
@@ -206,7 +206,7 @@ class CurveGFpMontgomery : CurveGFpRepr
     *  z = output
     *  x = multiplicand
     */
-    override void curveSqr(BigInt* z, BigInt* x, ref SecureVector!word ws) const
+    override void curveSqr(BigInt* z, const(BigInt)* x, ref SecureVector!word ws) const
     {
         if (x.isZero())
         {
@@ -413,12 +413,12 @@ struct CurveGFp
         return z.move;
     }
 
-    void sqr()(BigInt* z, BigInt* x, SecureVector!word ws) const
+    void sqr()(BigInt* z, const(BigInt)* x, SecureVector!word ws) const
     {
         m_repr.curveSqr(z, x, ws);
     }
 
-    BigInt sqr()(BigInt* x, SecureVector!word ws) const
+    BigInt sqr()(const(BigInt)* x, SecureVector!word ws) const
     {
         BigInt z;
         m_repr.curveSqr(z, x, ws);

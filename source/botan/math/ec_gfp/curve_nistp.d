@@ -88,7 +88,7 @@ abstract class CurveGFpNIST : CurveGFpRepr
     *  z = output
     *  x = multiplicand
     */
-    override void curveSqr(BigInt* z, BigInt* x, ref SecureVector!word ws) const
+    override void curveSqr(BigInt* z, const(BigInt)* x, ref SecureVector!word ws) const
     {
         if (x.isZero())
         {
