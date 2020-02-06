@@ -178,8 +178,7 @@ public:
 		} else static if (__traits(compiles, { T t = T(); }())) {
             if (obj is T.init) obj = T();
 		}
-        
-        obj.decodeFrom(this);
+        (cast()*obj).decodeFrom(this);
         return this;
     }
     

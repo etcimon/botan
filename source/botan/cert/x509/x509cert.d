@@ -540,7 +540,9 @@ protected:
         BigInt serial_bn;
         auto sig_algo_inner = AlgorithmIdentifier();
         X509DN dn_issuer, dn_subject;
-        X509Time start, end;
+        import std.datetime : Clock, UTC;
+        X509Time start = X509Time(Clock.currTime(UTC()));
+        X509Time end = X509Time(Clock.currTime(UTC()));
         
         BERDecoder tbsCert = BERDecoder(m_tbs_bits);
         tbsCert.decodeOptional(_version, (cast(ASN1Tag) 0),
@@ -583,7 +585,7 @@ protected:
         if (v3_exts_data.type_tag == 3 &&
             v3_exts_data.class_tag == (ASN1Tag.CONSTRUCTED | ASN1Tag.CONTEXT_SPECIFIC))
         {
-            X509Extensions extensions;
+            X509Extensions extensions = X509Extensions(true);
             
             BERDecoder(v3_exts_data.value).decode(extensions).verifyEnd();
             

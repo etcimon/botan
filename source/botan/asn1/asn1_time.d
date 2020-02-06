@@ -32,8 +32,6 @@ final class X509TimeImpl : ASN1Object
 {
 public:
 
-    this() { }
-
     /*
     * DER encode a X509Time
     */
