@@ -166,7 +166,7 @@ class CurveGFpMontgomery : CurveGFpRepr
         if (x.isZero() || y.isZero())
         {
             BigInt zero = BigInt(0);
-            z.swap(zero);
+            z.swap(&zero);
             return;
         }
 

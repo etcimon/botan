@@ -137,7 +137,10 @@ BigInt lcm(const(BigInt)* a, const(BigInt)* b)
     return a_b/gcd_a_b;
 }
 
-
+BigInt lcm(const(BigInt) a, const(BigInt) b)
+{
+    return (lcm(&a, &b));
+}
 /**
 * Params:
 *  x = an integer

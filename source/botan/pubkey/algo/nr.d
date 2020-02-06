@@ -152,7 +152,7 @@ public:
         m_nr = nr;
         m_q = &m_nr.groupQ();
         m_x = &m_nr.getX();
-        m_powermod_g_p = FixedBasePowerMod(m_nr.groupG(), m_nr.groupP());
+        m_powermod_g_p = FixedBasePowerMod(&m_nr.groupG(), &m_nr.groupP());
         m_mod_q = ModularReducer(m_nr.groupQ());
     }
 
@@ -173,8 +173,8 @@ public:
             do
                 k.randomize(rng, m_q.bits());
             while (k >= *m_q);
-            FixedBasePowerModImpl powermod_g_p = m_powermod_g_p;
-            c = m_mod_q.reduce(powermod_g_p(&k) + f);
+            auto pow_mod = (cast()*m_powermod_g_p)(&k);
+            c = m_mod_q.reduce(pow_mod + f);
             d = m_mod_q.reduce(k - (*m_x) * c);
         }
         
@@ -212,7 +212,9 @@ public:
         m_q = &nr.groupQ();
         m_y = &nr.getY();
         m_p = &nr.groupP();
-        m_powermod_g_p = FixedBasePowerMod(nr.groupG(), nr.groupP());
+        m_g = &nr.groupG();
+        m_powermod_g_p = FixedBasePowerMod(m_g, m_p);
+        m_powermod_y_p = FixedBasePowerMod(m_y, m_p);
         m_mod_p = ModularReducer(nr.groupP());
         m_mod_q = ModularReducer(nr.groupQ());
     }
@@ -240,48 +242,9 @@ public:
         
         if (c.isZero() || c >= *q || d >= *q)
             throw new InvalidArgument("NR verification: Invalid signature");
-
-		import core.sync.mutex, core.sync.condition;
-		Mutex mutex = ThreadMem.alloc!Mutex();
-		scope(exit) {
-			ThreadMem.free(mutex);
-		}
-
-        BigInt res;
-		res.reserve(max(m_q.bytes() + m_q.bytes() % 128, m_y.bytes() + m_y.bytes() % 128));
-
-		struct Handler {
-			shared(Mutex) mtx;
-			shared(const BigInt*) y;
-			shared(const BigInt*) p;
-			shared(BigInt*) c2;
-			shared(BigInt*) res2; 
-			void run() { 
-				try {
-					import botan.libstate.libstate : modexpInit;
-					modexpInit(); // enable quick path for powermod
-					BigInt* ret = cast(BigInt*) res2;
-					{
-						import memutils.utils;
-						FixedBasePowerModImpl powermod_y_p = ThreadMem.alloc!FixedBasePowerModImpl(*cast(const BigInt*)y, *cast(const BigInt*)p);
-						scope(exit) ThreadMem.free(powermod_y_p);
-                        auto ret_1 = powermod_y_p(c2);
-						synchronized(cast()mtx) ret.load( &ret_1 );
-					}
-				} catch (Exception e) { logDebug("Error: ", e.toString()); }
-
-			}
-		}
-			
-		auto handler = Handler(cast(shared) mutex, cast(shared)m_y, cast(shared)m_p, cast(shared)&c, cast(shared)&res);
-
-		Unique!Thread thr = new Thread(&handler.run);
-		thr.start();
-        FixedBasePowerModImpl powermod_g_p = m_powermod_g_p;
-        BigInt g_d = powermod_g_p(&d);
-		thr.join();
-		BigInt i;
-		synchronized(mutex) i = m_mod_p.multiply(&g_d, &res);
+        BigInt g_d = (cast(FixedBasePowerModImpl)*m_powermod_g_p)(&d);
+        BigInt y_p = (cast(FixedBasePowerModImpl)*m_powermod_y_p)(&c);
+		BigInt i = m_mod_p.multiply(&g_d, &y_p);
         return BigInt.encodeLocked(m_mod_q.reduce(c - i));
     }
 private:
@@ -289,8 +252,9 @@ private:
     const BigInt* m_q;
     const BigInt* m_y;
     const BigInt* m_p;
+    const BigInt* m_g;
 
-    FixedBasePowerMod m_powermod_g_p;
+    FixedBasePowerMod m_powermod_g_p, m_powermod_y_p;
     ModularReducer m_mod_p, m_mod_q;
 }
 

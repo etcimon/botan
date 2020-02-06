@@ -12,6 +12,7 @@ module botan.utils.mem_ops;
 import botan.utils.types;
 public import botan_math.mem_ops;
 import std.algorithm : min;
+import std.traits : isPointer;
 
 
 Vector!T unlock(T, ALLOC)(auto const ref Vector!(T, ALLOC) input)
@@ -67,6 +68,7 @@ pure:
 *  val = the value to set each ubyte to
 */
 void setMem(T)(T* ptr, size_t n, ubyte val)
+    if (!isPointer!T)
 {
     import core.stdc.string : memset;
     //logDebug("memset ops: ", cast(void*)ptr, " L:", T.sizeof*n);
@@ -82,6 +84,7 @@ void setMem(T)(T* ptr, size_t n, ubyte val)
 * Returns: true iff p1[i] == p2[i] forall i in [0...n$(RPAREN)
 */
 bool sameMem(T)(in T* p1, in T* p2, in size_t n)
+    if (!isPointer!T)
 {
     return ((cast(const(ubyte)*)p1)[0 .. n] == (cast(const(ubyte)*)p2)[0 .. n]);
 }

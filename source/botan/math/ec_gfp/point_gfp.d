@@ -379,15 +379,14 @@ public:
     * Params:
     *  other = the object to swap values with
     */
-    void swap(T)(T* other)
-        if (!isPointer!T)
+    void swap(PointGFp* other)
     {
         m_curve.swap(&other.m_curve);
         m_coord_x.swap(&other.m_coord_x);
         m_coord_y.swap(&other.m_coord_y);
         m_coord_z.swap(&other.m_coord_z);
-        import std.algorithm.mutation : swap;
-        swap(m_ws, other.m_ws);
+        //import std.algorithm.mutation : swap;
+        m_ws.swap(other.m_ws);
     }
     
     void swap(T)(T other)

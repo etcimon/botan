@@ -13,6 +13,7 @@ module botan.utils.bit_ops;
 import botan.constants;
 import botan.utils.get_byte;
 import botan.utils.types;
+import std.traits : isPointer;
 /**
 * Power of 2 test. T should be an uinteger type
 * Params:
@@ -20,6 +21,7 @@ import botan.utils.types;
 * Returns: true iff arg is 2^n for some n > 0
 */
 bool isPowerOf2(T)(T arg)
+    if (!isPointer!T)
 {
     return ((arg != 0 && arg != 1) && ((arg & (arg-1)) == 0));
 }
@@ -32,6 +34,7 @@ bool isPowerOf2(T)(T arg)
 * Returns: index of the highest set bit in n
 */
 size_t highBit(T)(T n)
+    if (!isPointer!T)
 {
     for (size_t i = 8*T.sizeof; i > 0; --i)
         if ((n >> (i - 1)) & 0x01)
@@ -47,6 +50,7 @@ size_t highBit(T)(T n)
 * Returns: index of the lowest set bit in n
 */
 size_t lowBit(T)(T n)
+    if (!isPointer!T)
 {
     for (size_t i = 0; i != 8*T.sizeof; ++i)
         if ((n >> i) & 0x01)
@@ -61,6 +65,7 @@ size_t lowBit(T)(T n)
 * Returns: number of significant bytes in n
 */
 size_t significantBytes(T)(T n)
+    if (!isPointer!T)
 {
     for (size_t i = 0; i != T.sizeof; ++i)
         if (get_byte(i, n))
@@ -75,6 +80,7 @@ size_t significantBytes(T)(T n)
 * Returns: number of bits in n set to 1
 */
 size_t hammingWeight(T)(T n)
+    if (!isPointer!T)
 {
     __gshared immutable ubyte[] NIBBLE_WEIGHTS = [
         0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4 ];
@@ -92,6 +98,7 @@ size_t hammingWeight(T)(T n)
 * Returns: maximum x st 2^x divides n
 */
 size_t ctz(T)(T n)
+    if (!isPointer!T)
 {
     for (size_t i = 0; i != 8*T.sizeof; ++i)
         if ((n >> i) & 0x01)

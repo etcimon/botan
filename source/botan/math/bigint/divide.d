@@ -14,7 +14,7 @@ import botan.constants;
 import botan.math.bigint.bigint;
 import botan.math.mp.mp_core;
 import botan.constants;
-
+import std.algorithm : max;
 /**
 * BigInt Division
 * Params:
@@ -81,6 +81,8 @@ void divide(const(BigInt)* x, const(BigInt)* y_arg, BigInt* q, BigInt* r)
             const word x_j0  = r.wordAt(j);
             const word x_j1 = r.wordAt(j-1);
             const word y_t  = y.wordAt(t);
+            if (y_t == 0)
+                throw new InvalidArgument("Division by zero due to too large bn");
             
             if (x_j0 == y_t)
                 q_words[j-t-1] = MP_WORD_MAX;

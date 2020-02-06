@@ -159,7 +159,8 @@ public:
     */
     this(const(ubyte)* input, size_t length, Base base = Binary)
     {
-        this.swap( decode(input, length, base) );
+        auto bn = decode(input, length, base);
+        this.swap( &bn );
     }
 
     /**
@@ -251,7 +252,7 @@ public:
     *  other = BigInt to swap values with
     */
     void swap(T)(T other_) nothrow
-        if (!isPointer!T && isNumeric!T)
+    if (!isPointer!T && isNumeric!T)
     {
         try {
             import std.algorithm.mutation : swap;
@@ -264,20 +265,18 @@ public:
     void swap(BigInt* other_) nothrow
     {
         try {
-            import std.algorithm.mutation : swap;   
+            import std.algorithm.mutation : swap;
             m_reg.swap(cast()other_.m_reg[]);
             m_signedness = cast(Sign)other_.m_signedness;
-            
         } catch(Throwable e) {}
     }
 
     void swap(ref BigInt other_) nothrow
     {
         try {
-            import std.algorithm.mutation : swap;     
+            import std.algorithm.mutation : swap;
             m_reg.swap(cast()other_.m_reg[]);
             m_signedness = cast(Sign)other_.m_signedness;
-            
         } catch(Throwable e) {}
     }
 
@@ -285,6 +284,7 @@ public:
     {
         swap(other_);
     }
+
     void swapReg(ref SecureVector!word reg)
     {
         m_reg.swap(reg);

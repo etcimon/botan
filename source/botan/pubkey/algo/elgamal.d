@@ -146,11 +146,12 @@ public:
 
     this(in DLSchemePublicKey key)
     {
+        m_key = key;
         assert(key.algoName == ElGamalPublicKey.algoName);
-        const BigInt* p = &key.groupP();
+        const BigInt* p = &m_key.groupP();
         
-        m_powermod_g_p = FixedBasePowerMod(key.groupG(), *p);
-        m_powermod_y_p = FixedBasePowerMod(key.getY(), *p);
+        m_powermod_g_p = FixedBasePowerMod(&m_key.groupG(), p);
+        m_powermod_y_p = FixedBasePowerMod(&m_key.getY(), p);
         m_mod_p = ModularReducer(*p);
     }
 
@@ -164,19 +165,18 @@ public:
             throw new InvalidArgument("ElGamal encryption: Input is too large");
 
         BigInt k = BigInt(rng, 2 * dlWorkFactor(p.bits()));
-        FixedBasePowerModImpl powermod_g_p = m_powermod_g_p;
-        FixedBasePowerModImpl powermod_y_p = m_powermod_y_p;
-        BigInt a = powermod_g_p.opCall(&k);
-        auto powermod_res = powermod_y_p(&k);
-        BigInt b = m_mod_p.multiply(&m, &powermod_res);
+        BigInt g_p = (cast()*m_powermod_g_p)(&k);
+        BigInt y_p_0 = (cast()*m_powermod_y_p)(&k);
+        BigInt y_p = m_mod_p.multiply(&m, &y_p_0);
         
         SecureVector!ubyte output = SecureVector!ubyte(2*p.bytes());
-        a.binaryEncode(&output[p.bytes() - a.bytes()]);
-        b.binaryEncode(&output[output.length / 2 + (p.bytes() - b.bytes())]);
+        g_p.binaryEncode(&output[p.bytes() - g_p.bytes()]);
+        y_p.binaryEncode(&output[output.length / 2 + (p.bytes() - y_p.bytes())]);
         return output;
     }
 
 private:
+    const DLSchemePublicKey m_key;
     FixedBasePowerMod m_powermod_g_p, m_powermod_y_p;
     ModularReducer m_mod_p;
 }
@@ -203,12 +203,11 @@ public:
         assert(key.algoName == ElGamalPublicKey.algoName);
         const BigInt* p = &key.groupP();
         
-        m_powermod_x_p = FixedExponentPowerMod(key.getX(), *p);
+        m_powermod_x_p = FixedExponentPowerMod(&key.getX(), p);
         m_mod_p = ModularReducer(*p);
         
         BigInt k = BigInt(rng, p.bits() - 1);
-        FixedExponentPowerModImpl powermod_x_p = m_powermod_x_p;
-        auto d = powermod_x_p(&k);
+        auto d = (cast()*m_powermod_x_p)(&k);
         m_blinder = Blinder(k, d, *p);
     }
 
@@ -228,8 +227,7 @@ public:
             throw new InvalidArgument("ElGamal decryption: Invalid message");
         
         a = m_blinder.blind(a);
-        FixedExponentPowerModImpl powermod_x_p = m_powermod_x_p;
-        auto r_0 = powermod_x_p(&a);
+        auto r_0 = (cast()*m_powermod_x_p)(&a);
         auto inv_res = inverseMod(&r_0, p);
         BigInt r = m_mod_p.multiply(&b, &inv_res);
         

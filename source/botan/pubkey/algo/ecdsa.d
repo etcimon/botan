@@ -153,7 +153,6 @@ public:
 
     override SecureVector!ubyte sign(const(ubyte)* msg, size_t msg_len, RandomNumberGenerator rng)
     {
-        logTrace("ECDSA Sign operation");
         rng.addEntropy(msg, msg_len);
         
         BigInt m = BigInt(msg, msg_len);
@@ -229,7 +228,6 @@ public:
     override bool verify(const(ubyte)* msg, size_t msg_len,
                          const(ubyte)* sig, size_t sig_len)
     {
-        logTrace("ECDSA Verification");
         if (sig_len != m_order.bytes()*2) {
             return false;
         }
@@ -244,18 +242,12 @@ public:
             return false;
         }
         
-        logTrace("ECDSA Verification milestone");
         BigInt w = inverseMod(&s, m_order);
-        logTrace("ECDSA Verification milestone2");
 		BigInt u1 = m_mod_order.reduce(e * w);
-        logTrace("ECDSA Verification milestone3");
 		BigInt u2 = m_mod_order.reduce(r * w);
-        logTrace("ECDSA Verification milestone4");
 		PointGFp R = PointGFp.multiExponentiate(*m_base_point, &u1, *m_public_point, &u2);
-        logTrace("ECDSA Verification milestone5");
         if (R.isZero()) 
             return false;
-        logTrace("ECDSA Verification milestone 2");
 		BigInt v = m_mod_order.reduce(R.getAffineX());
         return (v == r);
     }

@@ -41,9 +41,11 @@ struct RWOptions {
         if (!strong)
             return true;
         
-        if ((privkey.getE() * privkey.getD()) % (lcm(&privkey.getP() - 1, &privkey.getQ() - 1) / 2) != 1)
+        auto p_minus_1 = privkey.getP() - 1;
+        auto q_minus_1 = privkey.getQ() - 1;
+        if ((privkey.getE() * privkey.getD()) % (lcm(&p_minus_1, &q_minus_1) >> 1) != 1)
             return false;
-        
+               
         return signatureConsistencyCheck(rng, privkey, "EMSA2(SHA-1)");
     }
 }
@@ -167,9 +169,9 @@ public:
         m_c = &m_priv_key.getC();
         m_d1 = &m_priv_key.getD1();
         m_p = &m_priv_key.getP();
-        m_powermod_d2_q = FixedExponentPowerMod(m_priv_key.getD2(), m_priv_key.getQ());
-        m_mod_p = ModularReducer(m_priv_key.getP());
-        m_blinder = Blinder.init;
+        m_powermod_d1_p = FixedExponentPowerMod(m_d1, m_p);
+        m_powermod_d2_q = FixedExponentPowerMod(&m_priv_key.getD2(), m_q);
+        m_mod_p = ModularReducer(*m_p);
     }
     override size_t messageParts() const { return 1; }
     override size_t messagePartSize() const { return 0; }
@@ -184,8 +186,7 @@ public:
         if (!m_blinder.initialized()) { // initialize here because we need rng
             BigInt k = BigInt(rng, std.algorithm.min(160, m_n.bits() - 1));
             auto e = powerMod(&k, m_e, m_n);
-            auto inv = inverseMod(&k, m_n);
-            m_blinder = Blinder(e, inv, *m_n);
+            m_blinder = Blinder(e, inverseMod(&k, m_n), *m_n);
         }
 
         BigInt i = BigInt(msg, msg_len);
@@ -194,50 +195,12 @@ public:
             throw new InvalidArgument("Rabin-Williams: invalid input");
         
         if (jacobi(&i, m_n) != 1)
-            i >>= 1;
-        
+            i >>= 1;        
         i = m_blinder.blind(i);
-
-        BigInt j1;
-		j1.reserve(max(m_e.bytes() + m_e.bytes() % 128, m_q.bytes() + m_q.bytes() % 128, m_n.bytes() + m_n.bytes() % 128));
-		import core.sync.mutex, core.sync.condition;
-		Mutex mutex = ThreadMem.alloc!Mutex();
-		scope(exit) {
-			ThreadMem.free(mutex);
-		}
-
-		struct Handler {
-			shared(Mutex) mtx;
-			shared(const BigInt*) d1;
-			shared(const BigInt*) p;
-			shared(BigInt*) i2;
-			shared(BigInt*) j1_2;
-			void run() {
-				try {
-					import botan.libstate.libstate : modexpInit;
-					modexpInit(); // enable quick path for powermod
-					BigInt* ret = cast(BigInt*)j1_2;
-					
-					{
-						import memutils.utils;
-						FixedExponentPowerModImpl powermod_d1_p = ThreadMem.alloc!FixedExponentPowerModImpl(*cast(const BigInt*)d1, *cast(const BigInt*)p);
-						scope(exit) ThreadMem.free(powermod_d1_p);
-						BigInt _res = powermod_d1_p(cast(BigInt*)i2);
-						synchronized(cast()mtx) ret.load( &_res );
-					}
-				} catch (Exception e) { logDebug("Error: ", e.toString()); }
-			}
-		}
-		
-		auto handler = Handler(cast(shared)mutex, cast(shared)m_d1, cast(shared)m_p, cast(shared)&i, cast(shared)&j1);
-		Unique!Thread thr = new Thread(&handler.run);
-		thr.start();
-        auto powermod_d2_q = cast(FixedExponentPowerModImpl) m_powermod_d2_q;
-        const BigInt j2 = powermod_d2_q(&i);
-		thr.join();
-		BigInt j3;
-		synchronized(mutex) j3 = m_mod_p.reduce(subMul(&j1, &j2, m_c));
-        BigInt r = m_blinder.unblind(mulAdd(&j3, m_q, &j2));        
+        const BigInt j1 = (cast(FixedExponentPowerModImpl)*m_powermod_d1_p)(cast(BigInt*)&i);
+		const BigInt j2 = (cast(FixedExponentPowerModImpl)*m_powermod_d2_q)(cast(BigInt*)&i);		
+		BigInt j3 = m_mod_p.reduce(subMul(&j1, &j2, m_c));
+        BigInt r = m_blinder.unblind(mulAdd(&j3, m_q, &j2)); 
         BigInt cmp2 = *m_n - r;
         BigInt min_val = r.move();
         if (cmp2 < min_val)
@@ -277,7 +240,8 @@ public:
     {
         assert(rw.algoName == RWPublicKey.algoName);
         m_n = &rw.getN();
-        m_powermod_e_n = FixedExponentPowerMod(rw.getE(), rw.getN());
+        m_e = &rw.getE();
+        m_powermod_e_n = FixedExponentPowerMod(m_e, m_n);
     }
     override size_t messageParts() const { return 1; }
     override size_t messagePartSize() const { return 0; }
@@ -295,8 +259,8 @@ public:
         
         if ((m > (*m_n >> 1)) || m.isNegative())
             throw new InvalidArgument("RW signature verification: m > n / 2 || m < 0");
-        auto powermod_e_n = cast(FixedExponentPowerModImpl) m_powermod_e_n;
-        BigInt r = powermod_e_n(&m);
+        m_powermod_e_n = FixedExponentPowerMod(m_e, m_n);
+        BigInt r = (cast()*m_powermod_e_n)(cast(BigInt*)&m);
         if (r % 16 == 12)
             return BigInt.encodeLocked(&r);
         if (r % 8 == 6)
@@ -313,6 +277,7 @@ public:
 
 private:
     const BigInt* m_n;
+    const BigInt* m_e;
     FixedExponentPowerMod m_powermod_e_n;
 }
 
