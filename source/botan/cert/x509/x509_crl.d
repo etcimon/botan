@@ -25,6 +25,7 @@ import botan.asn1.oids;
 import botan.asn1.asn1_time;
 import botan.utils.types;
 import memutils.utils;
+import std.datetime;
 
 alias X509CRL = RefCounted!X509CRLImpl;
 
@@ -209,7 +210,8 @@ protected:
         tbs_crl.decode(dn_issuer);
         m_info.add(dn_issuer.contents());
         
-        X509Time start, end;
+        X509Time start = X509Time(Clock.currTime(UTC()));
+        X509Time end = X509Time(Clock.currTime(UTC()));
         tbs_crl.decode(start).decode(end);
         logTrace("CRL Start, ", start.readableString());
         m_info.add("X509.CRL.start", start.readableString());

@@ -77,11 +77,11 @@ public:
     */
     override void decodeFrom(ref BERDecoder source)
     {
-        BigInt serial_number_bn;
+        BigInt serial_number_bn = BigInt(0);
         m_reason = UNSPECIFIED;
         
         BERDecoder entry = source.startCons(ASN1Tag.SEQUENCE);
-
+        m_time = X509Time(Clock.currTime(UTC()));
         entry.decode(serial_number_bn).decode(m_time);
         
         if (entry.moreItems())

@@ -1,5 +1,4 @@
 [![Build Status](https://travis-ci.org/etcimon/botan.svg?branch=master)](https://travis-ci.org/etcimon/botan)
-[![Build status](https://ci.appveyor.com/api/projects/status/p6xmptd7b4j8jpsv?svg=true)](https://ci.appveyor.com/project/etcimon/botan)
 
 
 Botan Crypto Library
@@ -9,20 +8,14 @@ Botan is a very complete crypto powerhouse packaged in a D library.
 
 It is a translation of the C++ library [Botan](http://botan.randombit.net/), although the code is now in D and uses the [memutils](https://github.com/etcimon/memutils) library as a replacement for the C++ STL.
 
-Current Version: v1.11.10, commit ref# [3e55885d20c1a579df13be3470491e5c378a2688](https://github.com/randombit/botan/commit/43e55885d20c1a579df13be3470491e5c378a2688)
-
 A TLS client/server with ALPN, SNI and HTTP/2 has been added to the [http2-botan vibe.d branch](https://github.com/etcimon/vibe.d/tree/http2-botan) on my fork.
 
 Getting Started
 ---------------
 
-Botan has been tested on Windows x86, Windows x64, OSX x64, Linux x86, Linux x64 with DMD v2.067, v2.067.1, v2.068.
+Botan has been tested on Windows x86, Windows x64, OSX x64, Linux x86, Linux x64 with DMD v2.080+
 
-For development, you should use the [Mono-D](http://wiki.dlang.org/Mono-D) IDE, as it has been specifically crafted to handle the high amount of symbols.
-
-- Install [DMD](http://dlang.org/download) v2.067.0+
-
-- Install [dub](http://code.dlang.org/download) v0.9.22+
+- Install [DMD](http://dlang.org/download) v2.080.0+
 
 - Compile Botan tests using `dub test --arch=x86_64` for x64, or `dub test --arch=x86` for x86. On Windows 64 bit, you will need to compile DMD64 using the Microsoft Visual Studio solution (.sln) in the DMD src/ folder. On Windows 32bit (--arch=x86), you will need to use the microsoft linker (mscoff): `dub test --config=32mscoff`, and DMD 2.068 (currently git master).
 

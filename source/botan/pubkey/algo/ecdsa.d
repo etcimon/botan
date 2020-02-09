@@ -352,7 +352,7 @@ static if (BOTAN_HAS_X509_CERTIFICATES)
 size_t testDecodeEcdsaX509()
 {
     X509Certificate cert = X509Certificate("../test_data/ecc/CSCA.CSCA.csca-germany.1.crt");
-    logDebug(cert.toString());
+    //logDebug(cert.toString());
     size_t fails = 0;
     
     mixin( CHECK_MESSAGE( `OIDS.lookup(cert.signatureAlgorithm().oid) == "ECDSA/EMSA1(SHA-224)"`, "error reading signature algorithm from x509 ecdsa certificate" ) );

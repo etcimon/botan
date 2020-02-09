@@ -4,22 +4,13 @@ d:
   - dmd-nightly
   - dmd-beta
   - dmd
-  - dmd-2.074.0
-  - dmd-2.072.2
-  - dmd-2.068.2
+  - dmd-2.089.0
+  - dmd-2.088.0
+  - dmd-2.087.2
   - ldc-beta
   - ldc
-  - ldc-1.2.0
-  - ldc-0.17.3
-  - gdc
-
-matrix:
-  allow_failures:
-      - d: ldc-beta
-      - d: ldc
-      - d: ldc-1.2.0
-      - d: ldc-0.17.3
-      - d: gdc
+  - ldc-1.19.0
+  - ldc-1.18.0
 
 script:
   - dub test
