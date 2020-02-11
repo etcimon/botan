@@ -278,7 +278,7 @@ X509Certificate createSelfSignedCert()(auto const ref X509CertOptions opts,
     else
         constraints = findConstraints(key, opts.constraints);
     
-    X509Extensions extensions;
+    X509Extensions extensions = X509Extensions(true);
     
     extensions.add(new BasicConstraints(opts.is_CA, opts.path_limit), true);
 

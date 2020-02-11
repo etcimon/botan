@@ -66,7 +66,7 @@ public:
             constraints = findConstraints(*key, req.constraints());
         }
 
-        X509Extensions extensions;
+        X509Extensions extensions = X509Extensions(true);
         
         extensions.add(new BasicConstraints(req.isCA(), req.pathLimit()), true);
         
@@ -232,7 +232,7 @@ private:
         auto current_time = Clock.currTime(UTC());
         auto expire_time = current_time + next_update;
         
-        X509Extensions extensions;
+        X509Extensions extensions = X509Extensions(true);
         extensions.add(new AuthorityKeyID(m_cert.subjectKeyId().dup));
         extensions.add(new CRLNumber(crl_number));
 

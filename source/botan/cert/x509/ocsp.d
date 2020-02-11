@@ -121,8 +121,8 @@ public:
             size_t responsedata_version;
             X509DN name = X509DN();
             Vector!ubyte key_hash;
-            X509Time produced_at;
-            X509Extensions extensions;
+            X509Time produced_at = X509Time(Clock.currTime(UTC()));
+            X509Extensions extensions = X509Extensions(true);
             
             BERDecoder(tbs_bits)
                     .decodeOptional(responsedata_version, (cast(ASN1Tag) 0), ASN1Tag.CONSTRUCTED | ASN1Tag.CONTEXT_SPECIFIC)

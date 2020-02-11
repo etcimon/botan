@@ -228,19 +228,19 @@ protected:
         
         if (attr.oid == OIDS.lookup("PKCS9.EmailAddress"))
         {
-            ASN1String email;
+            ASN1String email = ASN1String("");
             value.decode(email);
             m_info.add("RFC822", email.value());
         }
         else if (attr.oid == OIDS.lookup("PKCS9.ChallengePassword"))
         {
-            ASN1String challenge_password;
+            ASN1String challenge_password = ASN1String("");
             value.decode(challenge_password);
             m_info.add("PKCS9.ChallengePassword", challenge_password.value());
         }
         else if (attr.oid == OIDS.lookup("PKCS9.ExtensionRequest"))
         {
-            X509Extensions extensions;
+            X509Extensions extensions = X509Extensions(true);
             value.decode(extensions).verifyEnd();
             
             DataStore issuer_info;

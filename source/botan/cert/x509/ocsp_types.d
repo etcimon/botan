@@ -135,7 +135,7 @@ public:
     override void decodeFrom(ref BERDecoder from)
     {
         BERObject cert_status;
-        X509Extensions extensions;
+        X509Extensions extensions = X509Extensions(true);
         
         from.startCons(ASN1Tag.SEQUENCE)
                 .decode(m_certid)

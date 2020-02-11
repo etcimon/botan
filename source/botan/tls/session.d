@@ -77,11 +77,11 @@ public:
     {
         ubyte side_code = 0;
         
-        ASN1String server_hostname;
-        ASN1String server_service;
+        ASN1String server_hostname = ASN1String("");
+        ASN1String server_service = ASN1String("");
         size_t server_port;
         
-        ASN1String srp_identifier_str;
+        ASN1String srp_identifier_str = ASN1String("");
         
         ubyte major_version = 0, minor_version = 0;
         
