@@ -260,7 +260,7 @@ version(LDC) {
     import ldc.llvmasm : __asmtuple;
     private void rawCpuid(uint eax, uint ecx, uint* a, uint* b, uint* c, uint* d)
     {
-
+        logDebug("Using rawCpuid llvm assembly");
         // CHECK: store %"ldc.llvmasm.__asmtuple_t!(uint, uint, uint, uint).__asmtuple_t" %3, %"ldc.llvmasm.__asmtuple_t!(uint, uint, uint, uint).__asmtuple_t"* %r
         auto r = __asmtuple!(uint, uint, uint, uint) ("cpuid",
             "={eax},={ebx},={ecx},={edx},{eax},{ecx}", eax, ecx);
@@ -323,7 +323,7 @@ shared static this() {
         max_extended_cpuid = a2;
     
     }
-
+    logDebug("Got vendorID: ", cast(string)vendorID);
     is_intel = vendorID == "GenuineIntel";
     is_amd = vendorID == "AuthenticAMD";
 
