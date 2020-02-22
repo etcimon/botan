@@ -11,6 +11,7 @@
 
 module botan.algo_base.buf_comp;
 
+import botan.constants;
 import memutils.vector;
 import botan.utils.get_byte;
 import botan.utils.types;

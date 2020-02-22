@@ -10,6 +10,7 @@
 */
 module botan.codec.openpgp;
 
+import botan.constants;
 import botan.filters.filters;
 import botan.filters.basefilt;
 import botan.filters.b64_filt;

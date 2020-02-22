@@ -256,32 +256,18 @@ version(GNU)
     }
 }
 
-version(none) {
-    private void rawCpuid(uint ain, uint cin, ref uint a, ref uint b, ref uint c, ref uint d)
+version(LDC) {
+    import ldc.llvmasm : __asmtuple;
+    private void rawCpuid(uint eax, uint ecx, uint* a, uint* b, uint* c, uint* d)
     {
-        version(PreserveEBX)
-        {
-            mixin( q{
-                __asm pure nothrow { 
-                    "xchg %1, %%ebx
-                    cpuid 
-                    xchg %1, %%ebx"
-                        : "=a" a, "=r" b, "=c" c, "=d" d 
-                            : "0" ain, "2" cin; 
-                }
-            } );
-        }
-        else
-        {
-            mixin( q{
-                __asm pure nothrow { 
-                    "cpuid"
-                        : "=a" a, "=b" b, "=c" c, "=d" d 
-                            : "0" ain, "2" cin; 
-                }
-            });
 
-        }
+        // CHECK: store %"ldc.llvmasm.__asmtuple_t!(uint, uint, uint, uint).__asmtuple_t" %3, %"ldc.llvmasm.__asmtuple_t!(uint, uint, uint, uint).__asmtuple_t"* %r
+        auto r = __asmtuple!(uint, uint, uint, uint) ("cpuid",
+            "={eax},={ebx},={ecx},={edx},{eax},{ecx}", eax, ecx);
+        *a = r.v[0];
+        *b = r.v[1];
+        *c = r.v[2];
+        *d = r.v[3];
     }
 }
 
@@ -295,11 +281,8 @@ shared static this() {
         uint a, b, c, d, a2;
         char * venptr = vendorID.ptr;
 
-        version(GNU)
-        {
-            rawCpuid(0, 0, a, venptr[0], venptr[2], venptr[1]);     
-        }
-        else version(none) rawCpuid(0, 0, a, venptr[0], venptr[2], venptr[1]);
+        version(LDC) rawCpuid(unused, unused, &a, cast(uint*) venptr, cast(uint*) (venptr+2*uint.sizeof), 
+                                cast(uint*) (venptr+uint.sizeof));
         else {
             version(D_InlineAsm_X86)
             {
@@ -328,11 +311,7 @@ shared static this() {
         }
 
         
-        version(GNU)
-        {
-            rawCpuid(0x8000_0000, 0, a2, unused, unused, unused);
-        }
-        else version(none) rawCpuid(0x8000_0000, 0, a2, unused, unused, unused);
+        version(LDC) rawCpuid(0x8000_0000U, 0U, &a2, &unused, &unused, &unused);
         else {
             asm pure nothrow {
                 mov EAX, 0x8000_0000;
@@ -350,10 +329,7 @@ shared static this() {
 
     {
         uint a, b, c, d;
-        version(GNU)
-        {
-            rawCpuid(1, 0, a, apic, c, d);
-        } else version(none) rawCpuid(1, 0, a, apic, c, d);
+        version(LDC) rawCpuid(1U, 0U, &a, &apic, &c, &d);
         else
         {
             asm pure nothrow {
@@ -377,8 +353,7 @@ shared static this() {
     {
         uint ext, reserved;
 
-        version(GNU) rawCpuid(7, 0, unused, ext, reserved, unused);
-        else version (none) rawCpuid(7, 0, unused, ext, reserved, unused);
+        version (LDC) rawCpuid(7U, 0U, &unused, &ext, &reserved, &unused);
         else
         {
             asm
@@ -421,10 +396,7 @@ shared static this() {
 
     if (max_extended_cpuid >= 0x8000_0001) {
         uint c, d;
-        version(GNU)
-        {
-            rawCpuid(0x8000_0001, 0, unused, unused, c, d);
-        } else version(none) rawCpuid(0x8000_0001, 0, unused, unused, c, d);
+        version(LDC) rawCpuid(0x8000_0001U, 0U, &unused, &unused, &c, &d);
         else
         {
             asm pure nothrow {
@@ -440,11 +412,7 @@ shared static this() {
     }
     if (max_extended_cpuid >= 0x8000_0005) {
         uint c;
-        version(GNU)
-        {
-            rawCpuid(0x8000_0005, 0, unused, unused, c, unused);
-        }
-        else version(none) rawCpuid(0x8000_0005, 0, unused, unused, c, unused);
+        version(LDC) rawCpuid(0x8000_0005U, 0U, &unused, &unused, &c, &unused);
         else
         {
             asm pure nothrow {
