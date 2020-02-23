@@ -119,7 +119,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_HASH_TEST) unittest
             });
     };
     
-    size_t fails = runTestsInDir("../test_data/hash", test);
+    size_t fails = runTestsInDir("test_data/hash", test);
 
     testReport("hash", total_tests, fails);
 }

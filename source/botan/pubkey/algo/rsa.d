@@ -447,9 +447,9 @@ static if (BOTAN_HAS_TESTS && !SKIP_RSA_TEST) unittest
 	Unique!AutoSeededRNG rng = new AutoSeededRNG;
 
     
-    File rsa_enc = File("../test_data/pubkey/rsaes.vec", "r");
-    File rsa_sig = File("../test_data/pubkey/rsa_sig.vec", "r");
-    File rsa_verify = File("../test_data/pubkey/rsa_verify.vec", "r");
+    File rsa_enc = File("test_data/pubkey/rsaes.vec", "r");
+    File rsa_sig = File("test_data/pubkey/rsa_sig.vec", "r");
+    File rsa_verify = File("test_data/pubkey/rsa_verify.vec", "r");
     
     fails += testPkKeygen(*rng);
 

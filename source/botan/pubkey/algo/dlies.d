@@ -231,7 +231,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_DLIES_TEST) unittest
     logDebug("Testing dlies.d ...");
     size_t fails = 0;
     
-    File dlies = File("../test_data/pubkey/dlies.vec", "r");
+    File dlies = File("test_data/pubkey/dlies.vec", "r");
     
     fails += runTestsBb(dlies, "DLIES Encryption", "Ciphertext", true,
         (ref HashMap!(string, string) m) {

@@ -296,7 +296,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_BLOCK_TEST) unittest {
     }
     
     logTrace("Running tests ...");
-    size_t fails = runTestsInDir("../test_data/block", &test_bc);
+    size_t fails = runTestsInDir("test_data/block", &test_bc);
 
 
     testReport("block_cipher", total_tests, fails);

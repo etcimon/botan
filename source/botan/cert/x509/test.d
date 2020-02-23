@@ -177,7 +177,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_X509_TEST) unittest
     auto state = globalState(); // ensure initialized
 
     logDebug("Testing x509/test.d ...");
-    const string root_test_dir = "../test_data/nist_x509/";
+    const string root_test_dir = "test_data/nist_x509/";
     
     size_t unexp_failure = 0;
     size_t unexp_success = 0;

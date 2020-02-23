@@ -349,7 +349,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_CURVE25519_TEST) unittest
 	size_t fails = 0;
 
 
-	File c25519_scalar = File("../test_data/pubkey/c25519_scalar.vec", "r");
+	File c25519_scalar = File("test_data/pubkey/c25519_scalar.vec", "r");
 	
 	fails += runTestsBb(c25519_scalar, "Curve25519 ScalarMult", "Out", true,
 		(ref HashMap!(string, string) m) {

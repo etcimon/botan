@@ -151,7 +151,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_STREAM_CIPHER_TEST) unittest
             });
     };
     
-    size_t fails = runTestsInDir("../test_data/stream", test);
+    size_t fails = runTestsInDir("test_data/stream", test);
     
     testReport("stream", total_tests, fails);
 }

@@ -394,7 +394,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_DSA_TEST) unittest
     
     Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
-    File dsa_sig = File("../test_data/pubkey/dsa.vec", "r");
+    File dsa_sig = File("test_data/pubkey/dsa.vec", "r");
     
     fails += runTestsBb(dsa_sig, "DSA Signature", "Signature", true,
         (ref HashMap!(string, string) m)

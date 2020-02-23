@@ -351,7 +351,7 @@ size_t testHashLargerThanN(RandomNumberGenerator rng)
 static if (BOTAN_HAS_X509_CERTIFICATES)
 size_t testDecodeEcdsaX509()
 {
-    X509Certificate cert = X509Certificate("../test_data/ecc/CSCA.CSCA.csca-germany.1.crt");
+    X509Certificate cert = X509Certificate("test_data/ecc/CSCA.CSCA.csca-germany.1.crt");
     //logDebug(cert.toString());
     size_t fails = 0;
     
@@ -371,8 +371,8 @@ size_t testDecodeEcdsaX509()
 static if (BOTAN_HAS_X509_CERTIFICATES)
 size_t testDecodeVerLinkSHA256()
 {
-    X509Certificate root_cert = X509Certificate("../test_data/ecc/root2_SHA256.cer");
-    X509Certificate link_cert = X509Certificate("../test_data/ecc/link_SHA256.cer");
+    X509Certificate root_cert = X509Certificate("test_data/ecc/root2_SHA256.cer");
+    X509Certificate link_cert = X509Certificate("test_data/ecc/link_SHA256.cer");
     
     size_t fails = 0;
     Unique!X509PublicKey pubkey = root_cert.subjectPublicKey();
@@ -385,8 +385,8 @@ static if (BOTAN_HAS_X509_CERTIFICATES)
 size_t testDecodeVerLinkSHA1()
 {
     atomicOp!"+="(total_tests, 1);
-    X509Certificate root_cert = X509Certificate("../test_data/ecc/root_SHA1.163.crt");
-    X509Certificate link_cert = X509Certificate("../test_data/ecc/link_SHA1.166.crt");
+    X509Certificate root_cert = X509Certificate("test_data/ecc/root_SHA1.163.crt");
+    X509Certificate link_cert = X509Certificate("test_data/ecc/link_SHA1.166.crt");
     
     size_t fails = 0;
     Unique!X509PublicKey pubkey = root_cert.subjectPublicKey();
@@ -498,14 +498,14 @@ size_t testCreatePkcs8(RandomNumberGenerator rng)
         //cout " ~\nequal: " ~  (rsa_key == rsa_key2));
         //DSAPrivateKey key(DLGroup("dsa/jce/1024"));
 
-        File rsa_priv_key = File("../test_data/ecc/rsa_private.pkcs8.pem", "wb+");
+        File rsa_priv_key = File("test_data/ecc/rsa_private.pkcs8.pem", "wb+");
         rsa_priv_key.write(pkcs8.PEM_encode(rsa_key));
         
         ECGroup dom_pars = ECGroup(OID("1.3.132.0.8"));
         auto key = ECDSAPrivateKey(rng, dom_pars);
         
         // later used by other tests :(
-        File priv_key = File("../test_data/ecc/wo_dompar_private.pkcs8.pem", "wb+");
+        File priv_key = File("test_data/ecc/wo_dompar_private.pkcs8.pem", "wb+");
         priv_key.write( pkcs8.PEM_encode(key) );
     }
     catch (Exception e)
@@ -525,13 +525,13 @@ size_t testCreateAndVerify(RandomNumberGenerator rng)
     
     ECGroup dom_pars = ECGroup(OID("1.3.132.0.8"));
     auto key = ECDSAPrivateKey(rng, dom_pars);
-    File priv_key = File("../test_data/ecc/dompar_private.pkcs8.pem", "w+");
+    File priv_key = File("test_data/ecc/dompar_private.pkcs8.pem", "w+");
     priv_key.write( pkcs8.PEM_encode(key) );
     
-    Unique!PKCS8PrivateKey loaded_key = pkcs8.loadKey("../test_data/ecc/wo_dompar_private.pkcs8.pem", rng);
+    Unique!PKCS8PrivateKey loaded_key = pkcs8.loadKey("test_data/ecc/wo_dompar_private.pkcs8.pem", rng);
     auto loaded_ec_key = ECDSAPrivateKey(*loaded_key);
     mixin( CHECK_MESSAGE( `loaded_ec_key`, "the loaded key could not be converted into an ECDSAPrivateKey" ) );
-    Unique!PKCS8PrivateKey loaded_key_1 = pkcs8.loadKey("../test_data/ecc/rsa_private.pkcs8.pem", rng);
+    Unique!PKCS8PrivateKey loaded_key_1 = pkcs8.loadKey("test_data/ecc/rsa_private.pkcs8.pem", rng);
     auto loaded_rsa_key = ECDSAPrivateKey(*loaded_key_1);
     mixin( CHECK_MESSAGE( `!loaded_rsa_key`, "the loaded key is ECDSAPrivateKey -> shouldn't be, is a RSA-Key" ) );
     
@@ -647,7 +647,7 @@ size_t testReadPkcs8(RandomNumberGenerator rng)
     
     try
     {
-        Unique!PKCS8PrivateKey loaded_key = pkcs8.loadKey("../test_data/ecc/wo_dompar_private.pkcs8.pem", rng);
+        Unique!PKCS8PrivateKey loaded_key = pkcs8.loadKey("test_data/ecc/wo_dompar_private.pkcs8.pem", rng);
         auto ecdsa = ECDSAPrivateKey(*loaded_key);
         mixin( CHECK_MESSAGE( `ecdsa`, "the loaded key could not be converted into an ECDSAPrivateKey" ) );
         
@@ -667,7 +667,7 @@ size_t testReadPkcs8(RandomNumberGenerator rng)
     
     try
     {
-        Unique!PKCS8PrivateKey loaded_key_nodp = pkcs8.loadKey("../test_data/ecc/nodompar_private.pkcs8.pem", rng);
+        Unique!PKCS8PrivateKey loaded_key_nodp = pkcs8.loadKey("test_data/ecc/nodompar_private.pkcs8.pem", rng);
         // anew in each test with unregistered domain-parameters
         auto ecdsa_nodp = ECDSAPrivateKey(*loaded_key_nodp);
         mixin( CHECK_MESSAGE( `ecdsa_nodp`, "the loaded key could not be converted into an ECDSAPrivateKey" ) );
@@ -682,7 +682,7 @@ size_t testReadPkcs8(RandomNumberGenerator rng)
         
         try
         {
-            Unique!PKCS8PrivateKey loaded_key_withdp = pkcs8.loadKey("../test_data/ecc/withdompar_private.pkcs8.pem", rng);
+            Unique!PKCS8PrivateKey loaded_key_withdp = pkcs8.loadKey("test_data/ecc/withdompar_private.pkcs8.pem", rng);
             
             logError("Unexpected success: loaded key with unknown OID");
             ++fails;
@@ -705,7 +705,7 @@ size_t testEccKeyWithRfc5915Extensions(RandomNumberGenerator rng)
     
     try
     {
-        Unique!PKCS8PrivateKey pkcs8 = pkcs8.loadKey("../test_data/ecc/ecc_private_with_rfc5915_ext.pem", rng);
+        Unique!PKCS8PrivateKey pkcs8 = pkcs8.loadKey("test_data/ecc/ecc_private_with_rfc5915_ext.pem", rng);
         
         if (!*ECDSAPrivateKey(*pkcs8))
         {
@@ -817,14 +817,14 @@ static if (BOTAN_HAS_TESTS && !SKIP_ECDSA_TEST) unittest
 
     fails += testPkKeygen(*rng);
 
-    File ecdsa_sig = File("../test_data/pubkey/ecdsa.vec", "r");
+    File ecdsa_sig = File("test_data/pubkey/ecdsa.vec", "r");
 
     fails += runTestsBb(ecdsa_sig, "ECDSA Signature", "Signature", true,
         (ref HashMap!(string, string) m) {
             return ecdsaSigKat(m.get("Group"), m.get("X"), m.get("Hash"), m.get("Msg"), m.get("Nonce"), m.get("Signature"));
         });
 
-    File ecc_mul = File("../test_data/pubkey/ecc.vec", "r");
+    File ecc_mul = File("test_data/pubkey/ecc.vec", "r");
 
     fails += runTestsBb(ecc_mul, "ECC Point Mult", "Y", false,
         (ref HashMap!(string, string) m)

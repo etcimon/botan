@@ -160,7 +160,7 @@ size_t hkdfTest(string algo, string ikm, string salt, string info, string okm, s
 static if (BOTAN_HAS_TESTS && !SKIP_HKDF_TEST) unittest
 {
     logDebug("Testing hkdf.d ...");
-    File vec = File("../test_data/hkdf.vec", "r");
+    File vec = File("test_data/hkdf.vec", "r");
     
     size_t fails = runTestsBb(vec, "HKDF", "OKM", true,
         (ref HashMap!(string, string) m)

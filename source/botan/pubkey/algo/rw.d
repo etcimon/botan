@@ -351,8 +351,8 @@ static if (BOTAN_HAS_TESTS && !SKIP_RW_TEST) unittest
     
     fails += testPkKeygen(*rng);
     
-    File rw_sig = File("../test_data/pubkey/rw_sig.vec", "r");
-    File rw_verify = File("../test_data/pubkey/rw_verify.vec", "r");
+    File rw_sig = File("test_data/pubkey/rw_sig.vec", "r");
+    File rw_verify = File("test_data/pubkey/rw_verify.vec", "r");
     
     fails += runTestsBb(rw_sig, "RW Signature", "Signature", true,
         (ref HashMap!(string, string) m) {
