@@ -96,7 +96,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_CIPHER_MODE_TEST) unittest {
             });
     };
     
-    size_t fails = runTestsInDir("../test_data/modes", test);
+    size_t fails = runTestsInDir("test_data/modes", test);
 
     testReport("cipher_mode", total_tests, fails);
 }

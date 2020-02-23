@@ -186,8 +186,8 @@ size_t hmacDrbgTest(ref HashMap!(string, string) m)
 static if (BOTAN_HAS_TESTS && !SKIP_RNG_TEST) unittest
 {
     logDebug("Testing rng/test.d ...");
-    File hmac_drbg_vec = File("../test_data/hmac_drbg.vec", "r");
-    File x931_vec = File("../test_data/x931.vec", "r");
+    File hmac_drbg_vec = File("test_data/hmac_drbg.vec", "r");
+    File x931_vec = File("test_data/x931.vec", "r");
     
     size_t fails = 0;
 

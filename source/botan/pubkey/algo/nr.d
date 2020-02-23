@@ -318,7 +318,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_NR_TEST) unittest
     
 	Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
-    File nr_sig = File("../test_data/pubkey/nr.vec", "r");
+    File nr_sig = File("test_data/pubkey/nr.vec", "r");
     
     fails += runTestsBb(nr_sig, "NR Signature", "Signature", true,
         (ref HashMap!(string, string) m) {

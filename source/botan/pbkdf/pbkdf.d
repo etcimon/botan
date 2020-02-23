@@ -161,7 +161,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_PBKDF_TEST) unittest {
             });
     };
     
-    size_t fails = runTestsInDir("../test_data/pbkdf", test);
+    size_t fails = runTestsInDir("test_data/pbkdf", test);
 
     testReport("pbkdf", total_tests, fails);
 }

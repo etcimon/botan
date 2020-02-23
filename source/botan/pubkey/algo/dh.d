@@ -248,7 +248,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_DH_TEST) unittest
 	Unique!AutoSeededRNG rng = new AutoSeededRNG;
 
 
-    File dh_sig = File("../test_data/pubkey/dh.vec", "r");
+    File dh_sig = File("test_data/pubkey/dh.vec", "r");
     
     fails += runTestsBb(dh_sig, "DH Kex", "K", true,
         (ref HashMap!(string, string) m) {

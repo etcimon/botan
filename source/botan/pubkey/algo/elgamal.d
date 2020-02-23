@@ -305,7 +305,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_ELGAMAL_TEST) unittest
     
     fails += testPkKeygen(*rng);
     
-    File elgamal_enc = File("../test_data/pubkey/elgamal.vec", "r");
+    File elgamal_enc = File("test_data/pubkey/elgamal.vec", "r");
     
     fails += runTestsBb(elgamal_enc, "ElGamal Encryption", "Ciphertext", true,
         (ref HashMap!(string, string) m) {

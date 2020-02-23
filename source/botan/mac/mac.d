@@ -116,7 +116,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_MAC_TEST) unittest {
             });
     };
     
-    size_t fails = runTestsInDir("../test_data/mac", test);
+    size_t fails = runTestsInDir("test_data/mac", test);
 
     testReport("mac", total_tests, fails);
 }

@@ -291,7 +291,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_BIGINT_TEST) unittest
     import std.stdio : writeln;
     logDebug("Testing bigint/test.d ...");
     import std.array;
-    const string filename = "../test_data/mp_valid.dat";
+    const string filename = "test_data/mp_valid.dat";
     File test_data = File(filename, "r");
     
     if (test_data.error || test_data.eof)

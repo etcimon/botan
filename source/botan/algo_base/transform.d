@@ -228,7 +228,7 @@ SecureVector!ubyte transformTest(string algo,
 static if (BOTAN_HAS_TESTS && !SKIP_TRANSFORM_TEST) unittest
 {
     logDebug("Testing transform.d ...");
-    File vec = File("../test_data/transform.vec", "r");
+    File vec = File("test_data/transform.vec", "r");
     size_t fails = runTests(vec, "Transform", "Output", true,
          (ref HashMap!(string, string) m) {
             atomicOp!"+="(total_tests, 1);

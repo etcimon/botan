@@ -313,7 +313,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_AEAD_TEST) unittest
             });
     };
     
-    size_t fails = runTestsInDir("../test_data/aead", test);
+    size_t fails = runTestsInDir("test_data/aead", test);
     logDebug("Test report");
     testReport("aead", total_tests, fails);
 }

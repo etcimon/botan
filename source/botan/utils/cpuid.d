@@ -256,18 +256,10 @@ version(GNU)
     }
 }
 
-version(LDC) {
+version(LDC) version(AArch64) {
     import ldc.llvmasm : __asmtuple;
     private void rawCpuid(uint eax, uint ecx, uint* a, uint* b, uint* c, uint* d)
     {
-        logDebug("Using rawCpuid llvm assembly");
-        // CHECK: store %"ldc.llvmasm.__asmtuple_t!(uint, uint, uint, uint).__asmtuple_t" %3, %"ldc.llvmasm.__asmtuple_t!(uint, uint, uint, uint).__asmtuple_t"* %r
-        auto r = __asmtuple!(uint, uint, uint, uint) ("cpuid",
-            "={eax},={ebx},={ecx},={edx},{eax},{ecx}", eax, ecx);
-        *a = r.v[0];
-        *b = r.v[1];
-        *c = r.v[2];
-        *d = r.v[3];
     }
 }
 
@@ -281,9 +273,9 @@ shared static this() {
         uint a, b, c, d, a2;
         char * venptr = vendorID.ptr;
 
-        version(LDC) rawCpuid(unused, unused, &a, cast(uint*) venptr, cast(uint*) (venptr+2*uint.sizeof), 
-                                cast(uint*) (venptr+uint.sizeof));
-        else {
+        version(LDC) { version(AArch64) rawCpuid(unused, unused, &a, cast(uint*) venptr, cast(uint*) (venptr+2*uint.sizeof), 
+                                cast(uint*) (venptr+uint.sizeof)); 
+        } else {
             version(D_InlineAsm_X86)
             {
                 asm pure nothrow {
@@ -311,8 +303,9 @@ shared static this() {
         }
 
         
-        version(LDC) rawCpuid(0x8000_0000U, 0U, &a2, &unused, &unused, &unused);
-        else {
+        version(LDC) { 
+            version(AArch64) rawCpuid(0x8000_0000U, 0U, &a2, &unused, &unused, &unused);
+        } else {
             asm pure nothrow {
                 mov EAX, 0x8000_0000;
                 cpuid;
@@ -323,14 +316,15 @@ shared static this() {
         max_extended_cpuid = a2;
     
     }
-    logDebug("Got vendorID: ", cast(string)vendorID);
+    
     is_intel = vendorID == "GenuineIntel";
     is_amd = vendorID == "AuthenticAMD";
 
     {
         uint a, b, c, d;
-        version(LDC) rawCpuid(1U, 0U, &a, &apic, &c, &d);
-        else
+        version(LDC) {
+             version(AArch64) rawCpuid(1U, 0U, &a, &apic, &c, &d);
+        } else
         {
             asm pure nothrow {
                 mov EAX, 1; // model, stepping
@@ -353,8 +347,9 @@ shared static this() {
     {
         uint ext, reserved;
 
-        version (LDC) rawCpuid(7U, 0U, &unused, &ext, &reserved, &unused);
-        else
+        version (LDC) {
+             version(AArch64) rawCpuid(7U, 0U, &unused, &ext, &reserved, &unused);
+        } else
         {
             asm
             {
@@ -396,8 +391,9 @@ shared static this() {
 
     if (max_extended_cpuid >= 0x8000_0001) {
         uint c, d;
-        version(LDC) rawCpuid(0x8000_0001U, 0U, &unused, &unused, &c, &d);
-        else
+        version(LDC) {
+             version(AArch64) rawCpuid(0x8000_0001U, 0U, &unused, &unused, &c, &d);
+        } else
         {
             asm pure nothrow {
                 mov EAX, 0x8000_0001;
@@ -412,8 +408,8 @@ shared static this() {
     }
     if (max_extended_cpuid >= 0x8000_0005) {
         uint c;
-        version(LDC) rawCpuid(0x8000_0005U, 0U, &unused, &unused, &c, &unused);
-        else
+        version(LDC) { version(AArch64) rawCpuid(0x8000_0005U, 0U, &unused, &unused, &c, &unused);
+        } else
         {
             asm pure nothrow {
                 mov EAX, 0x8000_0005; // L1 cache

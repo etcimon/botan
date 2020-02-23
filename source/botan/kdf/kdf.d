@@ -205,7 +205,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_KDF_TEST) unittest
             });
         };
         
-    size_t fails = runTestsInDir("../test_data/kdf", test);
+    size_t fails = runTestsInDir("test_data/kdf", test);
     
     testReport("kdf", g_total_tests, fails);
 }

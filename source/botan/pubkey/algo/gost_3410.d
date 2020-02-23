@@ -378,7 +378,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_GOST_TEST) unittest
 
     fails += testPkKeygen(*rng);
 
-    File ecdsa_sig = File("../test_data/pubkey/gost_3410.vec", "r");
+    File ecdsa_sig = File("test_data/pubkey/gost_3410.vec", "r");
     
     fails += runTestsBb(ecdsa_sig, "GOST-34.10 Signature", "Signature", true,
         (ref HashMap!(string, string) m) {
