@@ -316,7 +316,7 @@ shared static this() {
         max_extended_cpuid = a2;
     
     }
-    logDebug("Got vendorID: ", cast(string)vendorID);
+    
     is_intel = vendorID == "GenuineIntel";
     is_amd = vendorID == "AuthenticAMD";
 
