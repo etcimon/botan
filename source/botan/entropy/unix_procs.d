@@ -30,6 +30,7 @@ import core.stdc.stdlib;
 import std.string : toStringz;
 
 extern(C) int getrusage(int, rusage*);
+version(Android) extern(C) pid_t      getsid(pid_t) @trusted;
 
 /**
 * Entropy source for generic Unix. Runs various programs trying to

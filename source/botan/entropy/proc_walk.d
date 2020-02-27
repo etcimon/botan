@@ -62,12 +62,19 @@ public:
             stat_t stat_buf;
             if (.lstat(full_path.toStringz, &stat_buf) == -1)
                 continue;
-            
-            if (S_ISDIR(stat_buf.st_mode))
+            version(ARM){
+                bool s_isdir = S_ISDIR(cast(ushort)stat_buf.st_mode);
+                bool s_isreg = S_ISREG(cast(ushort)stat_buf.st_mode);
+            }
+            else {
+                bool s_isdir = S_ISDIR(stat_buf.st_mode);
+                bool s_isreg = S_ISREG(stat_buf.st_mode);
+            }
+            if (s_isdir)
             {
                 addDirectory(full_path);
             }
-            else if (S_ISREG(stat_buf.st_mode) && (stat_buf.st_mode & S_IROTH))
+            else if (s_isreg && (stat_buf.st_mode & S_IROTH))
             {
                 int fd = .open(full_path.toStringz, O_RDONLY | O_NOCTTY);
                 
