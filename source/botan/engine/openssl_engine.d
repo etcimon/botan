@@ -104,7 +104,7 @@ public:
     */
     ModularExponentiator modExp(const(BigInt)* n, PowerMod.UsageHints) const
     {
-        return new OpenSSLModularExponentiator(n);
+        return new OpenSSLModularExponentiator(*n);
     }
 
 
@@ -249,9 +249,9 @@ package:
 final class OpenSSLModularExponentiator : ModularExponentiator
 {
 public:
-    void setBase(const ref BigInt b) { m_base = OSSL_BN(b); }
+    void setBase(const(BigInt)* b) { m_base = OSSL_BN(*b); }
     
-    void setExponent(const ref BigInt e) { m_exp = OSSL_BN(e); }
+    void setExponent(const(BigInt)* e) { m_exp = OSSL_BN(*e); }
     
     BigInt execute() const
     {
@@ -270,7 +270,7 @@ public:
 		return ret;
     }
     
-    this(const ref BigInt n) {
+    this(ref const(BigInt) n) {
 		m_ctx = new OSSL_BN_CTX;
         m_mod = OSSL_BN(n);
     }
@@ -478,16 +478,16 @@ public:
     */
     void clear()
     {
-        const EVP_CIPHER* algo = EVP_CIPHER_CTX_cipher(&m_encrypt);
+        const EVP_CIPHER* algo = EVP_CIPHER_CTX_cipher(m_encrypt);
         
-        EVP_CIPHER_CTX_cleanup(&m_encrypt);
-        EVP_CIPHER_CTX_cleanup(&m_decrypt);
-        EVP_CIPHER_CTX_init(&m_encrypt);
-        EVP_CIPHER_CTX_init(&m_decrypt);
-        EVP_EncryptInit_ex(&m_encrypt, algo, null, null, null);
-		EVP_DecryptInit_ex(&m_decrypt, algo, null, null, null);
-		EVP_CIPHER_CTX_set_padding(&m_encrypt, 0);
-		EVP_CIPHER_CTX_set_padding(&m_decrypt, 0);
+        EVP_CIPHER_CTX_cleanup(m_encrypt);
+        EVP_CIPHER_CTX_cleanup(m_decrypt);
+        m_encrypt = EVP_CIPHER_CTX_new();
+        m_decrypt = EVP_CIPHER_CTX_new();
+        EVP_EncryptInit_ex(m_encrypt, algo, null, null, null);
+		EVP_DecryptInit_ex(m_decrypt, algo, null, null, null);
+		EVP_CIPHER_CTX_set_padding(m_encrypt, 0);
+		EVP_CIPHER_CTX_set_padding(m_decrypt, 0);
     }
     
     @property string name() const { return m_cipher_name; }
@@ -496,7 +496,7 @@ public:
     */
     BlockCipher clone() const
     {
-        return new EVPBlockCipher(EVP_CIPHER_CTX_cipher(&m_encrypt),
+        return new EVPBlockCipher(EVP_CIPHER_CTX_cipher(m_encrypt),
                                    m_cipher_name,
                                    m_cipher_key_spec.minimumKeylength(),
                                    m_cipher_key_spec.maximumKeylength(),
@@ -516,14 +516,14 @@ public:
         if (EVP_CIPHER_mode(algo) != EVP_CIPH_ECB_MODE)
             throw new InvalidArgument("EVP_BlockCipher: Non-ECB EVP was passed in");
         
-        EVP_CIPHER_CTX_init(&m_encrypt);
-        EVP_CIPHER_CTX_init(&m_decrypt);
+        m_encrypt = EVP_CIPHER_CTX_new();
+        m_decrypt = EVP_CIPHER_CTX_new();
         
-        EVP_EncryptInit_ex(&m_encrypt, algo, null, null, null);
-        EVP_DecryptInit_ex(&m_decrypt, algo, null, null, null);
+        EVP_EncryptInit_ex(m_encrypt, algo, null, null, null);
+        EVP_DecryptInit_ex(m_decrypt, algo, null, null, null);
         
-        EVP_CIPHER_CTX_set_padding(&m_encrypt, 0);
-        EVP_CIPHER_CTX_set_padding(&m_decrypt, 0);
+        EVP_CIPHER_CTX_set_padding(m_encrypt, 0);
+        EVP_CIPHER_CTX_set_padding(m_decrypt, 0);
     }
     
     
@@ -541,14 +541,14 @@ public:
         if (EVP_CIPHER_mode(algo) != EVP_CIPH_ECB_MODE)
             throw new InvalidArgument("EVP_BlockCipher: Non-ECB EVP was passed in");
         
-        EVP_CIPHER_CTX_init(&m_encrypt);
-        EVP_CIPHER_CTX_init(&m_decrypt);
+        m_encrypt = EVP_CIPHER_CTX_new();
+        m_decrypt = EVP_CIPHER_CTX_new();
         
-        EVP_EncryptInit_ex(&m_encrypt, algo, null, null, null);
-		EVP_DecryptInit_ex(&m_decrypt, algo, null, null, null);
+        EVP_EncryptInit_ex(m_encrypt, algo, null, null, null);
+		EVP_DecryptInit_ex(m_decrypt, algo, null, null, null);
         
-        EVP_CIPHER_CTX_set_padding(&m_encrypt, 0);
-        EVP_CIPHER_CTX_set_padding(&m_decrypt, 0);
+        EVP_CIPHER_CTX_set_padding(m_encrypt, 0);
+        EVP_CIPHER_CTX_set_padding(m_decrypt, 0);
     }
     
     
@@ -559,8 +559,8 @@ public:
     */
     ~this()
     {
-        EVP_CIPHER_CTX_cleanup(&m_encrypt);
-        EVP_CIPHER_CTX_cleanup(&m_decrypt);
+        EVP_CIPHER_CTX_free(m_encrypt);
+        EVP_CIPHER_CTX_free(m_decrypt);
     }
 
 	override @property size_t parallelism() const { return 1; }
@@ -572,7 +572,7 @@ protected:
                    size_t blocks)
     {
         int out_len = 0;
-        EVP_EncryptUpdate(&m_encrypt, output, &out_len, input, cast(int)(blocks * m_block_sz));
+        EVP_EncryptUpdate(m_encrypt, output, &out_len, input, cast(int)(blocks * m_block_sz));
     }
     
     /*
@@ -582,7 +582,7 @@ protected:
                    size_t blocks)
     {
         int out_len = 0;
-        EVP_DecryptUpdate(&m_decrypt, output, &out_len, input, cast(int)(blocks * m_block_sz));
+        EVP_DecryptUpdate(m_decrypt, output, &out_len, input, cast(int)(blocks * m_block_sz));
     }
     
     /*
@@ -597,24 +597,24 @@ protected:
             full_key ~= key[0 .. 8];
         }
         else
-            if (EVP_CIPHER_CTX_set_key_length(&m_encrypt, cast(int)length) == 0 ||
-				EVP_CIPHER_CTX_set_key_length(&m_decrypt, cast(int)length) == 0)
+            if (EVP_CIPHER_CTX_set_key_length(m_encrypt, cast(int)length) == 0 ||
+				EVP_CIPHER_CTX_set_key_length(m_decrypt, cast(int)length) == 0)
                 throw new InvalidArgument("EVP_BlockCipher: Bad key length for " ~ m_cipher_name);
         
         if (m_cipher_name == "RC2")
         {
-            EVP_CIPHER_CTX_ctrl(&m_encrypt, EVP_CTRL_SET_RC2_KEY_BITS, cast(int)length*8, null);
-            EVP_CIPHER_CTX_ctrl(&m_decrypt, EVP_CTRL_SET_RC2_KEY_BITS, cast(int)length*8, null);
+            EVP_CIPHER_CTX_ctrl(m_encrypt, EVP_CTRL_SET_RC2_KEY_BITS, cast(int)length*8, null);
+            EVP_CIPHER_CTX_ctrl(m_decrypt, EVP_CTRL_SET_RC2_KEY_BITS, cast(int)length*8, null);
         }
         
-        EVP_EncryptInit_ex(&m_encrypt, null, null, full_key.ptr, null);
-        EVP_DecryptInit_ex(&m_decrypt, null, null, full_key.ptr, null);
+        EVP_EncryptInit_ex(m_encrypt, null, null, full_key.ptr, null);
+        EVP_DecryptInit_ex(m_decrypt, null, null, full_key.ptr, null);
     }
     
     size_t m_block_sz;
     KeyLengthSpecification m_cipher_key_spec;
     string m_cipher_name;
-    EVP_CIPHER_CTX m_encrypt, m_decrypt;
+    EVP_CIPHER_CTX* m_encrypt, m_decrypt;
 }
 
 
@@ -638,8 +638,8 @@ public:
     */
     void clear()
     {
-        const EVP_MD* algo = EVP_MD_CTX_md(&m_md);
-        EVP_DigestInit_ex(&m_md, algo, null);
+        const EVP_MD* algo = EVP_MD_CTX_md(m_md);
+        EVP_DigestInit_ex(m_md, algo, null);
     }
     
     @property string name() const { return m_algo_name; }
@@ -648,18 +648,18 @@ public:
     */
     HashFunction clone() const
     {
-        const EVP_MD* algo = EVP_MD_CTX_md(&m_md);
+        const EVP_MD* algo = EVP_MD_CTX_md(m_md);
         return new EVPHashFunction(algo, name);
     }
     
     @property size_t outputLength() const
     {
-        return EVP_MD_size(EVP_MD_CTX_md(&m_md));
+        return EVP_MD_size(EVP_MD_CTX_md(m_md));
     }
     
     @property size_t hashBlockSize() const
     {
-        return EVP_MD_block_size(EVP_MD_CTX_md(&m_md));
+        return EVP_MD_block_size(EVP_MD_CTX_md(m_md));
     }
     /*
     * Create an EVP hash function
@@ -668,15 +668,15 @@ public:
          in string name)
     {
         m_algo_name = name;
-        EVP_MD_CTX_init(&m_md);
-        EVP_DigestInit_ex(&m_md, algo, null);
+        m_md = EVP_MD_CTX_new();
+        EVP_DigestInit_ex(m_md, algo, null);
     }
     /*
     * Destroy an EVP hash function
     */
     ~this()
     {
-        EVP_MD_CTX_cleanup(&m_md);
+        EVP_MD_CTX_free(m_md);
     }
     
 protected:
@@ -686,20 +686,20 @@ protected:
     */
     override void addData(const(ubyte)* input, size_t length)
     {
-        EVP_DigestUpdate(&m_md, input, length);
+        EVP_DigestUpdate(m_md, input, length);
     }
     /*
     * Finalize an EVP Hash Calculation
     */
     override void finalResult(ubyte* output)
     {
-        EVP_DigestFinal_ex(&m_md, output, null);
-        const EVP_MD* algo = EVP_MD_CTX_md(&m_md);
-        EVP_DigestInit_ex(&m_md, algo, null);
+        EVP_DigestFinal_ex(m_md, output, null);
+        const EVP_MD* algo = EVP_MD_CTX_md(m_md);
+        EVP_DigestInit_ex(m_md, algo, null);
     }
     
     string m_algo_name;
-    EVP_MD_CTX m_md;
+    EVP_MD_CTX* m_md;
 }
 
 
