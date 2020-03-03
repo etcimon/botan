@@ -58,7 +58,7 @@ public:
     */
     override void encodeInto(ref DEREncoder to_) const
     {
-        X509Extensions extensions;
+        X509Extensions extensions = X509Extensions(true);
         
         extensions.add(new CRLReasonCode(m_reason));
         
