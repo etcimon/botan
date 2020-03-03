@@ -11,7 +11,7 @@
 module botan.constants;
 
 public import botan_math.mp_types;
-enum LogLevel = Debug;
+enum LogLevel = Error;
 
 enum SKIP_TRANSFORM_TEST = false;
 enum SKIP_X509_TEST = false;
