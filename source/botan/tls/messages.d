@@ -1290,7 +1290,8 @@ public:
                 throw new DecodingError("Certificate: Message malformed");
             
             auto cert_buf = DataSourceMemory(&certs[3], cert_size);
-            m_certs.pushBack(X509Certificate(cast(DataSource)cert_buf));
+            auto cert = X509Certificate(cast(DataSource)cert_buf);
+            m_certs.pushBack(cert);
             
             certs += cert_size + 3;
         }
@@ -1307,7 +1308,9 @@ protected:
 		buf.length = 3;
         for (size_t i = 0; i != m_certs.length; ++i)
         {
-            Vector!ubyte raw_cert = m_certs[i].BER_encode();
+            auto cert = m_certs[i];
+            if (!cert.isValid()) continue;
+            Vector!ubyte raw_cert = cert.BER_encode();
             const size_t cert_size = raw_cert.length;
             foreach (size_t j; 0 .. 3)
                 buf.pushBack(get_byte!uint(j+1, cast(uint) cert_size));

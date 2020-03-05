@@ -487,6 +487,9 @@ public:
         else return -1;
     }
 
+    bool isValid() {
+        return !m_subject.get("X509.Certificate.start").empty;
+    }
 
     /**
     * Create a certificate from a data source providing the DER or
@@ -621,6 +624,7 @@ protected:
             
             m_subject.add("X509v3.BasicConstraints.path_constraint", limit);
         }
+
     }
 
 

@@ -177,7 +177,7 @@ public:
 		static HashMap!(void*, ubyte[]) cache;
 		if ((cast(void*)this) in cache) return Vector!ubyte(cache[cast(void*)this]);
 		
-		auto der = DEREncoder.init;
+		auto der = DEREncoder();
 		encodeInto(der);
 		auto ret = der.getContentsUnlocked();
 		if (cache.length > 50)
