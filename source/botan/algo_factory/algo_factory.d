@@ -394,7 +394,7 @@ const(T) factoryPrototype(T)(in string algo_spec,
                              AlgorithmFactory af,
                              AlgorithmCache!T cache) {
 
-    logTrace("Searching for algo ", algo_spec, " | engine: ", provider ? provider : "All");
+    //logTrace("Searching for algo ", algo_spec, " | engine: ", provider ? provider : "All");
 
     if (const T cache_hit = cache.get(algo_spec, provider)) 
         return cache_hit;

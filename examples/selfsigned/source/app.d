@@ -133,4 +133,5 @@ void main() {
 	std.file.write(cert_file, user_cert.PEM_encode());
 	
 	writeln(user_cert.toString());
+	writeln(X509Certificate(user_cert.BER_encode()).PEM_encode());
 }

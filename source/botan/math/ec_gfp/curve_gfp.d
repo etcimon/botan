@@ -22,7 +22,7 @@ import std.algorithm : swap;
 import botan.constants;
 import memutils.unique;
 import std.conv : to;
-
+import core.stdc.string;
 abstract class CurveGFpRepr
 {
 public:

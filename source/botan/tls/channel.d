@@ -254,6 +254,7 @@ public:
         }
         catch(Exception e)
         {
+            logTrace(e.toString());
             sendFatalAlert(TLSAlert.INTERNAL_ERROR);
             throw e;
         }

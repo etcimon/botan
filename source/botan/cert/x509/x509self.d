@@ -316,7 +316,7 @@ PKCS10Request createCertReq()(auto const ref X509CertOptions opts,
     PKSigner signer = chooseSigFormat(key, hash_fn, sig_algo);
     loadInfo(opts, subject_dn, subject_alt);
     __gshared immutable size_t PKCS10_VERSION = 0;
-    auto extensions = X509Extensions();
+    auto extensions = X509Extensions(true);
     
     extensions.add(new BasicConstraints(opts.is_CA, opts.path_limit));
 
