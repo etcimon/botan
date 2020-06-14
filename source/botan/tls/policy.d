@@ -55,7 +55,7 @@ public:
 
 	/// Returns a list of EC Point Formats supported, only 0x00 (Uncompressed) is supported at the moment.
 	Vector!ubyte ecPointFormats() const {
-		return Vector!ubyte([cast(ubyte)0x00b]); // uncompressed
+		return Vector!ubyte([cast(ubyte)0x00]); // uncompressed
 	}
 
     /**
@@ -78,9 +78,9 @@ public:
             "AES-128",
             "Camellia-256",
             "Camellia-128",
-            "SEED",
-            "3DES",
-            "RC4",
+            //"SEED",
+            //"3DES",
+            //"RC4",
         ]);
     }
 
@@ -95,8 +95,8 @@ public:
             "SHA-512",
             "SHA-384",
             "SHA-224",
-            "SHA-1",
-            "MD5",
+            //"SHA-1",
+            //"MD5",
         ]);
     }
 
@@ -110,8 +110,8 @@ public:
             "AEAD",
             "SHA-384",
             "SHA-256",
-            "SHA-1",
-            "MD5",
+            //"SHA-1",
+            //"MD5",
         ]);
     }
 
@@ -300,7 +300,7 @@ public:
      */
     bool sendFallbackSCSV(in TLSProtocolVersion _version) const
     {
-        return _version == latestSupportedVersion(_version.isDatagramProtocol());
+        return false;
     }
 	
 	/**
