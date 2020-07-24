@@ -26,17 +26,13 @@ alias AlgorithmIdentifier = RefCounted!AlgorithmIdentifierImpl;
 final class AlgorithmIdentifierImpl : ASN1Object
 {
     version(ARM) {
-        ulong toHash() const nothrow @trusted {
-            ulong ret;
-            try ret = (cast()this).m_oid.toHash(); catch(Throwable e) {}
-            return ret;
+        override size_t toHash() const nothrow @safe {
+            return typeid(m_oid).getHash(&m_oid);
         }
     } else {
         
-        override ulong toHash() const nothrow @trusted {
-            ulong ret;
-            try ret = (cast()this).m_oid.toHash(); catch(Throwable e) {}
-            return ret;
+        override size_t toHash() const nothrow @safe {
+            return typeid(m_oid).getHash(&m_oid);
         }
     }
 public:
