@@ -43,6 +43,10 @@ branches:
   only:
     - master
 
+matrix:
+  allow_failures:
+    - DC: ldc
+
 install:
   - ps: function ResolveLatestDMD
         {
@@ -124,4 +128,8 @@ test_script:
  - echo %DC%
  - echo %PATH%
  - '%DC% --version'
+ - dub test --arch=%Darch% --compiler=%DC% :base
+ - dub test --arch=%Darch% --compiler=%DC% :compression
+ - dub test --arch=%Darch% --compiler=%DC% :passhash
+ - dub test --arch=%Darch% --compiler=%DC% :tls
  - dub test --arch=%Darch% --compiler=%DC%
