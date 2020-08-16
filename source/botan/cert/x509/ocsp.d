@@ -275,7 +275,7 @@ struct OnlineCheck {
 			*cast(OCSPResponse*)resp = OCSPResponse.init;
 			return;
 		}
-		responder_url = (*cast(X509Certificate*)issuer).ocspResponder();
+		responder_url = (*cast(X509Certificate*)subject).ocspResponder();
 	    logTrace("Responder url: ", responder_url.length);
 
 	    if (responder_url.length == 0) {
