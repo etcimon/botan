@@ -88,6 +88,13 @@ public:
          const(X509Certificate)* issuer,
          in string response_bits)
     {
+        this.trusted_roots = trusted_roots;
+        this.issuer = issuer;
+        this.response_bits = response_bits;
+    }
+
+    void check()
+    {
         Vector!ubyte response_vec = Vector!ubyte(response_bits);
         BERDecoder response_outer = BERDecoder(response_vec).startCons(ASN1Tag.SEQUENCE);
         
@@ -185,6 +192,9 @@ public:
         return m_responses.length == 0;
     }
 private:
+    const(CertificateStore) trusted_roots;
+    const(X509Certificate)* issuer;
+    string response_bits;
     Vector!( SingleResponse ) m_responses;
 }
 
@@ -301,5 +311,6 @@ struct OnlineCheck {
 		*cast(OCSPResponse*)resp = OCSPResponse(*(cast(CertificateStore*)trusted_roots),
             issuer is subject ? null : issuer,
             res._body());
+        resp.check();
 	}
 }
