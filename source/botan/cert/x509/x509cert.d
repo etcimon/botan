@@ -273,7 +273,7 @@ public:
     */
     string ocspResponder() const
     {
-        //logTrace("Find OSCP responder in DataStore: ", m_subject.toString());
+        //logTrace("Find OCSP responder in DataStore: ", m_subject.toString());
         return m_subject.get1("OCSP.responder", "");
     }
 

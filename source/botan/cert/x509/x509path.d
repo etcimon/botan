@@ -510,7 +510,7 @@ Vector!( RBTreeRef!CertificateStatusCode )
 	            if (ocsp_status == CertificateStatusCode.CERT_IS_REVOKED)
 	                return cert_status.move();
 			} else logTrace("OCSP not found");
-		} catch (Exception e) { logTrace("OSCP failed with ", e.msg); }
+		} catch (Exception e) { logTrace("OCSP failed with ", e.msg); }
         
         const X509CRL crl = findCrlsFor(subject, certstores);
         
