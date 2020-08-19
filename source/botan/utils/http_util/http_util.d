@@ -99,21 +99,21 @@ HTTPResponse httpSync()(in string verb,
     import std.array : Appender;
     Appender!string outbuf;
     
-    outbuf ~= verb ~ " " ~ loc ~ " HTTP/1.0\r";
-    outbuf ~= "Host: " ~ hostname ~ "\r";
+    outbuf ~= verb ~ " " ~ loc ~ " HTTP/1.0\r\n";
+    outbuf ~= "Host: " ~ hostname ~ "\r\n";
     
     if (verb == "GET")
     {
-        outbuf ~= "Accept: */*\r";
-        outbuf ~= "Cache-Control: no-cache\r";
+        outbuf ~= "Accept: */*\r\n";
+        outbuf ~= "Cache-Control: no-cache\r\n";
     }
     else if (verb == "POST")
-        outbuf ~= "Content-Length: " ~ _body.length.to!string ~ "\r";
+        outbuf ~= "Content-Length: " ~ _body.length.to!string ~ "\r\n";
     
     if (content_type != "")
-        outbuf ~= "Content-Type: " ~ content_type ~ "\r";
+        outbuf ~= "Content-Type: " ~ content_type ~ "\r\n";
 
-    outbuf ~= "Connection: close\r\r";
+    outbuf ~= "Connection: close\r\n\r\n";
     outbuf ~= cast(string) _body[];
     
 	auto reply = tcp_message_handler(hostname, outbuf.data);
@@ -138,31 +138,31 @@ HTTPResponse httpSync()(in string verb,
     string reply_front = reply[idx + 1 .. $];
     status_code = parse!uint(reply_front);
 
-    idx = reply.indexOf('\r');
+    idx = reply.indexOf('\n');
 
     if (idx == -1)
         throw new Exception("Not an HTTP response");
 
-    status_message = reply[status_code.to!string.length + http_version.to!string.length + 2 .. idx];
+    status_message = reply[status_code.to!string.length + http_version.to!string.length + 2 .. idx].strip;
 
     reply = reply[idx + 1 .. $];
     
     string header_line;
-    while (reply[0] != '\r')
+    while (true)
     {
-        idx = reply.indexOf('\r');
-        header_line = reply[0 .. idx];
+        idx = reply.indexOf("\n");
+        if (idx < 0)
+            throw new Exception("Unterminated HTTP headers");
+        header_line = reply[0 .. idx].strip;
+        if (!header_line.length)
+            break;
 
-        auto sep = header_line.indexOf(": ");
-        if (sep == -1 || sep > header_line.length - 2)
+        auto sep = header_line.indexOf(':');
+        if (sep == -1)
             throw new Exception("Invalid HTTP header " ~ header_line);
-        const string key = header_line[0 .. sep];
-        
-        if (sep + 2 < header_line.length - 1)
-        {
-            const string val = header_line[sep + 2 .. $];
-            headers[key] = val;
-        }
+        const string key = header_line[0 .. sep].strip;
+        const string val = header_line[sep + 1 .. $].strip;
+        headers[key] = val;
 
         reply = reply[idx + 1 .. $];
     }
@@ -174,7 +174,7 @@ HTTPResponse httpSync()(in string verb,
         return GET_sync(headers["Location"], allowable_redirects - 1);
     }
     
-    string resp_body = reply[1 .. $];
+    string resp_body = reply[idx + 1 .. $];
     
     const string header_size = headers.get("Content-Length");
     

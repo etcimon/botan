@@ -249,6 +249,8 @@ public:
             throw new InvalidArgument("Invalid time specification " ~ t_spec);
     }
 
+    this() {}
+
     /*
     * Create a X509Time from a time point
     */

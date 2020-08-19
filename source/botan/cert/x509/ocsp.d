@@ -85,7 +85,15 @@ class OCSPResponseImpl
 {
 public:
     this(in CertificateStore trusted_roots,
+         const(X509Certificate)* issuer,
          in string response_bits)
+    {
+        this.trusted_roots = trusted_roots;
+        this.issuer = issuer;
+        this.response_bits = response_bits;
+    }
+
+    void check()
     {
         Vector!ubyte response_vec = Vector!ubyte(response_bits);
         BERDecoder response_outer = BERDecoder(response_vec).startCons(ASN1Tag.SEQUENCE);
@@ -132,15 +140,20 @@ public:
                     .decodeList(m_responses)
                     .decodeOptional(extensions, (cast(ASN1Tag)1), ASN1Tag.CONSTRUCTED | ASN1Tag.CONTEXT_SPECIFIC);
             
-            if (certs.empty)
+            if (certs.empty && issuer && issuer.subjectDn() == name)
+                checkSignature(tbs_bits, sig_algo, signature, *issuer);
+            else
             {
-                if (auto cert = trusted_roots.findCert(name, Vector!ubyte()))
-                    certs.pushBack(cert);
-                else
-                    throw new Exception("Could not find certificate that signed OCSP response");
+                if (certs.empty)
+                {
+                    if (auto cert = trusted_roots.findCert(name, Vector!ubyte()))
+                        certs.pushBack(cert);
+                    else
+                        throw new Exception("Could not find certificate that signed OCSP response");
+                }
+
+                checkSignature(tbs_bits, sig_algo, signature, trusted_roots, certs);
             }
-            
-            checkSignature(tbs_bits, sig_algo, signature, trusted_roots, certs);
         }
         
         response_outer.endCons();
@@ -179,6 +192,9 @@ public:
         return m_responses.length == 0;
     }
 private:
+    const(CertificateStore) trusted_roots;
+    const(X509Certificate)* issuer;
+    string response_bits;
     Vector!( SingleResponse ) m_responses;
 }
 
@@ -275,7 +291,7 @@ struct OnlineCheck {
 			*cast(OCSPResponse*)resp = OCSPResponse.init;
 			return;
 		}
-		responder_url = (*cast(X509Certificate*)issuer).ocspResponder();
+		responder_url = (*cast(X509Certificate*)subject).ocspResponder();
 	    logTrace("Responder url: ", responder_url.length);
 
 	    if (responder_url.length == 0) {
@@ -292,6 +308,9 @@ struct OnlineCheck {
 	    res.throwUnlessOk();
 	    
 	    // Check the MIME type?
-		*cast(OCSPResponse*)resp = OCSPResponse(*(cast(CertificateStore*)trusted_roots), res._body());
+		*cast(OCSPResponse*)resp = OCSPResponse(*(cast(CertificateStore*)trusted_roots),
+            issuer is subject ? null : issuer,
+            res._body());
+        resp.check();
 	}
 }
