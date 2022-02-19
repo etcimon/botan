@@ -571,13 +571,13 @@ protected:
             // TLS is easy just remove all but the current state
             auto current_epoch = sequenceNumbers().currentWriteEpoch();
 
-            foreach (const ref ushort k, const ref ConnectionCipherState v; m_write_cipher_states) {
+            foreach (const ref ushort k, const ref ConnectionCipherState v; cast(const)m_write_cipher_states) {
                 if (k != current_epoch) {
                     v.destroy();
                     m_write_cipher_states.remove(k);
                 }
             }
-            foreach (const ref ushort k, const ref ConnectionCipherState v; m_read_cipher_states) {
+            foreach (const ref ushort k, const ref ConnectionCipherState v; cast(const)m_read_cipher_states) {
                 if (k != current_epoch) {
                     v.destroy();
                     m_write_cipher_states.remove(k);                    
@@ -836,12 +836,12 @@ private:
         m_pending_state.free();
         m_readbuf.destroy();
 		m_writebuf.destroy();
-        foreach (const ref k, const ref v; m_write_cipher_states)
+        foreach (const ref k, const ref v; cast(const)m_write_cipher_states)
         {
             v.destroy();
         }
         m_write_cipher_states.clear();
-        foreach (const ref k, const ref v; m_read_cipher_states)
+        foreach (const ref k, const ref v; cast(const)m_read_cipher_states)
         {
             v.destroy();
         }
