@@ -435,7 +435,7 @@ public:
     Vector!X509Certificate peerCertChain() const
     {
         if (const HandshakeState active = activeState())
-            return getPeerCertChain(active).dup;
+            return getPeerCertChain(active).clone;
         return Vector!X509Certificate();
     }
 

@@ -27,19 +27,19 @@ abstract class CurveGFpRepr
 {
 public:
 
-    abstract ref const(BigInt) getP() const;
+    abstract ref const(BigInt) getP() return const;
     
-    abstract ref const(BigInt) getA() const;
+    abstract ref const(BigInt) getA() return const;
     
-    abstract ref const(BigInt) getB() const;
+    abstract ref const(BigInt) getB() return const;
 
     abstract size_t getPWords() const;
 
     /// Returns toCurveRep(getA())
-    abstract ref const(BigInt) getARep() const;
+    abstract ref const(BigInt) getARep() return const;
 
     /// Returns toCurveRep(getB())
-    abstract ref const(BigInt) getBRep() const;
+    abstract ref const(BigInt) getBRep() return const;
 
     abstract void toCurveRep(BigInt* x, ref SecureVector!word ws) const;
 
@@ -105,9 +105,9 @@ class CurveGFpMontgomery : CurveGFpRepr
 
     this()(BigInt* p, BigInt* a, BigInt* b)
     {
-        m_p = p.dup;
-        m_a = a.dup;
-        m_b = b.dup;
+        m_p = p.clone;
+        m_a = a.clone;
+        m_b = b.clone;
         m_p_words = m_p.sigWords();
         m_p_dash = montyInverse(m_p.wordAt(0));
         BigInt r = BigInt.powerOf2(m_p_words * BOTAN_MP_WORD_BITS);
@@ -127,27 +127,27 @@ class CurveGFpMontgomery : CurveGFpRepr
 		}
     }
 
-    override ref const(BigInt) getP() const { return m_p; }
+    override ref const(BigInt) getP() const return { return m_p; }
 
-    override ref const(BigInt) getA() const { return m_a; }
+    override ref const(BigInt) getA() const return { return m_a; }
 
-    override ref const(BigInt) getB() const { return m_b; }
+    override ref const(BigInt) getB() const return { return m_b; }
         
-    override ref const(BigInt) getARep() const { return m_a_r; }
+    override ref const(BigInt) getARep() const return { return m_a_r; }
 
-    override ref const(BigInt) getBRep() const { return m_b_r; }
+    override ref const(BigInt) getBRep() const return { return m_b_r; }
 
     override size_t getPWords() const { return m_p_words; }
 
     override void toCurveRep(BigInt* x, ref SecureVector!word ws) const
     {
-        const BigInt tx = x.dup;
+        const BigInt tx = x.clone;
         curveMul(x, &tx, &m_r2, ws);
     }
 
     override void fromCurveRep(BigInt* x, ref SecureVector!word ws) const
     {
-        const BigInt tx = x.dup;
+        const BigInt tx = x.clone;
         BigInt bi = BigInt(1);
         curveMul(x, &tx, &bi, ws);
     }
@@ -352,7 +352,7 @@ struct CurveGFp
     
     BigInt fromRep()(const(BigInt)* x, ref SecureVector!word ws) const
     { 
-        BigInt xt = x.dup;
+        BigInt xt = x.clone;
         m_repr.fromCurveRep(&xt, ws);
         return xt.move;
     }
@@ -392,10 +392,10 @@ struct CurveGFp
         else return -1;
     }
 
-    @property CurveGFp dup() const {
-        BigInt p = getP().dup;
-        BigInt a = getA().dup;
-        BigInt b = getB().dup;
+    @property CurveGFp clone() const {
+        BigInt p = getP().clone;
+        BigInt a = getA().clone;
+        BigInt b = getB().clone;
         return CurveGFp(&p, &a, &b);
     }
 

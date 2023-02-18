@@ -198,18 +198,18 @@ public:
         
         if (msgBuf().length > 0)
         {
-            auto buffer2 = msgBuf().dup;
+            auto buffer2 = msgBuf().clone;
             buffer2 ~= buffer;
             buffer = buffer2.move;
         }
 
         SecureVector!ubyte V = S2V(buffer.ptr + offset, buffer.length - offset);
         if (V.length > 0) {
-            auto buffer2 = V.dup;
+            auto buffer2 = V.clone;
             buffer2 ~= buffer;
             buffer = buffer2.move;
         }
-        setCtrIv(V.dup);
+        setCtrIv(V.clone);
         ctr().cipher1(buffer.ptr + offset + V.length, buffer.length - offset - V.length);
     }
     
@@ -250,7 +250,7 @@ public:
         assert(buffer.length >= offset, "Offset is sane");
 
         if (msgBuf().length > 0) {
-            auto buffer2 = msgBuf().dup;
+            auto buffer2 = msgBuf().clone;
             buffer2 ~= buffer;
             buffer = buffer2.move;
         }
@@ -261,7 +261,7 @@ public:
 
         SecureVector!ubyte V = SecureVector!ubyte(buffer.ptr[offset .. offset + 16]);
         
-        setCtrIv(V.dup);
+        setCtrIv(V.clone);
         
         ctr().cipher(buffer.ptr + offset + V.length, buffer.ptr + offset, buffer.length - offset - V.length);
         

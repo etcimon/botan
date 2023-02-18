@@ -64,7 +64,7 @@ public:
     */
     this()(auto const ref CurveGFp curve) 
     {
-        m_curve = curve.dup;
+        m_curve = curve.clone;
         m_ws.resize(16);
         m_coord_x = BigInt(0);
         auto b1 = BigInt(1);
@@ -88,7 +88,7 @@ public:
     /**
     * Move Assignment
     */
-    ref PointGFp opAssign(PointGFp* other)
+    ref PointGFp opAssign(PointGFp* other) return
     {
         swap(other);
         return this;
@@ -107,10 +107,10 @@ public:
 			throw new InvalidArgument("Invalid PointGFp affine x");
 		if (*y <= 0 || *y >= curve.getP())
 			throw new InvalidArgument("Invalid PointGFp affine y");
-        m_curve = curve.dup;
+        m_curve = curve.clone;
         //m_ws.resize(2 * (curve.getPWords() + 2));
-        m_coord_x = x.dup;
-        m_coord_y = y.dup;
+        m_coord_x = x.clone;
+        m_coord_y = y.clone;
         auto bi = BigInt(1);
         m_coord_z = bi.move;
         m_curve.toRep(&m_coord_x, m_ws_ref);
@@ -141,7 +141,7 @@ public:
     void opOpAssign(string op)(const ref PointGFp rhs)
         if (op == "-")
     {
-        auto tdup = rhs.dup;
+        auto tdup = rhs.clone;
         if (isZero()) {
             auto tmp = PointGFp(&tdup).negate();
             this.swap( &tmp );
@@ -186,7 +186,7 @@ public:
 		{
 		    ubyte value = scalar.abs().byteAt(0);
 		    
-		    PointGFp result = point.dup;
+		    PointGFp result = point.clone;
 	    
 		    if (value == 2)
 			        result.mult2(ws);
@@ -199,7 +199,7 @@ public:
 
         
         PointGFp x1 = PointGFp(m_curve);
-        PointGFp x2 = point.dup;
+        PointGFp x2 = point.clone;
         
         size_t bits_left = scalar_bits;
         
@@ -278,14 +278,14 @@ public:
     {
         if (!isZero())
             m_coord_y = m_curve.getP() - m_coord_y;
-        return this.dup;
+        return this.clone;
     }
 
     /**
     * Return base curve of this point
     * Returns: the curve over GF(p) of this point
     */
-    ref const(CurveGFp) getCurve() const { return m_curve; }
+    ref const(CurveGFp) getCurve() const return { return m_curve; }
 
     /**
     * get affine x coordinate
@@ -298,7 +298,7 @@ public:
                 
         BigInt z2 = curveSqr(cast(BigInt*)&m_coord_z);
         m_curve.fromRep(&z2, m_ws_const.move());
-        auto p = m_curve.getP().dup;
+        auto p = m_curve.getP().clone;
         z2 = inverseMod(&z2, &p);
         
         return curveMult(&z2, cast(BigInt*)&m_coord_x);
@@ -395,15 +395,17 @@ public:
         this.swap(&other);
     }
 
-    @property PointGFp dup() const
+    @property PointGFp clone() const
     {
         auto point = PointGFp(m_curve);
-        point.m_coord_x = m_coord_x.dup;
-        point.m_coord_y = m_coord_y.dup;
-        point.m_coord_z = m_coord_z.dup;
-        point.m_ws = m_ws.dup;
+        point.m_coord_x = m_coord_x.clone;
+        point.m_coord_y = m_coord_y.clone;
+        point.m_coord_z = m_coord_z.clone;
+        point.m_ws = m_ws.clone;
         return point;
     }
+
+    @disable @property PointGFp dup() const;
 
     /**
     * Equality operator
@@ -481,9 +483,9 @@ private:
     {
         if (isZero())
         {
-            m_coord_x = rhs.m_coord_x.dup;
-            m_coord_y = rhs.m_coord_y.dup;
-            m_coord_z = rhs.m_coord_z.dup;
+            m_coord_x = rhs.m_coord_x.clone;
+            m_coord_y = rhs.m_coord_y.clone;
+            m_coord_z = rhs.m_coord_z.clone;
             return;
         }
         else if (rhs.isZero())
@@ -511,13 +513,13 @@ private:
         auto mult_1 = curveMult(&m_coord_z, lhs_z2);
         curveMult(S2, &rhs.m_coord_y, &mult_1);
         
-        *H = U2.dup;
+        *H = U2.clone;
         *H -= *U1;
 
         if (H.isNegative())
             *H += *p;
         
-        *r = S2.dup;
+        *r = S2.clone;
         *r -= *S1;
         if (r.isNegative())
             *r += *p;
@@ -575,7 +577,6 @@ private:
             return;
         }
         const BigInt* p = &m_curve.getP();
-        logTrace("");
         auto y_2 = cast(BigInt*) &*(ws_bn[0]);
         auto S = cast(BigInt*) &*(ws_bn[1]);
         auto z4 = cast(BigInt*) &*(ws_bn[2]);
@@ -595,7 +596,7 @@ private:
         
         auto sqr_1 = cast(BigInt) curveSqr(&m_coord_z);
         curveSqr(z4, &sqr_1);
-        auto a_rep = m_curve.getARep().dup;
+        auto a_rep = m_curve.getARep().clone;
         curveMult(a_z4, &a_rep, z4);
         
         *M = curveSqr(&m_coord_x);
@@ -628,9 +629,9 @@ private:
         if (*z >= *p)
             *z -= *p;
         
-        m_coord_x = (*x).dup;
-        m_coord_y = (*y).dup;
-        m_coord_z = (*z).dup;
+        m_coord_x = (*x).clone;
+        m_coord_y = (*y).clone;
+        m_coord_z = (*z).clone;
         
     }
 public:
@@ -645,14 +646,14 @@ public:
     PointGFp opUnary(string op)() const
         if (op == "-")
     {
-        PointGFp ret = this.dup;
-        return ret.negate().dup;
+        PointGFp ret = this.clone;
+        return ret.negate().clone;
     }
     
     PointGFp opBinary(string op)(auto const ref PointGFp rhs) const
         if (op == "+")
     {
-        PointGFp ret = this.dup;
+        PointGFp ret = this.clone;
         ret += rhs;
         return ret;
     }
@@ -660,7 +661,7 @@ public:
     PointGFp opBinary(string op)(auto const ref PointGFp rhs) const
         if (op == "-")
     {
-        PointGFp ret = this.dup;
+        PointGFp ret = this.clone;
         ret -= rhs;
         return ret;
     }
@@ -668,7 +669,7 @@ public:
     PointGFp opBinary(string op)(auto const ref PointGFp point) const
         if (op == "*")
     {
-        PointGFp ret = this.dup;
+        PointGFp ret = this.clone;
         ret *= point;
         return ret;
     }
@@ -701,8 +702,8 @@ public:
     CurveGFp m_curve;
     BigInt m_coord_x, m_coord_y, m_coord_z;
     SecureVector!word m_ws; // workspace for Montgomery
-    @property ref SecureVector!word m_ws_ref() { return m_ws; }
-    @property SecureVector!word m_ws_const() const { return m_ws.dup; }
+    @property ref SecureVector!word m_ws_ref() return { return m_ws; }
+    @property SecureVector!word m_ws_const() const { return m_ws.clone; }
     alias mutable = SecureVector!word*;
 }
 

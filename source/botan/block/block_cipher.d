@@ -88,7 +88,7 @@ public:
     */
     final void encrypt(ref ubyte[] block) 
     in { assert(block.length == this.blockSize()); }
-    body { encryptN(block.ptr, block.ptr, 1); }
+    do { encryptN(block.ptr, block.ptr, 1); }
     
     /**
     * Decrypt a block.
@@ -99,7 +99,7 @@ public:
     */
     final void decrypt(ref ubyte[] block) 
     in { assert(block.length >= this.blockSize()); }
-    body { decryptN(block.ptr, block.ptr, 1); }
+    do { decryptN(block.ptr, block.ptr, 1); }
 
     /**
     * Encrypt one or more blocks
@@ -108,7 +108,7 @@ public:
     */
     final void encrypt(Alloc)(ref Vector!( ubyte, Alloc ) block)
     in { assert(block.length >= this.blockSize()); }
-    body {
+    do {
         return encryptN(block.ptr, block.ptr, block.length / this.blockSize());
     }
 
@@ -119,7 +119,7 @@ public:
     */
     final void decrypt(Alloc)(ref Vector!( ubyte, Alloc ) block)
     in { assert(block.length >= this.blockSize()); }
-    body {
+    do {
         return decryptN(block.ptr, block.ptr, block.length / this.blockSize());
     }
 
@@ -132,7 +132,7 @@ public:
     final void encrypt(Alloc, Alloc2)(auto const ref Vector!( ubyte, Alloc ) input,
                                               ref Vector!( ubyte, Alloc2 ) output)
     in { assert(input.length >= this.blockSize()); }
-    body {
+    do {
         return encryptN(input.ptr, output.ptr, input.length / this.blockSize());
     }
     
@@ -145,7 +145,7 @@ public:
     final void decrypt(Alloc, Alloc2)(auto const ref Vector!( ubyte, Alloc ) input,
                                               ref Vector!( ubyte, Alloc2 ) output)
     in { assert(input.length >= this.blockSize()); }
-    body {
+    do {
         return decryptN(input.ptr, output.ptr, input.length / this.blockSize());
     }
     /**
@@ -156,7 +156,7 @@ public:
     */
     final void encrypt(ubyte[] input, ref ubyte[] output)
     in { assert(input.length >= this.blockSize()); }
-    body {
+    do {
         return encryptN(input.ptr, output.ptr, input.length / blockSize());
     }
     
@@ -168,7 +168,7 @@ public:
     */
     final void decrypt(ubyte[] input, ref ubyte[] output)
     in { assert(input.length >= this.blockSize()); }
-    body {
+    do {
         return decryptN(input.ptr, output.ptr, input.length / this.blockSize());
     }
 
@@ -194,6 +194,7 @@ public:
     * Returns: new object representing the same algorithm as this
     */
     abstract BlockCipher clone() const;
+    final @disable BlockCipher dup() const;
 }
 
 /**
@@ -254,7 +255,7 @@ size_t blockTest(string algo, string key_hex, string in_hex, string out_hex)
         
         Unique!BlockCipher cipher = proto.clone();
         cipher.setKey(key);
-        SecureVector!ubyte buf = pt.dup;
+        SecureVector!ubyte buf = pt.clone;
         
         cipher.encrypt(buf);
         atomicOp!"+="(total_tests, 1);
@@ -263,7 +264,7 @@ size_t blockTest(string algo, string key_hex, string in_hex, string out_hex)
             logTrace(buf[], " Real");
             logTrace(ct[], " Expected");
             ++fails;
-            buf = ct.dup;
+            buf = ct.clone;
         }
 
         cipher.decrypt(buf);

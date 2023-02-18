@@ -98,7 +98,7 @@ public:
 
     override SecureVector!ubyte rawData()
     {
-        return m_message.dup;
+        return m_message.clone;
     }
 
     override SecureVector!ubyte encodingOf(const ref SecureVector!ubyte msg,

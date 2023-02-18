@@ -275,7 +275,7 @@ SecureVector!ubyte PKCS8_decode(DataSource source, in string delegate() get_pass
     }
     
     if (!is_encrypted)
-        key = key_data.dup;
+        key = key_data.clone;
     
     __gshared immutable size_t MAX_TRIES = 3;
     

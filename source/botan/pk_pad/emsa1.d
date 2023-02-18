@@ -92,7 +92,7 @@ private:
 
 SecureVector!ubyte emsa1Encoding(const ref SecureVector!ubyte msg_, size_t output_bits)
 {
-    SecureVector!ubyte msg = msg_.dup;
+    SecureVector!ubyte msg = msg_.clone;
 
     if (8*msg.length <= output_bits)
         return msg.move;

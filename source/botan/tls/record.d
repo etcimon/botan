@@ -59,15 +59,15 @@ public:
         
         if (side == CLIENT)
         {
-            cipher_key = keys.clientCipherKey().dup;
-            iv = keys.clientIv().dup;
-            mac_key = keys.clientMacKey().dup;
+            cipher_key = keys.clientCipherKey().clone;
+            iv = keys.clientIv().clone;
+            mac_key = keys.clientMacKey().clone;
         }
         else
         {
-            cipher_key = keys.serverCipherKey().dup;
-            iv = keys.serverIv().dup;
-            mac_key = keys.serverMacKey().dup;
+            cipher_key = keys.serverCipherKey().clone;
+            iv = keys.serverIv().clone;
+            mac_key = keys.serverMacKey().clone;
         }
         
         const string cipher_algo = suite.cipherAlgo();
@@ -126,7 +126,7 @@ public:
 			return nonce.move();
 		}
 
-		Vector!ubyte nonce = m_nonce.dup;
+		Vector!ubyte nonce = m_nonce.clone;
 		storeBigEndian(seq, nonce.ptr + nonceBytesFromHandshake());
 		return nonce.move();
 
@@ -147,7 +147,7 @@ public:
 		else if (nonceBytesFromRecord() > 0) {
 			if(record_len < nonceBytesFromRecord())
 				throw new DecodingError("Invalid AEAD packet too short to be valid");
-			Vector!ubyte nonce = m_nonce.dup;
+			Vector!ubyte nonce = m_nonce.clone;
 			copyMem(nonce.ptr + nonceBytesFromHandshake(), record, nonceBytesFromRecord());
 			return nonce.move();
 		}
@@ -156,7 +156,7 @@ public:
 	        nonce_len == 0 is assumed to mean no nonce in the message but
 	        instead the AEAD uses the seq number in network order.
 	   */
-		Vector!ubyte nonce = m_nonce.dup;
+		Vector!ubyte nonce = m_nonce.clone;
 		storeBigEndian(seq, nonce.ptr + nonceBytesFromHandshake());
 		return nonce.move();
 	

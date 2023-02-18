@@ -23,6 +23,7 @@ public:
     * Returns: new object representing the same algorithm as this
     */
     HashFunction clone() const;
+    final @disable HashFunction dup() const;
 
     void clear();
 

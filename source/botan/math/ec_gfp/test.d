@@ -88,15 +88,15 @@ size_t testPointTurnOnSpRedMul()
     PointGFp r1 = p_G * &d;
     mixin( CHECK(` r1.getAffineX() != 0 `) );
     
-    PointGFp p_G2 = p_G.dup;
+    PointGFp p_G2 = p_G.clone;
     
     PointGFp r2 = p_G2 * &d;
 
     mixin( CHECK_MESSAGE( `r1 == r2`, "error with point mul after extra turn on sp red mul" ) );
     mixin( CHECK(` r1.getAffineX() != 0 `) );
     
-    PointGFp p_r1 = r1.dup;
-    PointGFp p_r2 = r2.dup;
+    PointGFp p_r1 = r1.clone;
+    PointGFp p_r2 = r2.clone;
     
     p_r1 *= BigInt(2);
     p_r2 *= BigInt(2);
@@ -147,7 +147,7 @@ size_t testCoordinates()
     BigInt bi_b_secp = BigInt.decode( sv_b_secp.ptr, sv_b_secp.length );
     CurveGFp secp160r1 = CurveGFp(&bi_p_secp, &bi_a_secp, &bi_b_secp);
     PointGFp p_G = OS2ECP( sv_G_secp_comp, secp160r1 );
-    PointGFp p0 = p_G.dup;
+    PointGFp p0 = p_G.clone;
     PointGFp p1 = p_G * BigInt(2);
     PointGFp point_exp = PointGFp(secp160r1, &exp_affine_x, &exp_affine_y);
     if (!point_exp.onTheCurve())
@@ -177,10 +177,10 @@ size_t testPointTransformation ()
     
     // get a vailid point
     ECGroup dom_pars = ECGroup(OID("1.3.132.0.8"));
-    PointGFp p = dom_pars.getBasePoint().dup;
+    PointGFp p = dom_pars.getBasePoint().clone;
     
     // get a copy
-    PointGFp q = p.dup;
+    PointGFp q = p.clone;
     
     mixin( CHECK_MESSAGE(  `p.getAffineX() == q.getAffineX()`, "affine_x changed during copy" ) );
     mixin( CHECK_MESSAGE(  `p.getAffineY() == q.getAffineY()`, "affine_y changed during copy" ) );
@@ -224,12 +224,12 @@ size_t testPointNegative()
     CurveGFp secp160r1 = CurveGFp(&bi_p_secp, &bi_a_secp, &bi_b_secp);
     PointGFp p_G = OS2ECP( sv_G_secp_comp, secp160r1 );
     p_G *= BigInt(2);
-    PointGFp p1 = p_G.dup;
+    PointGFp p1 = p_G.clone;
     
     mixin( CHECK(` p1.getAffineX() == BigInt("16984103820118642236896513183038186009872590470") `) );
     mixin( CHECK(` p1.getAffineY() == BigInt("1373093393927139016463695321221277758035357890939") `) );
     
-    PointGFp p1_neg = p1.negate().dup;
+    PointGFp p1_neg = p1.negate().clone;
     
     mixin( CHECK(` p1_neg.getAffineX() == BigInt("16984103820118642236896513183038186009872590470") `) );
     mixin( CHECK(` p1_neg.getAffineY() == BigInt("88408243403763901739989511495005261618427168388") `) );
@@ -337,9 +337,9 @@ size_t testAddPoint()
     CurveGFp secp160r1 = CurveGFp(&bi_p_secp, &bi_a_secp, &bi_b_secp);
     PointGFp p_G = OS2ECP( sv_G_secp_comp, secp160r1 );
     
-    PointGFp p0 = p_G.dup;
+    PointGFp p0 = p_G.clone;
     p_G *= BigInt(2);
-    PointGFp p1 = p_G.dup;
+    PointGFp p1 = p_G.clone;
     
     p1 += p0;
     auto bi1 = BigInt("704859595002530890444080436569091156047721708633");
@@ -374,9 +374,9 @@ size_t testSubPoint()
     CurveGFp secp160r1 = CurveGFp(&bi_p_secp, &bi_a_secp, &bi_b_secp);
     PointGFp p_G = OS2ECP( sv_G_secp_comp, secp160r1 );
     
-    PointGFp p0 = p_G.dup;
+    PointGFp p0 = p_G.clone;
     p_G *= BigInt(2);
-    PointGFp p1 = p_G.dup;
+    PointGFp p1 = p_G.clone;
     
     p1 -= p0;
     auto bi1 = BigInt("425826231723888350446541592701409065913635568770");
@@ -410,9 +410,9 @@ size_t testMultPoint()
     CurveGFp secp160r1 = CurveGFp(&bi_p_secp, &bi_a_secp, &bi_b_secp);
     PointGFp p_G = OS2ECP( sv_G_secp_comp, secp160r1 );
     
-    PointGFp p0 = p_G.dup;
+    PointGFp p0 = p_G.clone;
     p_G *= BigInt(2);
-    PointGFp p1 = p_G.dup;
+    PointGFp p1 = p_G.clone;
     
     p1 *= p0.getAffineX();
     
@@ -442,7 +442,7 @@ size_t testBasicOperations()
     
     PointGFp p_G = OS2ECP( sv_G_secp_comp, secp160r1 );
     
-    PointGFp p0 = p_G.dup;
+    PointGFp p0 = p_G.clone;
     
     BigInt bi1 = BigInt("425826231723888350446541592701409065913635568770");
     BigInt bi2 = BigInt("203520114162904107873991457957346892027982641970");
@@ -450,7 +450,7 @@ size_t testBasicOperations()
     
     mixin( CHECK(` p0 == expected `) );
     p_G *= BigInt(2);
-    PointGFp p1 = p_G.dup;
+    PointGFp p1 = p_G.clone;
     
     mixin( CHECK(` p1.getAffineX() == BigInt("16984103820118642236896513183038186009872590470") `) );
     mixin( CHECK(` p1.getAffineY() == BigInt("1373093393927139016463695321221277758035357890939") `) );
@@ -653,7 +653,7 @@ size_t testGfpStoreRestore()
     //ECGroup dom_pars = global_config().get_ec_dompar("1.3.132.0.8");
     //ECGroup dom_pars = ECGroup("1.3.132.0.8");
     ECGroup dom_pars = ECGroup(OID("1.3.132.0.8"));
-    PointGFp p = dom_pars.getBasePoint().dup;
+    PointGFp p = dom_pars.getBasePoint().clone;
     
     //store point (to string)
     Vector!ubyte sv_mes = unlock(EC2OSP(p, PointGFp.COMPRESSED));
@@ -742,7 +742,7 @@ size_t testMultByOrder()
     
     // generate point
     ECGroup dom_pars = ECGroup(OID("1.3.132.0.8"));
-    PointGFp p = dom_pars.getBasePoint().dup;
+    PointGFp p = dom_pars.getBasePoint().clone;
     PointGFp shouldBeZero = p * &dom_pars.getOrder();
     
     mixin( CHECK_MESSAGE( `shouldBeZero.isZero()`, "G * order != O" ) );
@@ -761,8 +761,8 @@ size_t testPointSwap()
     PointGFp b = createRandomPoint(*rng, dom_pars.getCurve());
     b *= BigInt(20);
     
-    PointGFp c = a.dup;
-    PointGFp d = b.dup;
+    PointGFp c = a.clone;
+    PointGFp d = b.clone;
     
     c.swap(&d); // TODO: check this for dual swap
     ///mixin( CHECK(` a == d `) ); disabled due to swap not being dual
@@ -787,9 +787,9 @@ size_t testMultSecMass()
         BigInt scal = BigInt(*rng, 40);
         auto scal_ref = &scal;
         PointGFp b = a * scal_ref;
-        PointGFp c = a.dup;
+        PointGFp c = a.clone;
         
-        c *= scal.dup;
+        c *= scal.clone;
         mixin( CHECK(` b == c `) );
     }
     return fails;
@@ -800,7 +800,7 @@ size_t testCurveCpCtor()
     try
     {
         ECGroup dom_pars = ECGroup(OID("1.3.132.0.8"));
-        CurveGFp curve = dom_pars.getCurve().dup;
+        CurveGFp curve = dom_pars.getCurve().clone;
     }
     catch (Exception)
     {

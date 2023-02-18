@@ -446,10 +446,10 @@ struct CiphersuitePreferenceOrdering
 public:
     this(ref Vector!string ciphers, ref Vector!string macs, ref Vector!string kex, ref Vector!string sigs)
     {
-        m_ciphers = ciphers.dup();
-        m_macs = macs.dup();
-        m_kex = kex.dup(); 
-        m_sigs = sigs.dup();
+        m_ciphers = ciphers.clone();
+        m_macs = macs.clone();
+        m_kex = kex.clone(); 
+        m_sigs = sigs.clone();
     }
     
     bool compare(U : TLSCiphersuite)(in TLSCiphersuite a, auto ref U b) const

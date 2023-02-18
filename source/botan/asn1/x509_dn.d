@@ -91,7 +91,7 @@ public:
             }
         }
         
-        m_dn_bits = bits.dup;
+        m_dn_bits = bits.clone;
     }
 
     /*
@@ -297,7 +297,7 @@ public:
         }
         return output.move();
     }
-    @property X509DN dup() const {
+    @property X509DN clone() const {
         return X509DN(getAttributes());
     }
 

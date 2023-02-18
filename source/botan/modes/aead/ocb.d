@@ -150,7 +150,7 @@ private:
 
         if (need_new_stretch)
         {
-            m_last_nonce = nonce_buf.dup;
+            m_last_nonce = nonce_buf.clone;
             
             m_cipher.encrypt(nonce_buf);
             
@@ -509,7 +509,7 @@ SecureVector!ubyte ocbHash(LComputer L,
         // this loop could run in parallel
         offset ^= L[ctz(i+1)];
         
-        buf = offset.dup;
+        buf = offset.clone;
         xorBuf(buf.ptr, &ad[BS*i], BS);
         
         cipher.encrypt(buf);
@@ -521,7 +521,7 @@ SecureVector!ubyte ocbHash(LComputer L,
     {
         offset ^= L.star();
         
-        buf = offset.dup;
+        buf = offset.clone;
         xorBuf(buf.ptr, &ad[BS*ad_blocks], ad_remainder);
         buf[ad_len % BS] ^= 0x80;
         
@@ -559,7 +559,7 @@ Vector!ubyte ocbEncrypt(OCBEncryption enc,
 
     try
     {
-        SecureVector!ubyte ct = buf.dup;
+        SecureVector!ubyte ct = buf.clone;
 
         dec.setAssociatedData(ad.ptr, ad.length);
         

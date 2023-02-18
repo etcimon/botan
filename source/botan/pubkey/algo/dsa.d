@@ -206,7 +206,7 @@ public:
 			thr.start();
             s = inverseMod(&k, m_q);
 			thr.join();
-			synchronized(mutex) r = res.dup;
+			synchronized(mutex) r = res.clone;
 			BigInt s_arg = mulAdd(m_x, &r, &i);
             s = m_mod_q.multiply(&s, &s_arg);
         }

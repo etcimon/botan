@@ -73,7 +73,7 @@ protected:
     override Vector!X509Certificate getPeerCertChain(in HandshakeState state) const
     {
         if (state.clientCerts())
-            return state.clientCerts().certChain().dup();
+            return state.clientCerts().certChain().clone();
         return Vector!X509Certificate();
     }
 
@@ -225,7 +225,7 @@ protected:
                 state.serverHello(new ServerHello(state.handshakeIo(),
                                                   state.hash(),
                                                   m_policy,
-                                                  state.clientHello().sessionId().dup,
+                                                  state.clientHello().sessionId().clone,
                                                   session_info.Version(),
                                                   session_info.ciphersuiteCode(),
                                                   session_info.compressionMethod(),
@@ -246,13 +246,13 @@ protected:
                     scope(exit) if (sess) sess.destroy();
                     if (sessionManager() && sessionManager().loadFromSessionId(state.clientHello().sessionId(), sess))
                     {
-                        state.setOriginalHandshakeHash(sess.originalHandshakeHash().dup());
+                        state.setOriginalHandshakeHash(sess.originalHandshakeHash().clone());
                     }
                 }
 
                 secureRenegotiationCheck(state.serverHello());
                 
-                state.computeSessionKeys(session_info.masterSecret().dup);
+                state.computeSessionKeys(session_info.masterSecret().clone);
                 
                 if (!saveSession(session_info))
                 {
@@ -471,7 +471,7 @@ protected:
         {
             state.setExpectedNext(HANDSHAKE_NONE);
             
-            state.clientFinished(new Finished(contents.dup));
+            state.clientFinished(new Finished(contents.clone));
             
             if (!state.clientFinished().verify(state, CLIENT))
                 throw new TLSException(TLSAlert.DECRYPT_ERROR, "Finished message didn't verify");
@@ -487,9 +487,9 @@ protected:
                 if (state.clientHello().supportsChannelID() && state.serverHello().supportsChannelID())
                     state.setOriginalHandshakeHash(state.hash().flushInto(state.Version(), state.ciphersuite().prfAlgo()));
 
-                auto session_info =   new TLSSession(state.serverHello().sessionId().dup,
-                                                     state.sessionKeys().masterSecret().dup,
-                                                     state.originalHandshakeHash().dup,
+                auto session_info =   new TLSSession(state.serverHello().sessionId().clone,
+                                                     state.sessionKeys().masterSecret().clone,
+                                                     state.originalHandshakeHash().clone,
                                                      state.serverHello().Version(),
                                                      state.serverHello().ciphersuite(),
                                                      state.serverHello().compressionMethod(),
@@ -739,7 +739,7 @@ HashMapRef!(string, Array!X509Certificate)
         Vector!X509Certificate certs = creds.certChainSingleType(cert_types[i], "tls-server", hostname);
         
         if (!certs.empty)
-            cert_chains[cert_types[i]] = certs.dupr;
+            cert_chains[cert_types[i]] = certs.cloneToRef;
     }
     
     return cert_chains;

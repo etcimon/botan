@@ -124,7 +124,7 @@ size_t streamTest(string algo,
         if (nonce.length)
             cipher.setIv(nonce.ptr, nonce.length);
         
-        SecureVector!ubyte buf = pt.dup;
+        SecureVector!ubyte buf = pt.clone;
         
         cipher.encrypt(buf);
         

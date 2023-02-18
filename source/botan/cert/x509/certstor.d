@@ -87,7 +87,7 @@ public:
         Vector!X509DN subjects;
         foreach (ref cert; m_certs[]) {
 			auto subj_dn = cert.subjectDn();
-            subjects.pushBack(subj_dn.dup);
+            subjects.pushBack(subj_dn.clone);
 		}
         return subjects;
     }
@@ -160,7 +160,7 @@ public:
     {
         Vector!X509DN subjects;
         foreach (cert; m_certs[])
-            subjects.pushBack(cert.subjectDn().dup);
+            subjects.pushBack(cert.subjectDn().clone);
         return subjects.move;
     }
 

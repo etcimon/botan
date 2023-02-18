@@ -47,8 +47,8 @@ public:
     {
         decodeOptions(options);
 
-        m_domain_params = dom_par.dup;
-        m_public_key = pub_point.dup;
+        m_domain_params = dom_par.clone;
+        m_public_key = pub_point.clone;
         m_domain_encoding = EC_DOMPAR_ENC_EXPLICIT;
 
         if (domain().getCurve() != publicPoint().getCurve())
@@ -206,7 +206,7 @@ public:
             m_private_key = BigInt.randomInteger(rng, bi, ec_group.getOrder());
         }
         else
-            m_private_key = private_key.dup;
+            m_private_key = private_key.clone;
 
         PointGFp public_key = ec_group.getBasePoint() * &m_private_key;
         

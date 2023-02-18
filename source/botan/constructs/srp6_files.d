@@ -71,8 +71,8 @@ public:
         if (*entry == SRP6DataImpl.init)
             return false;
 
-        v = entry.v.dup;
-        salt = entry.salt.dup;
+        v = entry.v.clone;
+        salt = entry.salt.clone;
         group_id = entry.group_id;
         
         return true;

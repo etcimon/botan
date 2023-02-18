@@ -445,7 +445,7 @@ public:
     override AuthorityKeyID copy() const { return new AuthorityKeyID(m_key_id); }
 
     this() {}
-    this()(auto const ref Vector!ubyte k) { m_key_id = k.dup(); }
+    this()(auto const ref Vector!ubyte k) { m_key_id = k.clone(); }
 
     ref const(Vector!ubyte) getKeyId() const { return m_key_id; }
 protected:
@@ -624,13 +624,13 @@ public:
 final class ExtendedKeyUsage : CertificateExtension
 {
 public:
-    override ExtendedKeyUsage copy() const { return new ExtendedKeyUsage(m_oids.dup); }
+    override ExtendedKeyUsage copy() const { return new ExtendedKeyUsage(m_oids.clone); }
 
     this() {}
 
     this()(auto const ref Vector!OID o) 
     {
-        m_oids = o.dup;
+        m_oids = o.clone;
     }
 
     ref const(Vector!OID) getOids() const { return m_oids; }
@@ -680,7 +680,7 @@ public:
     { return new CertificatePolicies(m_oids); }
 
     this() {}
-    this()(auto const ref Vector!OID o) { m_oids = o.dup(); }
+    this()(auto const ref Vector!OID o) { m_oids = o.clone(); }
 
     ref const(Vector!OID) getOids() const { return m_oids; }
 protected:
@@ -942,7 +942,7 @@ public:
 
     this() {}
 
-    this()(auto const ref Vector!( DistributionPoint ) points) { m_distribution_points = points.dup; }
+    this()(auto const ref Vector!( DistributionPoint ) points) { m_distribution_points = points.clone; }
 
     ref const(Vector!( DistributionPoint )) distributionPoints() const
     { return m_distribution_points; }

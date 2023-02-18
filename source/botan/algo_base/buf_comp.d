@@ -108,7 +108,7 @@ public:
     */
     final void flushInto(ref ubyte[] output) 
     in { assert(output.length == outputLength); }
-    body { finalResult(output.ptr); }
+    do { finalResult(output.ptr); }
 
     /**
     * Complete the computation and retrieve the

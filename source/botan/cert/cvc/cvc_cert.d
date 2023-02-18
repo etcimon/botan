@@ -114,10 +114,10 @@ public:
     *  other = the other CVC
     */
     this(const ref EAC11CVC other) {
-        m_sig = other.m_sig.dup;
+        m_sig = other.m_sig.clone;
         m_sig_algo = AlgorithmIdentifier(other.m_sig_algo);
-        m_tbs_bits = other.m_tbs_bits.dup;
-        m_PEM_labels_allowed = other.m_PEM_labels_allowed.dup;
+        m_tbs_bits = other.m_tbs_bits.clone;
+        m_PEM_labels_allowed = other.m_PEM_labels_allowed.clone;
         
         m_pk = cast(ECDSAPublicKey) other.m_pk; // no copy of this...
         m_chr = ASN1Chr(other.m_chr);
@@ -139,7 +139,7 @@ public:
     void opAssign(ref EAC11CVC other) {
         m_sig = other.m_sig;
         m_sig_algo = other.m_sig_algo;
-        m_tbs_bits = other.m_tbs_bits.dup;
+        m_tbs_bits = other.m_tbs_bits.clone;
         m_PEM_labels_allowed = other.m_PEM_labels_allowed;
         m_pk = other.m_pk;
         m_chr = other.m_chr;

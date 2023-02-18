@@ -39,7 +39,7 @@ public:
     * Get the prime m_p.
     * Returns: prime m_p
     */
-    ref const(BigInt) getP() const
+    ref const(BigInt) getP() const return
     {
         initCheck();
         return m_p;
@@ -49,7 +49,7 @@ public:
     * Get the prime q.
     * Returns: prime q
     */
-    ref const(BigInt) getQ() const
+    ref const(BigInt) getQ() const return
     {
         initCheck();
         if (m_q == 0)
@@ -61,7 +61,7 @@ public:
     * Get the base m_g.
     * Returns: base m_g
     */
-    ref const(BigInt) getG() const
+    ref const(BigInt) getG() const return
     {
         initCheck();
         return m_g;
@@ -367,10 +367,10 @@ public:
     /**
      * Duplicate this object
      */ 
-    @property DLGroup dup() const {
-        auto p2 = m_p.dup;
-        auto q2 = m_q.dup;
-        auto g2 = m_g.dup;
+    @property DLGroup clone() const {
+        auto p2 = m_p.clone;
+        auto q2 = m_q.clone;
+        auto g2 = m_g.clone;
         return DLGroup(m_initialized, p2, q2, g2);
     }
 

@@ -136,7 +136,7 @@ public:
     */
     this()(auto const ref Vector!string trusted_path, size_t proc_cnt = 0)
     {
-        m_trusted_paths = trusted_path.dup;
+        m_trusted_paths = trusted_path.clone;
         m_concurrent = concurrent_processes(proc_cnt);
     }
 private:

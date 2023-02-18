@@ -52,8 +52,8 @@ bool checkBcrypt(in string password, in string hash)
         return false;
     }
     const ushort workfactor = cast(ushort) to!uint(hash[4 .. 6]);
-
-    Vector!ubyte salt = bcryptBase64Decode(hash[7 .. 29].dup);
+    char[22] salt_decode = hash[7 .. 29];
+    Vector!ubyte salt = bcryptBase64Decode(salt_decode[0 .. 22]);
     const string compare = makeBcrypt(password, salt, workfactor);
 	// constant time memory comparisons on hashes, inefficient but necessary for timing attacks
 	bool valid = true;
@@ -108,7 +108,6 @@ string bcryptBase64Encode(const(ubyte)* input, size_t length)
 
     while (b64.length && b64[b64.length-1] == '=') {
         b64 = b64[0 .. $-1];
-
     }
     
     foreach (size_t i; 0 .. b64.length)

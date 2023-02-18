@@ -133,10 +133,10 @@ public:
 		static string last_algo_spec;
 		Vector!string algo_parts;
 		if (algo_spec == last_algo_spec)
-			algo_parts = last_algo_parts.dup;
+			algo_parts = last_algo_parts.clone;
 		else {
 			algo_parts = splitter(algo_spec, '/');
-			last_algo_parts = algo_parts.dup;
+			last_algo_parts = algo_parts.clone;
 			last_algo_spec = algo_spec;
 		}
         if (algo_parts.empty)

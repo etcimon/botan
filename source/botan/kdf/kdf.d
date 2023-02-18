@@ -121,6 +121,7 @@ public:
     }
 
     abstract KDF clone() const;
+    final @disable KDF dup() const;
 
 protected:
     abstract SecureVector!ubyte

@@ -123,9 +123,11 @@ public:
         return BERObject(type_tag, class_tag, value.move());
     }
 
-    BERObject dup() {
-        return BERObject(type_tag, class_tag, value.dup());
+    BERObject clone() {
+        return BERObject(type_tag, class_tag, value.clone());
     }
+
+    @disable @property BERObject dup();
 
     ASN1Tag type_tag, class_tag;
     SecureVector!ubyte value;

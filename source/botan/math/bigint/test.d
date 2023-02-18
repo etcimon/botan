@@ -99,7 +99,7 @@ size_t checkAdd(const ref Vector!string args)
     BigInt c = BigInt(args[2]);
     
     BigInt d = a + b;
-    BigInt e = a.dup;
+    BigInt e = a.clone;
 
     e += b;
     
@@ -107,7 +107,7 @@ size_t checkAdd(const ref Vector!string args)
         return 1;
     
     d = b + a;
-    e = b.dup;
+    e = b.clone;
     e += a;
     
     return results("+", a, b, c, d, e);
@@ -120,7 +120,7 @@ size_t checkSub(const ref Vector!string args)
     BigInt c = BigInt(args[2]);
     
     BigInt d = a - b;
-    BigInt e = a.dup;
+    BigInt e = a.clone;
     e -= b;
     
     return results("-", a, b, c, d, e);
@@ -144,14 +144,14 @@ size_t checkMul(const ref Vector!string args)
     b.growTo(64);
     
     BigInt d = a * b;
-    BigInt e = a.dup;
+    BigInt e = a.clone;
     e *= b;
     
     if (results("*", a, b, c, d, e))
         return 1;
     
     d = b * a;
-    e = b.dup;
+    e = b.clone;
     e *= a;
     
     return results("*", a, b, c, d, e);
@@ -178,7 +178,7 @@ size_t checkDiv(const ref Vector!string args)
     BigInt c = BigInt(args[2]);
     
     BigInt d = a / b;
-    BigInt e = a.dup;
+    BigInt e = a.clone;
     e /= b;
     
     return results("/", a, b, c, d, e);
@@ -191,7 +191,7 @@ size_t checkMod(const ref Vector!string args, RandomNumberGenerator rng)
     BigInt c = BigInt(args[2]);
     
     BigInt d = a % b;
-    BigInt e = a.dup;
+    BigInt e = a.clone;
     e %= b;
     
     size_t got = results("%", a, b, c, d, e);
@@ -210,7 +210,7 @@ size_t checkMod(const ref Vector!string args, RandomNumberGenerator rng)
     c = a % b; /* we declare the BigInt % BigInt version to be correct here */
     
     word d2 = a % b_word;
-    e = a.dup;
+    e = a.clone;
     e %= b_word;
     
     return results("%(word)", a, b, c, BigInt(d2), e);
@@ -223,7 +223,7 @@ size_t checkShl(const ref Vector!string args)
     BigInt c = BigInt(args[2]);
     
     BigInt d = a << b;
-    BigInt e = a.dup;
+    BigInt e = a.clone;
     e <<= b;
     
     return results("<<", a, BigInt(b), c, d, e);
@@ -236,7 +236,7 @@ size_t checkShr(const ref Vector!string args)
     BigInt c = BigInt(args[2]);
     
     BigInt d = a >> b;
-    BigInt e = a.dup;
+    BigInt e = a.clone;
     e >>= b;
     
     return results(">>", a, BigInt(b), c, d, e);

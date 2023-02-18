@@ -135,7 +135,7 @@ public:
     this(in X509CertificateImpl cert, CRLCode why = UNSPECIFIED)
     {
         m_throw_on_unknown_critical = false;
-        m_serial = cert.serialNumber().dup;
+        m_serial = cert.serialNumber().clone;
         m_time = X509Time(Clock.currTime(UTC()));
         m_reason = why;
     }

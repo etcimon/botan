@@ -28,8 +28,8 @@ public:
     this() {}
 
     this()(auto const ref BigInt r, auto const ref BigInt s) {
-        m_r = r.dup;
-        m_s = s.dup;
+        m_r = r.clone;
+        m_s = s.clone;
     }
 
     this(const ref Vector!ubyte ber)
@@ -42,9 +42,9 @@ public:
                 .verifyEnd();
     }
 
-    @property ECDSASignature dup() const
+    @property ECDSASignature clone() const
     {
-        return new ECDSASignature(m_r.dup, m_s.dup);
+        return new ECDSASignature(m_r.clone, m_s.clone);
     }
 
     ref const(BigInt) getR() const { return m_r; }

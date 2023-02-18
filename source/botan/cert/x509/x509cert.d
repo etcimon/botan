@@ -52,7 +52,7 @@ public:
     */
     PublicKey subjectPublicKey() const
     {
-        Vector!ubyte keybits = subjectPublicKeyBits().dup;
+        Vector!ubyte keybits = subjectPublicKeyBits().clone;
         return x509_key.loadKey(putInSequence(keybits));
     }
 

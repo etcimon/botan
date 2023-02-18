@@ -74,7 +74,7 @@ public:
     override Vector!X509Certificate getPeerCertChain(in HandshakeState state) const
     {
         if (state.serverCerts())
-            return state.serverCerts().certChain().dup;
+            return state.serverCerts().certChain().clone;
         return Vector!X509Certificate();
     }
 
@@ -109,11 +109,11 @@ public:
                                           state.hash(),
                                           m_policy,
                                           rng(),
-                                          secureRenegotiationDataForClientHello().dup,
+                                          secureRenegotiationDataForClientHello().clone,
                                           session_info,
                                           next_protocols.move));
                     
-                    state.resume_master_secret = session_info.masterSecret().dup;
+                    state.resume_master_secret = session_info.masterSecret().clone;
                 }
             }
         }
@@ -125,7 +125,7 @@ public:
                                               _version,
                                               m_policy,
                                               rng(),
-                                              secureRenegotiationDataForClientHello().dup,
+                                              secureRenegotiationDataForClientHello().clone,
                                               next_protocols.move,
                                               m_info.hostname(),
                                               srp_identifier));
@@ -413,7 +413,7 @@ public:
         }
         else if (type == FINISHED)
         {
-            state.serverFinished(new Finished(contents.dup));
+            state.serverFinished(new Finished(contents.clone));
             
             if (!state.serverFinished().verify(state, SERVER))
                 throw new TLSException(TLSAlert.DECRYPT_ERROR, "Finished message didn't verify");
@@ -433,13 +433,13 @@ public:
                     scope(exit) if (sess) sess.destroy();
                     if (sessionManager() && sessionManager().loadFromSessionId(state.serverHello().sessionId(), sess))
                     {
-                        state.setOriginalHandshakeHash(sess.originalHandshakeHash().dup());
+                        state.setOriginalHandshakeHash(sess.originalHandshakeHash().clone());
                         state.channelID(new ChannelID(state.handshakeIo(),
                                 state.hash(),
                                 m_creds, 
                                 m_info.hostname,
                                 state.hash().flushInto(state.Version(), state.ciphersuite().prfAlgo()),
-                                state.originalHandshakeHash().dup
+                                state.originalHandshakeHash().clone
                                 ));
                     }
                 }
@@ -447,16 +447,16 @@ public:
                 state.clientFinished(new Finished(state.handshakeIo(), state, CLIENT));
             }
             
-            Vector!ubyte session_id = state.serverHello().sessionId().dup;
+            Vector!ubyte session_id = state.serverHello().sessionId().clone;
             
             Vector!ubyte session_ticket = state.sessionTicket();
             
             if (session_id.empty && !session_ticket.empty)
                 session_id = makeHelloRandom(rng(), m_policy);
 
-            auto session_info =   new TLSSession(session_id.dup,
-                                                 state.sessionKeys().masterSecret().dup,
-                                                 state.originalHandshakeHash().dup(),
+            auto session_info =   new TLSSession(session_id.clone,
+                                                 state.sessionKeys().masterSecret().clone,
+                                                 state.originalHandshakeHash().clone(),
                                                  state.serverHello().Version(),
                                                  state.serverHello().ciphersuite(),
                                                  state.serverHello().compressionMethod(),

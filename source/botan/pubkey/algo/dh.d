@@ -222,7 +222,7 @@ size_t dhSigKat(string p, string g, string x, string y, string kdf, string outle
     BigInt x_bn = BigInt(x);
     BigInt y_bn = BigInt(y);
     auto domain = DLGroup(p_bn, g_bn);
-    auto mykey = DHPrivateKey(*rng, domain.dup, x_bn.move());
+    auto mykey = DHPrivateKey(*rng, domain.clone, x_bn.move());
     auto otherkey = DHPublicKey(domain.move, y_bn.move());
     
     if (kdf == "")

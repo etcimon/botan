@@ -250,7 +250,7 @@ protected:
         const ulong bit_count = m_count * 8;
         storeLittleEndian(bit_count, length_buf.ptr);
         
-        SecureVector!ubyte sum_buf = m_sum.dup;
+        SecureVector!ubyte sum_buf = m_sum.clone;
         
         compress_n(length_buf.ptr, 1);
         compress_n(sum_buf.ptr, 1);

@@ -239,7 +239,7 @@ private:
             m_fresh_nonce = true;
         }
 
-        ref Vector!ubyte get()
+        ref Vector!ubyte get() return
         {
             assert(m_fresh_nonce, "The nonce is fresh for this message");
             

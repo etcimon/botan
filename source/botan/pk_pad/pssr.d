@@ -122,7 +122,7 @@ public:
         if (const_coded[const_coded.length-1] != 0xBC)
             return false;
         
-        SecureVector!ubyte coded = const_coded.dup;
+        SecureVector!ubyte coded = const_coded.clone;
         if (coded.length < KEY_BYTES)
         {
             SecureVector!ubyte temp = SecureVector!ubyte(KEY_BYTES);

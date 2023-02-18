@@ -361,7 +361,7 @@ public:
     void addOid2str(in OID oid, in string str)
     {
         if (m_oid2str.get(oid) == string.init) 
-            m_oid2str ~= OID2STR(oid.dup, str);
+            m_oid2str ~= OID2STR(oid.clone, str);
     }
 
     string lookup(in OID oid)

@@ -88,11 +88,11 @@ AEADMode getAead(in string algo_spec, CipherDir direction)
 	static string last_algo_spec;
 	Vector!string algo_parts;
 	if (last_algo_spec == algo_spec)
-		algo_parts = last_algo_parts.dup;
+		algo_parts = last_algo_parts.clone;
 	else {
 		algo_parts = algo_spec.splitter('/');
 		last_algo_spec = algo_spec;
-		last_algo_parts = algo_parts.dup;
+		last_algo_parts = algo_parts.clone;
 	}
 	if (algo_parts.empty)
         throw new InvalidAlgorithmName(algo_spec);
@@ -109,10 +109,10 @@ AEADMode getAead(in string algo_spec, CipherDir direction)
 	static string last_algo_part_1;
 	Vector!string mode_info;
 	if (last_algo_part_1 == algo_parts[1])
-		mode_info = last_mode_info.dup;
+		mode_info = last_mode_info.clone;
 	else {
 		mode_info = parseAlgorithmName(algo_parts[1]);
-		last_mode_info = mode_info.dup;
+		last_mode_info = mode_info.clone;
 		last_algo_part_1 = algo_parts[1];
 	}
 
@@ -218,7 +218,7 @@ size_t aeadTest(string algo, string input, string expected, string nonce_hex, st
     const SecureVector!ubyte pt = hexDecodeLocked(input);
     const SecureVector!ubyte expected_ct = hexDecodeLocked(expected);
     
-    SecureVector!ubyte vec = pt.dup;
+    SecureVector!ubyte vec = pt.clone;
     enc.start(nonce);
 
     // should first update if possible
@@ -230,7 +230,7 @@ size_t aeadTest(string algo, string input, string expected, string nonce_hex, st
         ++fail;
     }
     
-    vec = expected_ct.dup;
+    vec = expected_ct.clone;
     
     dec.start(nonce);
     dec.finish(vec);
@@ -243,7 +243,7 @@ size_t aeadTest(string algo, string input, string expected, string nonce_hex, st
     
     if (enc.authenticated())
     {
-        vec = expected_ct.dup;
+        vec = expected_ct.clone;
         vec[0] ^= 1;
         dec.start(nonce);
         try
@@ -256,9 +256,9 @@ size_t aeadTest(string algo, string input, string expected, string nonce_hex, st
         
         if (nonce.length)
         {
-            auto bad_nonce = nonce.dup;
+            auto bad_nonce = nonce.clone;
             bad_nonce[0] ^= 1;
-            vec = expected_ct.dup;
+            vec = expected_ct.clone;
             
             dec.start(bad_nonce);
             
@@ -273,7 +273,7 @@ size_t aeadTest(string algo, string input, string expected, string nonce_hex, st
         
         if (auto aead_dec = cast(AEADMode)(*dec))
         {
-            SecureVector!ubyte bad_ad = ad.dup;
+            SecureVector!ubyte bad_ad = ad.clone;
             
             if (ad.length) {
                 bad_ad[0] ^= 1;
@@ -284,7 +284,7 @@ size_t aeadTest(string algo, string input, string expected, string nonce_hex, st
             
             aead_dec.setAssociatedDataVec(bad_ad);
             
-            vec = expected_ct.dup;
+            vec = expected_ct.clone;
             dec.start(nonce);
             
             try

@@ -30,8 +30,8 @@ void dumpData(const ref Vector!ubyte output, const ref Vector!ubyte expected)
 {
     Pipe pipe = Pipe(new HexEncoder);
     
-    pipe.processMsg(output.dup);
-    pipe.processMsg(expected.dup);
+    pipe.processMsg(output.clone);
+    pipe.processMsg(expected.clone);
     logTrace("Got: " ~ pipe.toString(0));
     logTrace("Exp: " ~ pipe.toString(1));
 }
@@ -146,7 +146,7 @@ size_t validateEncryption(PKEncryptor e, PKDecryptor d,
         
         for(size_t i = 0; i != ctext.length; ++i)
         {
-            Vector!ubyte bad_ctext = ctext.dup;
+            Vector!ubyte bad_ctext = ctext.clone;
             
             bad_ctext[i] ^= nonzeroByte(*arng);
             
@@ -197,7 +197,7 @@ size_t validateSignature(ref PKVerifier v, ref PKSigner s, string algo,
     
     for(size_t i = 0; i != 3; ++i)
     {
-        auto bad_sig = sig.dup;
+        auto bad_sig = sig.clone;
         
         const size_t idx = (test_rng.nextByte() * 256 + test_rng.nextByte()) % sig.length;
         bad_sig[idx] ^= nonzeroByte(test_rng);

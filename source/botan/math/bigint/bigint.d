@@ -104,7 +104,7 @@ public:
     }
 
     /// Move constructor
-    ref BigInt opAssign(size_t other) const
+    ref BigInt opAssign(size_t other) const return
     {
         (cast(BigInt*)&this).swap(other);
         
@@ -583,7 +583,7 @@ public:
     BigInt opUnary(string op)() const
         if (op == "-")
     {
-        BigInt ret = this.dup;
+        BigInt ret = this.clone;
         ret.flipSign();
         return ret;
     }
@@ -877,7 +877,7 @@ public:
     */
     BigInt abs() const
     {
-        BigInt ret = this.dup;
+        BigInt ret = this.clone;
         ret.setSign(Positive);
         return ret;
     }
@@ -1177,7 +1177,7 @@ public:
         }
         else if (base == Decimal)
         {
-            BigInt copy = n.dup();
+            BigInt copy = n.clone();
             BigInt remainder;
             copy.setSign(Positive);
             const size_t output_size = n.encodedSize(Decimal);
@@ -1476,7 +1476,7 @@ public:
         if (mod.isNegative())
             throw new InvalidArgument("BigInt.operator%: modulus must be > 0");
         if (n.isPositive() && mod.isPositive() && *n < mod)
-            return n.dup;
+            return n.clone;
         
         BigInt q, r;
         divide(n, mod, &q, &r);
@@ -1519,7 +1519,7 @@ public:
     {
         const BigInt* x = &this;
         if (shift == 0)
-            return x.dup();
+            return x.clone();
         
         const size_t shift_words = shift / MP_WORD_BITS,
             shift_bits  = shift % MP_WORD_BITS;
@@ -1538,7 +1538,7 @@ public:
         if (op == ">>")
     {
         if (shift == 0)
-            return this.dup;
+            return this.clone;
         if (bits() <= shift)
             return BigInt(0);
         
@@ -1555,9 +1555,11 @@ public:
         return BigInt(m_reg, m_signedness);
     }
 
-    @property BigInt dup() const {
-        return BigInt(m_reg.dup(), m_signedness);
+    @property BigInt clone() const {
+        return BigInt(m_reg.clone(), m_signedness);
     }
+
+    @disable @property BigInt dup();
     
 private:
 

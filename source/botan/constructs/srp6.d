@@ -165,9 +165,9 @@ public:
         auto m_B0 = powerMod(g, &b, p);
         m_B = (v*k + m_B0) % (*p);
         
-        m_v = v.dup;
+        m_v = v.clone;
         m_b = b.move();
-        m_p = p.dup;
+        m_p = p.clone;
         m_hash_id = hash_id;
         
         return m_B;

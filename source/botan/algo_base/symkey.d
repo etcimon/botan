@@ -34,7 +34,7 @@ public:
     /**
     * Returns: this object as a $(D SecureVector!ubyte)
     */
-    SecureVector!ubyte bitsOf() const { return m_bits.dup; }
+    SecureVector!ubyte bitsOf() const { return m_bits.clone; }
     
     /**
     * Returns: Pointer to the first ubyte of this string
@@ -222,9 +222,9 @@ public:
     }
 
     /// Returns: A copy of the underlying bits in a new octet string
-    @property OctetString dup() const
+    @property OctetString clone() const
     {
-        return OctetString(m_bits.dup);
+        return OctetString(m_bits.clone);
     }
 
 private:

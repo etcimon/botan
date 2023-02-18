@@ -51,7 +51,7 @@ SecureVector!ubyte runMode()(string algo, CipherDir dir,
     cipher.finish(ct);
     */
     
-    Pipe pipe = Pipe(getCipher(algo, SymmetricKey(key.dup), InitializationVector(nonce.dup), dir));
+    Pipe pipe = Pipe(getCipher(algo, SymmetricKey(key.clone), InitializationVector(nonce.clone), dir));
     
     pipe.processMsg(pt.ptr, pt.length);
     

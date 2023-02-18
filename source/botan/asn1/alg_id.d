@@ -139,7 +139,7 @@ public:
     }
 
     @property Vector!ubyte parameters() const {
-        return m_parameters.dup;
+        return m_parameters.clone;
     }
 
     @property void oid(OID oid) {
@@ -147,7 +147,7 @@ public:
     }
 
     @property void parameters()(auto ref Vector!ubyte param) {
-        m_parameters = param.dup;
+        m_parameters = param.clone;
     }
 
     override string toString() const {

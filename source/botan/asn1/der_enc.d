@@ -44,7 +44,7 @@ public:
         if (m_subsequences.length != 0)
             throw new InvalidState("DEREncoder: Sequence hasn't been marked done");
         
-        return m_contents.dup;
+        return m_contents.clone;
     }  
 
     /*
@@ -55,13 +55,13 @@ public:
         if (m_subsequences.length != 0)
             throw new InvalidState("DEREncoder: Sequence hasn't been marked done");
         
-        return m_contents.dupr;
+        return m_contents.cloneToRef;
     }
     
     /*
     * Start a new ASN.1 ASN1Tag.SEQUENCE/SET/EXPLICIT
     */
-    ref DEREncoder startCons(ASN1Tag m_type_tag, ASN1Tag m_class_tag = ASN1Tag.UNIVERSAL)
+    ref DEREncoder startCons(ASN1Tag m_type_tag, ASN1Tag m_class_tag = ASN1Tag.UNIVERSAL) return
     {
         m_subsequences.pushBack(DERSequence(m_type_tag, m_class_tag));
         return this;
@@ -70,7 +70,7 @@ public:
     /*
     * Finish the current ASN.1 ASN1Tag.SEQUENCE/SET/EXPLICIT
     */
-    ref DEREncoder endCons()
+    ref DEREncoder endCons() return
     {
         if (m_subsequences.empty)
             throw new InvalidState("endCons: No such sequence");
@@ -84,7 +84,7 @@ public:
     /*
     * Start a new ASN.1 EXPLICIT encoding
     */
-    ref DEREncoder startExplicit(ushort type_no)
+    ref DEREncoder startExplicit(ushort type_no) return
     {
         ASN1Tag m_type_tag = cast(ASN1Tag)(type_no);
         
@@ -97,7 +97,7 @@ public:
     /*
     * Finish the current ASN.1 EXPLICIT encoding
     */
-    ref DEREncoder endExplicit()
+    ref DEREncoder endExplicit() return
     {
         return endCons();
     }
@@ -105,12 +105,12 @@ public:
     /*
     * Write raw bytes into the stream
     */
-    ref DEREncoder rawBytes(ALLOC)(auto const ref Vector!(ubyte, ALLOC) val)
+    ref DEREncoder rawBytes(ALLOC)(auto const ref Vector!(ubyte, ALLOC) val) return
     {
         return rawBytes(val.ptr, val.length);
     }
 
-    ref DEREncoder rawBytes(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) val)
+    ref DEREncoder rawBytes(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) val) return
     {
         return rawBytes(val.ptr, val.length);
     }
@@ -118,7 +118,7 @@ public:
     /*
     * Write raw bytes into the stream
     */
-    ref DEREncoder rawBytes(const(ubyte)* bytes, size_t length)
+    ref DEREncoder rawBytes(const(ubyte)* bytes, size_t length) return
     {
 
         if (m_subsequences.length)
@@ -132,7 +132,7 @@ public:
     /*
     * Encode a NULL object
     */
-    ref DEREncoder encodeNull()
+    ref DEREncoder encodeNull() return
     {
         return addObject(ASN1Tag.NULL_TAG, ASN1Tag.UNIVERSAL, null, 0);
     }
@@ -140,7 +140,7 @@ public:
     /*
     * DER encode a BOOLEAN
     */
-    ref DEREncoder encode(bool is_true)
+    ref DEREncoder encode(bool is_true) return
     {
         return encode(is_true, ASN1Tag.BOOLEAN, ASN1Tag.UNIVERSAL);
     }
@@ -148,7 +148,7 @@ public:
     /*
     * DER encode a small INTEGER
     */
-    ref DEREncoder encode(size_t n)
+    ref DEREncoder encode(size_t n) return
     {
         return encode(BigInt(n), ASN1Tag.INTEGER, ASN1Tag.UNIVERSAL);
     }
@@ -156,7 +156,7 @@ public:
     /*
     * DER encode a small INTEGER
     */
-    ref DEREncoder encode()(auto const ref BigInt n)
+    ref DEREncoder encode()(auto const ref BigInt n) return
     {
         return encode(n, ASN1Tag.INTEGER, ASN1Tag.UNIVERSAL);
     }
@@ -164,7 +164,7 @@ public:
     /*
     * DER encode an OCTET STRING or BIT STRING
     */
-    ref DEREncoder encode(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) bytes, ASN1Tag real_type)
+    ref DEREncoder encode(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) bytes, ASN1Tag real_type) return
     {
         return encode(bytes.ptr, bytes.length, real_type, real_type, ASN1Tag.UNIVERSAL);
     }
@@ -172,7 +172,7 @@ public:
     /*
     * DER encode an OCTET STRING or BIT STRING
     */
-    ref DEREncoder encode(ALLOC)(auto const ref Vector!(ubyte, ALLOC) bytes, ASN1Tag real_type)
+    ref DEREncoder encode(ALLOC)(auto const ref Vector!(ubyte, ALLOC) bytes, ASN1Tag real_type) return
     {
         return encode(bytes.ptr, bytes.length, real_type, real_type, ASN1Tag.UNIVERSAL);
     }
@@ -180,7 +180,7 @@ public:
     /*
     * Encode this object
     */
-    ref DEREncoder encode(const(ubyte)* bytes, size_t length, ASN1Tag real_type)
+    ref DEREncoder encode(const(ubyte)* bytes, size_t length, ASN1Tag real_type) return
     {
         return encode(bytes, length, real_type, real_type, ASN1Tag.UNIVERSAL);
     }
@@ -188,7 +188,7 @@ public:
     /*
     * DER encode a BOOLEAN
     */
-    ref DEREncoder encode(bool is_true, ASN1Tag m_type_tag, ASN1Tag m_class_tag = ASN1Tag.CONTEXT_SPECIFIC)
+    ref DEREncoder encode(bool is_true, ASN1Tag m_type_tag, ASN1Tag m_class_tag = ASN1Tag.CONTEXT_SPECIFIC) return
     {
         ubyte val = is_true ? 0xFF : 0x00;
         return addObject(m_type_tag, m_class_tag, &val, 1);
@@ -197,7 +197,7 @@ public:
     /*
     * DER encode a small INTEGER
     */
-    ref DEREncoder encode(size_t n, ASN1Tag m_type_tag, ASN1Tag m_class_tag = ASN1Tag.CONTEXT_SPECIFIC)
+    ref DEREncoder encode(size_t n, ASN1Tag m_type_tag, ASN1Tag m_class_tag = ASN1Tag.CONTEXT_SPECIFIC) return
     {
         return encode(BigInt(n), m_type_tag, m_class_tag);
     }
@@ -205,7 +205,7 @@ public:
     /*
     * DER encode an INTEGER
     */
-    ref DEREncoder encode()(auto const ref BigInt n, ASN1Tag m_type_tag, ASN1Tag m_class_tag = ASN1Tag.CONTEXT_SPECIFIC)
+    ref DEREncoder encode()(auto const ref BigInt n, ASN1Tag m_type_tag, ASN1Tag m_class_tag = ASN1Tag.CONTEXT_SPECIFIC) return
     {
         //logTrace("Encode BigInt: ", n.toString());
         if (n == 0)
@@ -231,7 +231,7 @@ public:
     */
     ref DEREncoder encode(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) bytes,
                                        ASN1Tag real_type,
-                                      ASN1Tag m_type_tag, ASN1Tag m_class_tag = ASN1Tag.CONTEXT_SPECIFIC)
+                                      ASN1Tag m_type_tag, ASN1Tag m_class_tag = ASN1Tag.CONTEXT_SPECIFIC) return
     {
         return encode(bytes.ptr, bytes.length, real_type, m_type_tag, m_class_tag);
     }
@@ -241,7 +241,7 @@ public:
     */
     ref DEREncoder encode(ALLOC)(auto const ref Vector!(ubyte, ALLOC) bytes,
                                       ASN1Tag real_type,
-                                      ASN1Tag m_type_tag, ASN1Tag m_class_tag = ASN1Tag.CONTEXT_SPECIFIC)
+                                      ASN1Tag m_type_tag, ASN1Tag m_class_tag = ASN1Tag.CONTEXT_SPECIFIC) return
     {
         return encode(bytes.ptr, bytes.length, real_type, m_type_tag, m_class_tag);
     }
@@ -251,7 +251,7 @@ public:
     */
     ref DEREncoder encode(const(ubyte)* bytes, size_t length,
                           ASN1Tag real_type,
-                          ASN1Tag m_type_tag, ASN1Tag m_class_tag = ASN1Tag.CONTEXT_SPECIFIC)
+                          ASN1Tag m_type_tag, ASN1Tag m_class_tag = ASN1Tag.CONTEXT_SPECIFIC) return
     {
         if (real_type != ASN1Tag.OCTET_STRING && real_type != ASN1Tag.BIT_STRING)
             throw new InvalidArgument("DEREncoder: Invalid tag for ubyte/bit string");
@@ -270,7 +270,7 @@ public:
     /*
     * Request for an object to encode itself
     */
-    ref DEREncoder encode(T)(auto const ref T obj)
+    ref DEREncoder encode(T)(auto const ref T obj) return
     {
         obj.encodeInto(this);
         return this;
@@ -279,28 +279,28 @@ public:
     /*
     * Conditionally write some values to the stream
     */
-    ref DEREncoder encodeIf (bool cond, ref DEREncoder codec)
+    ref DEREncoder encodeIf (bool cond, ref DEREncoder codec) return
     {
         if (cond)
             return rawBytes(codec.getContents());
         return this;
     }
     
-    ref DEREncoder encodeIf(T)(bool cond, auto const ref T obj)
+    ref DEREncoder encodeIf(T)(bool cond, auto const ref T obj) return
     {
         if (cond)
             encode(obj);
         return this;
     }
 
-    ref DEREncoder encodeOptional(T)(in T value, in T default_value = T.init)
+    ref DEREncoder encodeOptional(T)(in T value, in T default_value = T.init) return
     {
         if (value != default_value)
             encode(value);
         return this;
     }
 
-    ref DEREncoder encodeList(T, Alloc)(const ref Vector!(T, Alloc) values)
+    ref DEREncoder encodeList(T, Alloc)(const ref Vector!(T, Alloc) values) return
     {
         foreach (const ref value; values[])
             encode(value);
@@ -310,7 +310,7 @@ public:
     /*
     * Write the encoding of the ubyte(s)
     */
-    ref DEREncoder addObject(ASN1Tag m_type_tag, ASN1Tag m_class_tag, in string rep_str)
+    ref DEREncoder addObject(ASN1Tag m_type_tag, ASN1Tag m_class_tag, in string rep_str) return
     {
         const(ubyte)* rep = cast(const(ubyte)*)(rep_str.ptr);
         const size_t rep_len = rep_str.length;
@@ -320,7 +320,7 @@ public:
     /*
     * Write the encoding of the ubyte(s)
     */
-    ref DEREncoder addObject(ASN1Tag m_type_tag, ASN1Tag m_class_tag, const(ubyte)* rep, size_t length)
+    ref DEREncoder addObject(ASN1Tag m_type_tag, ASN1Tag m_class_tag, const(ubyte)* rep, size_t length) return
     {
         //logTrace("AddObject: ", m_type_tag);
         SecureVector!ubyte buffer;
@@ -337,20 +337,20 @@ public:
     /*
     * Write the encoding of the ubyte
     */
-    ref DEREncoder addObject(ASN1Tag m_type_tag, ASN1Tag m_class_tag, ubyte rep)
+    ref DEREncoder addObject(ASN1Tag m_type_tag, ASN1Tag m_class_tag, ubyte rep) return
     {
         return addObject(m_type_tag, m_class_tag, &rep, 1);
     }
 
 
     ref DEREncoder addObject(ALLOC)(ASN1Tag m_type_tag, ASN1Tag m_class_tag, 
-                                    auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) rep)
+                                    auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) rep) return
     {
         return addObject(m_type_tag, m_class_tag, rep.ptr, rep.length);
     }
 
     ref DEREncoder addObject(ALLOC)(ASN1Tag m_type_tag, ASN1Tag m_class_tag, 
-                                        auto const ref Vector!(ubyte, ALLOC) rep)
+                                        auto const ref Vector!(ubyte, ALLOC) rep) return
     {
         return addObject(m_type_tag, m_class_tag, rep.ptr, rep.length);
     }

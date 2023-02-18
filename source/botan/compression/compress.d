@@ -276,7 +276,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_COMPRESSION_TEST) unittest {
 			SecureVector!ubyte buf;
 			SecureVector!ubyte verif;
 			buf ~= "Some message";
-			verif = buf.dup;
+			verif = buf.clone;
 			comp.start();
 			comp.finish(buf);
 			
@@ -293,7 +293,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_COMPRESSION_TEST) unittest {
 			SecureVector!ubyte buf;
 			SecureVector!ubyte verif;
 			buf ~= "Some message";
-			verif = buf.dup;
+			verif = buf.clone;
 			comp.start();
 			comp.finish(buf);
 			
@@ -310,7 +310,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_COMPRESSION_TEST) unittest {
 			SecureVector!ubyte buf;
 			SecureVector!ubyte verif;
 			buf ~= "Some message";
-			verif = buf.dup;
+			verif = buf.clone;
 			comp.start();
 			comp.finish(buf);
 			
@@ -327,7 +327,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_COMPRESSION_TEST) unittest {
 			SecureVector!ubyte buf;
 			SecureVector!ubyte verif;
 			buf ~= "Some message ";
-			verif = buf.dup;
+			verif = buf.clone;
 			comp.start();
 			comp.finish(buf);
 			Unique!CompressorTransform dec = makeDecompressor("lzma");

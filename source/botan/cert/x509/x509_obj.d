@@ -132,7 +132,7 @@ public:
             SignatureFormat format = (pub_key.messageParts() >= 2) ? DER_SEQUENCE : IEEE_1363;
             PKVerifier verifier = PKVerifier(pub_key, padding, format);
             auto tbs = tbsData();
-            auto sig = signature().dup;
+            auto sig = signature().clone;
             return verifier.verifyMessage(tbs, sig);
         }
         catch(Exception e)
@@ -174,15 +174,15 @@ public:
     */
     final Vector!ubyte BER_encode() const
     {
-		static HashMap!(void*, ubyte[]) cache;
-		if ((cast(void*)this) in cache) return Vector!ubyte(cache[cast(void*)this]);
+		//static HashMap!(void*, ubyte[]) cache;
+		//if ((cast(void*)this) in cache) return Vector!ubyte(cache[cast(void*)this]);
 		
 		auto der = DEREncoder();
 		encodeInto(der);
 		auto ret = der.getContentsUnlocked();
-		if (cache.length > 50)
-			cache = HashMap!(void*, ubyte[])();
-		cache[cast(void*)this] = ret[].dup;
+		//if (cache.length > 50)
+		//	cache = HashMap!(void*, ubyte[])();
+		//cache[cast(void*)this] = ret[].dup;
 
 		return ret.move;
     }

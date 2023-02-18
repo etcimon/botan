@@ -33,7 +33,7 @@ public:
     const(InitializationVector) clientIv() const { return m_c_iv; }
     const(InitializationVector) serverIv() const { return m_s_iv; }
 
-    ref const(SecureVector!ubyte) masterSecret() const { return m_master_sec; }
+    ref const(SecureVector!ubyte) masterSecret() const return { return m_master_sec; }
 
     @disable this();
 
@@ -63,7 +63,7 @@ public:
         
         if (resuming)
         {
-            m_master_sec = pre_master_secret.dup;
+            m_master_sec = pre_master_secret.clone;
         }
         else
         {

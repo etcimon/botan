@@ -40,7 +40,7 @@ public:
     *  size = requested size for the I/O buffer
     * Returns: cached I/O buffer for repeated polls
     */
-    ref SecureVector!ubyte getIoBuffer(size_t size)
+    ref SecureVector!ubyte getIoBuffer(size_t size) return
     {
         m_io_buffer.clear();
         m_io_buffer.resize(size);

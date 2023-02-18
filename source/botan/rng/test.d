@@ -61,10 +61,11 @@ public:
 
     override SecureVector!ubyte randomVec(size_t bytes) { return super.randomVec(bytes); }
     
-    this(const ref Vector!ubyte input)
+    this()(const auto ref Vector!ubyte input)
     {    
         m_buf.insert(input.ptr[0 .. input.length]);
     }
+
     
     this(string in_str)
     {

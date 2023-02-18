@@ -96,7 +96,7 @@ public:
     bool ocspAllIntermediates() const
     { return m_ocsp_all_intermediates; }
 
-    ref const(RBTree!string) trustedHashes() const
+    ref const(RBTree!string) trustedHashes() const return
     { 
 		if (m_trusted_hashes.length > 0)
 			return m_trusted_hashes;
@@ -156,7 +156,7 @@ public:
     /**
     * Returns: the full path from subject to trust root
     */
-    ref const(Vector!X509Certificate) certPath() const { return m_cert_path; }
+    ref const(Vector!X509Certificate) certPath() const return { return m_cert_path; }
 
     /**
     * Returns: true iff the validation was succesful
@@ -177,7 +177,7 @@ public:
     /**
     * Return a set of status codes for each certificate in the chain
     */
-    ref const(Vector!(RBTreeRef!CertificateStatusCode)) allStatuses() const
+    ref const(Vector!(RBTreeRef!CertificateStatusCode)) allStatuses() const return
     { return m_all_status; }
 
     /**

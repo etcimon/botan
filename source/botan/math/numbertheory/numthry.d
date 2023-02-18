@@ -78,7 +78,7 @@ BigInt subMul(const(BigInt)* a, const(BigInt)* b, const(BigInt)* c)
     if (a.isNegative() || b.isNegative())
         throw new InvalidArgument("subMul: First two arguments must be >= 0");
     
-    BigInt r = a.dup;
+    BigInt r = a.clone;
     r -= b;
     r *= c;
     return r.move();
@@ -104,7 +104,7 @@ BigInt gcd(const(BigInt)* a, const(BigInt)* b)
     if (a.isZero() || b.isZero()) return BigInt(0);
     if (*a == 1 || *b == 1)         return BigInt(1);
     
-    BigInt x = a.dup, y = b.dup;
+    BigInt x = a.clone, y = b.clone;
     x.setSign(BigInt.Positive);
     y.setSign(BigInt.Positive);
     size_t shift = std.algorithm.min(lowZeroBits(&x), lowZeroBits(&y));
@@ -177,7 +177,7 @@ BigInt inverseMod(const(BigInt)* n, const(BigInt)* mod)
     if (mod.isOdd())
         return inverseModOddModulus(n, mod);
     
-    BigInt u = mod.dup, v = n.dup;
+    BigInt u = mod.clone, v = n.clone;
     BigInt A = BigInt(1);
     BigInt B = BigInt(0);
     BigInt C = BigInt(0);
@@ -234,7 +234,7 @@ int jacobi(const(BigInt)* a, const(BigInt)* n)
     if (n.isEven() || (*n) < 2)
         throw new InvalidArgument("jacobi: second argument must be odd and > 1");
     
-    BigInt x = (*a).dup, y = (*n).dup;
+    BigInt x = (*a).clone, y = (*n).clone;
     int J = 1;
     
     while (y > 1)
@@ -309,7 +309,7 @@ BigInt ressol(const(BigInt)* a, const(BigInt)* p)
 		throw new InvalidArgument("ressol(): a to solve for must be positive");
 
     if (*p == 2)
-        return a.dup;
+        return a.clone;
 	else if (*p <= 1)
 		throw new InvalidArgument("ressol(): prime must be > 1");
 	else if(p.isEven())
@@ -349,7 +349,7 @@ BigInt ressol(const(BigInt)* a, const(BigInt)* p)
     
     while (n > 1)
     {
-        q = n.dup();
+        q = n.clone();
         
         size_t i = 0;
         while (q != 1)
@@ -666,7 +666,7 @@ bool generateDsaPrimes()(RandomNumberGenerator rng,
     struct Seed
     {
     public:
-        this(const(Vector!ubyte)* s) { m_seed = s.dup(); }
+        this(const(Vector!ubyte)* s) { m_seed = s.clone(); }
         
         ref T opCast(T : Vector!ubyte)() { return m_seed; }
         
@@ -743,8 +743,8 @@ bool fips1863ValidSize(size_t pbits, size_t qbits)
 */
 BigInt inverseModOddModulus(const(BigInt)* n, const(BigInt)* mod)
 {
-    BigInt u = mod.dup;
-    BigInt v = n.dup;
+    BigInt u = mod.clone;
+    BigInt v = n.clone;
     BigInt B = BigInt(0);
     BigInt D = BigInt(1);
     
@@ -807,7 +807,7 @@ size_t mrTestIterations(size_t n_bits, size_t prob, bool random)
     
     /*
     * For randomly chosen numbers we can use the estimates from
-    * http://www.math.dartmouth.edu/~carlp/PDF/paper88.pdf‎
+    * http://www.math.dartmouth.edu/~carlp/PDF/paper88.pdf
     *
     * These values are derived from the inequality for p(k,t) given on
     * the second page.

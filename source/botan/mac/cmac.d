@@ -71,7 +71,7 @@ public:
     {
         const bool top_carry = (input[0] & 0x80) != 0;
         
-        SecureVector!ubyte output = input.dup;
+        SecureVector!ubyte output = input.clone;
         
         ubyte carry = 0;
         for (size_t i = output.length; i != 0; --i)

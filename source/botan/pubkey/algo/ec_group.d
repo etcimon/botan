@@ -54,10 +54,10 @@ public:
     this()(auto const ref CurveGFp curve, auto const ref PointGFp base_point, 
            auto const ref BigInt order, auto const ref BigInt cofactor, in string oid = "") 
     {
-        m_curve = curve.dup;
-        m_base_point = base_point.dup;
-        m_order = order.dup;
-        m_cofactor = cofactor.dup;
+        m_curve = curve.clone;
+        m_base_point = base_point.clone;
+        m_order = order.clone;
+        m_cofactor = cofactor.clone;
         m_oid = oid;
     }
 
@@ -234,25 +234,25 @@ public:
     * Return domain parameter curve
     * Returns: domain parameter curve
     */
-    ref const(CurveGFp) getCurve() const { return m_curve; }
+    ref const(CurveGFp) getCurve() const return { return m_curve; }
 
     /**
     * Return domain parameter curve
     * Returns: domain parameter curve
     */
-    ref const(PointGFp) getBasePoint() const { return m_base_point; }
+    ref const(PointGFp) getBasePoint() const return { return m_base_point; }
 
     /**
     * Return the order of the base point
     * Returns: order of the base point
     */
-    ref const(BigInt) getOrder() const { return m_order; }
+    ref const(BigInt) getOrder() const return { return m_order; }
 
     /**
     * Return the cofactor
     * Returns: the cofactor
     */
-    ref const(BigInt) getCofactor() const { return m_cofactor; }
+    ref const(BigInt) getCofactor() const return { return m_cofactor; }
 
     bool initialized() const { return !m_base_point.isZero(); }
 
@@ -295,7 +295,7 @@ public:
         return toVector()[].idup;
     }
 
-    @property ECGroup dup() const {
+    @property ECGroup clone() const {
         return ECGroup(m_curve, m_base_point, m_order, m_cofactor, m_oid);
     }
     

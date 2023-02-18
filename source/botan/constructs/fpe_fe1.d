@@ -47,11 +47,11 @@ struct FPE {
         Unique!FPEEncryptor F = new FPEEncryptor(key, n0, tweak);
         
         BigInt a, b;
-        factor(n0.dup, &a, &b);
+        factor(n0.clone, &a, &b);
         
         const size_t r = rounds(&a, &b);
         
-        BigInt X = X0.dup;
+        BigInt X = X0.clone;
         
         foreach (size_t i; 0 .. r)
         {
@@ -79,11 +79,11 @@ struct FPE {
         auto F = scoped!FPEEncryptor(key, n0, tweak);
         
         BigInt a, b;
-        factor(n0.dup, &a, &b);
+        factor(n0.clone, &a, &b);
         
         const size_t r = rounds(&a, &b);
         
-        BigInt X = X0.dup;
+        BigInt X = X0.clone;
         
         foreach (size_t i; 0 .. r)
         {

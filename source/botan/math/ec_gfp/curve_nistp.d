@@ -25,8 +25,8 @@ abstract class CurveGFpNIST : CurveGFpRepr
 {
     this()(size_t p_bits, BigInt* a, BigInt* b)
     {
-        m_a = a.dup;
-        m_b = b.dup;
+        m_a = a.clone;
+        m_b = b.clone;
         m_p_words = (p_bits + BOTAN_MP_WORD_BITS - 1) / BOTAN_MP_WORD_BITS;
     }
 

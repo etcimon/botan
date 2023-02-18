@@ -219,7 +219,7 @@ SecureVector!ubyte transformTest(string algo,
     //transform.setKey(key);
     transform.start(nonce);
     
-    SecureVector!ubyte output = input.dup;
+    SecureVector!ubyte output = input.clone;
     transform.update(output, 0);
     
     return output;

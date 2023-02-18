@@ -276,7 +276,7 @@ public:
 	override HandshakeExtensionType type() const { return staticType(); }
 
 	this(Vector!ubyte formats = Vector!ubyte([cast(ubyte)0x00])) {
-		m_formats = formats.dup();
+		m_formats = formats.clone();
 	}
 
 	override Vector!ubyte serialize() const
@@ -636,7 +636,7 @@ public:
         m_ticket = reader.getElem!(ubyte, Vector!ubyte)(extension_size);
     }
 
-    override Vector!ubyte serialize() const { return m_ticket.dup; }
+    override Vector!ubyte serialize() const { return m_ticket.clone; }
 
     override @property bool empty() const { return false; }
 private:
@@ -1102,7 +1102,7 @@ struct TLSExtensions
 public:
     Vector!HandshakeExtensionType extensionTypes() const
     {
-		return m_extensions.types.dup;
+		return m_extensions.types.clone;
     }
 
 

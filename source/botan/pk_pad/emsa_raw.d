@@ -49,7 +49,7 @@ public:
                                   size_t,
                                   RandomNumberGenerator)
     {
-        return msg.dup;
+        return msg.clone;
     }
 
     /*

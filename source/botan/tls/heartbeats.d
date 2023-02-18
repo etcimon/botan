@@ -41,7 +41,7 @@ public:
         return send_buf;
     }
 
-    ref const(Vector!ubyte) payload() const { return m_payload; }
+    ref const(Vector!ubyte) payload() const return { return m_payload; }
 
     bool isRequest() const { return m_type == REQUEST; }
 

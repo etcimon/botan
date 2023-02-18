@@ -80,7 +80,7 @@ size_t base64Encode(char* output,
 * Params:
 *  input = some input
 *  input_length = length of input in bytes
-* Returns: base64adecimal representation of input
+* Returns: base64adecimal representation of input allocated on the GC
 */
 
 string base64Encode(const(ubyte)* input,

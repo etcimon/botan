@@ -201,7 +201,7 @@ public:
     */
     void addExConstraint()(auto ref OID oid)
     {
-        ex_constraints.pushBack(oid.dup);
+        ex_constraints.pushBack(oid.clone);
     }
 
     /**

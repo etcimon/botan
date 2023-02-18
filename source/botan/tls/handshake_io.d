@@ -459,7 +459,7 @@ private:
             if (!complete())
                 throw new InternalError("DatagramHandshakeIO - message not complete");
             
-            return NextRecord(cast(HandshakeType)(m_msg_type), m_message.dup);
+            return NextRecord(cast(HandshakeType)(m_msg_type), m_message.clone);
         }
 
         private:
@@ -477,7 +477,7 @@ private:
         {
             epoch = e;
             msg_type = mt;
-            msg_bits = msg.dupr;
+            msg_bits = msg.cloneToRef;
         }
 
         ushort epoch = 0xFFFF;

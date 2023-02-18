@@ -256,17 +256,17 @@ public:
 
     this(const ref OID other)
     {
-        m_id = other.m_id.dup;
+        m_id = other.m_id.clone;
     }
 
     this(const OIDImpl other)
     {
-        m_id = other.m_id.dup;
+        m_id = other.m_id.clone;
     }
 
-    @property OID dup() const {
+    @property OID clone() const {
         OID oid = OID();
-        oid.m_id = m_id.dup;
+        oid.m_id = m_id.clone;
         return oid;
     }
 private:

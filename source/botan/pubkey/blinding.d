@@ -29,7 +29,7 @@ public:
     BigInt blind()(auto const ref BigInt i)
     {
         if (!m_reducer.initialized()) 
-            return i.dup;
+            return i.clone;
 
         m_e = m_reducer.square(&m_e);
         m_d = m_reducer.square(&m_d);
@@ -42,7 +42,7 @@ public:
     BigInt unblind()(auto const ref BigInt i) const
     {
         if (!m_reducer.initialized())
-            return i.dup;
+            return i.clone;
         return m_reducer.multiply(&i, &m_d);
     }
 
@@ -63,8 +63,8 @@ public:
             throw new InvalidArgument("Blinder: Arguments too small");
         
         m_reducer = ModularReducer(n);
-        m_e = e.dup;
-        m_d = d.dup;
+        m_e = e.clone;
+        m_d = d.clone;
     }
 
 private:

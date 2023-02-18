@@ -203,7 +203,7 @@ public:
             algorithms.
         */
         BigInt m = BigInt(msg, msg_len);
-        m = m_blinder.blind(m.dup);
+        m = m_blinder.blind(m.clone);
         m = privateOp(m);
         BigInt x = m_blinder.unblind(m);
         return BigInt.encode1363(x, m_n.bytes());

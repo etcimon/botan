@@ -178,7 +178,7 @@ public:
         
         const string session_id_str = hexEncode(session.sessionId());
 
-        m_sessions[session_id_str] = session.encrypt(m_session_key, m_rng).dupr;
+        m_sessions[session_id_str] = session.encrypt(m_session_key, m_rng).cloneToRef;
         m_sessions_ordered ~= session_id_str;
 
         if (session.side() == CLIENT && !session.serverInfo().empty)

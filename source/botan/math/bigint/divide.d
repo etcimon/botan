@@ -31,10 +31,10 @@ void divide(const(BigInt)* x, const(BigInt)* y_arg, BigInt* q, BigInt* r)
     if (y_arg.isZero())
         throw new BigInt.DivideByZero();
     
-    BigInt y = y_arg.dup;
+    BigInt y = y_arg.clone;
     const size_t y_words = y.sigWords();
     
-    *r = x.dup;
+    *r = x.clone;
     *q = 0;
     
     r.setSign(BigInt.Positive);

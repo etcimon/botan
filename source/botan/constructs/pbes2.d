@@ -95,7 +95,7 @@ Pair!(AlgorithmIdentifier, Array!ubyte)
 		OIDS.lookup("PBE-PKCS5v20"),
 		encodePbes2Params(cipher, prf, salt, iv, iterations, key_length));
 	
-	return makePair(id, unlock(buf).dupr);
+	return makePair(id, unlock(buf).cloneToRef);
 	
 }
 /*

@@ -24,7 +24,7 @@ import std.traits : isPointer;
 struct ModularReducer
 {
 public:
-    ref const(BigInt) getModulus() const { return m_modulus; }
+    ref const(BigInt) getModulus() const return { return m_modulus; }
 
     /*
     * Barrett Reduction
@@ -41,7 +41,7 @@ public:
         }
         else if (x.cmp(m_modulus_2, false) < 0)
         {
-            BigInt t1 = x.dup;
+            BigInt t1 = x.clone;
             t1.setSign(BigInt.Positive);
             t1 >>= (MP_WORD_BITS * (m_mod_words - 1));
             t1 *= m_mu;
@@ -116,14 +116,14 @@ public:
     {
         if (mod <= 0)
             throw new InvalidArgument("ModularReducer: modulus must be positive");
-        m_modulus = mod.dup;
+        m_modulus = mod.clone;
         m_mod_words = m_modulus.sigWords();
         m_modulus_2 = .square(&m_modulus);
 		auto po2 = BigInt.powerOf2(2 * MP_WORD_BITS * m_mod_words);
         m_mu = po2 / m_modulus;
     }
 
-    @property ModularReducer dup() const {
+    @property ModularReducer clone() const {
         return ModularReducer(m_modulus);
     }
 

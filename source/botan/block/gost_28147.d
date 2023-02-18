@@ -211,7 +211,7 @@ public:
     }
 protected:
     this(const ref Vector!uint other_SBOX) {
-        m_SBOX = other_SBOX.dup; 
+        m_SBOX = other_SBOX.clone; 
         m_EK = 8;
     }
 

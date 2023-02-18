@@ -167,7 +167,7 @@ void testEncGenSelfsigned(RandomNumberGenerator rng)
     bool exc = false;
     try
     {
-        logTrace("order = ", p_ecdsa_pk.domain().getOrder().dup.toString());
+        logTrace("order = ", p_ecdsa_pk.domain().getOrder().clone.toString());
     }
     catch (InvalidState)
     {

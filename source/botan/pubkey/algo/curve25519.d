@@ -99,7 +99,7 @@ public:
 	}
 
 	/// Create a Curve25519 Public Key.
-	this(const ref Vector!ubyte pub) { m_public = pub.dup(); }
+	this(const ref Vector!ubyte pub) { m_public = pub.clone(); }
 
 	this(const ref SecureVector!ubyte pub) { m_public = unlock(pub); }
 
@@ -126,7 +126,7 @@ public:
 				.getContentsUnlocked();
 	}
 	
-	Vector!ubyte publicValue() const { return m_public.dup(); }
+	Vector!ubyte publicValue() const { return m_public.clone(); }
 	
 	override bool checkKey(RandomNumberGenerator rng, bool b) const { return true; }
 	

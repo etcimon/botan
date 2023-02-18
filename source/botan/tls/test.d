@@ -41,7 +41,7 @@ public:
     
     override Vector!CertificateStore trustedCertificateAuthorities(in string, in string)
     {
-        return m_stores.dup;
+        return m_stores.clone;
     }
 
     override Vector!X509Certificate certChain(const ref Vector!string cert_key_types, in string type, in string) 

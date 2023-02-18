@@ -43,7 +43,7 @@ public:
     */
     void setOtherKey()(auto const ref Vector!ubyte ok)
     {
-        m_other_key = ok.dup;
+        m_other_key = ok.clone;
     }
 protected:
     /*
@@ -205,8 +205,8 @@ size_t dliesKat(string p,
 
     DLGroup domain = DLGroup(p_bn, g_bn);
     
-    auto from = DHPrivateKey(*rng, domain.dup, x1_bn.move());
-    auto to = DHPrivateKey(*rng, domain.dup, x2_bn.move());
+    auto from = DHPrivateKey(*rng, domain.clone, x1_bn.move());
+    auto to = DHPrivateKey(*rng, domain.clone, x2_bn.move());
     
     const string opt_str = "KDF2(SHA-1)/HMAC(SHA-1)/16";
 

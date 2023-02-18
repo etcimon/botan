@@ -52,7 +52,7 @@ public:
             
             key_len -= produce;
         }
-        return output.bitsOf().dup;
+        return output.bitsOf().clone;
     }
 
     override @property string name() const { return "SSL3-PRF"; }

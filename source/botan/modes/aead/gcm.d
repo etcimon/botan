@@ -294,7 +294,7 @@ public:
     void start(const(ubyte)* nonce, size_t len)
     {
         m_nonce[] = nonce[0 .. len];
-        m_ghash = m_H_ad.dup;
+        m_ghash = m_H_ad.clone;
     }
 
     /*

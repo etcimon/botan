@@ -72,8 +72,8 @@ public:
         
         extensions.add(new KeyUsage(constraints), true);
         
-        extensions.add(new AuthorityKeyID(m_cert.subjectKeyId().dup));
-        extensions.add(new SubjectKeyID(req.rawPublicKey().dup));
+        extensions.add(new AuthorityKeyID(m_cert.subjectKeyId().clone));
+        extensions.add(new SubjectKeyID(req.rawPublicKey().clone));
         
         extensions.add(new SubjectAlternativeName(req.subjectAltName()));
         
@@ -125,7 +125,7 @@ public:
                         Duration next_update = 0.seconds) const
     {
 
-        Vector!CRLEntry revoked = crl.getRevoked().dup;
+        Vector!CRLEntry revoked = crl.getRevoked().clone;
         revoked ~= new_revoked[];
         return makeCRL(revoked, crl.crlNumber() + 1, next_update, rng);
     }
@@ -233,7 +233,7 @@ private:
         auto expire_time = current_time + next_update;
         
         X509Extensions extensions = X509Extensions(true);
-        extensions.add(new AuthorityKeyID(m_cert.subjectKeyId().dup));
+        extensions.add(new AuthorityKeyID(m_cert.subjectKeyId().clone));
         extensions.add(new CRLNumber(crl_number));
 
         auto contents = 

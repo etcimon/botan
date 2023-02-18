@@ -106,7 +106,7 @@ public:
     Vector!ubyte sessionTicket() const
     {
         if (newSessionTicket() && !newSessionTicket().ticket().empty())
-            return newSessionTicket().ticket().dup;
+            return newSessionTicket().ticket().clone;
         
         return clientHello().sessionTicket();
     }
@@ -387,7 +387,7 @@ public:
 
     void computeSessionKeys()
     {
-        m_session_keys = TLSSessionKeys(this, clientKex().preMasterSecret().dup, false);
+        m_session_keys = TLSSessionKeys(this, clientKex().preMasterSecret().clone, false);
     }
 
     void computeSessionKeys()(auto ref SecureVector!ubyte resume_master_secret)

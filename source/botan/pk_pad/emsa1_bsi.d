@@ -46,7 +46,7 @@ public:
             throw new EncodingError("EMSA1_BSI::encodingOf: Invalid size for input");
         
         if (8*msg.length <= output_bits)
-            return msg.dup;
+            return msg.clone;
         
         throw new EncodingError("EMSA1_BSI::encodingOf: max key input size exceeded");
     }

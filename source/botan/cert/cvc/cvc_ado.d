@@ -142,7 +142,7 @@ public:
     */
     override const(Vector!ubyte) tbsData() const
     {
-        return m_tbs_bits.dup;
+        return m_tbs_bits.clone;
     }
 
 
@@ -160,9 +160,9 @@ public:
     */
     this(ref EAC11ADO other)
     {
-        m_sig = other.m_sig.dup;
+        m_sig = other.m_sig.clone;
         m_sig_algo = AlgorithmIdentifier(other.m_sig_algo);
-        m_tbs_bits = other.m_tbs_bits.dup;
+        m_tbs_bits = other.m_tbs_bits.clone;
         m_PEM_labels_allowed = other.m_PEM_labels_allowed;
 
         m_car = ASN1Car(other.m_car);
@@ -178,7 +178,7 @@ public:
     {
         m_sig = other.m_sig;
         m_sig_algo = other.m_sig_algo;
-        m_tbs_bits = other.m_tbs_bits.dup;
+        m_tbs_bits = other.m_tbs_bits.clone;
         m_PEM_labels_allowed = other.m_PEM_labels_allowed;
 
         m_car = other.m_car;

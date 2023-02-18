@@ -37,7 +37,7 @@ public:
     this(OID attr_oid, ref Vector!ubyte attr_value)
     {
         oid = attr_oid;
-        parameters = attr_value.dup;
+        parameters = attr_value.clone;
     }
     
     /*
@@ -46,7 +46,7 @@ public:
     this(in string attr_oid, ref Vector!ubyte attr_value)
     {
         oid = OIDS.lookup(attr_oid);
-        parameters = attr_value.dup;
+        parameters = attr_value.clone;
     }
     
     /*

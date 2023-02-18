@@ -187,14 +187,14 @@ public:
     Vector!( Pair!(string, string) ) supportedAlgos() const
     {
         if (SignatureAlgorithms sigs = m_extensions.get!SignatureAlgorithms())
-            return sigs.supportedSignatureAlgorthms().dup();
+            return sigs.supportedSignatureAlgorthms().clone();
         return Vector!( Pair!(string, string) )();
     }
 
     Vector!string supportedEccCurves() const
     {
         if (SupportedEllipticCurves ecc = m_extensions.get!SupportedEllipticCurves())
-            return ecc.curves().dup();
+            return ecc.curves().clone();
         return Vector!string();
     }
 
@@ -225,7 +225,7 @@ public:
     Vector!ubyte renegotiationInfo() const
     {
         if (RenegotiationExtension reneg = m_extensions.get!RenegotiationExtension())
-            return reneg.renegotiationInfo().dup();
+            return reneg.renegotiationInfo().clone();
         return Vector!ubyte();
     }
 
@@ -244,7 +244,7 @@ public:
     Vector!ubyte sessionTicket() const
     {
         if (SessionTicket ticket = m_extensions.get!SessionTicket())
-            return ticket.contents().dup();
+            return ticket.contents().clone();
         return Vector!ubyte();
     }
 
@@ -261,7 +261,7 @@ public:
     const(Vector!string) nextProtocols() const
     {
         if (auto alpn = m_extensions.get!ApplicationLayerProtocolNotification())
-            return alpn.protocols().dup;
+            return alpn.protocols().clone;
         return Vector!string();
     }
 
@@ -287,7 +287,7 @@ public:
         if (!m_version.isDatagramProtocol())
             throw new Exception("Cannot use hello cookie with stream protocol");
         
-        m_hello_cookie = hello_verify.cookie().dup;
+        m_hello_cookie = hello_verify.cookie().clone;
     }
 
     const(Vector!HandshakeExtensionType) extensionTypes() const
@@ -406,7 +406,7 @@ public:
         bool reneg_empty = reneg_info.empty;
 
         m_version = session.Version();
-        m_session_id = session.sessionId().dup;
+        m_session_id = session.sessionId().clone;
         m_random = makeHelloRandom(rng, policy);
 		m_suites.reserve(16);
 		m_grease = policy.allowClientHelloGrease();
@@ -442,7 +442,7 @@ public:
 					m_extensions.add(new ExtendedMasterSecret);
 					break;
 				case TLSEXT_SESSION_TICKET:
-					m_extensions.add(new SessionTicket(session.sessionTicket().dup));
+					m_extensions.add(new SessionTicket(session.sessionTicket().clone));
 					break;
 				case TLSEXT_SIGNATURE_ALGORITHMS:
 					if (m_version.supportsNegotiableSignatureAlgorithms())
@@ -660,7 +660,7 @@ public:
     Vector!ubyte renegotiationInfo() const
     {
         if (RenegotiationExtension reneg = m_extensions.get!RenegotiationExtension())
-            return reneg.renegotiationInfo().dup;
+            return reneg.renegotiationInfo().clone;
         return Vector!ubyte();
     }
 
@@ -1068,7 +1068,7 @@ public:
                 
                 if (!group.verifyGroup(rng, false))
                     throw new TLSException(TLSAlert.INSUFFICIENT_SECURITY, "DH group failed validation, possible attack");
-                auto counterparty_key = DHPublicKey(group.dup, Y.move);
+                auto counterparty_key = DHPublicKey(group.clone, Y.move);
                 
                 auto priv_key = DHPrivateKey(rng, group.move);
                 
@@ -1220,7 +1220,7 @@ public:
 
 
 protected:
-    override Vector!ubyte serialize() const { return m_key_material.dup; }
+    override Vector!ubyte serialize() const { return m_key_material.clone; }
 
 private:
     Vector!ubyte m_key_material;
@@ -1257,7 +1257,7 @@ public:
         ref HandshakeHash hash,
         auto ref Vector!X509Certificate cert_list)
     {
-        m_certs = cert_list.dupr;
+        m_certs = cert_list.cloneToRef;
         hash.update(io.send(this));
     }
 
@@ -1342,7 +1342,7 @@ public:
     ref const(Vector!X509DN) acceptableCAs() const { return m_names; }
 
     Vector!( Pair!(string, string) ) supportedAlgos() const
-    { return m_supported_algos.dup; }
+    { return m_supported_algos.clone; }
 
     /**
     * Create a new Certificate Request message
@@ -1359,7 +1359,7 @@ public:
 		static TLSPolicy last_tls_policy;
         static TLSProtocolVersion last_version;
 		if (policy is last_tls_policy && _version == last_version)
-			m_supported_algos = last_supported_algos.dup;
+			m_supported_algos = last_supported_algos.clone;
 		else {
 			m_supported_algos.reserve(16);
 	        if (_version.supportsNegotiableSignatureAlgorithms())
@@ -1373,7 +1373,7 @@ public:
 	        }
 			last_tls_policy = cast() policy;
             last_version = _version;
-			last_supported_algos = m_supported_algos.dup;
+			last_supported_algos = m_supported_algos.clone;
 		}
         
         hash.update(io.send(this));
@@ -1449,7 +1449,7 @@ protected:
         appendTlsLengthValue(buf, cert_types, 1);
         
         if (!m_supported_algos.empty) {
-			Unique!SignatureAlgorithms sig_algos = new SignatureAlgorithms(m_supported_algos.dup);
+			Unique!SignatureAlgorithms sig_algos = new SignatureAlgorithms(m_supported_algos.clone);
             buf ~= sig_algos.serialize();
 		}
         
@@ -1612,7 +1612,7 @@ protected:
     */
     override Vector!ubyte serialize() const
     {
-        return m_verification_data.dup;
+        return m_verification_data.clone;
     }
    
 private:
@@ -1914,7 +1914,7 @@ protected:
     */
     override Vector!ubyte serialize() const
     {
-        Vector!ubyte buf = params().dup;
+        Vector!ubyte buf = params().clone;
         
         if (m_signature.length)
         {
