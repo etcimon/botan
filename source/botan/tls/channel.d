@@ -571,7 +571,7 @@ protected:
             // TLS is easy just remove all but the current state
             auto current_epoch = sequenceNumbers().currentWriteEpoch();
 
-            foreach (const ref ushort k, const ref ConnectionCipherState v; m_write_cipher_states) {
+            foreach (const ref ushort k, const ref ConnectionCipherState v; cast(const)m_write_cipher_states) {
                 if (k != current_epoch) {
                     v.destroy();
                     m_write_cipher_states.remove(k);

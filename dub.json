@@ -82,7 +82,7 @@
                     "copyFiles-windows-x86_64": ["lib/win-amd64/libeay32.dll", "lib/win-amd64/ssleay32.dll"],
                     "sourceFiles-windows-x86_64" : ["lib/win-amd64/libeay32.lib", "lib/win-amd64/ssleay32.lib"],
                     "dependencies": {
-                        "openssl": { "version": "~>1.1.7+1.1.1d" } 
+                        "openssl": { "version": "~>1.1.7+1.1.1d", "optional": true } 
                     }
                 }, 
                 {
@@ -94,7 +94,7 @@
                 {
                     "name": "pubkey",
                     "versions": [
-                        "Locking_Allocator", "SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24", "Nyberg_Rueppel", "Diffie_Hellman", "ECDH", "PUBKEY", "X509", "RSA", "RW", "DLIES", "DSA", "ECDSA", "ElGamal", "GOST_3410", "Curve25519", "HMAC", "Entropy_HRTimer", "Entropy_Rdrand", "Entropy_DevRand", "Entropy_EGD", "Entropy_UnixProc", "Entropy_CAPI", "Entropy_Win32", "Entropy_ProcWalk", "KDF1", "KDF2", "SSL_V3_PRF", "TLS_V10_PRF", "TLS_V12_PRF", "X942_PRF"
+                        "Locking_Allocator", "SHA2_32", "SHA2_64", "MD4", "MD5", "SHA1", "CRC24", "Nyberg_Rueppel", "Diffie_Hellman", "ECDH", "PUBKEY", "X509", "RSA", "RW", "DLIES", "DSA", "ECDSA", "ElGamal", "GOST_3410", "Curve25519", "HMAC", "Entropy_HRTimer", "Entropy_Rdrand", "Entropy_DevRand", "Entropy_EGD", "Entropy_UnixProc", "Entropy_CAPI", "Entropy_Win32", "Entropy_ProcWalk", "KDF1", "KDF2", "SSL_V3_PRF", "TLS_V10_PRF", "TLS_V12_PRF", "X942_PRF", "PBE_PKCSv20", "CBC", "EME_OAEP", "EME_PKCS1v15", "PBE_PKCSv20"
                     ]
                 },
                 {

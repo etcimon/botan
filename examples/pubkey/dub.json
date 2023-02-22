@@ -10,5 +10,8 @@
     "dependencies": {
             "botan": { "version": "~master", "path": "../../" } 
     }, 
+    "subConfigurations": {
+        "botan": "pubkey"
+    },
     "versions": ["DisableDebugger"]
 }
