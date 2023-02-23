@@ -79,7 +79,7 @@ install:
                 $latest = $version;
                 $url = "https://github.com/ldc-developers/ldc/releases/download/v$($version)/ldc2-$($version)-windows-$($arch).7z";
             }
-            $env:PATH += ";C:\ldc2-$($latest)-windows-x64\bin";
+            $env:PATH += ";C:\ldc2-$($latest)-windows-$($arch)\bin";
             $env:DC = "ldc2";
             return $url;
         }
