@@ -8,16 +8,16 @@ Botan is a very complete crypto powerhouse packaged in a D library.
 
 It is a translation of the C++ library [Botan](http://botan.randombit.net/), although the code is now in D and uses the [memutils](https://github.com/etcimon/memutils) library as a replacement for the C++ STL.
 
-A TLS client/server with ALPN, SNI and HTTP/2 has been added to the [http2-botan vibe.d branch](https://github.com/etcimon/vibe.d/tree/http2-botan) on my fork.
+A TLS client/server with ALPN, SNI and HTTP/2 has been added to the [http2-botan vibe.d port](https://github.com/etcimon/vibe.0).
 
 Getting Started
 ---------------
 
-Botan has been tested on Windows x86, Windows x64, OSX x64, Linux x86, Linux x64 with DMD v2.080+
+Botan has been tested on Windows x86, Windows x64, OSX x64, Linux x86, Linux x64 with DMD v2.099.1+ and LDC v1.31.0+
 
-- Install [DMD](http://dlang.org/download) v2.080.0+
+- Install [DMD](http://dlang.org/download) v2.099.1+
 
-- Compile Botan tests using `dub test --arch=x86_64` for x64, or `dub test --arch=x86` for x86. On Windows 64 bit, you will need to compile DMD64 using the Microsoft Visual Studio solution (.sln) in the DMD src/ folder. On Windows 32bit (--arch=x86), you will need to use the microsoft linker (mscoff): `dub test --config=32mscoff`, and DMD 2.068 (currently git master).
+- Compile Botan tests using `dub test --arch=x86_64` for x64, or `dub test --arch=x86_mscoff` for x86.
 
 Learning
 --------

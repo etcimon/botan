@@ -20,10 +20,10 @@ environment:
     DVersion: stable
     arch: x86_mscoff
   - DC: dmd
-    DVersion: 2.102.1
+    DVersion: 2.099.1
     arch: x64
   - DC: dmd
-    DVersion: 2.102.1
+    DVersion: 2.099.1
     arch: x86_mscoff
   - DC: ldc
     DVersion: beta
@@ -32,10 +32,10 @@ environment:
     DVersion: stable
     arch: x64
   - DC: ldc
-    DVersion: 1.13.0
+    DVersion: 1.31.0
     arch: x64
   - DC: ldc
-    DVersion: 1.13.0
+    DVersion: 1.31.0
     arch: x86
 
 skip_tags: false
@@ -114,6 +114,10 @@ build_script:
             $env:compilersetupargs = "amd64";
             $env:Darch = "x86_64";
             $env:DConf = "m64";
+        }elseif($env:arch -eq "x86"){
+            $env:compilersetupargs = "x86";
+            $env:Darch = "x86";
+            $env:DConf = "m32";
         }
   - ps: $env:compilersetup = "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall";
   - '"%compilersetup%" %compilersetupargs%'

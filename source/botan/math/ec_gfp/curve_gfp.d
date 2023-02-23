@@ -307,28 +307,28 @@ struct CurveGFp
     /**
     * Returns: curve coefficient a
     */
-    ref const(BigInt) getA() const { return m_repr.getA(); }
+    ref const(BigInt) getA() const return { return m_repr.getA(); }
 
     /**
     * Returns: curve coefficient b
     */
-    ref const(BigInt) getB() const { return m_repr.getB(); }
+    ref const(BigInt) getB() const return { return m_repr.getB(); }
 
     /**
     * Get prime modulus of the field of the curve
     * Returns: prime modulus of the field of the curve
     */
-    ref const(BigInt) getP() const { return m_repr.getP(); }
+    ref const(BigInt) getP() const return { return m_repr.getP(); }
 
     /**
     * Returns: a * r mod p
     */
-    ref const(BigInt) getARep() const { return m_repr.getARep(); }
+    ref const(BigInt) getARep() const return { return m_repr.getARep(); }
 
     /**
     * Returns: b * r mod p
     */
-    ref const(BigInt) getBRep() const { return m_repr.getBRep(); }
+    ref const(BigInt) getBRep() const return { return m_repr.getBRep(); }
 
     void toRep()(BigInt* x, SecureVector!word ws) const
     { 

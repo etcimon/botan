@@ -23,19 +23,18 @@ import std.algorithm : max;
 *  q = will be set to x / y
 *  r = will be set to x % y
 */
-void divide(const(BigInt)* x, const(BigInt)* y_arg, BigInt* q, BigInt* r)
+void divide(const(BigInt)* x, const(BigInt)* y_arg, BigInt* q_out, BigInt* r_out)
 {
     /*
     * Solve x = q * y + r
     */
     if (y_arg.isZero())
         throw new BigInt.DivideByZero();
-    
     BigInt y = y_arg.clone;
     const size_t y_words = y.sigWords();
     
-    *r = x.clone;
-    *q = 0;
+    BigInt r = x.clone;
+    BigInt q = 0;
     
     r.setSign(BigInt.Positive);
     y.setSign(BigInt.Positive);
@@ -44,8 +43,8 @@ void divide(const(BigInt)* x, const(BigInt)* y_arg, BigInt* q, BigInt* r)
     
     if (compare == 0)
     {
-        *q = 1;
-        *r = 0;
+        q = 1;
+        r = 0;
     }
     else if (compare > 0)
     {
@@ -53,7 +52,7 @@ void divide(const(BigInt)* x, const(BigInt)* y_arg, BigInt* q, BigInt* r)
         word y_top = y.wordAt(y.sigWords()-1);
         while (y_top < MP_WORD_TOP_BIT) { y_top <<= 1; ++shifts; }
         y <<= shifts;
-        *r <<= shifts;
+        r <<= shifts;
         
         const size_t n = r.sigWords() - 1, t = y_words - 1;
         
@@ -66,49 +65,49 @@ void divide(const(BigInt)* x, const(BigInt)* y_arg, BigInt* q, BigInt* r)
         
         if (n <= t)
         {
-            while (*r > y) { *r -= y; ++(*q); }
-            *r >>= shifts;
-            signFixup(x, y_arg, q, r);
+            while (r > y) { r -= y; ++(q); }
+            r >>= shifts;
+            signFixup(x, y_arg, &q, &r);
             return;
         }
         
-        BigInt temp = y << (MP_WORD_BITS * (n-t));
+        BigInt shifted_y = y << (MP_WORD_BITS * (n-t));
         
-        while (*r >= temp) { *r -= temp; q_words[n-t] += 1; }
+        while (r >= shifted_y) { r -= shifted_y; q_words[n-t] += 1; }
         
         for (size_t j = n; j != t; --j)
         {
             const word x_j0  = r.wordAt(j);
             const word x_j1 = r.wordAt(j-1);
-            const word y_t  = y.wordAt(t);
-            if (y_t == 0)
-                throw new InvalidArgument("Division by zero due to too large bn");
+            const word x_j2 = r.wordAt(j-2);
+            const word y_t0  = y.wordAt(t);
+            const word y_t1  = y.wordAt(t-1);
+
+            word qjt = (x_j0 == y_t0) ? MP_WORD_MAX : bigint_divop(x_j0, x_j1, y_t0);
             
-            if (x_j0 == y_t)
-                q_words[j-t-1] = MP_WORD_MAX;
-            else
-                q_words[j-t-1] = bigint_divop(x_j0, x_j1, y_t);
-            
-            while (divisionCheck(q_words[j-t-1], y_t, y.wordAt(t-1), x_j0, x_j1, r.wordAt(j-2)))
+            while (divisionCheck(qjt, y_t0, y_t1, x_j0, x_j1, x_j2))
             {
-                q_words[j-t-1] -= 1;
+                qjt -= 1;
             }
-			auto y_1 = (y * q_words[j-t-1]);
-			auto j_t_1 = (j-t-1);
-            y_1 <<= (MP_WORD_BITS * j_t_1);
-            *r -= y_1;
+
+            shifted_y >>= BOTAN_MP_WORD_BITS;
+            // Now shifted_y == y << (BOTAN_MP_WORD_BITS * (j-t-1))
+            r -= shifted_y * qjt;
+            if (r.isNegative()) {
+                // overcorrected
+                qjt -= 1;
+                r += shifted_y;
+            }
+            q_words[j-t-1] = qjt;
             
-            if (r.isNegative())
-            {
-                y <<= (MP_WORD_BITS * (j-t-1));
-                *r += y;
-                q_words[j-t-1] -= 1;
-            }
         }
-        *r >>= shifts;
+        r >>= shifts;
     }
     
-    signFixup(x, y_arg, q, r);
+    signFixup(x, y_arg, &q, &r);
+
+    *r_out = r.move();
+    *q_out = q.move();
 }
 
 private:
