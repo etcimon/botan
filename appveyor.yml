@@ -20,16 +20,10 @@ environment:
     DVersion: stable
     arch: x86_mscoff
   - DC: dmd
-    DVersion: 2.076.0
+    DVersion: 2.102.1
     arch: x64
   - DC: dmd
-    DVersion: 2.076.0
-    arch: x86_mscoff
-  - DC: dmd
-    DVersion: 2.074.0
-    arch: x64
-  - DC: dmd
-    DVersion: 2.074.0
+    DVersion: 2.102.1
     arch: x86_mscoff
   - DC: ldc
     DVersion: beta
@@ -37,6 +31,12 @@ environment:
   - DC: ldc
     DVersion: stable
     arch: x64
+  - DC: ldc
+    DVersion: 1.13.0
+    arch: x64
+  - DC: ldc
+    DVersion: 1.13.0
+    arch: x86
 
 skip_tags: false
 branches:
@@ -55,7 +55,7 @@ install:
                 $latestVersion = $latest.split("-")[0].split("~")[0];
                 $url = "http://downloads.dlang.org/pre-releases/2.x/$($latestVersion)/dmd.$($latest).windows.7z";
             }elseif($version -eq "nightly") {
-                $url = "http://nightlies.dlang.org/dmd-nightly/dmd.master.windows.7z"
+                $url = "https://downloads.dlang.org/nightlies/dmd-master/dmd.master.windows.7z"
             }else {
                 $url = "http://downloads.dlang.org/releases/2.x/$($version)/dmd.$($version).windows.7z";
             }

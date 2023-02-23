@@ -69,7 +69,7 @@ version(D_InlineAsm_X86) {
         asm
         {
             mov EAX, ret;
-            rdrand EAX;
+            db 0x0F, 0xC7, 0xF0;
             mov ret, EAX;
         }
         if (ret != 0)

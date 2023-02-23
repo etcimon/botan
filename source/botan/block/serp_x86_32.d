@@ -246,7 +246,6 @@ void botan_serpent_x86_32_key_schedule(uint* ks) pure
     enum PUSHED = 4;
     enum ASM =
           START_ASM ~
-          "naked;\n" ~
           SPILL_REGS() ~
           ASSIGN(EDI, ARG(PUSHED, 1)) ~ /* round keys */
           ASSIGN(ESI, IMM(8)) ~
@@ -317,7 +316,6 @@ void botan_serpent_x86_32_key_schedule(uint* ks) pure
           RESTORE_REGS() ~
           "ret;\n"~
           END_ASM;
-
     mixin(ASM);
 }
 
