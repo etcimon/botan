@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/etcimon/botan.svg?branch=master)](https://travis-ci.org/etcimon/botan)
+[![Build Status](https://ci.appveyor.com/api/projects/status/github/etcimon/botan?branch=master&svg=true)](https://ci.appveyor.com/project/etcimon/botan)
 
 
 Botan Crypto Library
