@@ -32,6 +32,9 @@ environment:
     DVersion: stable
     arch: x64
   - DC: ldc
+    DVersion: stable
+    arch: x86
+  - DC: ldc
     DVersion: 1.31.0
     arch: x64
   - DC: ldc
