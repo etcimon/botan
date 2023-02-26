@@ -272,8 +272,6 @@ private:
 
         this(in string[] args) { spawn(args); }
 
-        ~this() { shutdown(); }
-
         this(ref UnixProcess other)
         {
             std.algorithm.swap(m_fd, other.m_fd);
@@ -291,6 +289,11 @@ private:
         return src;
     }
 
+    ~this() {
+        foreach (ref UnixProcess proc; m_procs[]) {
+            proc.shutdown();
+        }
+    }
 
     Vector!string m_trusted_paths;
     const size_t m_concurrent;
