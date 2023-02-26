@@ -1,5 +1,5 @@
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/etcimon/botan?branch=master&svg=true)](https://ci.appveyor.com/project/etcimon/botan)
-
+[![CI](https://github.com/etcimon/botan/actions/workflows/ci.yml/badge.svg)](https://github.com/etcimon/botan/actions/workflows/ci.yml)
 
 Botan Crypto Library
 ====================
