@@ -23,7 +23,7 @@ import std.algorithm : max;
 *  q = will be set to x / y
 *  r = will be set to x % y
 */
-void divide(const(BigInt)* x, const(BigInt)* y_arg, BigInt* q_out, BigInt* r_out)
+void divide(const(BigInt)* x, const(BigInt)* y_arg, BigInt* q_out, BigInt* r_out, bool trace = false)
 {
     /*
     * Solve x = q * y + r
@@ -55,7 +55,6 @@ void divide(const(BigInt)* x, const(BigInt)* y_arg, BigInt* q_out, BigInt* r_out
         r <<= shifts;
         
         const size_t n = r.sigWords() - 1, t = y_words - 1;
-        
         if (n < t)
             throw new InternalError("BigInt division word sizes");
         
@@ -67,8 +66,7 @@ void divide(const(BigInt)* x, const(BigInt)* y_arg, BigInt* q_out, BigInt* r_out
         {
             while (r > y) { r -= y; ++(q); }
             r >>= shifts;
-            signFixup(x, y_arg, &q, &r);
-            return;
+            goto ret;
         }
         
         BigInt shifted_y = y << (MP_WORD_BITS * (n-t));
@@ -97,6 +95,7 @@ void divide(const(BigInt)* x, const(BigInt)* y_arg, BigInt* q_out, BigInt* r_out
                 // overcorrected
                 qjt -= 1;
                 r += shifted_y;
+                
             }
             q_words[j-t-1] = qjt;
             
@@ -104,8 +103,8 @@ void divide(const(BigInt)* x, const(BigInt)* y_arg, BigInt* q_out, BigInt* r_out
         r >>= shifts;
     }
     
+ret:
     signFixup(x, y_arg, &q, &r);
-
     *r_out = r.move();
     *q_out = q.move();
 }

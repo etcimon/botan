@@ -43,7 +43,19 @@ struct RWOptions {
         
         auto p_minus_1 = privkey.getP() - 1;
         auto q_minus_1 = privkey.getQ() - 1;
-        if ((privkey.getE() * privkey.getD()) % (lcm(&p_minus_1, &q_minus_1) >> 1) != 1)
+        auto arg1 = (privkey.getE() * privkey.getD());
+        auto arg2 = (lcm(&p_minus_1, &q_minus_1) >> 1);
+        auto mod_res = arg1 % arg2;
+        logTrace(mod_res.toString());
+        import botan.math.bigint.divide;
+        BigInt q, r;
+        logTrace("Calling divide with arg1arg2:");
+        logTrace(arg1.toString());
+        logTrace(arg2.toString());
+        divide(&arg1, &arg2, &q, &r, true);
+        logTrace(r.toString());
+
+        if (mod_res != 1)
             return false;
                
         return signatureConsistencyCheck(rng, privkey, "EMSA2(SHA-1)");
