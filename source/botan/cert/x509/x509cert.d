@@ -498,8 +498,9 @@ public:
     * Params:
     *  input = the data source
     */
-    this(DataSource input)
+    this(DataSource input, bool throw_on_unknown_critical_ = true)
     {
+        m_throw_on_unknown_critical = throw_on_unknown_critical_;
         super(input, "CERTIFICATE/X509 CERTIFICATE");
         m_self_signed = false;
         doDecode();
@@ -512,22 +513,25 @@ public:
     * Params:
     *  filename = the name of the certificate file
     */
-    this(in string filename)
+    this(in string filename, bool throw_on_unknown_critical_ = true)
     {
+        m_throw_on_unknown_critical = throw_on_unknown_critical_;
         super(filename, "CERTIFICATE/X509 CERTIFICATE");
         m_self_signed = false;
         doDecode();
     }
 
-    this(ALLOC)(auto const ref Vector!(ubyte, ALLOC) input)
+    this(ALLOC)(auto const ref Vector!(ubyte, ALLOC) input, bool throw_on_unknown_critical_ = true)
     {
+        m_throw_on_unknown_critical = throw_on_unknown_critical_;
         super(input, "CERTIFICATE/X509 CERTIFICATE");
         m_self_signed = false;
         doDecode();
     }
 
-    this(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input)
+    this(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input, bool throw_on_unknown_critical_ = true)
     {
+        m_throw_on_unknown_critical = throw_on_unknown_critical_;
         super(input, "CERTIFICATE/X509 CERTIFICATE");
         m_self_signed = false;
         doDecode();
@@ -588,7 +592,7 @@ protected:
         if (v3_exts_data.type_tag == 3 &&
             v3_exts_data.class_tag == (ASN1Tag.CONSTRUCTED | ASN1Tag.CONTEXT_SPECIFIC))
         {
-            X509Extensions extensions = X509Extensions(true);
+            X509Extensions extensions = X509Extensions(m_throw_on_unknown_critical);
             
             BERDecoder(v3_exts_data.value).decode(extensions).verifyEnd();
             
@@ -632,6 +636,7 @@ protected:
 
     DataStore m_subject, m_issuer;
     bool m_self_signed;
+    bool m_throw_on_unknown_critical;
 }
 
 
