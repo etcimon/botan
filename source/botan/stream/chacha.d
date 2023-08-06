@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 2014 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2018 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -68,9 +68,7 @@ public:
         if (!validIvLength(length))
             throw new InvalidIVLength(name, length);
         
-        m_state[12] = 0;
-
-        m_state[13] = 0;
+        initializeState();
         
 		if(length == 0)
 		{
@@ -84,6 +82,28 @@ public:
 			m_state[13] = loadLittleEndian!uint(iv, 0);
 			m_state[14] = loadLittleEndian!uint(iv, 1);
 			m_state[15] = loadLittleEndian!uint(iv, 2);
+		} else if (length == 24) {
+			m_state[12] = loadLittleEndian!uint(iv, 0);
+			m_state[13] = loadLittleEndian!uint(iv, 1);
+			m_state[14] = loadLittleEndian!uint(iv, 2);
+			m_state[15] = loadLittleEndian!uint(iv, 3);
+
+			auto hc = SecureVector!uint(8);
+			hchacha(*cast(uint[8]*) hc.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
+
+			m_state[ 4] = hc[0];
+			m_state[ 5] = hc[1];
+			m_state[ 6] = hc[2];
+			m_state[ 7] = hc[3];
+			m_state[ 8] = hc[4];
+			m_state[ 9] = hc[5];
+			m_state[10] = hc[6];
+			m_state[11] = hc[7];
+			m_state[12] = 0;
+			m_state[13] = 0;
+
+			m_state[14] = loadLittleEndian!uint(iv, 4);
+			m_state[15] = loadLittleEndian!uint(iv, 5);
 		}
 		version(SIMD_SSE2) {
 			if (CPUID.hasSse2())
@@ -94,7 +114,7 @@ public:
     }
 
     override bool validIvLength(size_t iv_len) const
-    { return (iv_len == 0 || iv_len == 8 || iv_len == 12); }
+    { return (iv_len == 0 || iv_len == 8 || iv_len == 12 || iv_len == 24); }
 
     KeyLengthSpecification keySpec() const
     {
@@ -106,6 +126,7 @@ public:
     */
     void clear()
     {
+        zap(m_key);
         zap(m_state);
         zap(m_buffer);
         m_position = 0;
@@ -123,44 +144,65 @@ public:
    
 
 protected:
+    void initializeState()
+    {
+        __gshared immutable uint[] TAU =    [ 0x61707865, 0x3120646e, 0x79622d36, 0x6b206574 ];
+
+        __gshared immutable uint[] SIGMA = [ 0x61707865, 0x3320646e, 0x79622d32, 0x6b206574 ];
+
+        m_state[4] = m_key[0];
+        m_state[5] = m_key[1];
+        m_state[6] = m_key[2];
+        m_state[7] = m_key[3];
+
+        if(m_key.length == 4)
+        {
+            m_state[0] = TAU[0];
+            m_state[1] = TAU[1];
+            m_state[2] = TAU[2];
+            m_state[3] = TAU[3];
+
+            m_state[8] = m_key[0];
+            m_state[9] = m_key[1];
+            m_state[10] = m_key[2];
+            m_state[11] = m_key[3];
+        }
+        else
+        {
+            m_state[0] = SIGMA[0];
+            m_state[1] = SIGMA[1];
+            m_state[2] = SIGMA[2];
+            m_state[3] = SIGMA[3];
+
+            m_state[8] = m_key[4];
+            m_state[9] = m_key[5];
+            m_state[10] = m_key[6];
+            m_state[11] = m_key[7];
+        }
+
+        m_state[12] = 0;
+        m_state[13] = 0;
+        m_state[14] = 0;
+        m_state[15] = 0;
+
+        m_position = 0;
+    }
+
     /*
     * ChaCha Key Schedule
     */
     override void keySchedule(const(ubyte)* key, size_t length)
     {
-        __gshared immutable uint[] TAU =    [ 0x61707865, 0x3120646e, 0x79622d36, 0x6b206574 ];
-        
-        __gshared immutable uint[] SIGMA = [ 0x61707865, 0x3320646e, 0x79622d32, 0x6b206574 ];
-        
-        const uint[] CONSTANTS = (length == 16) ? TAU : SIGMA;
+        m_key.resize(length / 4);
+        loadLittleEndian!uint(m_key.ptr, key, m_key.length);
 
-		// Repeat the key if 128bits
-		const(ubyte)* key2 = (length == 32) ? key + 16 : key;
-		m_position = 0;
         m_state.resize(16);
         m_buffer.resize(4*64);
-        
-        m_state[0] = CONSTANTS[0];
-        m_state[1] = CONSTANTS[1];
-        m_state[2] = CONSTANTS[2];
-        m_state[3] = CONSTANTS[3];
-        
-        m_state[4] = loadLittleEndian!uint(key, 0);
-        m_state[5] = loadLittleEndian!uint(key, 1);
-        m_state[6] = loadLittleEndian!uint(key, 2);
-        m_state[7] = loadLittleEndian!uint(key, 3);
-                
-        m_state[8] = loadLittleEndian!uint(key2, 0);
-        m_state[9] = loadLittleEndian!uint(key2, 1);
-        m_state[10] = loadLittleEndian!uint(key2, 2);
-        m_state[11] = loadLittleEndian!uint(key2, 3);
-        
-		// Default all-zero IV
-        
-        const ubyte[8] ZERO;
-        setIv(ZERO.ptr, ZERO.length);
+
+        setIv(null, 0);
     }
 
+    SecureVector!uint m_key;
 	SecureVector!uint m_state;
     SecureVector!ubyte m_buffer;
     size_t m_position = 0;
@@ -173,6 +215,42 @@ enum string CHACHA_QUARTER_ROUND(alias _a, alias _b, alias _c, alias _d) = q{
     %1$s += %2$s; %4$s ^= %1$s; %4$s = rotateLeft(%4$s, 8);
     %3$s += %4$s; %2$s ^= %3$s; %2$s = rotateLeft(%2$s, 7);
 }.format(__traits(identifier, _a), __traits(identifier, _b), __traits(identifier, _c), __traits(identifier, _d));
+
+/*
+* Generate HChaCha cipher stream (for XChaCha IV setup)
+*/
+private void hchacha(ref uint[8] output, const(uint)[16] input, size_t rounds)
+{
+    assert(rounds % 2 == 0, "Valid rounds");
+
+    uint x00 = input[ 0], x01 = input[ 1], x02 = input[ 2], x03 = input[ 3],
+        x04 = input[ 4], x05 = input[ 5], x06 = input[ 6], x07 = input[ 7],
+        x08 = input[ 8], x09 = input[ 9], x10 = input[10], x11 = input[11],
+        x12 = input[12], x13 = input[13], x14 = input[14], x15 = input[15];
+
+    for (size_t i = 0; i != rounds / 2; ++i)
+    {
+        mixin(CHACHA_QUARTER_ROUND!(x00, x04, x08, x12) ~
+            CHACHA_QUARTER_ROUND!(x01, x05, x09, x13) ~
+            CHACHA_QUARTER_ROUND!(x02, x06, x10, x14) ~
+            CHACHA_QUARTER_ROUND!(x03, x07, x11, x15) ~
+
+            CHACHA_QUARTER_ROUND!(x00, x05, x10, x15) ~
+            CHACHA_QUARTER_ROUND!(x01, x06, x11, x12) ~
+            CHACHA_QUARTER_ROUND!(x02, x07, x08, x13) ~
+            CHACHA_QUARTER_ROUND!(x03, x04, x09, x14)
+            );
+    }
+
+    output[0] = x00;
+    output[1] = x01;
+    output[2] = x02;
+    output[3] = x03;
+    output[4] = x12;
+    output[5] = x13;
+    output[6] = x14;
+    output[7] = x15;
+}
 
 private void chachax4(ref ubyte[64*4] output, ref uint[16] input, size_t rounds)
 {
