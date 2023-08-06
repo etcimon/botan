@@ -72,7 +72,12 @@ public:
 
         m_state[13] = 0;
         
-		if (length == 8) {
+		if(length == 0)
+		{
+			// Treat zero length IV same as an all-zero IV
+			m_state[14] = 0;
+			m_state[15] = 0;
+		} else if (length == 8) {
 	        m_state[14] = loadLittleEndian!uint(iv, 0);
 	        m_state[15] = loadLittleEndian!uint(iv, 1);
 		} else if (length == 12) {
@@ -89,7 +94,7 @@ public:
     }
 
     override bool validIvLength(size_t iv_len) const
-    { return (iv_len == 8 || iv_len == 12); }
+    { return (iv_len == 0 || iv_len == 8 || iv_len == 12); }
 
     KeyLengthSpecification keySpec() const
     {
