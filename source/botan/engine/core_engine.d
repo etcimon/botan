@@ -83,6 +83,7 @@ static if (BOTAN_HAS_XTEA)            import botan.block.xtea;
 static if (BOTAN_HAS_ADLER32)         import botan.checksum.adler32;
 static if (BOTAN_HAS_CRC24)           import botan.checksum.crc24;
 static if (BOTAN_HAS_CRC32)           import botan.checksum.crc32;
+static if (BOTAN_HAS_BLAKE2B)         import botan.hash.blake2b;
 static if (BOTAN_HAS_GOST_34_11)      import botan.hash.gost_3411;
 static if (BOTAN_HAS_HAS_160)         import botan.hash.has160;
 static if (BOTAN_HAS_KECCAK)          import botan.hash.keccak;
@@ -391,6 +392,11 @@ public:
         static if (BOTAN_HAS_CRC32) {
             if (request.algoName == "CRC32")
                 return new CRC32;
+        }
+
+        static if (BOTAN_HAS_BLAKE2B) {
+            if (request.algoName == "BLAKE2b")
+                return new Blake2b(request.argAsInteger(0, 512));
         }
         
         static if (BOTAN_HAS_GOST_34_11) {
