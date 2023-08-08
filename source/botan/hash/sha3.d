@@ -211,6 +211,28 @@ public:
         SHA3.permute(*cast(ulong[25]*) S.ptr);
     }
 
+    static void expand(size_t bitrate, ref SecureVector!ulong S, ubyte* output, size_t output_length)
+    {
+        if (bitrate % 64 != 0)
+            throw new InvalidArgument("SHA-3 bitrate must be multiple of 64");
+
+        const size_t byterate = bitrate / 8;
+
+        while(output_length > 0)
+        {
+            const size_t copying = min(byterate, output_length);
+
+            foreach (size_t i; 0 .. copying)
+                output[i] = get_byte(7 - (i % 8), S[i/8]);
+
+            output += copying;
+            output_length -= copying;
+
+            if(output_length > 0)
+                SHA3.permute(*cast(ulong[25]*) S.ptr);
+        }
+    }
+
 protected:
     override void addData(const(ubyte)* input, size_t length)
     {

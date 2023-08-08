@@ -212,6 +212,17 @@ public:
             return def_value;
         return to!uint(m_args[i]);
     }
+
+    /**
+    * Params:
+    *  i = which argument
+    *
+    * Returns: ith argument as an integer
+    */
+    size_t argAsInteger(size_t i) const
+    {
+        return to!uint(m_args[i]);
+    }
     
     /**
     * Returns: cipher mode (if any)
