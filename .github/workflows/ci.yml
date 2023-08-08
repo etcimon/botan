@@ -30,6 +30,9 @@ jobs:
           - dc: dmd-latest
             os: macos-latest
             arch: x86_64
+        exclude:
+          - os: ubuntu-latest
+            arch: x86
     steps:
       - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
       - uses: dlang-community/setup-dlang@763d869b4d67e50c3ccd142108c8bca2da9df166
