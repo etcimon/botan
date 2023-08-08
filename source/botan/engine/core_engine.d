@@ -95,6 +95,7 @@ static if (BOTAN_HAS_RIPEMD_160)      import botan.hash.rmd160;
 static if (BOTAN_HAS_SHA1)            import botan.hash.sha160;
 static if (BOTAN_HAS_SHA2_32)         import botan.hash.sha2_32;
 static if (BOTAN_HAS_SHA2_64)         import botan.hash.sha2_64;
+static if (BOTAN_HAS_SHA3)            import botan.hash.sha3;
 static if (BOTAN_HAS_SKEIN_512)       import botan.hash.skein_512;
 static if (BOTAN_HAS_TIGER)           import botan.hash.tiger;
 static if (BOTAN_HAS_WHIRLPOOL)       import botan.hash.whrlpool;
@@ -456,6 +457,11 @@ public:
                 return new SHA384;
             if (request.algoName == "SHA-512")
                 return new SHA512;
+        }
+
+        static if (BOTAN_HAS_SHA3) {
+            if (request.algoName == "SHA-3")
+                return new SHA3(request.argAsInteger(0, 512));
         }
         
         static if (BOTAN_HAS_TIGER) {
