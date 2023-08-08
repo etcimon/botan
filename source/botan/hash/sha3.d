@@ -22,7 +22,7 @@ import std.algorithm : min;
 /**
 * SHA-3
 */
-final class SHA3 : HashFunction
+class SHA3 : HashFunction
 {
 public:
 
@@ -42,7 +42,7 @@ public:
 
         if (output_bits != 224 && output_bits != 256 &&
             output_bits != 384 && output_bits != 512)
-            throw new InvalidArgument("SHA_3: Invalid output lengthh " ~ to!string(output_bits));
+            throw new InvalidArgument("SHA_3: Invalid output length " ~ to!string(output_bits));
     }
 
     override @property size_t hashBlockSize() const { return m_bitrate / 8; }
@@ -234,4 +234,24 @@ protected:
     size_t m_output_bits, m_bitrate;
     SecureVector!ulong m_S;
     size_t m_S_pos;
+}
+
+final class SHA3_224 : SHA3
+{
+    this() { super(224); }
+}
+
+final class SHA3_256 : SHA3
+{
+    this() { super(256); }
+}
+
+final class SHA3_384 : SHA3
+{
+    this() { super(384); }
+}
+
+final class SHA3_512 : SHA3
+{
+    this() { super(512); }
 }
