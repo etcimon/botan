@@ -114,8 +114,8 @@ public:
 		return donna128(this.lo() | y.lo(), this.hi() | y.hi());
 	}
 
-	@property ulong lo() const { return *cast(ulong*)&l;}
-	@property ulong hi() const { return *cast(ulong*)&h;}
+	@property ulong lo() const { return l;}
+	@property ulong hi() const { return h;}
 private:
 	ulong l;
 	ulong h;
