@@ -228,45 +228,56 @@ private:
 		import core.sync.condition;
 		import core.sync.mutex;
 		import core.atomic;
-		import memutils.utils : ThreadMem;
-		Mutex mutex = ThreadMem.alloc!Mutex();
-		scope(exit) {
-			ThreadMem.free(mutex);
-		}
+        version(Botan_Threading) {
+            import memutils.utils : ThreadMem;
+            Mutex mutex = ThreadMem.alloc!Mutex();
+            scope(exit) {
+                ThreadMem.free(mutex);
+            }
+        }
         if (m >= *m_n)
             throw new InvalidArgument("RSA private op - input is too large");
         BigInt j1;
 		j1.reserve(max(m_q.bytes() + m_q.bytes() % 128, m_n.bytes() + m_n.bytes() % 128));
+        version(Botan_Threading) {
 
-		struct Handler {
-			shared(Mutex) mtx;
-			shared(const BigInt*) d1;
-			shared(const BigInt*) p;
-			shared(const BigInt*) m2;
-			shared(BigInt*) j1_2;
-			void run() { 
-				try {
-					import botan.libstate.libstate : modexpInit;
-					modexpInit(); // enable quick path for powermod
-					BigInt* ret = cast(BigInt*) j1_2;
-					{
-						import memutils.utils;
-						FixedExponentPowerMod powermod_d1_p = FixedExponentPowerMod(cast(BigInt*)d1, cast(BigInt*)p);
-						BigInt _res =(cast()*powermod_d1_p)( cast(BigInt*) m2);
-						synchronized(cast()mtx) ret.load(&_res);
-					}
-				} catch (Exception e) { logDebug("Error: ", e.toString()); }
-			}
-		}
-		
-		auto handler = Handler(cast(shared)mutex, cast(shared)m_d1, cast(shared)m_p, cast(shared)&m, cast(shared)&j1);
-		Unique!Thread thr = new Thread(&handler.run);
-		thr.start();
+            struct Handler {
+                shared(Mutex) mtx;
+                shared(const BigInt*) d1;
+                shared(const BigInt*) p;
+                shared(const BigInt*) m2;
+                shared(BigInt*) j1_2;
+                void run() { 
+                    try {
+                        import botan.libstate.libstate : modexpInit;
+                        modexpInit(); // enable quick path for powermod
+                        BigInt* ret = cast(BigInt*) j1_2;
+                        {
+                            import memutils.utils;
+                            FixedExponentPowerMod powermod_d1_p = FixedExponentPowerMod(cast(BigInt*)d1, cast(BigInt*)p);
+                            BigInt _res =(cast()*powermod_d1_p)( cast(BigInt*) m2);
+                            synchronized(cast()mtx) ret.load(&_res);
+                        }
+                    } catch (Exception e) { logDebug("Error: ", e.toString()); }
+                }
+            }
+            
+            auto handler = Handler(cast(shared)mutex, cast(shared)m_d1, cast(shared)m_p, cast(shared)&m, cast(shared)&j1);
+            Unique!Thread thr = new Thread(&handler.run);
+            thr.start();
+        }
         FixedExponentPowerModImpl powermod_d2_q = cast(FixedExponentPowerModImpl)*m_powermod_d2_q;
         BigInt j2 = powermod_d2_q.opCall(&m);
-		thr.join();
-		BigInt j3;
-		synchronized(mutex) j3 = m_mod_p.reduce(subMul(&j1, &j2, m_c));
+
+		version(Botan_Threading) {
+            thr.join();
+            BigInt j3;
+            synchronized(mutex) j3 = m_mod_p.reduce(subMul(&j1, &j2, m_c));
+        } else {
+            FixedExponentPowerMod powermod_d1_p = FixedExponentPowerMod(cast(BigInt*)m_d1, cast(BigInt*)m_p);
+            j1 = (cast()*powermod_d1_p)( cast(BigInt*) &m);
+            BigInt j3 = m_mod_p.reduce(subMul(&j1, &j2, m_c));
+        }
         return mulAdd(&j3, m_q, &j2);
     }
 

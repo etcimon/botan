@@ -7,11 +7,12 @@
     "targetType": "executable",
     "targetPath": "build",
     "workingDirectory": "build",
+    
     "dependencies": {
             "botan": { "version": "~master", "path": "../../" } 
     }, 
     "subConfigurations": {
         "botan": "pubkey"
     },
-    "versions": ["DisableDebugger"]
+    "versions": ["TLSGC", "EnableDebugger"]
 }

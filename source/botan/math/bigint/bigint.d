@@ -1077,7 +1077,7 @@ public:
     */
     static BigInt randomInteger(RandomNumberGenerator rng, const(BigInt)* min, const(BigInt)* max)
     {
-		BigInt delta_upper_bound = max - min - 1;
+		BigInt delta_upper_bound = *max - *min - 1;
 
         if (delta_upper_bound <= 0)
             throw new InvalidArgument("randomInteger: invalid min/max values");
