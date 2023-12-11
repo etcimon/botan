@@ -44,7 +44,7 @@ int curve25519Donna(ubyte* mypublic, const ubyte* secret, const ubyte* basepoint
 	ubyte[32] e;
 	int i;
 	
-	for (i = 0;i < 32;++i) e[i] = secret[i];
+	copyMem(e.ptr, secret, 32);
 	e[0] &= 248;
 	e[31] &= 127;
 	e[31] |= 64;
@@ -54,6 +54,7 @@ int curve25519Donna(ubyte* mypublic, const ubyte* secret, const ubyte* basepoint
 	crecip(zmone.ptr, z.ptr);
 	fmul(z.ptr, x.ptr, zmone.ptr);
 	fcontract(mypublic, z.ptr);
+
 	return 0;
 }
 

@@ -10,9 +10,17 @@
 module botan.utils.donna128;
 
 import botan.utils.mul128;
-
+version(LDC)
+import ldc.attributes;
+else {
+	struct optStrategy {
+		string strategy;
+	}
+}
 struct donna128
 {
+
+@optStrategy("none"):
 public:
 	void opAssign(donna128 other) {
 		this.l = other.l;
@@ -106,8 +114,9 @@ public:
 		return donna128(this.lo() | y.lo(), this.hi() | y.hi());
 	}
 
-	ulong lo() const { return l;}
-	ulong hi() const { return h;}
+	@property ulong lo() const { return *cast(ulong*)&l;}
+	@property ulong hi() const { return *cast(ulong*)&h;}
+private:
 	ulong l;
 	ulong h;
 }

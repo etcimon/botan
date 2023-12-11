@@ -47,7 +47,7 @@
         "source/botan/test.d",
         "source/botan/all.d"
     ],
-    "versions": ["Have_botan", "Botan", "EnableDebugger", "TLSGC"],
+    "versions": ["Have_botan", "Botan"],
     "libs-posix": ["dl"],
     "libs-windows": ["advapi32", "user32"],
 
