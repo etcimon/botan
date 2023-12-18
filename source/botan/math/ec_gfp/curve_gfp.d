@@ -447,8 +447,8 @@ struct CurveGFp
 
     static CurveGFpRepr chooseRepr()(BigInt* p, BigInt* a, BigInt* b)
     {
-        //if (p == CurveGFpP521.prime)
-        //    return cast(CurveGFpRepr) new CurveGFpP521(a, b);
+        if (p == CurveGFpP521.prime)
+            return cast(CurveGFpRepr) new CurveGFpP521(a, b);
         return cast(CurveGFpRepr) new CurveGFpMontgomery(p, a, b);
     }
 

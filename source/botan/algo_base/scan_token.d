@@ -290,7 +290,10 @@ public:
 
 private:
     static HashMapRef!(string, string) s_alias_map;
-    
+    static ~this() {
+        s_alias_map.destroy();
+        m_cache.destroy();
+    }
     string m_orig_algo_spec;
     string m_alg_name;
     Array!string m_args;

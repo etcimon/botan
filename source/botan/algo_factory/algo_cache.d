@@ -251,16 +251,3 @@ private:
 	}
 
 }
-
-shared(int) threads;
-static this() {
-    import core.atomic;
-    atomicOp!"+="(threads, 1);
-    logTrace("Starting, Threads: ", atomicLoad(threads));
-}
-
-static ~this() {
-    import core.atomic;
-    atomicOp!"-="(threads, 1);
-    logTrace("Closing, Threads: ", atomicLoad(threads));
-}

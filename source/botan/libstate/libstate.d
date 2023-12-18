@@ -75,6 +75,8 @@ public:
 	~this() {
 		if (m_algorithm_factory)
 			m_algorithm_factory.destroy(); 
+        if (m_prng)
+            m_prng.destroy();
 	}
 
     void initialize()
@@ -127,16 +129,11 @@ public:
         }
         
         algorithmFactory().addEngine(new CoreEngine);
-		if (!gs_entropy_src_mutex)
-			gs_entropy_src_mutex = new Mutex;
-        synchronized(gs_entropy_src_mutex) {
-            if (gs_sources.length == 0)
-                gs_sources = entropySources();
+        if (m_sources.length == 0)
+            m_sources = entropySources();
 
-            if (!gs_global_prng) {
-				gs_ctor = Thread.getThis();
-                gs_global_prng = new SerializedRNG();
-			}
+        if (!m_prng) {
+            m_prng = new SerializedRNG();
         }
         logTrace("Done serialized RNG");
         static if (BOTAN_HAS_SELFTESTS) {        
@@ -166,24 +163,23 @@ public:
     */
     RandomNumberGenerator globalRng()
     {
-        return cast(RandomNumberGenerator)gs_global_prng;
+        return cast(RandomNumberGenerator)m_prng;
     }
 
     void pollAvailableSources(ref EntropyAccumulator accum)
     {
-        synchronized(gs_entropy_src_mutex){
-            if (gs_sources.empty)
-                throw new Exception("No entropy sources enabled at build time, poll failed");
-            
-            size_t poll_attempt = 0;
-            
-            while (!accum.pollingGoalAchieved() && poll_attempt < 16)
-            {
-                const size_t src_idx = poll_attempt % gs_sources.length;
-                gs_sources[src_idx].poll(accum);
-                ++poll_attempt;
-            }
+        if (m_sources.empty)
+            throw new Exception("No entropy sources enabled at build time, poll failed");
+        
+        size_t poll_attempt = 0;
+        
+        while (!accum.pollingGoalAchieved() && poll_attempt < 16)
+        {
+            const size_t src_idx = poll_attempt % m_sources.length;
+            m_sources[src_idx].poll(accum);
+            ++poll_attempt;
         }
+        
     }
 
 private:
@@ -232,10 +228,7 @@ private:
     }
 
     AlgorithmFactory m_algorithm_factory;
+    SerializedRNG m_prng;
+    Vector!EntropySource m_sources;
     bool m_initialized;
 }
-
-__gshared Thread gs_ctor;
-__gshared SerializedRNG gs_global_prng;
-__gshared Mutex gs_entropy_src_mutex;
-__gshared Vector!( EntropySource ) gs_sources;

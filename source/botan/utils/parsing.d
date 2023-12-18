@@ -109,7 +109,6 @@ Vector!string splitOnPred(in string str,
     Vector!string elems;
 	elems.reserve(8);
     if (str == "") return elems.move();
-    import std.array : Appender;
     Vector!ubyte substr;
 	substr.reserve(16);
     foreach(const char c; str)

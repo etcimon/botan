@@ -197,7 +197,6 @@ public:
 
 	~this()
 	{
-		if (isBusy) return;
 		if (m_is_client)
 			m_impl.client.destroy(); 
 		else m_impl.server.destroy();

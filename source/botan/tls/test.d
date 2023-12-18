@@ -313,3 +313,8 @@ static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
     testReport("TLS", 4, errors);
 
 }
+
+static ~this() {
+    import botan.libstate.global_state;
+    setGlobalState(null);
+}

@@ -151,7 +151,7 @@ class CurveGFpP521 : CurveGFpNIST
 public:
     this()(BigInt* a, BigInt* b)
     {
-		if (prime is BigInt.init)
+		if (prime == BigInt.init)
 			prime = BigInt("0x1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 
         super(521, a, b);
