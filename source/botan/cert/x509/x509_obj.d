@@ -26,9 +26,7 @@ import botan.utils.types;
 import botan.utils.types;
 import memutils.hashmap;
 
-version(X509):
-
-/**
+version (X509)  : /**
 * This class represents abstract X.509 signed objects as
 * in the X.500 SIGNED macro
 */
@@ -66,18 +64,17 @@ public:
     final string hashUsedForSignature() const
     {
         Vector!string sig_info = botan.utils.parsing.splitter(OIDS.lookup(m_sig_algo.oid), '/');
-        
+
         if (sig_info.length != 2)
             throw new InternalError("Invalid name format found for " ~ m_sig_algo.oid.toString());
-        
+
         Vector!string pad_and_hash = parseAlgorithmName(sig_info[1]);
-        
+
         if (pad_and_hash.length != 2)
             throw new InternalError("Invalid name format " ~ sig_info[1]);
-        
+
         return pad_and_hash[1];
     }
-
 
     /**
     * Create a signed X509 object.
@@ -90,28 +87,27 @@ public:
     * Returns: signed X509 object
     */
     static Vector!ubyte makeSigned(ALLOC)(ref PKSigner signer,
-                                               RandomNumberGenerator rng,
-                                              in AlgorithmIdentifier algo,
-                                              auto const ref Vector!(ubyte, ALLOC) tbs_bits)
+        RandomNumberGenerator rng,
+        in AlgorithmIdentifier algo,
+        auto const ref Vector!(ubyte, ALLOC) tbs_bits)
     {
         return DEREncoder()
-                .startCons(ASN1Tag.SEQUENCE)
-                .rawBytes(tbs_bits)
-                .encode(algo)
-                .encode(signer.signMessage(tbs_bits, rng), ASN1Tag.BIT_STRING)
-                .endCons()
-                .getContentsUnlocked();
+            .startCons(ASN1Tag.SEQUENCE)
+            .rawBytes(tbs_bits)
+            .encode(algo)
+            .encode(signer.signMessage(tbs_bits, rng), ASN1Tag.BIT_STRING)
+            .endCons()
+            .getContentsUnlocked();
     }
 
     /// ditto
     static Vector!ubyte makeSigned(ALLOC)(ref PKSigner signer,
-                                          RandomNumberGenerator rng,
-                                          in AlgorithmIdentifier algo,
-                                          auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) tbs_bits)
+        RandomNumberGenerator rng,
+        in AlgorithmIdentifier algo,
+        auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) tbs_bits)
     {
         return makeSigned(signer, rng, algo, *tbs_bits);
     }
-
 
     /**
     * Check the signature on this data
@@ -122,12 +118,13 @@ public:
     final bool checkSignature(in PublicKey pub_key) const
     {
         assert(pub_key);
-        try {
+        try
+        {
             Vector!string sig_info = botan.utils.parsing.splitter(OIDS.lookup(m_sig_algo.oid), '/');
-            
+
             if (sig_info.length != 2 || sig_info[0] != pub_key.algoName)
                 return false;
-            
+
             string padding = sig_info[1];
             SignatureFormat format = (pub_key.messageParts() >= 2) ? DER_SEQUENCE : IEEE_1363;
             PKVerifier verifier = PKVerifier(pub_key, padding, format);
@@ -135,7 +132,7 @@ public:
             auto sig = signature().clone;
             return verifier.verifyMessage(tbs, sig);
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             return false;
         }
@@ -144,12 +141,12 @@ public:
     override void encodeInto(ref DEREncoder to) const
     {
         to.startCons(ASN1Tag.SEQUENCE)
-                .startCons(ASN1Tag.SEQUENCE)
-                .rawBytes(m_tbs_bits)
-                .endCons()
-                .encode(m_sig_algo)
-                .encode(m_sig, ASN1Tag.BIT_STRING)
-                .endCons();
+            .startCons(ASN1Tag.SEQUENCE)
+            .rawBytes(m_tbs_bits)
+            .endCons()
+            .encode(m_sig_algo)
+            .encode(m_sig, ASN1Tag.BIT_STRING)
+            .endCons();
     }
 
     /*
@@ -159,34 +156,32 @@ public:
     {
         //logTrace("decodeFrom X509Object");
         from.startCons(ASN1Tag.SEQUENCE)
-                .startCons(ASN1Tag.SEQUENCE)
-                .rawBytes(m_tbs_bits)
-                .endCons()
-                .decode(m_sig_algo)
-                .decode(m_sig, ASN1Tag.BIT_STRING)
-                .verifyEnd()
-                .endCons();
+            .startCons(ASN1Tag.SEQUENCE)
+            .rawBytes(m_tbs_bits)
+            .endCons()
+            .decode(m_sig_algo)
+            .decode(m_sig, ASN1Tag.BIT_STRING)
+            .verifyEnd()
+            .endCons();
     }
-
 
     /**
     * Returns: BER encoding of this
     */
     final Vector!ubyte BER_encode() const
     {
-		//static HashMap!(void*, ubyte[]) cache;
-		//if ((cast(void*)this) in cache) return Vector!ubyte(cache[cast(void*)this]);
-		
-		auto der = DEREncoder();
-		encodeInto(der);
-		auto ret = der.getContentsUnlocked();
-		//if (cache.length > 50)
-		//	cache = HashMap!(void*, ubyte[])();
-		//cache[cast(void*)this] = ret[].dup;
+        //static HashMap!(void*, ubyte[]) cache;
+        //if ((cast(void*)this) in cache) return Vector!ubyte(cache[cast(void*)this]);
 
-		return ret.move;
+        auto der = DEREncoder();
+        encodeInto(der);
+        auto ret = der.getContentsUnlocked();
+        //if (cache.length > 50)
+        //	cache = HashMap!(void*, ubyte[])();
+        //cache[cast(void*)this] = ret[].dup;
+
+        return ret.move;
     }
-
 
     /**
     * Returns: PEM encoding of this
@@ -196,8 +191,10 @@ public:
         return PEM.encode(BER_encode(), m_PEM_label_pref);
     }
 
-    ~this() {}
-protected:
+    ~this()
+    {
+    }
+
     /*
     * Create a generic X.509 object
     */
@@ -211,7 +208,7 @@ protected:
     */
     this(in string file, in string labels)
     {
-        DataSource stream = cast(DataSource)DataSourceStream(file, true);
+        DataSource stream = cast(DataSource) DataSourceStream(file, true);
         init(stream, labels);
     }
 
@@ -221,7 +218,7 @@ protected:
     this(ALLOC)(auto const ref Vector!(ubyte, ALLOC) vec, in string labels)
     {
         auto stream = DataSourceMemory(vec.ptr, vec.length);
-        init(cast(DataSource)stream, labels);
+        init(cast(DataSource) stream, labels);
     }
 
     /*
@@ -230,27 +227,33 @@ protected:
     this(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) vec, in string labels)
     {
         auto stream = DataSourceMemory(vec.ptr, vec.length);
-        init(cast(DataSource)stream, labels);
+        init(cast(DataSource) stream, labels);
     }
 
+protected:
     /*
     * Try to decode the actual information
     */
     final void doDecode()
     {
-        try {
+        try
+        {
             forceDecode();
         }
-        catch(DecodingError e)
+        catch (DecodingError e)
         {
             throw new DecodingError(m_PEM_label_pref ~ " decoding failed (" ~ e.msg ~ ")");
         }
-        catch(InvalidArgument e)
+        catch (InvalidArgument e)
         {
             throw new DecodingError(m_PEM_label_pref ~ " decoding failed (" ~ e.msg ~ ")");
         }
     }
-    this() { }
+
+    this()
+    {
+    }
+
     AlgorithmIdentifier m_sig_algo;
     Vector!ubyte m_tbs_bits, m_sig;
 
@@ -267,11 +270,12 @@ private:
         m_PEM_labels_allowed = botan.utils.parsing.splitter(labels, '/');
         if (m_PEM_labels_allowed.length < 1)
             throw new InvalidArgument("Bad labels argument to X509Object");
-        
+
         //logTrace("Initialize PEM/BER X.509 Object");
         m_PEM_label_pref = m_PEM_labels_allowed[0];
-        
-        try {
+
+        try
+        {
             if (maybeBER(input) && !PEM.matches(input))
             {
                 auto dec = BERDecoder(input);
@@ -281,14 +285,16 @@ private:
             {
                 string got_label;
                 auto ber = DataSourceMemory(PEM.decode(input, got_label));
-                if (!m_PEM_labels_allowed[].canFind(got_label)) {
-                    throw new DecodingError("Invalid PEM Certificate format " ~ got_label ~ ", please convert it to a PEM or BER X.509 object format. Possible labels: " ~ m_PEM_labels_allowed[].to!string);
-				}
-                auto dec = BERDecoder(cast(DataSource)ber);
+                if (!m_PEM_labels_allowed[].canFind(got_label))
+                {
+                    throw new DecodingError("Invalid PEM Certificate format " ~ got_label ~ ", please convert it to a PEM or BER X.509 object format. Possible labels: " ~ m_PEM_labels_allowed[]
+                            .to!string);
+                }
+                auto dec = BERDecoder(cast(DataSource) ber);
                 decodeFrom(dec);
             }
         }
-        catch(DecodingError e)
+        catch (DecodingError e)
         {
             throw new DecodingError(m_PEM_label_pref ~ " decoding failed: " ~ e.msg);
         }
