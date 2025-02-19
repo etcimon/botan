@@ -25,17 +25,17 @@ jobs:
         arch: [x86, x86_64]
         include:
           - dc: ldc-latest
-            os: macos-latest
+            os: macos-13
             arch: x86_64
           - dc: dmd-latest
-            os: macos-latest
+            os: macos-13
             arch: x86_64
         exclude:
           - os: ubuntu-latest
             arch: x86
     steps:
-      - uses: actions/checkout@v3
-      - uses: dlang-community/setup-dlang@v1
+      - uses: actions/checkout@v4
+      - uses: dlang-community/setup-dlang@v2
         with:
           compiler: ${{ matrix.dc }}
       - name: Install multi-lib for 32-bit systems
