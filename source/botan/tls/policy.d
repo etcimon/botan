@@ -74,8 +74,10 @@ public:
             "AES-128/CCM-8",
             "Camellia-256/GCM",
             "Camellia-128/GCM",
-            "AES-256",
+            "AES-256/GCM",
+            "AES-256/CBC",
             "AES-128",
+            "AES-256",
             "Camellia-256",
             "Camellia-128",
             //"SEED",
@@ -127,9 +129,13 @@ public:
             //"ECDHE_PSK",
             //"DHE_PSK",
             //"PSK",
-			"RSA",
+			//"RSA",
 			"ECDH",
-            "DH",
+            //"DH",
+            "ECDSA",
+            "ECDHE_RSA",
+            "ECDHE_ECDSA"
+
         ]);
     }
 
@@ -141,9 +147,11 @@ public:
     {
         return Vector!string([
 			"RSA",
-			"ECDSA",
-            "DSA",
-            //""
+			"ECDH",
+            //"DH",
+            "ECDSA",
+            "ECDHE_RSA",
+            "ECDHE_ECDSA"
         ]);
     }
 
@@ -161,13 +169,13 @@ public:
             "secp384r1",
             "secp256r1",
             "secp256k1",
-            "secp224r1",
-            "secp224k1",
-            "secp192r1",
-            "secp192k1",
-            "secp160r2",
-            "secp160r1",
-            "secp160k1",
+            //"secp224r1",
+            //"secp224k1",
+            //"secp192r1",
+            //"secp192k1",
+            //"secp160r2",
+            //"secp160r1",
+            //"secp160k1",
         ]);
     }
 

@@ -114,7 +114,7 @@ void main() {
 		ca_cert = X509Certificate(ca_cert_file);
 	}
     // Create user's key and cert request
-	auto user_key = RSAPrivateKey(*rng, 1024).release();
+	auto user_key = RSAPrivateKey(*rng, 2048).release();
 	
 	auto user_key_enc = pkcs8.PEM_encode(cast(PrivateKey)user_key, *rng, key_pass);
 	auto user_pub_enc = x509_key.PEM_encode(cast(PublicKey)user_key);
