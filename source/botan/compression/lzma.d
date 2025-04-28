@@ -106,7 +106,9 @@ public:
     ~this()
     {
         .lzma_end(streamp());
-        delete streamp().allocator;
+    	auto a = streamp().allocator;
+	destroy(a);
+	GC.free(cast(void*) a);
     }
     
     override bool run(uint flags)
