@@ -31,19 +31,19 @@ pure:
 version(GDC) {
 @inline:
     // _mm_aesenc_si128
-    __m128i _mm_aesenc_si128()(auto ref __m128i a, auto const ref __m128i b) {
+    __m128i _mm_aesenc_si128()(auto ref __m128i a, const auto ref __m128i b) {
         return cast(__m128i) __builtin_ia32_aesenc128(cast(long2) a, cast(long2) b);
     }
 
-    __m128i _mm_aesenclast_si128()(auto ref __m128i a, auto const ref __m128i b) {
+    __m128i _mm_aesenclast_si128()(auto ref __m128i a, const auto ref __m128i b) {
         return cast(__m128i) __builtin_ia32_aesenclast128(cast(long2) a, cast(long2) b);
     }
 
-    __m128i _mm_aesdec_si128()(auto ref __m128i a, auto const ref __m128i b) {
+    __m128i _mm_aesdec_si128()(auto ref __m128i a, const auto ref __m128i b) {
         return cast(__m128i) __builtin_ia32_aesdec128(cast(long2) a, cast(long2) b);
     }
 
-    __m128i _mm_aesdeclast_si128()(auto ref __m128i a, auto const ref __m128i b) {
+    __m128i _mm_aesdeclast_si128()(auto ref __m128i a, const auto ref __m128i b) {
         return cast(__m128i) __builtin_ia32_aesdeclast128(cast(long2) a, cast(long2) b);
     }
 
@@ -62,19 +62,19 @@ version(GDC) {
 
 version(none) {
     // _mm_aesenc_si128
-    __m128i _mm_aesenc_si128()(auto ref __m128i a, auto const ref __m128i b) {
+    __m128i _mm_aesenc_si128()(auto ref __m128i a, const auto ref __m128i b) {
         return cast(__m128i) __builtin_ia32_aesenc128(cast(long2) a, cast(long2) b);
     }
     
-    __m128i _mm_aesenclast_si128()(auto ref __m128i a, auto const ref __m128i b) {
+    __m128i _mm_aesenclast_si128()(auto ref __m128i a, const auto ref __m128i b) {
         return cast(__m128i) __builtin_ia32_aesenclast128(cast(long2) a, cast(long2) b);
     }
     
-    __m128i _mm_aesdec_si128()(auto ref __m128i a, auto const ref __m128i b) {
+    __m128i _mm_aesdec_si128()(auto ref __m128i a, const auto ref __m128i b) {
         return cast(__m128i) __builtin_ia32_aesdec128(cast(long2) a, cast(long2) b);
     }
     
-    __m128i _mm_aesdeclast_si128()(auto ref __m128i a, auto const ref __m128i b) {
+    __m128i _mm_aesdeclast_si128()(auto ref __m128i a, const auto ref __m128i b) {
         return cast(__m128i) __builtin_ia32_aesdeclast128(cast(long2) a, cast(long2) b);
     }
     
@@ -92,7 +92,7 @@ version(none) {
 }
 
 version(D_InlineAsm_X86_64) {
-    __m128i _mm_aesenc_si128()(auto ref __m128i a, auto const ref __m128i b) {
+    __m128i _mm_aesenc_si128()(auto ref __m128i a, const auto ref __m128i b) {
         __m128i* _a = &a;
         const(__m128i)* _b = &b;
         
@@ -108,7 +108,7 @@ version(D_InlineAsm_X86_64) {
         return a;
     }
 
-    __m128i _mm_aesenclast_si128()(auto ref __m128i a, auto const ref __m128i b) {
+    __m128i _mm_aesenclast_si128()(auto ref __m128i a, const auto ref __m128i b) {
         __m128i* _a = &a;
         const(__m128i)* _b = &b;
         
@@ -124,7 +124,7 @@ version(D_InlineAsm_X86_64) {
         return a;
     }
     
-    __m128i _mm_aesdec_si128()(auto ref __m128i a, auto const ref __m128i b) {
+    __m128i _mm_aesdec_si128()(auto ref __m128i a, const auto ref __m128i b) {
         __m128i* _a = &a;
         const(__m128i)* _b = &b;
         
@@ -141,7 +141,7 @@ version(D_InlineAsm_X86_64) {
     }
 
 
-    __m128i _mm_aesdeclast_si128()(auto ref __m128i a, auto const ref __m128i b) {
+    __m128i _mm_aesdeclast_si128()(auto ref __m128i a, const auto ref __m128i b) {
         __m128i* _a = &a;
         const(__m128i)* _b = &b;
         

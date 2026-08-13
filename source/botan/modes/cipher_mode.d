@@ -37,9 +37,9 @@ import memutils.hashmap;
 
 private shared size_t total_tests;
 SecureVector!ubyte runMode()(string algo, CipherDir dir, 
-                             auto const ref SecureVector!ubyte pt, 
-                             auto const ref SecureVector!ubyte nonce, 
-                             auto const ref SecureVector!ubyte key)
+                             const auto ref SecureVector!ubyte pt, 
+                             const auto ref SecureVector!ubyte nonce, 
+                             const auto ref SecureVector!ubyte key)
 {
     /*
     Unique!CipherMode cipher = getCipher(algo, dir);

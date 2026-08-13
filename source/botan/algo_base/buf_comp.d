@@ -46,7 +46,7 @@ public:
     * Params:
     *  input = the input to process as a reference type
     */
-    final void update(T, ALLOC)(auto const ref RefCounted!(Vector!(T, ALLOC)) input)
+    final void update(T, ALLOC)(const auto ref RefCounted!(Vector!(T, ALLOC)) input)
     {
         addData(input.ptr, input.length);
     }
@@ -57,7 +57,7 @@ public:
     * Params:
     *  input = the input to process as a $(D Vector)
     */
-    final void update(T, ALLOC)(auto const ref Vector!(T, ALLOC) input)
+    final void update(T, ALLOC)(const auto ref Vector!(T, ALLOC) input)
     {
         addData(input.ptr, input.length);
     }
@@ -172,7 +172,7 @@ public:
     * 
     * Returns: The result of the call to $(D finished())
     */
-    final SecureVector!ubyte process(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input)
+    final SecureVector!ubyte process(ALLOC)(const auto ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input)
     {
         addData(input.ptr, input.length);
         return finished();
@@ -186,7 +186,7 @@ public:
     * 
     * Returns: The result of the call to $(D finished())
     */
-    final SecureVector!ubyte process(ALLOC)(auto const ref Vector!(ubyte, ALLOC) input)
+    final SecureVector!ubyte process(ALLOC)(const auto ref Vector!(ubyte, ALLOC) input)
     {
         addData(input.ptr, input.length);
         return finished();

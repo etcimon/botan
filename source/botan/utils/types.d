@@ -73,7 +73,7 @@ private template UnConst(T) {
 /**
 * Existence check for values
 */
-bool valueExists(T, Alloc)(auto const ref Vector!(T, Alloc) vec, in T val)
+bool valueExists(T, Alloc)(const auto ref Vector!(T, Alloc) vec, in T val)
 {
     for (size_t i = 0; i != vec.length; ++i)
         if (vec[i] == val)

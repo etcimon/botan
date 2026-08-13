@@ -396,7 +396,7 @@ public:
     override SubjectKeyID copy() const { return new SubjectKeyID(m_key_id); }
 
     this() {}
-    this()(auto const ref Vector!ubyte pub_key)
+    this()(const auto ref Vector!ubyte pub_key)
     {
         auto hash = scoped!SHA160();
         m_key_id = unlock(hash.process(pub_key));
@@ -445,7 +445,7 @@ public:
     override AuthorityKeyID copy() const { return new AuthorityKeyID(m_key_id); }
 
     this() {}
-    this()(auto const ref Vector!ubyte k) { m_key_id = k.clone(); }
+    this()(const auto ref Vector!ubyte k) { m_key_id = k.clone(); }
 
     ref const(Vector!ubyte) getKeyId() const { return m_key_id; }
 protected:
@@ -628,7 +628,7 @@ public:
 
     this() {}
 
-    this()(auto const ref Vector!OID o) 
+    this()(const auto ref Vector!OID o) 
     {
         m_oids = o.clone;
     }
@@ -680,7 +680,7 @@ public:
     { return new CertificatePolicies(m_oids); }
 
     this() {}
-    this()(auto const ref Vector!OID o) { m_oids = o.clone(); }
+    this()(const auto ref Vector!OID o) { m_oids = o.clone(); }
 
     ref const(Vector!OID) getOids() const { return m_oids; }
 protected:
@@ -942,7 +942,7 @@ public:
 
     this() {}
 
-    this()(auto const ref Vector!( DistributionPoint ) points) { m_distribution_points = points.clone; }
+    this()(const auto ref Vector!( DistributionPoint ) points) { m_distribution_points = points.clone; }
 
     ref const(Vector!( DistributionPoint )) distributionPoints() const
     { return m_distribution_points; }

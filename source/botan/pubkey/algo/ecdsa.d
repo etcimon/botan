@@ -111,7 +111,7 @@ public:
     *  domain = parameters to used for this key
     *  x = the private key (if zero, generate a ney random key)
     */
-    this()(RandomNumberGenerator rng, auto const ref ECGroup domain, BigInt x = BigInt(0))
+    this()(RandomNumberGenerator rng, const auto ref ECGroup domain, BigInt x = BigInt(0))
     {
 		m_owned = true;
         m_priv = new ECPrivateKey(Options(), rng, domain, x);

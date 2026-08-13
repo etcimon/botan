@@ -649,7 +649,7 @@ bool generateDsaPrimes()(RandomNumberGenerator rng,
                          AlgorithmFactory af,
                          ref BigInt p_out, ref BigInt q_out,
                          size_t pbits, size_t qbits,
-                         auto const ref Vector!ubyte seed_c)
+                         const auto ref Vector!ubyte seed_c)
 {
     if (!fips1863ValidSize(pbits, qbits))
         throw new InvalidArgument(

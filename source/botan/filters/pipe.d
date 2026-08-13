@@ -89,7 +89,7 @@ public:
     * Params:
     *  input = the SecureVector containing the data to write
     */
-    void write(T, ALLOC)(auto const ref RefCounted!(Vector!(T, ALLOC), ALLOC) input)
+    void write(T, ALLOC)(const auto ref RefCounted!(Vector!(T, ALLOC), ALLOC) input)
     { write(input.ptr, input.length); }
 
     /**
@@ -98,7 +98,7 @@ public:
     * Params:
     *  input = the std::vector containing the data to write
     */
-    void write(T, ALLOC)(auto const ref Vector!(T, ALLOC) input)
+    void write(T, ALLOC)(const auto ref Vector!(T, ALLOC) input)
     { write(input.ptr, input.length); }
 
     /**
@@ -170,7 +170,7 @@ public:
     * Params:
     *  input = the SecureVector containing the data to write
     */
-    void processMsg(ALLOC)(auto const ref Vector!(ubyte, ALLOC) input)
+    void processMsg(ALLOC)(const auto ref Vector!(ubyte, ALLOC) input)
     {
         processMsg(input.ptr, input.length);
     }
@@ -181,7 +181,7 @@ public:
     * Params:
     *  input = the SecureVector containing the data to write
     */
-    void processMsg(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input)
+    void processMsg(ALLOC)(const auto ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input)
     {
         processMsg(input.ptr, input.length);
     }

@@ -389,7 +389,7 @@ enum : CHATValues {
     FINGERPRINT = 0x01
 }
 
-void encodeEacBigint()(ref DEREncoder der, auto const ref BigInt x, ASN1Tag tag)
+void encodeEacBigint()(ref DEREncoder der, const auto ref BigInt x, ASN1Tag tag)
 {
     der.encode(BigInt.encode1363(x, x.bytes()), ASN1Tag.OCTET_STRING, tag);
 }

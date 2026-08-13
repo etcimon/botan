@@ -65,7 +65,7 @@ public:
 		return l;
 	}
 
-	donna128 opOpAssign(string op)(auto const ref donna128 x)
+	donna128 opOpAssign(string op)(const auto ref donna128 x)
 		if (op == "+")
 	{
 		l += x.l;
@@ -92,7 +92,7 @@ public:
 		return donna128(lohi[0], lohi[1]);
 	}
 
-	donna128 opBinary(string op)(auto const ref donna128 y) const
+	donna128 opBinary(string op)(const auto ref donna128 y) const
 		if (op == "+")
 	{
 		donna128 z = donna128(l, h);
@@ -108,7 +108,7 @@ public:
 		return z;
 	}
 
-	donna128 opBinary(string op)(auto const ref donna128 y) const
+	donna128 opBinary(string op)(const auto ref donna128 y) const
 		if (op == "|")
 	{
 		return donna128(this.lo() | y.lo(), this.hi() | y.hi());

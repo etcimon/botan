@@ -149,7 +149,7 @@ Vector!ubyte bcryptBase64Decode(char[] input)
 }
 
 string makeBcrypt()(in string pass,
-                    auto const ref Vector!ubyte salt,
+                    const auto ref Vector!ubyte salt,
                     ushort work_factor)
 {
     __gshared immutable ubyte[24] magic = [

@@ -990,7 +990,7 @@ public:
 
     override @property bool empty() const { return false; }
 
-    this()(auto const ref Vector!string hashes, auto const ref Vector!string sigs, auto const ref Vector!ubyte sig_algos)
+    this()(const auto ref Vector!string hashes, const auto ref Vector!string sigs, const auto ref Vector!ubyte sig_algos)
     {
         m_signature_algos_override[] = cast(ubyte[])sig_algos[];
 

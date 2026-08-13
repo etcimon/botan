@@ -103,7 +103,7 @@ public:
     *  tbs = the data to be signed
     * Returns: the correctly encoded body of the object
     */
-    static Vector!ubyte buildCertBody(ALLOC)(auto const ref Vector!(ubyte, ALLOC) tbs)
+    static Vector!ubyte buildCertBody(ALLOC)(const auto ref Vector!(ubyte, ALLOC) tbs)
     {
         return DEREncoder()
                 .startCons((cast(ASN1Tag)78), ASN1Tag.APPLICATION)
@@ -121,7 +121,7 @@ public:
     * Returns: the DER encoded signed generalized CVC object
     */
     static Vector!ubyte makeSigned(ALLOC)(ref PKSigner signer,
-                                          auto const ref Vector!(ubyte, ALLOC) tbs_bits,
+                                          const auto ref Vector!(ubyte, ALLOC) tbs_bits,
                                           RandomNumberGenerator rng)
     {
         const auto concat_sig = signer.signMessage(tbs_bits, rng);
@@ -134,7 +134,7 @@ public:
     }
 
     static Vector!ubyte makeSigned(ALLOC)(ref PKSigner signer,
-                                          auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) tbs_bits,
+                                          const auto ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) tbs_bits,
                                           RandomNumberGenerator rng)
     {
         return makeSigned(signer, *tbs_bits, rng);

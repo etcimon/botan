@@ -27,7 +27,7 @@ class ECDSASignature
 public:
     this() {}
 
-    this()(auto const ref BigInt r, auto const ref BigInt s) {
+    this()(const auto ref BigInt r, const auto ref BigInt s) {
         m_r = r.clone;
         m_s = s.clone;
     }

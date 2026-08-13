@@ -521,7 +521,7 @@ public:
         doDecode();
     }
 
-    this(ALLOC)(auto const ref Vector!(ubyte, ALLOC) input, bool throw_on_unknown_critical_ = true)
+    this(ALLOC)(const auto ref Vector!(ubyte, ALLOC) input, bool throw_on_unknown_critical_ = true)
     {
         m_throw_on_unknown_critical = throw_on_unknown_critical_;
         super(input, "CERTIFICATE/X509 CERTIFICATE");
@@ -529,7 +529,7 @@ public:
         doDecode();
     }
 
-    this(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input, bool throw_on_unknown_critical_ = true)
+    this(ALLOC)(const auto ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input, bool throw_on_unknown_critical_ = true)
     {
         m_throw_on_unknown_critical = throw_on_unknown_critical_;
         super(input, "CERTIFICATE/X509 CERTIFICATE");
@@ -684,7 +684,7 @@ AlternativeName createAltName(in DataStore info)
 /*
 * Lookup each OID in the vector
 */
-Vector!string lookupOids(ALLOC)(auto const ref Vector!(string, ALLOC) input)
+Vector!string lookupOids(ALLOC)(const auto ref Vector!(string, ALLOC) input)
 {
     Vector!string output = Vector!string();
     
@@ -695,7 +695,7 @@ Vector!string lookupOids(ALLOC)(auto const ref Vector!(string, ALLOC) input)
 
 
 bool certSubjectDnsMatch(ALLOC)(in string name,
-                                     auto const ref Vector!(string, ALLOC) cert_names)
+                                     const auto ref Vector!(string, ALLOC) cert_names)
 {
     foreach (const cn; cert_names[])
     {

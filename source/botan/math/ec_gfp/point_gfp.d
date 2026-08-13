@@ -62,7 +62,7 @@ public:
     * Params:
     *  curve = The base curve
     */
-    this()(auto const ref CurveGFp curve) 
+    this()(const auto ref CurveGFp curve) 
     {
         m_curve = curve.clone;
         m_ws.resize(16);
@@ -650,7 +650,7 @@ public:
         return ret.negate().clone;
     }
     
-    PointGFp opBinary(string op)(auto const ref PointGFp rhs) const
+    PointGFp opBinary(string op)(const auto ref PointGFp rhs) const
         if (op == "+")
     {
         PointGFp ret = this.clone;
@@ -658,7 +658,7 @@ public:
         return ret;
     }
     
-    PointGFp opBinary(string op)(auto const ref PointGFp rhs) const
+    PointGFp opBinary(string op)(const auto ref PointGFp rhs) const
         if (op == "-")
     {
         PointGFp ret = this.clone;
@@ -666,7 +666,7 @@ public:
         return ret;
     }
     
-    PointGFp opBinary(string op)(auto const ref PointGFp point) const
+    PointGFp opBinary(string op)(const auto ref PointGFp point) const
         if (op == "*")
     {
         PointGFp ret = this.clone;
@@ -754,7 +754,7 @@ SecureVector!ubyte EC2OSP(const ref PointGFp point, ubyte format)
         throw new InvalidArgument("EC2OSP illegal point encoding");
 }
 
-PointGFp OS2ECP()(const(ubyte)* data, size_t data_len, auto const ref CurveGFp curve)
+PointGFp OS2ECP()(const(ubyte)* data, size_t data_len, const auto ref CurveGFp curve)
 {
     if (data_len <= 1) {
         return PointGFp(curve); // return zero
@@ -799,7 +799,7 @@ PointGFp OS2ECP()(const(ubyte)* data, size_t data_len, auto const ref CurveGFp c
     return result.move();
 }
 
-PointGFp OS2ECP(Alloc)(auto const ref Vector!( ubyte, Alloc ) data, auto const ref CurveGFp curve)
+PointGFp OS2ECP(Alloc)(const auto ref Vector!( ubyte, Alloc ) data, const auto ref CurveGFp curve)
 { return OS2ECP(data.ptr, data.length, curve); }
 
 private:

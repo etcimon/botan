@@ -1264,7 +1264,7 @@ public:
     /**
     * Deserialize a Certificate message
     */
-    this()(auto const ref Vector!ubyte buf)
+    this()(const auto ref Vector!ubyte buf)
     {
         if (buf.length < 3)
             throw new DecodingError("Certificate: Message malformed");
@@ -2112,7 +2112,7 @@ ubyte certTypeNameToCode(in string name)
 }
 
 
-SecureVector!ubyte stripLeadingZeros()(auto const ref SecureVector!ubyte input)
+SecureVector!ubyte stripLeadingZeros()(const auto ref SecureVector!ubyte input)
 {
     size_t leading_zeros = 0;
     

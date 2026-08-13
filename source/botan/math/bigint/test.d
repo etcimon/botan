@@ -64,8 +64,8 @@ Vector!string parse(string line)
 }
 
 // c==expected, d==a op b, e==a op= b
-size_t results()(string op, auto const ref BigInt a, auto const ref BigInt b, auto const ref BigInt c, 
-                 auto const ref BigInt d, auto const ref BigInt e)
+size_t results()(string op, const auto ref BigInt a, const auto ref BigInt b, const auto ref BigInt c, 
+                 const auto ref BigInt d, const auto ref BigInt e)
 {
     string op1 = "operator" ~ op;
     string op2 = op1 ~ "=";

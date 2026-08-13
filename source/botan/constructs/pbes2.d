@@ -40,7 +40,7 @@ import botan.libstate.libstate;
 *  rng = a random number generator
 */
 Pair!(AlgorithmIdentifier, Array!ubyte)
-	pbes2Encrypt()(auto const ref SecureVector!ubyte key_bits,
+	pbes2Encrypt()(const auto ref SecureVector!ubyte key_bits,
                    const string passphrase,
                    Duration msec,
                    const string cipher,
@@ -141,7 +141,7 @@ Vector!ubyte encodePbes2Params(const string cipher,
 SecureVector!ubyte
 	pbes2Decrypt()(const ref SecureVector!ubyte key_bits,
 				   const string passphrase,
-				   auto const ref Vector!ubyte params,
+				   const auto ref Vector!ubyte params,
                    AlgorithmFactory af = null)
 {
 	if (!af) af = globalState().algorithmFactory();

@@ -143,7 +143,7 @@ public:
 
     this(T)(in T options,
             in AlgorithmIdentifier alg_id, 
-            auto const ref SecureVector!ubyte key_bits)
+            const auto ref SecureVector!ubyte key_bits)
     {
         decodeOptions(options);
         m_group.BER_decode(alg_id.parameters, m_format);

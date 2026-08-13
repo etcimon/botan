@@ -150,12 +150,12 @@ public:
     /*
     * Insert a single key and value
     */
-    void add(ALLOC)(in string key, auto const ref Vector!(ubyte, ALLOC) val)
+    void add(ALLOC)(in string key, const auto ref Vector!(ubyte, ALLOC) val)
     {
         add(key.idup, hexEncode(val.ptr, val.length));
     }
     
-    void add(ALLOC)(in string key, auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) val)
+    void add(ALLOC)(in string key, const auto ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) val)
     {
         add(key.idup, hexEncode(val.ptr, val.length));
     }

@@ -17,7 +17,7 @@ public import botan.utils.simd.emmintrin;
 version(GDC) {
 @inline:
     // _mm_shuffle_epi8
-    __m128i _mm_shuffle_epi8()(auto ref __m128i a, auto const ref __m128i b) {
+    __m128i _mm_shuffle_epi8()(auto ref __m128i a, const auto ref __m128i b) {
         return cast(__m128i) __builtin_ia32_pshufb128(a, b);
     }
 
@@ -29,7 +29,7 @@ version(GDC) {
 
 version(none) {    
     // _mm_shuffle_epi8
-    __m128i _mm_shuffle_epi8()(auto ref __m128i a, auto const ref __m128i b) {
+    __m128i _mm_shuffle_epi8()(auto ref __m128i a, const auto ref __m128i b) {
         return cast(__m128i) __builtin_ia32_pshufb128(a, b);
     }
 
@@ -40,7 +40,7 @@ version(none) {
 
 version(D_InlineAsm_X86_64) {
     // _mm_min_epi8 ; PSHUFB
-    __m128i _mm_shuffle_epi8()(auto const ref __m128i a, auto const ref __m128i b) {
+    __m128i _mm_shuffle_epi8()(const auto ref __m128i a, const auto ref __m128i b) {
         
         const(__m128i)* _a = &a;
         const(__m128i)* _b = &b;
@@ -60,7 +60,7 @@ version(D_InlineAsm_X86_64) {
     }
 
     // _mm_alignr_epi8 ; palignr
-    __m128i _mm_alignr_epi8(int n)(auto const ref __m128i a, auto const ref __m128i b) {
+    __m128i _mm_alignr_epi8(int n)(const auto ref __m128i a, const auto ref __m128i b) {
         const(__m128i)* _a = &a;
         const(__m128i)* _b = &b;
         __m128i c;

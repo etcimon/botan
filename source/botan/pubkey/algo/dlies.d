@@ -41,7 +41,7 @@ public:
     /*
     * Set the other parties public key
     */
-    void setOtherKey()(auto const ref Vector!ubyte ok)
+    void setOtherKey()(const auto ref Vector!ubyte ok)
     {
         m_other_key = ok.clone;
     }

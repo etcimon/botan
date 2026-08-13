@@ -257,7 +257,7 @@ public:
 *  rng = the rng to use
 * Returns: newly created self-signed certificate
 */
-X509Certificate createSelfSignedCert()(auto const ref X509CertOptions opts,
+X509Certificate createSelfSignedCert()(const auto ref X509CertOptions opts,
                                        in PrivateKey key,
                                        in string hash_fn,
                                        RandomNumberGenerator rng)
@@ -301,7 +301,7 @@ X509Certificate createSelfSignedCert()(auto const ref X509CertOptions opts,
 *  rng = the rng to use
 * Returns: newly created PKCS#10 request
 */
-PKCS10Request createCertReq()(auto const ref X509CertOptions opts,
+PKCS10Request createCertReq()(const auto ref X509CertOptions opts,
                               in PrivateKey key,
                               in string hash_fn,
                               RandomNumberGenerator rng)

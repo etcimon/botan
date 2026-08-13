@@ -189,7 +189,7 @@ public:
     *  data = a vector containing the DER/BER encoded group
     *  format = the format of the encoded group
     */
-    void BER_decode()(auto const ref Vector!ubyte data,
+    void BER_decode()(const auto ref Vector!ubyte data,
                       Format format)
     {
         //logTrace("BER_decode ", format);
@@ -327,7 +327,7 @@ public:
     *  pbits = the desired bit size of the prime p
     *  qbits = the desired bit size of the prime q.
     */
-    this()(RandomNumberGenerator rng, auto const ref Vector!ubyte seed, size_t pbits = 1024, size_t qbits = 0)
+    this()(RandomNumberGenerator rng, const auto ref Vector!ubyte seed, size_t pbits = 1024, size_t qbits = 0)
     {
         if (!generateDsaPrimes(rng, globalState().algorithmFactory(), m_p, m_q, pbits, qbits, seed))
             throw new InvalidArgument("DLGroup: The seed given does not "

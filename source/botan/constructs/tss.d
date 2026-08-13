@@ -103,7 +103,7 @@ public:
     *  shares = the list of shares
     */
 
-    static SecureVector!ubyte reconstruct()(auto const ref Vector!RTSS shares)
+    static SecureVector!ubyte reconstruct()(const auto ref Vector!RTSS shares)
     {
         __gshared immutable size_t RTSS_HEADER_SIZE = 20;
         

@@ -129,7 +129,7 @@ public:
     *  input = the input buffer (multiple of blockSize())
     *  output = the output buffer (same size as input)
     */
-    final void encrypt(Alloc, Alloc2)(auto const ref Vector!( ubyte, Alloc ) input,
+    final void encrypt(Alloc, Alloc2)(const auto ref Vector!( ubyte, Alloc ) input,
                                               ref Vector!( ubyte, Alloc2 ) output)
     in { assert(input.length >= this.blockSize()); }
     do {
@@ -142,7 +142,7 @@ public:
     *  input = the input buffer (multiple of blockSize())
     *  output = the output buffer (same size as input)
     */
-    final void decrypt(Alloc, Alloc2)(auto const ref Vector!( ubyte, Alloc ) input,
+    final void decrypt(Alloc, Alloc2)(const auto ref Vector!( ubyte, Alloc ) input,
                                               ref Vector!( ubyte, Alloc2 ) output)
     in { assert(input.length >= this.blockSize()); }
     do {

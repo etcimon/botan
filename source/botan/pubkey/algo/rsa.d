@@ -222,7 +222,7 @@ public:
         return BigInt.encodeLocked(x);
     }
 private:
-    BigInt privateOp()(auto const ref BigInt m) const
+    BigInt privateOp()(const auto ref BigInt m) const
     {
 		//import core.memory : GC; GC.disable(); scope(exit) GC.enable();
 		import core.sync.condition;

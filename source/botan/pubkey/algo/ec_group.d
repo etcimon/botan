@@ -51,8 +51,8 @@ public:
     *  cofactor = the cofactor
     *  oid = the provided oid
     */
-    this()(auto const ref CurveGFp curve, auto const ref PointGFp base_point, 
-           auto const ref BigInt order, auto const ref BigInt cofactor, in string oid = "") 
+    this()(const auto ref CurveGFp curve, const auto ref PointGFp base_point, 
+           const auto ref BigInt order, const auto ref BigInt cofactor, in string oid = "") 
     {
         m_curve = curve.clone;
         m_base_point = base_point.clone;
@@ -66,7 +66,7 @@ public:
     * Params:
     *  ber_data = the bytes of the BER encoding
     */
-    this()(auto const ref Vector!ubyte ber_data)
+    this()(const auto ref Vector!ubyte ber_data)
     {
         m_curve = CurveGFp.init;
         m_base_point = PointGFp.init;

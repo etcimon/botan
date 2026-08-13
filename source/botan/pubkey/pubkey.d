@@ -121,7 +121,7 @@ public:
     *  input = the ciphertext
     * Returns: decrypted message
     */
-    final SecureVector!ubyte decrypt(Alloc)(auto const ref Vector!( ubyte, Alloc ) input) const
+    final SecureVector!ubyte decrypt(Alloc)(const auto ref Vector!( ubyte, Alloc ) input) const
     {
         return dec(input.ptr, input.length);
     }
@@ -161,10 +161,10 @@ public:
     *  rng = the rng to use
     * Returns: signature
     */
-    Vector!ubyte signMessage(ALLOC)(auto const ref Vector!(ubyte, ALLOC) input, RandomNumberGenerator rng)
+    Vector!ubyte signMessage(ALLOC)(const auto ref Vector!(ubyte, ALLOC) input, RandomNumberGenerator rng)
     { return signMessage(input.ptr, input.length, rng); }
 
-    Vector!ubyte signMessage(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input, RandomNumberGenerator rng)
+    Vector!ubyte signMessage(ALLOC)(const auto ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input, RandomNumberGenerator rng)
     { return signMessage(input.ptr, input.length, rng); }
 
     /**
@@ -193,8 +193,8 @@ public:
     * Params:
     *  input = the message part to add
     */
-    void update(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input) { update(input.ptr, input.length); }
-    void update(ALLOC)(auto const ref Vector!(ubyte, ALLOC) input) { update(input.ptr, input.length); }
+    void update(ALLOC)(const auto ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input) { update(input.ptr, input.length); }
+    void update(ALLOC)(const auto ref Vector!(ubyte, ALLOC) input) { update(input.ptr, input.length); }
 
     /**
     * Get the signature of the so far processed message (provided by the
@@ -279,7 +279,7 @@ private:
     /*
     * Check the signature we just created, to help prevent fault attacks
     */
-    bool selfTestSignature()(auto const ref Vector!ubyte msg, auto const ref Vector!ubyte sig) const
+    bool selfTestSignature()(const auto ref Vector!ubyte msg, const auto ref Vector!ubyte sig) const
     {
         if (!m_verify_op)
             return true; // checking disabled, assume ok
@@ -345,15 +345,15 @@ public:
     *  sig = the signature
     * Returns: true if the signature is valid
     */
-    bool verifyMessage(Alloc, Alloc2)(auto const ref Vector!( ubyte, Alloc ) msg, 
-                                      auto const ref Vector!( ubyte, Alloc2 ) sig)
+    bool verifyMessage(Alloc, Alloc2)(const auto ref Vector!( ubyte, Alloc ) msg, 
+                                      const auto ref Vector!( ubyte, Alloc2 ) sig)
     {
         return verifyMessage(msg.ptr, msg.length, sig.ptr, sig.length);
     }
 
     /// ditto
-    bool verifyMessage(Alloc, Alloc2)(auto const ref RefCounted!(Vector!( ubyte, Alloc ), Alloc) msg, 
-                                      auto const ref RefCounted!(Vector!( ubyte, Alloc2 ), Alloc2) sig)
+    bool verifyMessage(Alloc, Alloc2)(const auto ref RefCounted!(Vector!( ubyte, Alloc ), Alloc) msg, 
+                                      const auto ref RefCounted!(Vector!( ubyte, Alloc2 ), Alloc2) sig)
     {
         return verifyMessage(msg.ptr, msg.length, sig.ptr, sig.length);
     }
@@ -438,7 +438,7 @@ public:
     *  sig = the signature to be verified
     * Returns: true if the signature is valid, false otherwise
     */
-    bool checkSignature(Alloc)(auto const ref Vector!( ubyte, Alloc ) sig)
+    bool checkSignature(Alloc)(const auto ref Vector!( ubyte, Alloc ) sig)
     {
         return checkSignature(sig.ptr, sig.length);
     }
@@ -482,7 +482,7 @@ public:
     }
 
 private:
-    bool validateSignature()(auto const ref SecureVector!ubyte msg, const(ubyte)* sig, size_t sig_len)
+    bool validateSignature()(const auto ref SecureVector!ubyte msg, const(ubyte)* sig, size_t sig_len)
     {
         if (m_op.withRecovery())
         {
@@ -541,7 +541,7 @@ public:
     *  params = extra derivation params
     *  params_len = the length of params in bytes
     */
-    SymmetricKey deriveKey()(size_t key_len, auto const ref Vector!ubyte input, 
+    SymmetricKey deriveKey()(size_t key_len, const auto ref Vector!ubyte input, 
                              const(ubyte)* params, size_t params_len) const
     {
         return deriveKey(key_len, input.ptr, input.length, params, params_len);
@@ -568,7 +568,7 @@ public:
     *  params = extra derivation params
     */
     SymmetricKey deriveKey()(size_t key_len,
-                             auto const ref Vector!ubyte input,
+                             const auto ref Vector!ubyte input,
                              in string params = "") const
     {
         return deriveKey(key_len, input.ptr, input.length,

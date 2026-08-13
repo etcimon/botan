@@ -282,7 +282,7 @@ private:
 */
 PathValidationResult 
     x509PathValidate()(const ref Vector!X509Certificate end_certs,
-                       auto const ref PathValidationRestrictions restrictions,
+                       const auto ref PathValidationRestrictions restrictions,
                        const ref Vector!CertificateStore certstores)
 {
 	const size_t max_iterations = restrictions.maxCertChainLength();
@@ -315,7 +315,7 @@ PathValidationResult
 * PKIX Path Validation
 */
 PathValidationResult x509PathValidate()(in X509Certificate end_cert,
-                                        auto const ref PathValidationRestrictions restrictions,
+                                        const auto ref PathValidationRestrictions restrictions,
                                         const ref Vector!CertificateStore certstores)
 {
     Vector!X509Certificate certs;
@@ -327,7 +327,7 @@ PathValidationResult x509PathValidate()(in X509Certificate end_cert,
 * PKIX Path Validation
 */
 PathValidationResult x509PathValidate()(in X509Certificate end_cert,
-                                        auto const ref PathValidationRestrictions restrictions,
+                                        const auto ref PathValidationRestrictions restrictions,
                                         in CertificateStore store)
 {
     Vector!X509Certificate certs;
@@ -343,7 +343,7 @@ PathValidationResult x509PathValidate()(in X509Certificate end_cert,
 * PKIX Path Validation
 */
 PathValidationResult x509PathValidate()(const ref Vector!X509Certificate end_certs,
-                                        auto const ref PathValidationRestrictions restrictions,
+                                        const auto ref PathValidationRestrictions restrictions,
                                         in CertificateStore store)
 {
     Vector!CertificateStore certstores;

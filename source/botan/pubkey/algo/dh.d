@@ -83,7 +83,7 @@ public:
     *  rng = a random number generator
     */
     this()(in AlgorithmIdentifier alg_id,
-           auto const ref SecureVector!ubyte key_bits,
+           const auto ref SecureVector!ubyte key_bits,
            RandomNumberGenerator rng) 
     {
 

@@ -63,13 +63,13 @@ public:
     }
     
     /// ditto
-    final void setKey(Alloc)(auto const ref RefCounted!(Vector!( ubyte, Alloc ), Alloc) key)
+    final void setKey(Alloc)(const auto ref RefCounted!(Vector!( ubyte, Alloc ), Alloc) key)
     {
         setKey(key.ptr, key.length);
     }
 
     /// ditto
-    final void setKey(Alloc)(auto const ref Vector!( ubyte, Alloc ) key)
+    final void setKey(Alloc)(const auto ref Vector!( ubyte, Alloc ) key)
     {
         setKey(key.ptr, key.length);
     }

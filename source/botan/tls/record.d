@@ -49,7 +49,7 @@ public:
     */
     this()(TLSProtocolVersion _version, 
            ConnectionSide side, bool our_side, 
-           in TLSCiphersuite suite, auto const ref TLSSessionKeys keys) 
+           in TLSCiphersuite suite, const auto ref TLSSessionKeys keys) 
     {
         m_start_time = Clock.currTime(UTC());
         m_implicit_nonce_size = suite.nonceBytesFromRecord();

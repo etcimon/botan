@@ -145,10 +145,10 @@ public:
     * Params:
     *  input = a bytestring
     */
-    this(ALLOC)(auto const ref Vector!(ubyte, ALLOC) input) {  m_bits = SecureVector!ubyte(input.ptr[0 .. input.length]); }
+    this(ALLOC)(const auto ref Vector!(ubyte, ALLOC) input) {  m_bits = SecureVector!ubyte(input.ptr[0 .. input.length]); }
 
     /// ditto
-    this(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input) {  m_bits = SecureVector!ubyte(input.ptr[0 .. input.length]); }
+    this(ALLOC)(const auto ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input) {  m_bits = SecureVector!ubyte(input.ptr[0 .. input.length]); }
 
 
     /**
@@ -180,7 +180,7 @@ public:
     }
 
     /// Append another $(D OctetString) to this
-    void opOpAssign(string op)(auto const ref OctetString other)
+    void opOpAssign(string op)(const auto ref OctetString other)
         if (op == "~")
     {
         m_bits ~= other.m_bits[];
@@ -194,7 +194,7 @@ public:
     *
     * Returns: this concatenated with other
     */
-    OctetString opBinary(string op)(auto const ref OctetString other)
+    OctetString opBinary(string op)(const auto ref OctetString other)
         if (op == "~") 
     {
         SecureVector!ubyte output;
@@ -211,7 +211,7 @@ public:
     * 
     * Returns: this XORed with other
     */
-    OctetString opBinary(string op)(auto const ref OctetString other)
+    OctetString opBinary(string op)(const auto ref OctetString other)
         if (op == "^") 
     {
         SecureVector!ubyte ret = SecureVector!ubyte(max(length(), other.length));

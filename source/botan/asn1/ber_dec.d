@@ -595,7 +595,7 @@ public:
     /*
     * BERDecoder Constructor
     */
-    this(T, ALLOC)(auto const ref Vector!(T, ALLOC) data)
+    this(T, ALLOC)(const auto ref Vector!(T, ALLOC) data)
     {
         m_pushed = BERObject.init;
         m_source = cast(DataSource) DataSourceMemory(data.ptr, data.length);
@@ -605,7 +605,7 @@ public:
     }
 
     /// ditto
-    this(T, ALLOC)(auto const ref RefCounted!(Vector!(T, ALLOC), ALLOC) data)
+    this(T, ALLOC)(const auto ref RefCounted!(Vector!(T, ALLOC), ALLOC) data)
     {
         m_pushed = BERObject.init;
         m_source = cast(DataSource) DataSourceMemory(data.ptr, data.length);

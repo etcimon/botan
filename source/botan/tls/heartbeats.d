@@ -45,7 +45,7 @@ public:
 
     bool isRequest() const { return m_type == REQUEST; }
 
-    this()(auto const ref Vector!ubyte buf)
+    this()(const auto ref Vector!ubyte buf)
     {
         TLSDataReader reader = TLSDataReader("Heartbeat", buf);
         

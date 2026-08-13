@@ -43,7 +43,7 @@ public:
     *  salt = a diversifier
     */
     SecureVector!ubyte deriveKey()(size_t key_len,
-                                   auto const ref SecureVector!ubyte secret,
+                                   const auto ref SecureVector!ubyte secret,
                                    in string salt = "") const
     {
         return deriveKey(key_len, secret.ptr, secret.length,
@@ -60,8 +60,8 @@ public:
     */
     
     SecureVector!ubyte deriveKey(Alloc)(size_t key_len,
-                                        auto const ref SecureVector!ubyte secret,
-                                        auto const ref Vector!( ubyte, Alloc ) salt) const
+                                        const auto ref SecureVector!ubyte secret,
+                                        const auto ref Vector!( ubyte, Alloc ) salt) const
     {
         return deriveKey(key_len, secret.ptr, secret.length, salt.ptr, salt.length);
     }
@@ -75,7 +75,7 @@ public:
     *  salt_len = size of salt in bytes
     */
     SecureVector!ubyte deriveKey()(size_t key_len,
-                                   auto const ref SecureVector!ubyte secret,
+                                   const auto ref SecureVector!ubyte secret,
                                    const(ubyte)* salt,
                                    size_t salt_len) const
     {

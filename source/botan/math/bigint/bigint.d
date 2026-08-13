@@ -194,11 +194,11 @@ public:
         this.swap(other);
     }
 
-    this(ALLOC)(auto const ref Vector!(ubyte, ALLOC) payload, in Sign sign) {
+    this(ALLOC)(const auto ref Vector!(ubyte, ALLOC) payload, in Sign sign) {
         this(payload.ptr, payload.length, sig_words);
     }
 
-    this(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) payload, in Sign sign) {
+    this(ALLOC)(const auto ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) payload, in Sign sign) {
         this(payload.ptr, payload.length, sig_words);
     }
 
@@ -327,7 +327,7 @@ public:
         
     }
     
-    void opOpAssign(string op)(auto const ref BigInt y)
+    void opOpAssign(string op)(const auto ref BigInt y)
         if (op == "+")
     {
         opOpAssign!"+"(&y);
@@ -383,7 +383,7 @@ public:
     }
 
 
-    void opOpAssign(string op)(auto const ref BigInt y)
+    void opOpAssign(string op)(const auto ref BigInt y)
         if (op == "-")
     {
         opOpAssign!"-"(&y);
@@ -434,7 +434,7 @@ public:
         }
     }
 
-    void opOpAssign(string op)(auto const ref BigInt y)
+    void opOpAssign(string op)(const auto ref BigInt y)
         if (op == "*")
     {
         opOpAssign!"*"(&y);
@@ -461,7 +461,7 @@ public:
             this = this / y;
     }
 
-    void opOpAssign(string op)(auto const ref BigInt y)
+    void opOpAssign(string op)(const auto ref BigInt y)
         if (op == "/")
     {
         opOpAssign!"/"(&y);
@@ -486,7 +486,7 @@ public:
     }
 
 
-    void opOpAssign(string op)(auto const ref BigInt mod)
+    void opOpAssign(string op)(const auto ref BigInt mod)
         if (op == "%")
     {
         opOpAssign!"%"(&mod);
@@ -631,7 +631,7 @@ public:
         return bigint_cmp(m_reg.ptr, this.sigWords(), other.ptr, other.sigWords());
     }
 
-    int cmp()(auto const ref BigInt other, bool check_signs = true) const
+    int cmp()(const auto ref BigInt other, bool check_signs = true) const
     {
         return cmp(&other, check_signs);
     }
@@ -642,7 +642,7 @@ public:
     bool opEquals(const(BigInt)* b) const
     { return (cmp(b) == 0); }
 
-    bool opEquals()(auto const ref BigInt b) const
+    bool opEquals()(const auto ref BigInt b) const
     { return (cmp(b) == 0); }
 
 
@@ -658,7 +658,7 @@ public:
         return cmp(b);
     }    
     
-    int opCmp()(auto const ref BigInt b) const
+    int opCmp()(const auto ref BigInt b) const
     { 
         return cmp(b);
     }
@@ -1027,7 +1027,7 @@ public:
     * Params:
     *  buf = the array to load from
     */
-    void binaryDecode(ALLOC)(auto const ref Vector!(ubyte, ALLOC) buf)
+    void binaryDecode(ALLOC)(const auto ref Vector!(ubyte, ALLOC) buf)
     {
         binaryDecode(buf.ptr, buf.length);
     }
@@ -1039,7 +1039,7 @@ public:
     }
 
     /// ditto
-    void binaryDecode(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) buf)
+    void binaryDecode(ALLOC)(const auto ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) buf)
     {
         binaryDecode(buf.ptr, buf.length);
     }
@@ -1091,7 +1091,7 @@ public:
 		return (x + min);
     }
 
-    static BigInt randomInteger()(RandomNumberGenerator rng, auto const ref BigInt min, auto const ref BigInt max)
+    static BigInt randomInteger()(RandomNumberGenerator rng, const auto ref BigInt min, const auto ref BigInt max)
     {
         return randomInteger(rng, &min, &max);
     }
@@ -1126,7 +1126,7 @@ public:
         return output.move();
     }
 
-    static Vector!ubyte encode()(auto const ref BigInt n, Base base = Binary)
+    static Vector!ubyte encode()(const auto ref BigInt n, Base base = Binary)
     {
         return encode(&n, base);
     }
@@ -1149,7 +1149,7 @@ public:
         return output.move();
     }
 
-    static SecureVector!ubyte encodeLocked()(auto const ref BigInt n, Base base = Binary)
+    static SecureVector!ubyte encodeLocked()(const auto ref BigInt n, Base base = Binary)
     {
         return encodeLocked(&n, base);
     }
@@ -1261,7 +1261,7 @@ public:
     *  base = number-base of the integer in buf
     * Returns: BigInt representing the integer in the ubyte array
     */
-    static BigInt decode(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) buf, Base base = Binary)
+    static BigInt decode(ALLOC)(const auto ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) buf, Base base = Binary)
     {
         return BigInt.decode(buf.ptr, buf.length, base);
     }
@@ -1273,7 +1273,7 @@ public:
     *  base = number-base of the integer in buf
     * Returns: BigInt representing the integer in the ubyte array
     */
-    static BigInt decode(ALLOC)(auto const ref Vector!(ubyte, ALLOC) buf, Base base = Binary)
+    static BigInt decode(ALLOC)(const auto ref Vector!(ubyte, ALLOC) buf, Base base = Binary)
     {
         return BigInt.decode(buf.ptr, buf.length, base);
     }
@@ -1301,7 +1301,7 @@ public:
         return output;
     }
 
-    static SecureVector!ubyte encode1363()(auto const ref BigInt n, size_t bytes)
+    static SecureVector!ubyte encode1363()(const auto ref BigInt n, size_t bytes)
     {
         return BigInt.encode1363(&n, bytes);
     }
@@ -1385,7 +1385,7 @@ public:
         return z.move();
     }
 
-    BigInt opBinary(string op)(auto const ref BigInt y) const
+    BigInt opBinary(string op)(const auto ref BigInt y) const
         if (op == "-")
     {
         return opBinary!"-"(&y);
@@ -1427,7 +1427,7 @@ public:
     }
 
     
-    BigInt opBinary(string op)(auto const ref BigInt y) const
+    BigInt opBinary(string op)(const auto ref BigInt y) const
         if (op == "*")
     {
         return BigInt.opBinary!"*"(&y);
@@ -1452,7 +1452,7 @@ public:
         return q.move();
     }
 
-    BigInt opBinary(string op)(auto const ref BigInt y) const
+    BigInt opBinary(string op)(const auto ref BigInt y) const
         if (op == "/")
     {
         return opBinary!"/"(&y);
@@ -1483,7 +1483,7 @@ public:
         return r.move();
     }
 
-    BigInt opBinary(string op)(auto const ref BigInt mod) const
+    BigInt opBinary(string op)(const auto ref BigInt mod) const
         if (op == "%")
     {
         return opBinary!"%"(&mod);

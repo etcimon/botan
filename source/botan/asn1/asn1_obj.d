@@ -167,7 +167,7 @@ class BERBadTag : BERDecodingError
 /**
 * Put some arbitrary bytes into a ASN1Tag.SEQUENCE
 */
-Vector!ubyte putInSequence(ALLOC)(auto const ref Vector!(ubyte, ALLOC) contents)
+Vector!ubyte putInSequence(ALLOC)(const auto ref Vector!(ubyte, ALLOC) contents)
 {
     return DEREncoder()
             .startCons(ASN1Tag.SEQUENCE)
@@ -177,7 +177,7 @@ Vector!ubyte putInSequence(ALLOC)(auto const ref Vector!(ubyte, ALLOC) contents)
 }
 
 /// ditto
-Vector!ubyte putInSequence(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) contents)
+Vector!ubyte putInSequence(ALLOC)(const auto ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) contents)
 {
     return DEREncoder()
             .startCons(ASN1Tag.SEQUENCE)

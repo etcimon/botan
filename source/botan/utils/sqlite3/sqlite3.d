@@ -113,7 +113,7 @@ public:
         bind(column, timeval);
     }
 
-    void bind()(int column, auto const ref Vector!ubyte val)
+    void bind()(int column, const auto ref Vector!ubyte val)
     {
         int rc = sqlite3_bind_blob(m_stmt, column, cast(void*)val.ptr, cast(int)val.length, SQLITE_TRANSIENT);
         if (rc != SQLITE_OK)

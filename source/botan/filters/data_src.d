@@ -186,7 +186,7 @@ public:
     * Params:
     *  input = the MemoryRegion to read from
     */
-    this(T, ALLOC)(auto const ref RefCounted!(Vector!(T, ALLOC), ALLOC) input)
+    this(T, ALLOC)(const auto ref RefCounted!(Vector!(T, ALLOC), ALLOC) input)
     {
         m_source = SecureVector!ubyte(input[]);
         m_offset = 0;
@@ -197,7 +197,7 @@ public:
     * Params:
     *  input = the MemoryRegion to read from
     */
-    this(T, ALLOC)(auto const ref Vector!(T, ALLOC) input) {
+    this(T, ALLOC)(const auto ref Vector!(T, ALLOC) input) {
         m_source = SecureVector!ubyte(input.ptr[0 .. input.length]);
         m_offset = 0;
     }

@@ -15,13 +15,13 @@ import std.algorithm : min;
 import std.traits : isPointer;
 
 
-Vector!T unlock(T, ALLOC)(auto const ref Vector!(T, ALLOC) input)
+Vector!T unlock(T, ALLOC)(const auto ref Vector!(T, ALLOC) input)
     if (is(ALLOC == SecureMem))
 {
     return Vector!T(input.ptr[0 .. input.length]);
 }
 
-RefCounted!(Vector!T) unlock(T, ALLOC)(auto const ref RefCounted!(Vector!(T, ALLOC), ALLOC) input)
+RefCounted!(Vector!T) unlock(T, ALLOC)(const auto ref RefCounted!(Vector!(T, ALLOC), ALLOC) input)
     if (is(ALLOC == SecureMem))
 {
     return RefCounted!(Vector!T)(input[]);

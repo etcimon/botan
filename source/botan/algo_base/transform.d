@@ -29,7 +29,7 @@ public:
     * Params:
     *  nonce = the per message nonce
     */    
-    final SecureVector!ubyte start(Alloc)(auto const ref RefCounted!(Vector!( ubyte, Alloc ), Alloc) nonce)
+    final SecureVector!ubyte start(Alloc)(const auto ref RefCounted!(Vector!( ubyte, Alloc ), Alloc) nonce)
     {
         return startRaw(nonce.ptr, nonce.length);
     }
@@ -40,7 +40,7 @@ public:
     * Params:
     *  nonce = the per message nonce
     */    
-    final SecureVector!ubyte start(Alloc)(auto const ref Vector!( ubyte, Alloc ) nonce)
+    final SecureVector!ubyte start(Alloc)(const auto ref Vector!( ubyte, Alloc ) nonce)
     {
         return startRaw(nonce.ptr, nonce.length);
     }

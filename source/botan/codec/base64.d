@@ -107,7 +107,7 @@ string base64Encode(const(ubyte)* input,
 *  input = some input
 * Returns: base64adecimal representation of input
 */
-string base64Encode(Alloc)(auto const ref Vector!( ubyte, Alloc ) input)
+string base64Encode(Alloc)(const auto ref Vector!( ubyte, Alloc ) input)
 {
     return base64Encode(input.ptr, input.length);
 }

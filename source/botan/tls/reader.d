@@ -198,7 +198,7 @@ void appendTlsLengthValue(T, Alloc)(ref Vector!( ubyte, Alloc ) buf, in T* vals,
 }
 
 void appendTlsLengthValue(T, Alloc, Alloc2)(ref Vector!( ubyte, Alloc ) buf, 
-                                            auto const ref Vector!( T, Alloc2 ) vals, 
+                                            const auto ref Vector!( T, Alloc2 ) vals, 
                                             size_t tag_size)
 {
     appendTlsLengthValue(buf, vals.ptr, vals.length, tag_size);

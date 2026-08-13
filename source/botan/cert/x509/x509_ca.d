@@ -120,7 +120,7 @@ public:
     *  next_update = the time to set in next update in $(D Duration) from now
     */
     X509CRL updateCRL()(in X509CRL crl,
-                        auto const ref Vector!CRLEntry new_revoked,
+                        const auto ref Vector!CRLEntry new_revoked,
                         RandomNumberGenerator rng,
                         Duration next_update = 0.seconds) const
     {
@@ -148,7 +148,7 @@ public:
     static X509Certificate makeCert(ALLOC)(ref PKSigner signer,
                                            RandomNumberGenerator rng,
                                            in AlgorithmIdentifier sig_algo,
-                                           auto const ref Vector!(ubyte, ALLOC) pub_key,
+                                           const auto ref Vector!(ubyte, ALLOC) pub_key,
                                            in X509Time not_before,
                                            in X509Time not_after,
                                            in X509DN issuer_dn,

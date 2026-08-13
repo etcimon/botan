@@ -255,7 +255,7 @@ EAC11CVC makeCvcCert(ALLOC)(ref PKSigner signer,
 
 /// ditto
 EAC11CVC makeCvcCert(ALLOC)(ref PKSigner signer,
-                            auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) public_key,
+                            const auto ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) public_key,
                             in ASN1Car car,
                             in ASN1Chr chr,
                             in ubyte holder_auth_templ,

@@ -77,13 +77,13 @@ string hexEncode(const(ubyte)* input, size_t input_length, bool uppercase = true
 *  uppercase = should output be upper or lower case?
 * Returns: hexadecimal representation of input
 */
-string hexEncode(Alloc)(auto const ref Vector!( ubyte, Alloc ) input, bool uppercase = true)
+string hexEncode(Alloc)(const auto ref Vector!( ubyte, Alloc ) input, bool uppercase = true)
 {
     return hexEncode(input.ptr, input.length, uppercase);
 }
 
 /// ditto
-string hexEncode(Alloc)(auto const ref RefCounted!(Vector!( ubyte, Alloc ), Alloc) input, bool uppercase = true)
+string hexEncode(Alloc)(const auto ref RefCounted!(Vector!( ubyte, Alloc ), Alloc) input, bool uppercase = true)
 {
     return hexEncode(input.ptr, input.length, uppercase);
 }

@@ -34,7 +34,7 @@ public:
     void update(const(ubyte)* input, size_t length)
     { m_data ~= input[0 .. length]; }
 
-    void update(ALLOC)(auto const ref Vector!(ubyte, ALLOC) input)
+    void update(ALLOC)(const auto ref Vector!(ubyte, ALLOC) input)
     { m_data ~= input[]; }
 
     /**

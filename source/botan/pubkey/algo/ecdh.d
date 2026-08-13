@@ -48,7 +48,7 @@ public:
     *  dom_par = the domain parameters associated with this key
     *  public_point = the public point defining this key
     */
-    this()(auto const ref ECGroup dom_par, auto const ref PointGFp public_point) 
+    this()(const auto ref ECGroup dom_par, const auto ref PointGFp public_point) 
     {
 		m_owned = true;
         m_pub = new ECPublicKey(Options(), dom_par, public_point);

@@ -112,20 +112,20 @@ public:
     * Params:
     *  input = some input for the filter
     */
-    final void send(ALLOC)(auto const ref Vector!(ubyte, ALLOC) input) { send(input.ptr, input.length); }
+    final void send(ALLOC)(const auto ref Vector!(ubyte, ALLOC) input) { send(input.ptr, input.length); }
 
     /**
     * Params:
     *  input = some input for the filter
     */
-    final void send(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input) { send(input.ptr, input.length); }
+    final void send(ALLOC)(const auto ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input) { send(input.ptr, input.length); }
 
     /**
     * Params:
     *  input = some input for the filter
     *  length = the number of bytes of in to send
     */
-    final void send(ALLOC)(auto const ref Vector!(ubyte, ALLOC) input, size_t length)
+    final void send(ALLOC)(const auto ref Vector!(ubyte, ALLOC) input, size_t length)
     {
         send(input.ptr, length);
     }
@@ -135,7 +135,7 @@ public:
     *  input = some input for the filter
     *  length = the number of bytes of in to send
     */
-    final void send(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input, size_t length)
+    final void send(ALLOC)(const auto ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) input, size_t length)
     {
         send(input.ptr, length);
     }

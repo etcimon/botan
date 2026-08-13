@@ -26,7 +26,7 @@ public:
     /*
     * Blind a number
     */
-    BigInt blind()(auto const ref BigInt i)
+    BigInt blind()(const auto ref BigInt i)
     {
         if (!m_reducer.initialized()) 
             return i.clone;
@@ -39,7 +39,7 @@ public:
     /*
     * Unblind a number
     */
-    BigInt unblind()(auto const ref BigInt i) const
+    BigInt unblind()(const auto ref BigInt i) const
     {
         if (!m_reducer.initialized())
             return i.clone;
@@ -55,9 +55,9 @@ public:
     *  d = the inverse of mask (depends on algo)
     *  n = modulus of the group operations are performed in
     */
-    this()(auto const ref BigInt e, 
-           auto const ref BigInt d, 
-           auto const ref BigInt n)
+    this()(const auto ref BigInt e, 
+           const auto ref BigInt d, 
+           const auto ref BigInt n)
     {
         if (e < 1 || d < 1 || n < 1)
             throw new InvalidArgument("Blinder: Arguments too small");

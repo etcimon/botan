@@ -89,7 +89,7 @@ public:
     static Vector!ubyte makeSigned(ALLOC)(ref PKSigner signer,
         RandomNumberGenerator rng,
         in AlgorithmIdentifier algo,
-        auto const ref Vector!(ubyte, ALLOC) tbs_bits)
+        const auto ref Vector!(ubyte, ALLOC) tbs_bits)
     {
         return DEREncoder()
             .startCons(ASN1Tag.SEQUENCE)
@@ -104,7 +104,7 @@ public:
     static Vector!ubyte makeSigned(ALLOC)(ref PKSigner signer,
         RandomNumberGenerator rng,
         in AlgorithmIdentifier algo,
-        auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) tbs_bits)
+        const auto ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) tbs_bits)
     {
         return makeSigned(signer, rng, algo, *tbs_bits);
     }
@@ -215,7 +215,7 @@ public:
     /*
     * Create a generic X.509 object
     */
-    this(ALLOC)(auto const ref Vector!(ubyte, ALLOC) vec, in string labels)
+    this(ALLOC)(const auto ref Vector!(ubyte, ALLOC) vec, in string labels)
     {
         auto stream = DataSourceMemory(vec.ptr, vec.length);
         init(cast(DataSource) stream, labels);
@@ -224,7 +224,7 @@ public:
     /*
     * Create a generic X.509 object
     */
-    this(ALLOC)(auto const ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) vec, in string labels)
+    this(ALLOC)(const auto ref RefCounted!(Vector!(ubyte, ALLOC), ALLOC) vec, in string labels)
     {
         auto stream = DataSourceMemory(vec.ptr, vec.length);
         init(cast(DataSource) stream, labels);

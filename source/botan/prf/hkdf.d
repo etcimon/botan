@@ -113,9 +113,9 @@ import memutils.hashmap;
 private shared size_t total_tests;
 
 SecureVector!ubyte hkdf()(string hkdf_algo,
-                          auto const ref SecureVector!ubyte ikm,
-                          auto const ref SecureVector!ubyte salt,
-                          auto const ref SecureVector!ubyte info,
+                          const auto ref SecureVector!ubyte ikm,
+                          const auto ref SecureVector!ubyte salt,
+                          const auto ref SecureVector!ubyte info,
                           size_t L)
 {
     AlgorithmFactory af = globalState().algorithmFactory();

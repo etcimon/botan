@@ -30,7 +30,7 @@ public:
     */
     X509Certificate findCertRef(in X509DN subject_dn, const ref Vector!ubyte key_id) const;
 
-    final X509Certificate findCert()(in X509DN subject_dn, auto const ref Vector!ubyte key_id) const {
+    final X509Certificate findCert()(in X509DN subject_dn, const auto ref Vector!ubyte key_id) const {
         return findCertRef(subject_dn, key_id);
     }
 
