@@ -730,7 +730,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
         Unique!Offer13Policy2 pol = new Offer13Policy2;
         Unique!AutoSeededRNG rng2 = new AutoSeededRNG;
         {
-            auto io = new StreamHandshakeIO((ubyte, const ref Vector!ubyte) {});
+            Unique!StreamHandshakeIO io = new StreamHandshakeIO((ubyte, const ref Vector!ubyte) {});
             HandshakeHash hh;
             Unique!ClientHello ch = new ClientHello(io, hh,
                 TLSProtocolVersion(TLSProtocolVersion.TLS_V13),
@@ -761,7 +761,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
             }
         }
         fails += checkMemutilsRepeat("tls13 sh/ee exchange", {
-            auto io = new StreamHandshakeIO((ubyte, const ref Vector!ubyte) {});
+            Unique!StreamHandshakeIO io = new StreamHandshakeIO((ubyte, const ref Vector!ubyte) {});
             HandshakeHash hh;
             Unique!ClientHello ch = new ClientHello(io, hh,
                 TLSProtocolVersion(TLSProtocolVersion.TLS_V13),
@@ -797,7 +797,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
         Unique!Offer13PqcPolicy pqc = new Offer13PqcPolicy;
         Unique!AutoSeededRNG rngp = new AutoSeededRNG;
         {
-            auto io = new StreamHandshakeIO((ubyte, const ref Vector!ubyte) {});
+            Unique!StreamHandshakeIO io = new StreamHandshakeIO((ubyte, const ref Vector!ubyte) {});
             HandshakeHash hh;
             Unique!ClientHello ch = new ClientHello(io, hh,
                 TLSProtocolVersion(TLSProtocolVersion.TLS_V13),
@@ -853,7 +853,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
             }
         }
         fails += checkMemutilsRepeat("tls13 pqc hybrid share", {
-            auto io = new StreamHandshakeIO((ubyte, const ref Vector!ubyte) {});
+            Unique!StreamHandshakeIO io = new StreamHandshakeIO((ubyte, const ref Vector!ubyte) {});
             HandshakeHash hh;
             Unique!ClientHello ch = new ClientHello(io, hh,
                 TLSProtocolVersion(TLSProtocolVersion.TLS_V13),
@@ -901,7 +901,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
         void checkPqcGroup(string name, ushort group, size_t ch_len, size_t sh_len, size_t ss_len)
         {
             Unique!OfferNamedPqcPolicy pol = new OfferNamedPqcPolicy(name);
-            auto io = new StreamHandshakeIO((ubyte, const ref Vector!ubyte) {});
+            Unique!StreamHandshakeIO io = new StreamHandshakeIO((ubyte, const ref Vector!ubyte) {});
             HandshakeHash hh;
             Unique!ClientHello ch = new ClientHello(io, hh,
                 TLSProtocolVersion(TLSProtocolVersion.TLS_V13),
@@ -962,7 +962,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
                           TLS13_P384_HYBRID_CH_LEN, TLS13_P384_HYBRID_SH_LEN, TLS13_P384_HYBRID_SS_LEN);
             fails += checkMemutilsRepeat("tls13 p256 hybrid share", {
                 Unique!OfferNamedPqcPolicy pol = new OfferNamedPqcPolicy(TLS13_GROUP_SECP256R1_MLKEM768_NAME);
-                auto io = new StreamHandshakeIO((ubyte, const ref Vector!ubyte) {});
+                Unique!StreamHandshakeIO io = new StreamHandshakeIO((ubyte, const ref Vector!ubyte) {});
                 HandshakeHash hh;
                 Unique!ClientHello ch = new ClientHello(io, hh,
                     TLSProtocolVersion(TLSProtocolVersion.TLS_V13),
@@ -1006,7 +1006,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
             }
             fails += checkMemutilsRepeat("tls13 x25519/efrodo-640-shake", {
                 Unique!OfferNamedPqcPolicy pol = new OfferNamedPqcPolicy(TLS13_GROUP_X25519_EFRODO_640_SHAKE_NAME);
-                auto io = new StreamHandshakeIO((ubyte, const ref Vector!ubyte) {});
+                Unique!StreamHandshakeIO io = new StreamHandshakeIO((ubyte, const ref Vector!ubyte) {});
                 HandshakeHash hh;
                 Unique!ClientHello ch = new ClientHello(io, hh,
                     TLSProtocolVersion(TLSProtocolVersion.TLS_V13),

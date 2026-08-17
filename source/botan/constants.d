@@ -357,9 +357,20 @@ else                          enum BOTAN_HAS_CURVE25519 = false;
 enum BOTAN_HAS_X25519 = BOTAN_HAS_CURVE25519;
 version(Ed25519)         {    enum BOTAN_HAS_ED25519 = true;                                                             }
 else                          enum BOTAN_HAS_ED25519 = false;
-version(Ed448)           {    enum BOTAN_HAS_ED448 = true;                                                               }
+version(Ed448)           {
+                              // 7×64-bit field / scalar; 32-bit `word` cannot hold the limbs.
+                              static if (BOTAN_MP_WORD_BITS == 64)
+                                  enum BOTAN_HAS_ED448 = true;
+                              else
+                                  enum BOTAN_HAS_ED448 = false;
+                         }
 else                          enum BOTAN_HAS_ED448 = false;
-version(X448)            {    enum BOTAN_HAS_X448 = true;                                                                }
+version(X448)            {
+                              static if (BOTAN_MP_WORD_BITS == 64)
+                                  enum BOTAN_HAS_X448 = true;
+                              else
+                                  enum BOTAN_HAS_X448 = false;
+                         }
 else                          enum BOTAN_HAS_X448 = false;
 version(SM2)             {    enum BOTAN_HAS_SM2 = true;                                                                 }
 else                          enum BOTAN_HAS_SM2 = false;
