@@ -102,6 +102,8 @@ install:
             }
         }
   - ps: SetUpDCompiler
+  - git clone --depth 1 --branch v1.0.13 https://github.com/etcimon/memutils.git _ci/memutils
+  - dub add-local _ci/memutils
 
 build_script:
   - ps: if($env:arch -eq "x86_mscoff"){
