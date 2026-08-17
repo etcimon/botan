@@ -610,8 +610,14 @@ version(ChaCha_SIMD)     {    enum BOTAN_HAS_CHACHA_SIMD = true;
                               static assert(BOTAN_HAS_CHACHA, "ChaCha_SIMD requires ChaCha");
                               static assert(BOTAN_HAS_SIMD, "ChaCha_SIMD requires SIMD"); }
 else                          enum BOTAN_HAS_CHACHA_SIMD = false;
-version(ChaCha_AVX2)     {    enum BOTAN_HAS_CHACHA_AVX2 = true;
-                              static assert(BOTAN_HAS_CHACHA, "ChaCha_AVX2 requires ChaCha"); }
+version(ChaCha_AVX2)     {
+                              // x8 body is LDC SIMD (int8 / shufflevector); DMD has no impl.
+                              version (LDC) {
+                                  enum BOTAN_HAS_CHACHA_AVX2 = true;
+                                  static assert(BOTAN_HAS_CHACHA, "ChaCha_AVX2 requires ChaCha");
+                              }
+                              else enum BOTAN_HAS_CHACHA_AVX2 = false;
+                         }
 else                          enum BOTAN_HAS_CHACHA_AVX2 = false;
 version(SM4_HWAES)       {    enum BOTAN_HAS_SM4_HWAES = true;
                               static assert(BOTAN_HAS_SM4, "SM4_HWAES requires SM4");
