@@ -23,13 +23,6 @@ jobs:
         dc: [ldc-latest, ldc-beta, dmd-latest, dmd-beta]
         os: [ubuntu-latest, windows-latest]
         arch: [x86, x86_64]
-        include:
-          - dc: ldc-latest
-            os: macos-13
-            arch: x86_64
-          - dc: dmd-latest
-            os: macos-13
-            arch: x86_64
         exclude:
           - os: ubuntu-latest
             arch: x86

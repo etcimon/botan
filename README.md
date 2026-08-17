@@ -1,10 +1,10 @@
-[![Build Status](https://ci.appveyor.com/api/projects/status/github/etcimon/botan?branch=master&svg=true)](https://ci.appveyor.com/project/etcimon/botan)
 [![CI](https://github.com/etcimon/botan/actions/workflows/ci.yml/badge.svg)](https://github.com/etcimon/botan/actions/workflows/ci.yml)
+[![Wiki](https://img.shields.io/badge/wiki-GitHub-blue)](https://github.com/etcimon/botan/wiki)
 
 Botan Crypto Library
 ====================
 
-Botan is a crypto and TLS library for D (package **3.13.0**).
+Botan is a crypto and TLS library for D (package **3.13.1**).
 
 It is a translation of the C++ library [Botan](https://botan.randombit.net/)
 (synced toward the 3.13 line) and uses
@@ -17,7 +17,7 @@ opt-in TLS 1.3 lives in the [vibe.0](https://github.com/etcimon/vibe.0) port.
 Getting Started
 ---------------
 
-Tested on Windows, macOS and Linux with DMD v2.099.1+ and LDC v1.31.0+
+Tested on Windows and Linux with DMD v2.099.1+ and LDC v1.31.0+
 (LDC 1.42+ for current CI).
 
 ```

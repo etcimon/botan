@@ -38,7 +38,7 @@ Faster rebuilds: LDC `--cache=build/ldc-cache` + `--oq` in `dub.json` (one
 `.o` per module inside `--combined`; see `scripts/inc-build.ps1` and
 `incremental-build.md`). Do not use `--build-mode=singleFile` on this tree.
 
-`README.md` still claims testing on DMD 2.099.1+ / LDC 1.31.0+ and `dub test --arch=x86_64`. CI (`.github/workflows/ci.yml`) runs `dub test --arch=$ARCH` on Ubuntu/Windows (`ldc-latest`, `ldc-beta`, `dmd-latest`, `dmd-beta` × x86/x86_64, with Ubuntu x86 excluded) plus macOS 13 x86_64 for ldc-latest and dmd-latest. Appveyor (`appveyor.yml`) still matrices DMD nightly/beta/stable/2.099.1 and LDC beta/stable/1.31.0.
+`README.md` claims testing on DMD 2.099.1+ / LDC 1.31.0+ (LDC 1.42+ for CI). GitHub Actions (`.github/workflows/ci.yml`) runs FocusTests on Ubuntu/Windows (`ldc-latest`, `ldc-beta`, `dmd-latest`, `dmd-beta` × x86/x86_64, Ubuntu x86 excluded) plus an Ubuntu LDC `full_openssl` job.
 
 `dmd64_build_instructions.txt` is a historical note about 32-bit Windows host memory when targeting x86_64 with old DMD. Treat as unread/stale unless someone is still building that way.
 
@@ -112,8 +112,7 @@ These are manuals, not the `dub test` suite.
 | Vector harness | `source/botan/test.d:72–152` |
 | Hash unittest shape | `source/botan/hash/hash.d:108–126` |
 | Startup KATs | `source/botan/selftest/selftest.d:43+` |
-| CI | `.github/workflows/ci.yml:44–48` (`dub test --arch=$ARCH`) |
-| Appveyor matrix | `appveyor.yml:1–36` |
+| CI | `.github/workflows/ci.yml` (Ubuntu/Windows FocusTests + Ubuntu LDC `full_openssl`) |
 
 ## Invariants
 
