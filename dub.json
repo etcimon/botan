@@ -106,7 +106,7 @@
             "copyFiles-windows-x86_64": ["lib/win-amd64/libeay32.dll", "lib/win-amd64/ssleay32.dll"],
             "sourceFiles-windows-x86_64" : ["lib/win-amd64/libeay32.lib", "lib/win-amd64/ssleay32.lib"],
             "dependencies": {
-                "openssl": { "version": "~>3.3.4", "optional": true, "default": false } 
+                "openssl": { "version": ">=3.3.4", "optional": true, "default": false } 
             }
         }, 
         {
