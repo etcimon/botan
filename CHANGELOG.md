@@ -26,9 +26,9 @@ v3.13.0
    null `this`. Encrypt/decrypt now take the AEAD class ref first.
  - Win32: DER INTEGER/SEQUENCE length checks use `remaining - hdr` so a
    wrapped 32-bit `hdr + n` cannot reach `BigInt.binaryDecode`.
- - `full_openssl` DUB range is `>=3.3.4` so a selected `openssl` 3.4.0
-   no longer warns. The OpenSSL engine still uses 1.x `BIGNUM` fields
-   and does not compile against OpenSSL 3 opaque BN.
+ - `full_openssl` DUB range is `>=3.3.4`. Engine/curve BN traffic uses
+   `BN_bin2bn` / `BN_bn2bin` (OpenSSL 3 opaque `BIGNUM`). Config sets
+   `DeimosOpenSSL_3_0`.
 
 v1.11.10
 -------------------

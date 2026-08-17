@@ -4,7 +4,7 @@
 * Copyright:
 * (C) 2007 Martin Doering, Christoph Ludwig, Falko Strenzke
 *     2010-2011,2012,2014 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -22,7 +22,6 @@ import std.algorithm : swap;
 import botan.constants;
 import memutils.unique;
 import std.conv : to;
-import core.stdc.string;
 abstract class CurveGFpRepr
 {
 public:
@@ -83,11 +82,30 @@ class CurveGFpMontgomery : CurveGFpRepr
 
 	static if (BOTAN_HAS_ENGINE_OPENSSL) {
 		import deimos.openssl.bn;
+		// OpenSSL 1.1+/3.x BIGNUM is opaque — copy via BN_bin2bn / BN_bn2bin.
+		static void osslBnFromBigInt(BIGNUM* bn, const(BigInt)* v)
+		{
+			if (v.isZero())
+			{
+				BN_zero(bn);
+				return;
+			}
+			auto enc = BigInt.encodeLocked(*v);
+			BN_bin2bn(enc.ptr, cast(int)enc.length, bn);
+		}
+		static void osslBnToBigInt(const(BIGNUM)* bn, BigInt* z)
+		{
+			const int n = BN_num_bytes(cast(BIGNUM*)bn);
+			if (n <= 0)
+			{
+				*z = BigInt(0);
+				return;
+			}
+			SecureVector!ubyte buf = SecureVector!ubyte(n);
+			BN_bn2bin(cast(BIGNUM*)bn, buf.ptr);
+			*z = BigInt.decode(buf);
+		}
 		~this() {
-			m_p_bn.d = null; m_p_bn.top = cast(int)0;
-			m_x_.d = null; m_x_.top = cast(int)0;
-			m_y_.d = null; m_y_.top = cast(int)0;
-			m_z_.d = null; m_z_.top = cast(int)0;
 			BN_free(m_z_);
 			BN_free(m_y_);
 			BN_free(m_x_);
@@ -119,8 +137,7 @@ class CurveGFpMontgomery : CurveGFpRepr
 			m_x_ = BN_new();
 			m_y_ = BN_new();
 			m_p_bn = BN_new();
-			m_p_bn.d = cast(BN_ULONG*)m_p.ptr;
-			m_p_bn.top = cast(int)m_p.sigWords();
+			osslBnFromBigInt(m_p_bn, &m_p);
 			m_ctx = BN_CTX_new();
 			m_mont = BN_MONT_CTX_new();
 			BN_MONT_CTX_set(m_mont, m_p_bn, m_ctx);
@@ -176,18 +193,13 @@ class CurveGFpMontgomery : CurveGFpRepr
 		z.clear();
 
 		static if (BOTAN_HAS_ENGINE_OPENSSL) {
-			// about 2-3x faster than the optimized botan-math
 			CurveGFpMontgomery this_ = cast()this;
-			this_.m_x_.neg = cast(int)0;
-			this_.m_x_.d = cast(BN_ULONG*)x.ptr;
-			this_.m_x_.top = cast(int) x.sigWords();
-			this_.m_y_.neg = cast(int)0;
-			this_.m_y_.d = cast(BN_ULONG*)y.ptr;
-			this_.m_y_.top = cast(int) y.sigWords();
+			osslBnFromBigInt(this_.m_x_, x);
+			osslBnFromBigInt(this_.m_y_, y);
 			BN_CTX* ctx_ = BN_CTX_new();
 			scope(exit) BN_CTX_free(ctx_);
 			BN_mod_mul_montgomery(this_.m_z_, this_.m_x_, this_.m_y_, this_.m_mont, ctx_);
-			memcpy(cast(ubyte*)z.mutablePtr(), cast(ubyte*)this_.m_z_.d, cast(ubyte*)(this_.m_z_.top*word.sizeof));
+			osslBnToBigInt(this_.m_z_, z);
 		}
 		else {
 			ws.resize(2*(m_p_words+2));	        
@@ -218,15 +230,12 @@ class CurveGFpMontgomery : CurveGFpRepr
 		z.growTo(output_size);
 		z.clear();
 		static if (BOTAN_HAS_ENGINE_OPENSSL) {
-			// about 2-3x faster than the optimized botan-math
 			CurveGFpMontgomery this_ = cast()this;
-			this_.m_x_.neg = cast(int)0;
-			this_.m_x_.d = cast(BN_ULONG*)x.ptr;
-			this_.m_x_.top = cast(int) x.sigWords();
+			osslBnFromBigInt(this_.m_x_, x);
 			BN_CTX* ctx_ = BN_CTX_new();
 			scope(exit) BN_CTX_free(ctx_);
 			BN_mod_mul_montgomery(this_.m_z_, this_.m_x_, this_.m_x_, this_.m_mont, ctx_);
-			memcpy(cast(ubyte*)z.mutablePtr(), cast(ubyte*)this_.m_z_.d, cast(ubyte*)(this_.m_z_.top*word.sizeof));
+			osslBnToBigInt(this_.m_z_, z);
 		}
 		else {
 	        ws.resize(2*(m_p_words+2));

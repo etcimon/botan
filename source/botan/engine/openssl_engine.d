@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -24,6 +24,31 @@ import deimos.openssl.evp;
 import deimos.openssl.bn;
 import deimos.openssl.aes;
 
+// OpenSSL 3 libcrypto exports EVP_*_get_*; deimos 3.4 still names the 1.1 symbols.
+extern(C) nothrow @nogc
+{
+    int EVP_CIPHER_get_block_size(const(EVP_CIPHER)* cipher);
+    int EVP_CIPHER_get_key_length(const(EVP_CIPHER)* cipher);
+    int EVP_CIPHER_get_mode(const(EVP_CIPHER)* cipher);
+    int EVP_MD_get_size(const(EVP_MD)* md);
+    int EVP_MD_get_block_size(const(EVP_MD)* md);
+
+    struct ossl_provider_st;
+    alias OSSL_PROVIDER = ossl_provider_st;
+    OSSL_PROVIDER* OSSL_PROVIDER_load(void* libctx, const(char)* name);
+}
+
+private void ensureOpenSslProviders()
+{
+    static bool loaded;
+    if (loaded)
+        return;
+    loaded = true;
+    // DES/RC4/MD4/Blowfish live in the legacy provider on OpenSSL 3.
+    OSSL_PROVIDER_load(null, "default");
+    OSSL_PROVIDER_load(null, "legacy");
+}
+
 static if (BOTAN_HAS_RSA)  import botan.pubkey.algo.rsa;
 static if (BOTAN_HAS_DSA)  import botan.pubkey.algo.dsa;
 static if (BOTAN_HAS_ECDSA) {
@@ -37,6 +62,8 @@ static if (BOTAN_HAS_DIFFIE_HELLMAN) import botan.pubkey.algo.dh;
 final class OpenSSLEngine : Engine
 {
 public:
+    this() { ensureOpenSslProviders(); }
+
     string providerName() const { return "openssl"; }
 
     KeyAgreement getKeyAgreementOp(in PrivateKey key, RandomNumberGenerator) const
@@ -312,6 +339,12 @@ public:
     {
         return BN_num_bytes(m_bn);
     }
+
+    // deimos BN_is_zero() still reads a.top (OpenSSL 1.0). 3.x BIGNUM is opaque.
+    bool isZero() const
+    {
+        return BN_num_bits(m_bn) == 0;
+    }
     
     
     SecureVector!ubyte toBytes() const
@@ -484,10 +517,10 @@ public:
     */
     void clear()
     {
-        const EVP_CIPHER* algo = EVP_CIPHER_CTX_cipher(m_encrypt);
+        const EVP_CIPHER* algo = m_algo;
         
-        EVP_CIPHER_CTX_cleanup(m_encrypt);
-        EVP_CIPHER_CTX_cleanup(m_decrypt);
+        EVP_CIPHER_CTX_free(m_encrypt);
+        EVP_CIPHER_CTX_free(m_decrypt);
         m_encrypt = EVP_CIPHER_CTX_new();
         m_decrypt = EVP_CIPHER_CTX_new();
         EVP_EncryptInit_ex(m_encrypt, algo, null, null, null);
@@ -502,7 +535,7 @@ public:
     */
     BlockCipher clone() const
     {
-        return new EVPBlockCipher(EVP_CIPHER_CTX_cipher(m_encrypt),
+        return new EVPBlockCipher(m_algo,
                                    m_cipher_name,
                                    m_cipher_key_spec.minimumKeylength(),
                                    m_cipher_key_spec.maximumKeylength(),
@@ -516,10 +549,11 @@ public:
     this(const EVP_CIPHER* algo,
          in string algo_name)
     {
-        m_block_sz = EVP_CIPHER_block_size(algo);
-        m_cipher_key_spec = EVP_CIPHER_key_length(algo);
+        m_algo = algo;
+        m_block_sz = EVP_CIPHER_get_block_size(algo);
+        m_cipher_key_spec = EVP_CIPHER_get_key_length(algo);
         m_cipher_name = algo_name;
-        if (EVP_CIPHER_mode(algo) != EVP_CIPH_ECB_MODE)
+        if (EVP_CIPHER_get_mode(algo) != EVP_CIPH_ECB_MODE)
             throw new InvalidArgument("EVP_BlockCipher: Non-ECB EVP was passed in");
         
         m_encrypt = EVP_CIPHER_CTX_new();
@@ -541,10 +575,11 @@ public:
          size_t key_min, size_t key_max,
          size_t key_mod) 
     {
-        m_block_sz = EVP_CIPHER_block_size(algo);
+        m_algo = algo;
+        m_block_sz = EVP_CIPHER_get_block_size(algo);
         m_cipher_key_spec = KeyLengthSpecification(key_min, key_max, key_mod);
         m_cipher_name = algo_name;
-        if (EVP_CIPHER_mode(algo) != EVP_CIPH_ECB_MODE)
+        if (EVP_CIPHER_get_mode(algo) != EVP_CIPH_ECB_MODE)
             throw new InvalidArgument("EVP_BlockCipher: Non-ECB EVP was passed in");
         
         m_encrypt = EVP_CIPHER_CTX_new();
@@ -617,6 +652,7 @@ protected:
         EVP_DecryptInit_ex(m_decrypt, null, null, full_key.ptr, null);
     }
     
+    const(EVP_CIPHER)* m_algo;
     size_t m_block_sz;
     KeyLengthSpecification m_cipher_key_spec;
     string m_cipher_name;
@@ -660,12 +696,12 @@ public:
     
     @property size_t outputLength() const
     {
-        return EVP_MD_size(EVP_MD_CTX_md(m_md));
+        return EVP_MD_get_size(EVP_MD_CTX_md(m_md));
     }
     
     @property size_t hashBlockSize() const
     {
-        return EVP_MD_block_size(EVP_MD_CTX_md(m_md));
+        return EVP_MD_get_block_size(EVP_MD_CTX_md(m_md));
     }
     /*
     * Create an EVP hash function
@@ -800,7 +836,7 @@ static if (BOTAN_HAS_DSA) {
             BN_add(s.ptr(), s.ptr(), i.ptr());
             BN_mod_mul(s.ptr(), s.ptr(), k.ptr(), m_q.ptr(), m_ctx.getCtx());
             
-            if (BN_is_zero(r.ptr()) || BN_is_zero(s.ptr()))
+            if (r.isZero() || s.isZero())
                 throw new InternalError("OpenSSL_DSA_Op::sign: r or s was zero");
             
             SecureVector!ubyte output = SecureVector!ubyte(2*q_bytes);
@@ -858,9 +894,9 @@ static if (BOTAN_HAS_DSA) {
             OSSL_BN s = OSSL_BN(sig + q_bytes, q_bytes);
             OSSL_BN i = OSSL_BN(msg, msg_len);
             
-            if (BN_is_zero(r.ptr()) || BN_cmp(r.ptr(), m_q.ptr()) >= 0)
+            if (r.isZero() || BN_cmp(r.ptr(), m_q.ptr()) >= 0)
                 return false;
-            if (BN_is_zero(s.ptr()) || BN_cmp(s.ptr(), m_q.ptr()) >= 0)
+            if (s.isZero() || BN_cmp(s.ptr(), m_q.ptr()) >= 0)
                 return false;
             
             if (BN_mod_inverse(s.ptr(), s.ptr(), m_q.ptr(), m_ctx.getCtx()) is null)
