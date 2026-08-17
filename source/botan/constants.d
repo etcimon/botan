@@ -114,14 +114,14 @@ version(CanTest)     {    enum BOTAN_HAS_TESTS = true;                          
 else                      enum BOTAN_HAS_TESTS = false;
 
 
-// This indicates the corresponding Botan (C++) version numbers
-enum BOTAN_VERSION_MAJOR = 1;
-enum BOTAN_VERSION_MINOR = 12;
-enum BOTAN_VERSION_PATCH = 3;
-enum BOTAN_VERSION_DATESTAMP = 20151109;
-enum BOTAN_VERSION_RELEASE_TYPE = "unreleased";
-enum BOTAN_VERSION_VC_REVISION = "git:6661c489929afc6c83c3038518dc37fd58938f3a";
-enum BOTAN_DISTRIBUTION_INFO = "unspecified";
+// D package / release identifiers (match dub.json and git tag v3.13.0)
+enum BOTAN_VERSION_MAJOR = 3;
+enum BOTAN_VERSION_MINOR = 13;
+enum BOTAN_VERSION_PATCH = 0;
+enum BOTAN_VERSION_DATESTAMP = 20260817;
+enum BOTAN_VERSION_RELEASE_TYPE = "release";
+enum BOTAN_VERSION_VC_REVISION = "git:v3.13.0";
+enum BOTAN_DISTRIBUTION_INFO = "etcimon/botan";
 
 enum BOTAN_TARGET_CPU_HAS_KNOWN_ENDIANNESS = true;
 enum BOTAN_TARGET_UNALIGNED_MEMORY_ACCESS_OK = true;

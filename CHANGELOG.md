@@ -10,6 +10,7 @@ v3.13.0
 -------------------
 
  - D package version jumps to the v3 range to match the C++ 3.13-line sync.
+   `BOTAN_VERSION_*` is **3.13.0** (datestamp 20260817).
    `latestTlsVersion()` remains TLS 1.2; TLS 1.3 is opt-in (`version(TLS_13)`,
    offer `TLS_V13`).
  - TLS 1.3 record/handshake, RFC 8448 vectors, OCSP HTTP handler, system
