@@ -2,8 +2,8 @@
 * Memory Operations
 * 
 * Copyright:
-* (C) 1999-2009,2012 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2017 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -35,8 +35,12 @@ RefCounted!(Vector!T) unlock(T, ALLOC)(const auto ref RefCounted!(Vector!(T, ALL
 void zap(T, Alloc)(ref Vector!(T, Alloc) vec)
 {
     import std.traits : hasIndirections;
-    static if (!hasIndirections!T && !is(Alloc == SecureMem))
-        zeroise(vec);
+    import botan.utils.ct : secureScrubMemory;
+    static if (!hasIndirections!T)
+    {
+        if (vec.ptr && vec.length)
+            secureScrubMemory(vec.ptr, T.sizeof * vec.length);
+    }
     vec.destroy();
 }
 
@@ -58,6 +62,18 @@ size_t bufferInsert(T, Alloc, Alloc2)(ref Vector!(T, Alloc) buf, size_t buf_offs
     return to_copy;
 }
 
+/**
+* Memory comparison. Early-out `==` by default (`BOTAN_HAS_CT` false).
+* Constant-time when `version(CT)` (`BOTAN_HAS_CT`).
+* `n` is the number of bytes compared (historical sameMem contract).
+*/
+bool sameMem(T)(in T* p1, in T* p2, in size_t n)
+    if (!isPointer!T)
+{
+    import botan.utils.ct : constantTimeCompare;
+    return constantTimeCompare(cast(const(ubyte)*) p1, cast(const(ubyte)*) p2, n);
+}
+
 pure:
 
 /**
@@ -74,21 +90,6 @@ void setMem(T)(T* ptr, size_t n, ubyte val)
     //logDebug("memset ops: ", cast(void*)ptr, " L:", T.sizeof*n);
     memset(ptr, val, T.sizeof*n);
 }
-
-/**
-* Memory comparison, input insensitive
-* Params:
-*  p1 = a pointer to an array
-*  p2 = a pointer to another array
-*  n = the number of Ts in p1 and p2
-* Returns: true iff p1[i] == p2[i] forall i in [0...n$(RPAREN)
-*/
-bool sameMem(T)(in T* p1, in T* p2, in size_t n)
-    if (!isPointer!T)
-{
-    return ((cast(const(ubyte)*)p1)[0 .. n] == (cast(const(ubyte)*)p2)[0 .. n]);
-}
-
 
 /**
 * Zeroise the values; length remains unchanged

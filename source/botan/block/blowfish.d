@@ -2,8 +2,8 @@
 * Blowfish
 * 
 * Copyright:
-* (C) 1999-2011 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2011,2018 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -24,7 +24,7 @@ import botan.utils.mem_ops;
 /**
 * Blowfish
 */
-final class Blowfish : BlockCipherFixedParams!(8, 1, 56), BlockCipher, SymmetricAlgorithm
+final class Blowfish : BlockCipherFixedParams!(8, 1, 72), BlockCipher, SymmetricAlgorithm
 {
 public:
     /*
@@ -108,8 +108,8 @@ public:
                         in ubyte[16] salt, size_t workfactor)
     {
         import std.conv : to;
-        // Truncate longer passwords to the 56 ubyte limit Blowfish enforces
-        length = min(length, 55);
+        // Bcrypt key is truncated at 72 bytes (password + NUL), not the 56-byte Blowfish cipher limit.
+        length = min(length, 72);
         
         if (workfactor == 0)
             throw new InvalidArgument("Bcrypt work factor must be at least 1");
@@ -128,14 +128,52 @@ public:
         m_S.reserve(1024);
         m_S[] = S_INIT[0 .. 1024];
         
-        key_expansion(key, length, salt);
+        key_expansion(key, length, salt.ptr, 16);
 
-        const ubyte[16] null_salt;
         const size_t rounds = 1 << workfactor;
         for (size_t r = 0; r != rounds; ++r)
         {
-            key_expansion(key, length, null_salt);
-            key_expansion(salt.ptr, 16, null_salt);
+            key_expansion(key, length, null, 0);
+            key_expansion(salt.ptr, 16, null, 0);
+        }
+    }
+
+    /**
+    * EKSBlowfish used by bcrypt-PBKDF. Salt length must be a positive
+    * multiple of 4. Key is truncated to 72 bytes (not the 56-byte
+    * Blowfish cipher limit).
+    */
+    void saltedSetKey(const(ubyte)* key, size_t length,
+                      const(ubyte)* salt, size_t salt_len,
+                      size_t workfactor, bool salt_first = false)
+    {
+        if (salt_len == 0 || salt_len % 4 != 0)
+            throw new InvalidArgument("Invalid salt length for Blowfish salted key schedule");
+        length = min(length, 72);
+
+        m_P.reserve(18);
+        m_P[] = P_INIT[0 .. 18];
+        m_S.reserve(1024);
+        m_S[] = S_INIT[0 .. 1024];
+
+        key_expansion(key, length, salt, salt_len);
+
+        if (workfactor > 0)
+        {
+            const size_t rounds = 1 << workfactor;
+            foreach (size_t r; 0 .. rounds)
+            {
+                if (salt_first)
+                {
+                    key_expansion(salt, salt_len, null, 0);
+                    key_expansion(key, length, null, 0);
+                }
+                else
+                {
+                    key_expansion(key, length, null, 0);
+                    key_expansion(salt, salt_len, null, 0);
+                }
+            }
         }
     }
 
@@ -165,23 +203,23 @@ protected:
         m_S.reserve(1024);
         m_S[] = S_INIT[0 .. 1024];
         
-        immutable ubyte[16] null_salt;
-        
-        key_expansion(key, length, null_salt);
+        key_expansion(key, length, null, 0);
     }
 
 private:
     void key_expansion(const(ubyte)* key,
                        size_t length,
-                       in ubyte[16] salt)
+                       const(ubyte)* salt,
+                       size_t salt_len)
     {
         for (size_t i = 0, j = 0; i < 18; ++i, j += 4) {
             m_P[i] ^= make_uint(key[(j  ) % length], key[(j+1) % length], key[(j+2) % length], key[(j+3) % length]);
         }
-        
+
+        const size_t p_salt_off = (salt_len > 0) ? 18 % (salt_len / 4) : 0;
         uint L = 0, R = 0;
-        generate_sbox(m_P, L, R, salt, 0);
-        generate_sbox(m_S, L, R, salt, 2);
+        generate_sbox(m_P, L, R, salt, salt_len, 0);
+        generate_sbox(m_S, L, R, salt, salt_len, p_salt_off);
     }
 
 
@@ -190,7 +228,8 @@ private:
     */
     void generate_sbox(ref SecureVector!uint box,
                        ref uint L, ref uint R,
-                       in ubyte[16] salt,
+                       const(ubyte)* salt,
+                       size_t salt_len,
                        size_t salt_off) const
     {
         import botan.utils.get_byte : get_byte;
@@ -198,11 +237,15 @@ private:
         const uint* S2 = &m_S[256];
         const uint* S3 = &m_S[512];
         const uint* S4 = &m_S[768];
-        
+        const size_t salt_words = salt_len / 4;
+
         for (size_t i = 0; i < box.length; i += 2)
         {
-            L ^= loadBigEndian!uint(salt.ptr, (i + salt_off) % 4);
-            R ^= loadBigEndian!uint(salt.ptr, (i + salt_off + 1) % 4);
+            if (salt_words)
+            {
+                L ^= loadBigEndian!uint(salt, (i + salt_off) % salt_words);
+                R ^= loadBigEndian!uint(salt, (i + salt_off + 1) % salt_words);
+            }
             
             for (size_t j = 0; j < 16; j += 2)
             {
@@ -399,4 +442,50 @@ private:
         0xB74E6132, 0xCE77E25B, 0x578FDFE3, 0x3AC372E6 ];
 
     SecureVector!uint m_S, m_P;
+}
+
+static if (BOTAN_HAS_TESTS && !SKIP_BLOCK_TEST) unittest
+{
+    import botan.test;
+    import botan.codec.hex;
+    import memutils.hashmap;
+    import std.stdio : File;
+
+    logDebug("Testing salted blowfish ...");
+    size_t fails = 0;
+    File vec = File("test_data/salted_blowfish.vec", "r");
+    fails += runTestsBb(vec, "BlowfishSalted", "Out", true,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Key" in m) || !("Salt" in m) || !("Out" in m))
+                return 0;
+            Unique!Blowfish bf = new Blowfish;
+            auto key = hexDecode(m["Key"]);
+            auto salt = hexDecode(m["Salt"]);
+            auto expect = hexDecode(m["Out"]);
+            bf.saltedSetKey(key.ptr, key.length, salt.ptr, salt.length, 0);
+            ubyte[8] block;
+            bf.encrypt(block.ptr);
+            if (block[] != expect[])
+            {
+                logError("salted blowfish got ", hexEncode(block.ptr, 8), " expected ", m["Out"]);
+                return 1;
+            }
+            return 0;
+        });
+
+    fails += checkMemutilsRepeat("salted_blowfish", {
+        Unique!Blowfish bf = new Blowfish;
+        ubyte[16] key;
+        ubyte[4] salt;
+        key[0] = 1;
+        salt[0] = 2;
+        bf.saltedSetKey(key.ptr, key.length, salt.ptr, salt.length, 0);
+        ubyte[8] block;
+        bf.encrypt(block.ptr);
+    });
+
+    if (fails)
+        logError("salted blowfish failures: ", fails);
+    assert(fails == 0);
 }

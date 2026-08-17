@@ -2,10 +2,10 @@
 * ECDSA
 * 
 * Copyright:
+* (C) 2007 Manuel Hartl, FlexSecure GmbH
 * (C) 2007 Falko Strenzke, FlexSecure GmbH
-*          Manuel Hartl, FlexSecure GmbH
 * (C) 2008-2010 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -13,7 +13,7 @@
 module botan.pubkey.algo.ecc_key;
 
 import botan.constants;
-static if (BOTAN_HAS_PUBLIC_KEY_CRYPTO && (BOTAN_HAS_ECDH || BOTAN_HAS_ECDSA || BOTAN_HAS_GOST_34_10_2001)):
+static if (BOTAN_HAS_PUBLIC_KEY_CRYPTO && (BOTAN_HAS_ECDH || BOTAN_HAS_ECDSA || BOTAN_HAS_GOST_34_10_2001 || BOTAN_HAS_SM2 || BOTAN_HAS_ECGDSA || BOTAN_HAS_ECKCDSA)):
 
 public import botan.pubkey.pubkey;
 public import botan.pubkey.algo.ec_group;
@@ -49,7 +49,7 @@ public:
 
         m_domain_params = dom_par.clone;
         m_public_key = pub_point.clone;
-        m_domain_encoding = EC_DOMPAR_ENC_EXPLICIT;
+        m_domain_encoding = m_domain_params.getOid().length ? EC_DOMPAR_ENC_OID : EC_DOMPAR_ENC_EXPLICIT;
 
         if (domain().getCurve() != publicPoint().getCurve())
             throw new InvalidArgument("ECPublicKey: curve mismatch in constructor");
@@ -61,7 +61,7 @@ public:
         decodeOptions(options);
 
         m_domain_params = ECGroup(alg_id.parameters);
-        m_domain_encoding = EC_DOMPAR_ENC_EXPLICIT;
+        m_domain_encoding = m_domain_params.getOid().length ? EC_DOMPAR_ENC_OID : EC_DOMPAR_ENC_EXPLICIT;
         m_public_key = OS2ECP(key_bits, domain().getCurve());
     }
 
@@ -70,6 +70,12 @@ public:
         decodeOptions(options);
         //logTrace("ECGroup with alg_id.parameters");
         m_domain_params = ECGroup(alg_id.parameters);
+        m_domain_encoding = EC_DOMPAR_ENC_EXPLICIT;
+    }
+
+    protected this(T)(in T options)
+    {
+        decodeOptions(options);
         m_domain_encoding = EC_DOMPAR_ENC_EXPLICIT;
     }
 
@@ -126,7 +132,22 @@ public:
 
     override bool checkKey(RandomNumberGenerator rng, bool b) const
     {
-        return publicPoint().onTheCurve();
+        if (publicPoint().isZero() || !publicPoint().onTheCurve())
+            return false;
+        const BigInt* order = &domain().getOrder();
+        const BigInt* cof = &domain().getCofactor();
+        if (order.isNegative() || order.isZero())
+            return false;
+        if (cof.isNegative() || cof.isZero())
+            return false;
+        // C++ verify_group: [cofactor]G must not be the identity
+        if (*cof != 1)
+        {
+            auto cg = domain().getBasePoint() * cof;
+            if (cg.isZero())
+                return false;
+        }
+        return true;
     }
 
     /**
@@ -199,7 +220,8 @@ public:
     /**
     * ECPrivateKey constructor
     */
-    this(T)(in T options, RandomNumberGenerator rng, const ref ECGroup ec_group, const ref BigInt private_key) 
+    this(T)(in T options, RandomNumberGenerator rng, const ref ECGroup ec_group, const ref BigInt private_key,
+            bool with_modular_inverse = false)
     {
         if (private_key == 0) {
             auto bi = BigInt(1);
@@ -208,7 +230,14 @@ public:
         else
             m_private_key = private_key.clone;
 
-        PointGFp public_key = ec_group.getBasePoint() * &m_private_key;
+        PointGFp public_key;
+        if (with_modular_inverse)
+        {
+            auto inv = inverseMod(&m_private_key, &ec_group.getOrder());
+            public_key = ec_group.getBasePoint() * &inv;
+        }
+        else
+            public_key = ec_group.getBasePoint() * &m_private_key;
         
         assert(public_key.onTheCurve(), "Generated public key point was on the curve");
 
@@ -216,10 +245,10 @@ public:
         super(options, ec_group, public_key);
     }
 
-    this(T)(in T options, const ref AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits) 
+    this(T)(in T options, const ref AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits,
+            bool with_modular_inverse = false) 
     {
-        super(options, alg_id);
-        PointGFp public_key;
+        super(options);
         OID key_parameters = OID();
 
         SecureVector!ubyte public_key_bits;
@@ -231,12 +260,48 @@ public:
                 .decodeOptional(key_parameters, (cast(ASN1Tag) 0), ASN1Tag.PRIVATE, key_parameters)
                 .decodeOptionalString(public_key_bits, ASN1Tag.BIT_STRING, 1, ASN1Tag.PRIVATE)
                 .endCons();
-        if (!key_parameters.empty && key_parameters != alg_id.oid)
-            throw new DecodingError("ECPrivateKey - inner and outer OIDs did not match");
+
+        bool have_outer;
+        try
+        {
+            if (alg_id.parameters.length)
+            {
+                m_domain_params = ECGroup(alg_id.parameters);
+                have_outer = true;
+            }
+        }
+        catch (Exception)
+        {
+            have_outer = false;
+        }
+
+        if (!key_parameters.empty)
+        {
+            if (have_outer)
+            {
+                auto inner = ECGroup(key_parameters);
+                if (inner != m_domain_params)
+                    throw new InvalidArgument("Domain parameters supplied AlgorithmIdentifier does not match the ECC private key's domain parameters in EC_PrivateKey construction");
+            }
+            else
+            {
+                m_domain_params = ECGroup(key_parameters);
+                have_outer = true;
+            }
+        }
+        if (!have_outer)
+            throw new InvalidArgument("Domain parameters are not supplied in EC_PrivateKey construction");
+        m_domain_encoding = m_domain_params.getOid().length ? EC_DOMPAR_ENC_OID : EC_DOMPAR_ENC_EXPLICIT;
 
         if (public_key_bits.empty)
         {
-            m_public_key = domain().getBasePoint() * &m_private_key;
+            if (with_modular_inverse)
+            {
+                auto inv = inverseMod(&m_private_key, &domain().getOrder());
+                m_public_key = domain().getBasePoint() * &inv;
+            }
+            else
+                m_public_key = domain().getBasePoint() * &m_private_key;
             assert(m_public_key.onTheCurve(), "Public point derived from loaded key was on the curve");
         }
         else
@@ -256,11 +321,15 @@ public:
 
     SecureVector!ubyte pkcs8PrivateKey() const
     {
+        auto pub_bits = publicValue();
         return DEREncoder()
                 .startCons(ASN1Tag.SEQUENCE)
                 .encode(cast(size_t)(1))
-                .encode(BigInt.encode1363(m_private_key, m_private_key.bytes()),
+                .encode(BigInt.encode1363(m_private_key, domain().getOrder().bytes()),
                         ASN1Tag.OCTET_STRING)
+                .startExplicit(1)
+                .encode(pub_bits, ASN1Tag.BIT_STRING, ASN1Tag.BIT_STRING, ASN1Tag.UNIVERSAL)
+                .endExplicit()
                 .endCons()
                 .getContents();
     }

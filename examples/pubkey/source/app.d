@@ -12,7 +12,7 @@ void main() {
 
 	const(ubyte)[] message = cast(const(ubyte)[])"Hello, this is a binary message!";
 	writeln("Message: ", cast(string)message);
-	auto privkey = RSAPrivateKey(*rng, 1024);
+	auto privkey = RSAPrivateKey(*rng, 2048);
 	
 	auto pubkey = RSAPublicKey(privkey);
 	

@@ -2,8 +2,8 @@
 * Public Key Interface
 * 
 * Copyright:
-* (C) 1999-2010 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2010,2015,2018 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -258,6 +258,29 @@ public:
         AlgorithmFactory af = globalState().algorithmFactory();
 
         RandomNumberGenerator rng = globalState().globalRng();
+
+        static if (BOTAN_HAS_ED25519)
+        {
+            import botan.pubkey.algo.ed25519 : ed25519TrySignatureOp;
+            if (auto op = ed25519TrySignatureOp(key, emsa_name))
+            {
+                m_op = op;
+                m_emsa = getEmsa("Raw");
+                m_sig_format = format;
+                return;
+            }
+        }
+        static if (BOTAN_HAS_ED448)
+        {
+            import botan.pubkey.algo.ed448 : ed448TrySignatureOp;
+            if (auto op = ed448TrySignatureOp(key, emsa_name))
+            {
+                m_op = op;
+                m_emsa = getEmsa("Raw");
+                m_sig_format = format;
+                return;
+            }
+        }
         
         foreach (Engine engine; af.engines[]) {
             if (!m_op)
@@ -309,6 +332,98 @@ private:
     Unique!Verification m_verify_op;
     Unique!EMSA m_emsa;
     SignatureFormat m_sig_format;
+}
+
+/// X.690 definite-length field; rejects indefinite and non-minimal long form.
+private size_t decodeDerLengthField(const(ubyte)* p, size_t remaining, ref size_t consumed)
+{
+    if (remaining < 1)
+        throw new DecodingError("DER length missing");
+    const ubyte b = p[0];
+    if ((b & 0x80) == 0)
+    {
+        consumed = 1;
+        return b;
+    }
+    const size_t nbytes = b & 0x7F;
+    if (nbytes == 0)
+        throw new DecodingError("DER indefinite length");
+    if (nbytes > 4 || 1 + nbytes > remaining)
+        throw new DecodingError("DER length too large");
+    if (p[1] == 0)
+        throw new DecodingError("DER length leading zero");
+    size_t len = 0;
+    foreach (i; 0 .. nbytes)
+        len = (len << 8) | p[1 + i];
+    consumed = 1 + nbytes;
+    if (len < 0x80)
+        throw new DecodingError("DER long-form length for short value");
+    return len;
+}
+
+private BigInt decodeDerInteger(const(ubyte)* p, size_t remaining, ref size_t consumed)
+{
+    if (remaining < 2 || p[0] != 0x02)
+        throw new DecodingError("DER INTEGER tag");
+    size_t len_cons;
+    const size_t n = decodeDerLengthField(p + 1, remaining - 1, len_cons);
+    const size_t hdr = 1 + len_cons;
+    if (n == 0 || hdr + n > remaining)
+        throw new DecodingError("DER INTEGER truncated");
+    const ubyte* v = p + hdr;
+    if (n > 1)
+    {
+        if (v[0] == 0x00 && (v[1] & 0x80) == 0)
+            throw new DecodingError("DER INTEGER non-minimal");
+        if (v[0] == 0xFF && (v[1] & 0x80) != 0)
+            throw new DecodingError("DER INTEGER non-minimal");
+    }
+    const bool negative = (v[0] & 0x80) != 0;
+    BigInt output;
+    if (negative)
+    {
+        Vector!ubyte tmp;
+        tmp.resize(n);
+        foreach (i; 0 .. n)
+            tmp[i] = v[i];
+        for (size_t i = n; i > 0; --i)
+            if (tmp[i - 1]--)
+                break;
+        foreach (i; 0 .. n)
+            tmp[i] = cast(ubyte)(~tmp[i]);
+        output = BigInt(tmp.ptr, n);
+        output.flipSign();
+    }
+    else
+        output = BigInt(v, n);
+    consumed = hdr + n;
+    return output.move();
+}
+
+/// C++ `decode_der_signature_pair` (Limits::DER): SEQUENCE of two INTEGERs.
+private SecureVector!ubyte decodeDerSignaturePair(const(ubyte)* der, size_t der_len, size_t part_size)
+{
+    if (der_len < 2 || der[0] != 0x30)
+        throw new DecodingError("DER signature SEQUENCE tag");
+    size_t lcons;
+    const size_t seq_len = decodeDerLengthField(der + 1, der_len - 1, lcons);
+    const size_t hdr = 1 + lcons;
+    if (hdr + seq_len != der_len)
+        throw new DecodingError("DER signature length mismatch");
+    size_t off;
+    size_t used;
+    BigInt r = decodeDerInteger(der + hdr, seq_len, used);
+    off += used;
+    BigInt s = decodeDerInteger(der + hdr + off, seq_len - off, used);
+    off += used;
+    if (off != seq_len)
+        throw new DecodingError("DER signature trailing data");
+    if (r.isNegative() || s.isNegative() || r.bytes() > part_size || s.bytes() > part_size)
+        throw new DecodingError("Invalid DER encoding of signature");
+    SecureVector!ubyte sig;
+    sig ~= BigInt.encode1363(r, part_size);
+    sig ~= BigInt.encode1363(s, part_size);
+    return sig.move();
 }
 
 /**
@@ -406,28 +521,15 @@ public:
                 return validateSignature(m_emsa.rawData(), sig, length);
             else if (m_sig_format == DER_SEQUENCE)
             {
-                BERDecoder decoder = BERDecoder(sig, length);
-                BERDecoder ber_sig = decoder.startCons(ASN1Tag.SEQUENCE);
-                
-                size_t count = 0;
-                SecureVector!ubyte real_sig;
-                while (ber_sig.moreItems())
-                {
-                    BigInt sig_part;
-                    ber_sig.decode(sig_part);
-                    real_sig ~= BigInt.encode1363(sig_part, m_op.messagePartSize());
-                    ++count;
-                }
-                
-                if (count != m_op.messageParts())
-                    throw new DecodingError("PKVerifier: signature size invalid");
-                
+                auto real_sig = decodeDerSignaturePair(sig, length, m_op.messagePartSize());
                 return validateSignature(m_emsa.rawData(), real_sig.ptr, real_sig.length);
             }
             else
                 throw new DecodingError("PKVerifier: Unknown signature format " ~ to!string(m_sig_format));
         }
-        catch(InvalidArgument) { return false; }
+        catch (DecodingError) { return false; }
+        catch (InvalidArgument) { return false; }
+        catch (InvalidState) { return false; }
     }
 
     /**
@@ -468,6 +570,29 @@ public:
     {
         AlgorithmFactory af = globalState().algorithmFactory();
         RandomNumberGenerator rng = globalState().globalRng();
+
+        static if (BOTAN_HAS_ED25519)
+        {
+            import botan.pubkey.algo.ed25519 : ed25519TryVerificationOp;
+            if (auto op = ed25519TryVerificationOp(key, emsa_name))
+            {
+                m_op = op;
+                m_emsa = getEmsa("Raw");
+                m_sig_format = format;
+                return;
+            }
+        }
+        static if (BOTAN_HAS_ED448)
+        {
+            import botan.pubkey.algo.ed448 : ed448TryVerificationOp;
+            if (auto op = ed448TryVerificationOp(key, emsa_name))
+            {
+                m_op = op;
+                m_emsa = getEmsa("Raw");
+                m_sig_format = format;
+                return;
+            }
+        }
 
         foreach (Engine engine; af.engines[]) {
             m_op = engine.getVerifyOp(key, rng);

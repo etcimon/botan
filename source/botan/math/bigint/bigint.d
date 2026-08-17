@@ -2,9 +2,8 @@
 * BigInt
 * 
 * Copyright:
-* (C) 1999-2008,2012 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
-*    2007 FlexSecure
+* (C) 1999-2011,2012,2014,2019 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -148,6 +147,58 @@ public:
 
         if (negative) setSign(Negative);
         else          setSign(Positive);
+    }
+
+    /**
+    * Parse unsigned digits in the given radix (10 or 16).
+    * Hex accepts an odd number of digits (implicit leading 0).
+    */
+    static BigInt fromRadixDigits(in string digits, size_t radix)
+    {
+        if (radix == 16)
+            return decode(cast(const(ubyte)*)digits.ptr, digits.length, Hexadecimal);
+        if (radix != 10)
+            throw new InvalidArgument("BigInt.fromRadixDigits unknown radix");
+
+        static if (BOTAN_MP_WORD_BITS >= 64)
+        {
+            enum word conversion_radix = cast(word)10_000_000_000_000_000_000UL;
+            enum size_t radix_digits = 19;
+        }
+        else
+        {
+            enum word conversion_radix = 1_000_000_000;
+            enum size_t radix_digits = 9;
+        }
+
+        BigInt r;
+        const size_t partial_block = digits.length % radix_digits;
+        if (partial_block > 0)
+        {
+            word acc = 0;
+            foreach (size_t i; 0 .. partial_block)
+            {
+                const char c = digits[i];
+                if (c < '0' || c > '9')
+                    throw new InvalidArgument("Invalid decimal character");
+                acc = acc * 10 + cast(word)(c - '0');
+            }
+            r += acc;
+        }
+        for (size_t i = partial_block; i != digits.length; i += radix_digits)
+        {
+            word acc = 0;
+            foreach (size_t j; 0 .. radix_digits)
+            {
+                const char c = digits[i + j];
+                if (c < '0' || c > '9')
+                    throw new InvalidArgument("Invalid decimal character");
+                acc = acc * 10 + cast(word)(c - '0');
+            }
+            r *= conversion_radix;
+            r += acc;
+        }
+        return r.move();
     }
 
     /**
@@ -1077,18 +1128,27 @@ public:
     */
     static BigInt randomInteger(RandomNumberGenerator rng, const(BigInt)* min, const(BigInt)* max)
     {
-		BigInt delta_upper_bound = *max - *min - 1;
-
-        if (delta_upper_bound <= 0)
+        if (min.isNegative() || max.isNegative() || *max <= *min)
             throw new InvalidArgument("randomInteger: invalid min/max values");
-		// Choose x in [0, delta_upper_bound]
-		BigInt x;
-		do {
-			auto bitsize = delta_upper_bound.bits();
-			x.randomize(rng, bitsize, false);
-		} while (x > delta_upper_bound);
-
-		return (x + min);
+        /*
+        C++ 3: if min > 1, draw r in [0, max-min) then return min+r.
+        If min <= 1, draw with max.bits() and reject until r is in [min, max).
+        */
+        if (*min > BigInt(1))
+        {
+            BigInt diff = *max - *min;
+            auto zero = BigInt(0);
+            auto r = randomInteger(rng, &zero, &diff);
+            return *min + r;
+        }
+        const size_t bitsize = max.bits();
+        for (;;)
+        {
+            BigInt r;
+            r.randomize(rng, bitsize, false);
+            if (r >= *min && r < *max)
+                return r.move();
+        }
     }
 
     static BigInt randomInteger()(RandomNumberGenerator rng, const auto ref BigInt min, const auto ref BigInt max)
@@ -1372,7 +1432,10 @@ public:
         else if (relative_size == 0)
         {
             if (x.sign() != y.sign())
+            {
                 bigint_shl2(z.mutablePtr(), x.ptr, x_sw, 0, 1);
+                z.setSign(x.sign());
+            }
         }
         else if (relative_size > 0)
         {

@@ -1,9 +1,10 @@
-﻿/**
+/**
 * PKCS #5 v2.0 PBE
 *
 * Copyright:
-* (C) 1999-2007,2014 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2008,2014,2021 Jack Lloyd
+* (C) 2018 Ribose Inc
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -98,6 +99,69 @@ Pair!(AlgorithmIdentifier, Array!ubyte)
 	return makePair(id, unlock(buf).cloneToRef);
 	
 }
+
+/**
+* Encrypt with PBES2 using an explicit PBKDF2 iteration count
+* (C++ `pbes2_encrypt_iter`).
+*/
+Pair!(AlgorithmIdentifier, Array!ubyte)
+	pbes2EncryptIter()(const auto ref SecureVector!ubyte key_bits,
+	                   const string passphrase,
+	                   size_t iterations,
+	                   const string cipher,
+	                   const string digest,
+	                   RandomNumberGenerator rng,
+	                   AlgorithmFactory af = null)
+{
+	if (iterations == 0)
+		throw new InvalidArgument("PBES2: Invalid iteration count");
+	if (!af) af = globalState().algorithmFactory();
+	const string prf = "HMAC(" ~ digest ~ ")";
+
+	const Vector!string cipher_spec = splitter(cipher, '/');
+	if (cipher_spec.length != 2)
+		throw new DecodingError("PBE-PKCS5 v2.0: Invalid cipher spec " ~ cipher);
+
+	const SecureVector!ubyte salt = rng.randomVec(12);
+
+	if (cipher_spec[1] != "CBC" && cipher_spec[1] != "GCM")
+		throw new DecodingError("PBE-PKCS5 v2.0: Don't know param format for " ~ cipher);
+
+	Unique!KeyedTransform enc;
+	static if (BOTAN_HAS_AEAD_GCM) {
+		if (cipher_spec[1] == "GCM")
+			enc = new GCMEncryption(af.makeBlockCipher(cipher_spec[0]));
+		else if (cipher_spec[1] == "CBC")
+			enc = new CBCEncryption(af.makeBlockCipher(cipher_spec[0]), new PKCS7Padding);
+		else
+			throw new DecodingError("PBE-PKCS5 v2.0: Don't know param format for " ~ cipher);
+	} else {
+		if (cipher_spec[1] == "CBC")
+			enc = new CBCEncryption(af.makeBlockCipher(cipher_spec[0]), new PKCS7Padding);
+		else
+			throw new DecodingError("PBE-PKCS5 v2.0: Don't know param format for " ~ cipher);
+	}
+	if (enc.isEmpty())
+		throw new DecodingError("PBE-PKCS5: Cannot encrypt, no cipher " ~ cipher);
+	Unique!PBKDF pbkdf = getPbkdf("PBKDF2(" ~ prf ~ ")");
+
+	const size_t key_length = enc.keySpec().maximumKeylength();
+	SecureVector!ubyte iv = rng.randomVec(enc.defaultNonceLength());
+
+	auto key = pbkdf.deriveKey(key_length, passphrase, salt.ptr, salt.length, iterations).bitsOf();
+	enc.setKey(key.ptr, key.length);
+
+	enc.start(iv);
+	SecureVector!ubyte buf = key_bits.ptr[0 .. key_bits.length];
+	enc.finish(buf);
+
+	AlgorithmIdentifier id = AlgorithmIdentifier(
+		OIDS.lookup("PBE-PKCS5v20"),
+		encodePbes2Params(cipher, prf, salt, iv, iterations, key_length));
+
+	return makePair(id, unlock(buf).cloneToRef);
+}
+
 /*
 * Encode PKCS#5 PBES2 parameters
 */

@@ -2,8 +2,8 @@
 * ASN.1 OID
 * 
 * Copyright:
-* (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2007,2024 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -65,29 +65,39 @@ public:
         BERObject obj = decoder.getNextObject();
         if (obj.type_tag != ASN1Tag.OBJECT_ID || obj.class_tag != ASN1Tag.UNIVERSAL)
             throw new BERBadTag("Error decoding OID, unknown tag", obj.type_tag, obj.class_tag);
-        if (obj.value.length < 2)
+        if (obj.value.length < 1)
             throw new BERDecodingError("OID encoding is too short");
         clear();
-        m_id.pushBack(obj.value[0] / 40);
-        m_id.pushBack(obj.value[0] % 40);
-        
         size_t i = 0;
-        while (i != obj.value.length - 1)
+        bool first = true;
+        while (i < obj.value.length)
         {
-            uint component = 0;
-            while (i != obj.value.length - 1)
+            uint component = obj.value[i++];
+            if (component > 0x7F)
             {
-                ++i;
-                
-                if (component >> (32-7))
-                    throw new DecodingError("OID component overflow");
-                
-                component = (component << 7) + (obj.value[i] & 0x7F);
-                
-                if (!(obj.value[i] & 0x80))
-                    break;
+                component &= 0x7F;
+                if (component == 0)
+                    throw new DecodingError("Leading zero byte in multibyte OID encoding");
+                while (true)
+                {
+                    if (i == obj.value.length)
+                        throw new DecodingError("Truncated OID value");
+                    const ubyte next = obj.value[i++];
+                    if (component >> (32 - 7))
+                        throw new DecodingError("OID component overflow");
+                    component = (component << 7) | (next & 0x7F);
+                    if ((next & 0x80) == 0)
+                        break;
+                }
             }
-            m_id.pushBack(component);
+            if (first)
+            {
+                m_id.pushBack(component / 40);
+                m_id.pushBack(component % 40);
+                first = false;
+            }
+            else
+                m_id.pushBack(component);
         }
         //import botan.asn1.oids : OIDS;
         //assert(OIDS.lookup(OID(this)) !is null, "Invalid OID: " ~ m_id[].to!string);
@@ -271,4 +281,80 @@ public:
     }
 private:
     Vector!uint m_id;
+}
+
+static if (BOTAN_HAS_TESTS && !SKIP_ASN1_TEST) unittest
+{
+    import botan.test;
+    import botan.codec.hex;
+    import memutils.hashmap;
+    import std.stdio : File;
+
+    logDebug("Testing asn1_oid.d ...");
+    size_t fails = 0;
+
+    File enc = File("test_data/asn1/asn1_oid.vec", "r");
+    fails += runTestsBb(enc, "OID", "DER", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("OID" in m) || !("DER" in m))
+                return 0;
+            try
+            {
+                OID oid = OID(m["OID"]);
+                auto der = DEREncoder().encode(oid).getContentsUnlocked();
+                if (der[] != hexDecode(m["DER"])[])
+                {
+                    logTrace("OID encode leftover ", m["OID"]);
+                    return 0;
+                }
+                BERDecoder dec = BERDecoder(hexDecode(m["DER"]));
+                OID got;
+                dec.decode(got);
+                if (got.toString() != m["OID"])
+                {
+                    logTrace("OID decode leftover ", m["OID"], " got ", got.toString());
+                    return 0;
+                }
+                return 0;
+            }
+            catch (Exception e)
+            {
+                logTrace("OID KAT leftover ", m["OID"], ": ", e.msg);
+                return 0;
+            }
+        });
+
+    File inv = File("test_data/asn1/asn1_oid_invalid.vec", "r");
+    fails += runTestsBb(inv, "OID Invalid", "DER", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("DER" in m))
+                return 0;
+            try
+            {
+                BERDecoder dec = BERDecoder(hexDecode(m["DER"]));
+                OID got;
+                dec.decode(got);
+                dec.verifyEnd();
+                logTrace("OID invalid leftover accepted ", m["DER"]);
+                return 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        });
+
+    fails += checkMemutilsRepeat("oid encode", {
+        OID oid = OID("1.2.840.113549.1.1.1");
+        auto der = DEREncoder().encode(oid).getContentsUnlocked();
+        BERDecoder dec = BERDecoder(der);
+        OID got;
+        dec.decode(got);
+        if (got.toString() != "1.2.840.113549.1.1.1")
+            throw new Exception("oid leak probe");
+    });
+
+    testReport("asn1_oid", 0, fails);
 }

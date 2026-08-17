@@ -99,6 +99,17 @@ public:
         m_position = 0;
     }
 
+    override void seek(ulong offset)
+    {
+        const ulong counter = offset / 64;
+        m_state[8] = cast(uint) counter;
+        m_state[9] = cast(uint)(counter >> 32);
+        salsa20(*cast(ubyte[64]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr);
+        ++m_state[8];
+        m_state[9] += (m_state[8] == 0);
+        m_position = cast(size_t)(offset % 64);
+    }
+
     override bool validIvLength(size_t iv_len) const
     { return (iv_len == 8 || iv_len == 24); }
 

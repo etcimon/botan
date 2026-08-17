@@ -2,8 +2,8 @@
 * OID Registry
 * 
 * Copyright:
-* (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2008,2013 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -122,6 +122,98 @@ public:
         addOidstr("1.3.6.1.4.1.25258.1.2", "NR");
 		addOidstr("1.3.6.1.4.1.25258.1.4", "Curve25519");
 		addOidstr("1.3.6.1.4.1.11591.15.1", "Curve25519");
+        addOidstr("1.3.101.110", "X25519");   // RFC 8410
+        addOidstr("1.3.101.111", "X448");     // RFC 8410
+        addOidstr("1.3.101.112", "Ed25519"); // RFC 8410
+        addOidstr("1.3.101.113", "Ed448");    // RFC 8410
+        addOidstr("2.16.840.1.101.3.4.4.1", "ML-KEM-512");  // FIPS 203
+        addOidstr("2.16.840.1.101.3.4.4.2", "ML-KEM-768");
+        addOidstr("2.16.840.1.101.3.4.4.3", "ML-KEM-1024");
+        addOidstr("1.3.6.1.4.1.25258.1.7.1", "Kyber-512-r3");
+        addOidstr("1.3.6.1.4.1.25258.1.7.2", "Kyber-768-r3");
+        addOidstr("1.3.6.1.4.1.25258.1.7.3", "Kyber-1024-r3");
+        addOidstr("1.3.6.1.4.1.25258.1.11.1", "Kyber-512-90s-r3");
+        addOidstr("1.3.6.1.4.1.25258.1.11.2", "Kyber-768-90s-r3");
+        addOidstr("1.3.6.1.4.1.25258.1.11.3", "Kyber-1024-90s-r3");
+        addOidstr("1.3.6.1.4.1.25258.1.9.1", "Dilithium-4x4-r3");
+        addOidstr("1.3.6.1.4.1.25258.1.9.2", "Dilithium-6x5-r3");
+        addOidstr("1.3.6.1.4.1.25258.1.9.3", "Dilithium-8x7-r3");
+        addOidstr("1.3.6.1.4.1.25258.1.10.1", "Dilithium-4x4-AES-r3");
+        addOidstr("1.3.6.1.4.1.25258.1.10.2", "Dilithium-6x5-AES-r3");
+        addOidstr("1.3.6.1.4.1.25258.1.10.3", "Dilithium-8x7-AES-r3");
+        addOidstr("1.3.6.1.4.1.25258.1.14.1", "FrodoKEM-640-SHAKE");
+        addOidstr("1.3.6.1.4.1.25258.1.14.2", "FrodoKEM-976-SHAKE");
+        addOidstr("1.3.6.1.4.1.25258.1.14.3", "FrodoKEM-1344-SHAKE");
+        addOidstr("1.3.6.1.4.1.25258.1.16.1", "eFrodoKEM-640-SHAKE");
+        addOidstr("1.3.6.1.4.1.25258.1.16.2", "eFrodoKEM-976-SHAKE");
+        addOidstr("1.3.6.1.4.1.25258.1.16.3", "eFrodoKEM-1344-SHAKE");
+        addOidstr("1.3.6.1.4.1.25258.1.15.1", "FrodoKEM-640-AES");
+        addOidstr("1.3.6.1.4.1.25258.1.15.2", "FrodoKEM-976-AES");
+        addOidstr("1.3.6.1.4.1.25258.1.15.3", "FrodoKEM-1344-AES");
+        addOidstr("1.3.6.1.4.1.25258.1.17.1", "eFrodoKEM-640-AES");
+        addOidstr("1.3.6.1.4.1.25258.1.17.2", "eFrodoKEM-976-AES");
+        addOidstr("1.3.6.1.4.1.25258.1.17.3", "eFrodoKEM-1344-AES");
+        addOidstr("0.4.0.127.0.15.1.1.13.0", "XMSS");
+        addOidstr("1.2.840.113549.1.9.16.3.17", "HSS-LMS");
+        addOidstr("1.3.6.1.4.1.25258.1.13", "HSS-LMS-Private-Key");
+        addOidstr("1.3.6.1.4.1.25258.1.21", "Hybrid-ML-KEM-768-X25519");
+        addOidstr("1.3.6.1.4.1.22554.5.1.1", "ClassicMcEliece_348864");
+        addOidstr("1.3.6.1.4.1.22554.5.1.2", "ClassicMcEliece_348864f");
+        addOidstr("1.3.6.1.4.1.22554.5.1.3", "ClassicMcEliece_460896");
+        addOidstr("1.3.6.1.4.1.22554.5.1.4", "ClassicMcEliece_460896f");
+        addOidstr("1.3.6.1.4.1.22554.5.1.5", "ClassicMcEliece_6688128");
+        addOidstr("1.3.6.1.4.1.22554.5.1.6", "ClassicMcEliece_6688128f");
+        addOidstr("1.3.6.1.4.1.22554.5.1.7", "ClassicMcEliece_6960119");
+        addOidstr("1.3.6.1.4.1.22554.5.1.8", "ClassicMcEliece_6960119f");
+        addOidstr("1.3.6.1.4.1.22554.5.1.9", "ClassicMcEliece_8192128");
+        addOidstr("1.3.6.1.4.1.22554.5.1.10", "ClassicMcEliece_8192128f");
+        addOidstr("1.3.6.1.4.1.25258.1.18.1", "ClassicMcEliece_6688128pc");
+        addOidstr("1.3.6.1.4.1.25258.1.18.2", "ClassicMcEliece_6688128pcf");
+        addOidstr("1.3.6.1.4.1.25258.1.18.3", "ClassicMcEliece_6960119pc");
+        addOidstr("1.3.6.1.4.1.25258.1.18.4", "ClassicMcEliece_6960119pcf");
+        addOidstr("1.3.6.1.4.1.25258.1.18.5", "ClassicMcEliece_8192128pc");
+        addOidstr("1.3.6.1.4.1.25258.1.18.6", "ClassicMcEliece_8192128pcf");
+        addOidstr("2.16.840.1.101.3.4.3.17", "ML-DSA-4x4"); // FIPS 204
+        addOidstr("2.16.840.1.101.3.4.3.18", "ML-DSA-6x5");
+        addOidstr("2.16.840.1.101.3.4.3.19", "ML-DSA-8x7");
+        addOidstr("2.16.840.1.101.3.4.3.20", "SLH-DSA-SHA2-128s"); // FIPS 205
+        addOidstr("2.16.840.1.101.3.4.3.21", "SLH-DSA-SHA2-128f");
+        addOidstr("2.16.840.1.101.3.4.3.22", "SLH-DSA-SHA2-192s");
+        addOidstr("2.16.840.1.101.3.4.3.23", "SLH-DSA-SHA2-192f");
+        addOidstr("2.16.840.1.101.3.4.3.24", "SLH-DSA-SHA2-256s");
+        addOidstr("2.16.840.1.101.3.4.3.25", "SLH-DSA-SHA2-256f");
+        addOidstr("2.16.840.1.101.3.4.3.26", "SLH-DSA-SHAKE-128s"); // FIPS 205
+        addOidstr("2.16.840.1.101.3.4.3.27", "SLH-DSA-SHAKE-128f");
+        addOidstr("2.16.840.1.101.3.4.3.28", "SLH-DSA-SHAKE-192s");
+        addOidstr("2.16.840.1.101.3.4.3.29", "SLH-DSA-SHAKE-192f");
+        addOidstr("2.16.840.1.101.3.4.3.30", "SLH-DSA-SHAKE-256s");
+        addOidstr("2.16.840.1.101.3.4.3.31", "SLH-DSA-SHAKE-256f");
+        addOidstr("1.3.6.1.4.1.25258.1.12.1.1", "SphincsPlus-shake-128s-r3.1");
+        addOidstr("1.3.6.1.4.1.25258.1.12.1.2", "SphincsPlus-shake-128f-r3.1");
+        addOidstr("1.3.6.1.4.1.25258.1.12.1.3", "SphincsPlus-shake-192s-r3.1");
+        addOidstr("1.3.6.1.4.1.25258.1.12.1.4", "SphincsPlus-shake-192f-r3.1");
+        addOidstr("1.3.6.1.4.1.25258.1.12.1.5", "SphincsPlus-shake-256s-r3.1");
+        addOidstr("1.3.6.1.4.1.25258.1.12.1.6", "SphincsPlus-shake-256f-r3.1");
+        addOidstr("1.3.6.1.4.1.25258.1.12.2.1", "SphincsPlus-sha2-128s-r3.1");
+        addOidstr("1.3.6.1.4.1.25258.1.12.2.2", "SphincsPlus-sha2-128f-r3.1");
+        addOidstr("1.3.6.1.4.1.25258.1.12.2.3", "SphincsPlus-sha2-192s-r3.1");
+        addOidstr("1.3.6.1.4.1.25258.1.12.2.4", "SphincsPlus-sha2-192f-r3.1");
+        addOidstr("1.3.6.1.4.1.25258.1.12.2.5", "SphincsPlus-sha2-256s-r3.1");
+        addOidstr("1.3.6.1.4.1.25258.1.12.2.6", "SphincsPlus-sha2-256f-r3.1");
+        addOidstr("1.2.156.10197.1.301.1", "SM2");     // GB/T 32918
+        addOidstr("1.2.156.10197.1.301.3", "SM2_Enc");
+        addOidstr("1.2.156.10197.1.501", "SM2/SM3");
+        addOidstr("1.3.36.3.3.2.5.2.1", "ECGDSA");
+        addOidstr("1.3.36.3.3.2.5.4.1", "ECGDSA/RIPEMD-160");
+        addOidstr("1.3.36.3.3.2.5.4.2", "ECGDSA/SHA-1");
+        addOidstr("1.3.36.3.3.2.5.4.3", "ECGDSA/SHA-224");
+        addOidstr("1.3.36.3.3.2.5.4.4", "ECGDSA/SHA-256");
+        addOidstr("1.3.36.3.3.2.5.4.5", "ECGDSA/SHA-384");
+        addOidstr("1.3.36.3.3.2.5.4.6", "ECGDSA/SHA-512");
+        addOidstr("1.0.14888.3.0.5", "ECKCDSA");
+        addOidstr("1.2.410.200004.1.100.4.3", "ECKCDSA/SHA-1");
+        addOidstr("1.2.410.200004.1.100.4.4", "ECKCDSA/SHA-224");
+        addOidstr("1.2.410.200004.1.100.4.5", "ECKCDSA/SHA-256");
         // X9.62 ecPublicKey, valid for ECDSA and ECDH (RFC 3279 sec 2.3.5)
         addOidstr("1.2.840.10045.2.1", "ECDSA");
         
@@ -168,6 +260,7 @@ public:
         addOidstr("2.16.840.1.101.3.4.2.1", "SHA-256");
         addOidstr("2.16.840.1.101.3.4.2.2", "SHA-384");
         addOidstr("2.16.840.1.101.3.4.2.3", "SHA-512");
+        addOidstr("2.16.840.1.101.3.4.2.6", "SHA-512-256");
         
         /* MACs */
         addOidstr("1.2.840.113549.2.7", "HMAC(SHA-160)");
@@ -261,6 +354,19 @@ public:
         addOidstr("1.2.840.113549.1.9.4", "PKCS9.MessageDigest");
         addOidstr("1.2.840.113549.1.9.7", "PKCS9.ChallengePassword");
         addOidstr("1.2.840.113549.1.9.14", "PKCS9.ExtensionRequest");
+        addOidstr("1.2.840.113549.1.9.20", "PKCS9.FriendlyName");
+        addOidstr("1.2.840.113549.1.9.21", "PKCS9.LocalKeyId");
+        addOidstr("1.2.840.113549.1.9.22.1", "PKCS9.X509Certificate");
+        addOidstr("1.2.840.113549.1.12.1.3", "PBE-SHA1-3DES");
+        addOidstr("1.2.840.113549.1.12.1.4", "PBE-SHA1-2DES");
+        addOidstr("1.2.840.113549.1.12.10.1.1", "PKCS12.KeyBag");
+        addOidstr("1.2.840.113549.1.12.10.1.2", "PKCS12.PKCS8ShroudedKeyBag");
+        addOidstr("1.2.840.113549.1.12.10.1.3", "PKCS12.CertBag");
+        addOidstr("1.2.840.113549.1.12.10.1.4", "PKCS12.CRLBag");
+        addOidstr("1.2.840.113549.1.12.10.1.5", "PKCS12.SecretBag");
+        addOidstr("1.2.840.113549.1.12.10.1.6", "PKCS12.SafeContentsBag");
+        addOidstr("1.2.840.113549.1.7.1", "PKCS7.Data");
+        addOidstr("1.2.840.113549.1.7.6", "PKCS7.EncryptedData");
         
         addOidstr("1.2.840.113549.1.7.1",        "CMS.DataContent");
         addOidstr("1.2.840.113549.1.7.2",        "CMS.SignedData");
@@ -279,12 +385,15 @@ public:
         addOidstr("2.5.29.21", "X509v3.ReasonCode");
         addOidstr("2.5.29.23", "X509v3.HoldInstructionCode");
         addOidstr("2.5.29.24", "X509v3.InvalidityDate");
+        addOidstr("2.5.29.30", "X509v3.NameConstraints");
         addOidstr("2.5.29.31", "X509v3.CRLDistributionPoints");
         addOidstr("2.5.29.32", "X509v3.CertificatePolicies");
         addOidstr("2.5.29.35", "X509v3.AuthorityKeyIdentifier");
         addOidstr("2.5.29.36", "X509v3.PolicyConstraints");
         addOidstr("2.5.29.37", "X509v3.ExtendedKeyUsage");
         addOidstr("1.3.6.1.5.5.7.1.1", "PKIX.AuthorityInformationAccess");
+        addOidstr("1.3.6.1.5.5.7.1.7", "PKIX.IPAddrBlocks");
+        addOidstr("1.3.6.1.5.5.7.1.8", "PKIX.ASIdentifiers");
         
         addOidstr("2.5.29.32.0", "X509v3.AnyPolicy");
         
@@ -302,6 +411,7 @@ public:
         
         addOidstr("1.3.6.1.5.5.7.48.1", "PKIX.OCSP");
         addOidstr("1.3.6.1.5.5.7.48.1.1", "PKIX.OCSP.BasicResponse");
+        addOidstr("1.3.6.1.5.5.7.48.2", "PKIX.CertificateAuthorityIssuers");
         
         /* ECC domain parameters */
         addOidstr("1.3.132.0.6",  "secp112r1");
@@ -325,6 +435,9 @@ public:
         addOidstr("1.2.840.10045.3.1.5", "x962_p239v2");
         addOidstr("1.2.840.10045.3.1.6", "x962_p239v3");
         addOidstr("1.2.840.10045.3.1.7", "secp256r1");
+        addOidstr("1.2.156.10197.1.301", "sm2p256v1");
+        addOidstr("1.2.250.1.223.101.256.1", "frp256v1");
+        addOidstr("1.3.6.1.4.1.25258.4.3", "numsp512d1");
         
         addOidstr("1.3.36.3.3.2.8.1.1.1",  "brainpool160r1");
         addOidstr("1.3.36.3.3.2.8.1.1.3",  "brainpool192r1");

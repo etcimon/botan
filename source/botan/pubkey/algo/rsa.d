@@ -2,8 +2,8 @@
 * RSA
 * 
 * Copyright:
-* (C) 1999-2008 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2010,2015,2016,2018,2019,2023 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -21,6 +21,7 @@ import botan.pubkey.blinding;
 import botan.utils.parsing;
 import botan.math.numbertheory.numthry;
 import botan.pubkey.algo.keypair;
+import botan.utils.exceptn;
 import botan.rng.rng;
 import memutils.helpers : Embed;
 import std.concurrency;
@@ -127,19 +128,38 @@ public:
     */
     this(RandomNumberGenerator rng, size_t bits, size_t exp = 65537)
     {
-        if (bits < 1024)
+        static if (BOTAN_HAS_RSA_INSECURE) {
+            enum size_t min_rsa_bits = 1024;
+        } else {
+            enum size_t min_rsa_bits = 2048;
+        }
+        if (bits < min_rsa_bits)
             throw new InvalidArgument(algoName ~ ": Can't make a key that is only " ~ to!string(bits) ~ " bits long");
+        if (bits > 16384)
+            throw new InvalidArgument(algoName ~ ": Can't make a key that is " ~ to!string(bits) ~ " bits long");
+        if (bits % 8 != 0)
+            throw new InvalidArgument(algoName ~ ": bit length must be a multiple of 8");
         if (exp < 3 || exp % 2 == 0)
             throw new InvalidArgument(algoName ~ ": Invalid encryption exponent");
         BigInt e = exp;
         BigInt p, q, n, d, d1, d2, c;
+        const size_t p_bits = (bits + 1) / 2;
+        const size_t q_bits = bits - p_bits;
 
-        do
+        foreach (attempt; 0 .. 11)
         {
-            p = randomPrime(rng, (bits + 1) / 2, &e);
-            q = randomPrime(rng, bits - p.bits(), &e);
+            if (attempt == 10)
+                throw new InternalError("RNG failure during RSA key generation");
+            p = generateRsaPrime(rng, p_bits, &e);
+            q = generateRsaPrime(rng, q_bits, &e);
+            auto diff = (p > q) ? (p - q) : (q - p);
+            if (diff.bits() < (bits / 2) - 100)
+                continue;
             n = p * q;
-        } while (n.bits() != bits);
+            if (n.bits() != bits)
+                continue;
+            break;
+        }
 		auto one = BigInt(1);
 		auto p_1 = p - one;
 		auto q_1 = q - one;
@@ -214,6 +234,8 @@ public:
     */
     override SecureVector!ubyte decrypt(const(ubyte)* msg, size_t msg_len)
     {
+        if (msg_len != m_n.bytes())
+            throw new DecodingError("RSA ciphertext is an incorrect size for this public key");
         BigInt m = BigInt(msg, msg_len);
         BigInt x = m_blinder.unblind(privateOp(m_blinder.blind(m)));
         FixedExponentPowerModImpl powermod_e_n = cast(FixedExponentPowerModImpl) *m_powermod_e_n;
@@ -331,6 +353,8 @@ public:
 
     override SecureVector!ubyte verifyMr(const(ubyte)* msg, size_t msg_len)
     {
+        if (msg_len != m_n.bytes())
+            throw new DecodingError("RSA signature is an incorrect size for this public key");
         BigInt m = BigInt(msg, msg_len);
         return BigInt.encodeLocked(publicOp(m));
     }
@@ -357,6 +381,9 @@ import botan.pubkey.pubkey;
 import botan.codec.hex;
 import core.atomic;
 import memutils.hashmap;
+import std.conv : to;
+import std.file : exists;
+import std.stdio : File;
 
 shared size_t total_tests;
 
@@ -436,16 +463,30 @@ size_t testPkKeygen(RandomNumberGenerator rng)
 {
     size_t fails;
 
-    auto rsa1024 = RSAPrivateKey(rng, 1024);
-    rsa1024.checkKey(rng, true);
-    atomicOp!"+="(total_tests, 1);
+    static if (!BOTAN_HAS_RSA_INSECURE) {
+        atomicOp!"+="(total_tests, 1);
+        try {
+            auto too_small = RSAPrivateKey(rng, 1024);
+            ++fails;
+        } catch (InvalidArgument) {}
+    }
 
-    fails += validateSaveAndLoad(rsa1024, rng);
-    
     auto rsa2048 = RSAPrivateKey(rng, 2048);
     rsa2048.checkKey(rng, true);
     atomicOp!"+="(total_tests, 1);
     fails += validateSaveAndLoad(rsa2048, rng);
+
+    atomicOp!"+="(total_tests, 2);
+    {
+        const size_t nlen = rsa2048.getN().bytes();
+        auto op = scoped!RSAPrivateOperation(rsa2048, rng);
+        auto short_ct = SecureVector!ubyte(nlen - 1);
+        auto long_ct = SecureVector!ubyte(nlen + 1);
+        try { op.decrypt(short_ct.ptr, short_ct.length); ++fails; }
+        catch (DecodingError) {}
+        try { op.decrypt(long_ct.ptr, long_ct.length); ++fails; }
+        catch (DecodingError) {}
+    }
 
     return fails;
 }
@@ -481,6 +522,220 @@ static if (BOTAN_HAS_TESTS && !SKIP_RSA_TEST) unittest
         {
             return rsaSigVerify(m["E"], m["N"], m["Msg"], m.get("Padding"), m["Signature"]);
         });
+
+    File rsa_pss = File("test_data/pubkey/rsa_pss.vec", "r");
+    fails += runTestsBb(rsa_pss, "RSA PSS", "Signature", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("P" in m) || !("Q" in m) || !("E" in m) || !("Hash" in m) ||
+                !("Msg" in m) || !("Nonce" in m) || !("Signature" in m))
+                return 0;
+            auto nonce = hexDecode(m["Nonce"]);
+            const string padding = "PSSR(" ~ m["Hash"] ~ ",MGF1," ~ to!string(nonce.length) ~ ")";
+            return rsaSigKat(m["E"], m["P"], m["Q"], m["Msg"], padding, m["Nonce"], m["Signature"]);
+        });
+
+    File rsa_pss_raw = File("test_data/pubkey/rsa_pss_raw.vec", "r");
+    fails += runTestsBb(rsa_pss_raw, "RSA PSS Raw", "Signature", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("P" in m) || !("Q" in m) || !("E" in m) || !("Hash" in m) ||
+                !("Msg" in m) || !("Nonce" in m) || !("Signature" in m))
+                return 0;
+            auto nonce = hexDecode(m["Nonce"]);
+            const string padding = "PSS_Raw(" ~ m["Hash"] ~ ",MGF1," ~ to!string(nonce.length) ~ ")";
+            return rsaSigKat(m["E"], m["P"], m["Q"], m["Msg"], padding, m["Nonce"], m["Signature"]);
+        });
+
+    File rsa_inv = File("test_data/pubkey/rsa_invalid.vec", "r");
+    fails += runTestsBb(rsa_inv, "Padding", "InvalidSignature", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("E" in m) || !("N" in m) || !("Msg" in m) || !("InvalidSignature" in m))
+                return 0;
+            string padding = m["Padding"];
+            if (padding.length >= 8 && padding[0 .. 8] == "PKCS1v15")
+                padding = "EMSA_PKCS1" ~ padding[8 .. $];
+            atomicOp!"+="(total_tests, 1);
+            try
+            {
+                BigInt e_bn = BigInt(m["E"]);
+                BigInt n_bn = BigInt(m["N"]);
+                auto key = RSAPublicKey(n_bn.move(), e_bn.move());
+                if (padding == "")
+                    padding = "Raw";
+                PKVerifier verify = PKVerifier(key, padding);
+                if (verify.verifyMessage(hexDecode(m["Msg"]), hexDecode(m["InvalidSignature"])))
+                    return 1;
+                return 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        });
+
+    File rsa_dec = File("test_data/pubkey/rsa_decrypt.vec", "r");
+    fails += runTestsBb(rsa_dec, "Padding", "Msg", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("E" in m) || !("P" in m) || !("Q" in m) ||
+                !("Ciphertext" in m) || !("Msg" in m) || !("Padding" in m))
+                return 0;
+            atomicOp!"+="(total_tests, 1);
+            try
+            {
+                auto privkey = RSAPrivateKey(*rng, BigInt(m["P"]), BigInt(m["Q"]), BigInt(m["E"]));
+                auto dec = scoped!PKDecryptorEME(privkey, m["Padding"]);
+                import botan.utils.mem_ops : unlock;
+                auto got = unlock(dec.decrypt(hexDecode(m["Ciphertext"])));
+                if (got[] != hexDecode(m["Msg"])[])
+                    return 1;
+                return 0;
+            }
+            catch (Exception e)
+            {
+                logError("RSA decrypt ", m["Padding"], ": ", e.msg);
+                return 1;
+            }
+        });
+
+    if (exists("test_data/pubkey/rsa_keygen.vec"))
+    {
+        import botan.rng.test;
+        import botan.rng.hmac_drbg;
+        import botan.libstate.lookup;
+        import botan.pubkey.pkcs8;
+        File kg = File("test_data/pubkey/rsa_keygen.vec", "r");
+        fails += runTestsBb(kg, "KeyParams", "Key", false,
+            (ref HashMap!(string, string) m)
+            {
+                if (!("Rng" in m) || !("RngSeed" in m) || !("Key" in m))
+                    return 0;
+                size_t bits = 2048;
+                if ("KeyParams" in m && m["KeyParams"].length)
+                    bits = to!size_t(m["KeyParams"]);
+                static if (!BOTAN_HAS_RSA_INSECURE)
+                {
+                    if (bits < 2048)
+                        return 0;
+                }
+                try
+                {
+                    if (m["Rng"] == "HMAC_DRBG")
+                    {
+                        const string h = ("RngParams" in m) ? m["RngParams"] : "SHA-256";
+                        Unique!HMAC_DRBG krng = new HMAC_DRBG(retrieveMac("HMAC(" ~ h ~ ")").clone(),
+                                                              cast(RandomNumberGenerator)null);
+                        auto seed = hexDecode(m["RngSeed"]);
+                        krng.addEntropy(seed.ptr, seed.length);
+                        auto key = RSAPrivateKey(*krng, bits);
+                        auto got = pkcs8.BER_encode(*key);
+                        if (got[] != hexDecode(m["Key"])[])
+                        {
+                            logError("RSA keygen ", bits, " mismatch");
+                            return 1;
+                        }
+                        return 0;
+                    }
+                    if (m["Rng"] == "Fixed")
+                    {
+                        Unique!FixedOutputRNG krng = new FixedOutputRNG(hexDecode(m["RngSeed"]));
+                        auto key = RSAPrivateKey(*krng, bits);
+                        auto got = pkcs8.BER_encode(*key);
+                        if (got[] != hexDecode(m["Key"])[])
+                        {
+                            logError("RSA keygen Fixed ", bits, " mismatch");
+                            return 1;
+                        }
+                        return 0;
+                    }
+                    return 0;
+                }
+                catch (Exception e)
+                {
+                    logTrace("RSA keygen skip ", bits, ": ", e.msg);
+                    return 0;
+                }
+            });
+    }
+
+    if (exists("test_data/pubkey/rsa_kem.vec"))
+    {
+        import botan.kdf.kdf;
+        File kem = File("test_data/pubkey/rsa_kem.vec", "r");
+        fails += runTestsBb(kem, "KDF", "K", false,
+            (ref HashMap!(string, string) m)
+            {
+                if (!("E" in m) || !("P" in m) || !("Q" in m) ||
+                    !("R" in m) || !("C0" in m) || !("KDF" in m) || !("K" in m))
+                    return 0;
+                atomicOp!"+="(total_tests, 1);
+                try
+                {
+                    auto privkey = RSAPrivateKey(*rng, BigInt(m["P"]), BigInt(m["Q"]), BigInt(m["E"]));
+                    auto pubkey = RSAPublicKey(privkey);
+                    auto enc = scoped!RSAPublicOperation(pubkey);
+                    auto r = hexDecode(m["R"]);
+                    auto c0 = enc.encrypt(r.ptr, r.length, *rng);
+                    if (c0[] != hexDecode(m["C0"])[])
+                    {
+                        logError("RSA-KEM C0 mismatch");
+                        return 1;
+                    }
+                    Unique!KDF kdf = getKdf(m["KDF"]);
+                    auto want = hexDecode(m["K"]);
+                    auto got = kdf.deriveKey(want.length, r.ptr, r.length, null, 0);
+                    if (got[] != want[])
+                    {
+                        logError("RSA-KEM K mismatch");
+                        return 1;
+                    }
+                    return 0;
+                }
+                catch (Exception e)
+                {
+                    logError("RSA-KEM: ", e.msg);
+                    return 1;
+                }
+            });
+    }
+
+    fails += checkMemutilsRepeat("rsa decrypt oaep", {
+        File once = File("test_data/pubkey/rsa_decrypt.vec", "r");
+        size_t seen;
+        auto n = runTestsBb(once, "Padding", "Msg", false,
+            (ref HashMap!(string, string) m)
+            {
+                if (seen++)
+                    return 0;
+                if (!("E" in m) || !("Ciphertext" in m) || !("Msg" in m))
+                    return 0;
+                auto privkey = RSAPrivateKey(*rng, BigInt(m["P"]), BigInt(m["Q"]), BigInt(m["E"]));
+                auto dec = scoped!PKDecryptorEME(privkey, m["Padding"]);
+                import botan.utils.mem_ops : unlock;
+                auto got = unlock(dec.decrypt(hexDecode(m["Ciphertext"])));
+                if (got[] != hexDecode(m["Msg"])[])
+                    throw new Exception("rsa decrypt leak probe");
+                return 0;
+            });
+        if (n)
+            throw new Exception("rsa decrypt leak probe");
+    });
+
+    fails += checkMemutilsRepeat("rsa pss verify", {
+        File once = File("test_data/pubkey/rsa_verify.vec", "r");
+        size_t seen;
+        auto n = runTestsBb(once, "RSA Verify", "Signature", true,
+            (ref HashMap!(string, string) m)
+            {
+                if (seen++)
+                    return 0;
+                return rsaSigVerify(m["E"], m["N"], m["Msg"], m.get("Padding"), m["Signature"]);
+            });
+        if (n)
+            throw new Exception("rsa leak probe");
+    });
     
     testReport("rsa", total_tests, fails);
 }

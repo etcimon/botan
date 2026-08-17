@@ -3,12 +3,15 @@
 * 
 * Copyright:
 * (C) 1999-2010 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
 */
 module botan.filters.b64_filt;
+
+import botan.constants;
+static if (BOTAN_HAS_CODEC_FILTERS):
 
 import botan.filters.filter;
 import botan.codec.base64;

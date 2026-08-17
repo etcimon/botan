@@ -2,8 +2,9 @@
 * OCB Mode
 * 
 * Copyright:
-* (C) 2013,2014 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2013,2017 Jack Lloyd
+* (C) 2016 Daniel Neus, Rohde & Schwarz Cybersecurity
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -58,7 +59,11 @@ public:
 
     override bool validNonceLength(size_t length) const
     {
-        return (length > 0 && length < BS);
+        if (length == 0)
+            return false;
+        if (BS == 16)
+            return length < 16;
+        return length < (BS - 1);
     }
 
     override size_t tagSize() const { return m_tag_size; }
@@ -105,10 +110,9 @@ protected:
         m_offset = m_BS;
         m_ad_hash = m_BS;
         m_tag_size = tag_size;
-        if (BS != 16)
-            throw new InvalidArgument("OCB is  not compatible with " ~ m_cipher.name);
-        
-        if (m_tag_size % 4 != 0 || m_tag_size < 8 || m_tag_size > BS)
+        if (BS != 16 && BS != 24 && BS != 32 && BS != 64)
+            throw new InvalidArgument("Invalid block size for OCB");
+        if (m_tag_size % 4 != 0 || m_tag_size < 8 || m_tag_size > BS || m_tag_size > 32)
             throw new InvalidArgument("OCB cannot produce a " ~ to!string(m_tag_size) ~ " ubyte tag");
         
     }
@@ -140,11 +144,13 @@ private:
         SecureVector!ubyte nonce_buf = SecureVector!ubyte(BS);
         
         copyMem(&nonce_buf[BS - nonce_len], nonce, nonce_len);
-        nonce_buf[0] = ((tagSize() * 8) % 128) << 1;
-        nonce_buf[BS - nonce_len - 1] = 1;
-        
-        const ubyte bottom = nonce_buf[BS-1] & 0x3F;
-        nonce_buf[BS-1] &= 0xC0;
+        nonce_buf[0] = cast(ubyte)(((tagSize() * 8) % (BS * 8)) << (BS <= 16 ? 1 : 0));
+        nonce_buf[BS - nonce_len - 1] ^= 1;
+
+        const size_t masklen = (BS == 16 ? 6 : (BS == 24 ? 7 : 8));
+        const ubyte bottom_mask = cast(ubyte)((1 << masklen) - 1);
+        const ubyte bottom = nonce_buf[BS-1] & bottom_mask;
+        nonce_buf[BS-1] &= cast(ubyte)~bottom_mask;
         
         const bool need_new_stretch = (m_last_nonce != nonce_buf);
 
@@ -153,9 +159,27 @@ private:
             m_last_nonce = nonce_buf.clone;
             
             m_cipher.encrypt(nonce_buf);
-            
-            foreach (size_t i; 0 .. BS/2)
-                nonce_buf.pushBack(nonce_buf[i] ^ nonce_buf[i+1]);
+
+            if (BS == 16)
+            {
+                foreach (size_t i; 0 .. BS / 2)
+                    nonce_buf.pushBack(nonce_buf[i] ^ nonce_buf[i + 1]);
+            }
+            else if (BS == 24)
+            {
+                foreach (size_t i; 0 .. 16)
+                    nonce_buf.pushBack(nonce_buf[i] ^ nonce_buf[i + 5]);
+            }
+            else if (BS == 32)
+            {
+                foreach (size_t i; 0 .. BS)
+                    nonce_buf.pushBack(cast(ubyte)(nonce_buf[i] ^ (nonce_buf[i] << 1) ^ (nonce_buf[i + 1] >> 7)));
+            }
+            else if (BS == 64)
+            {
+                foreach (size_t i; 0 .. BS / 2)
+                    nonce_buf.pushBack(nonce_buf[i] ^ nonce_buf[i + 22]);
+            }
             
             m_stretch = nonce_buf.move;
         }
@@ -544,6 +568,83 @@ import botan.libstate.lookup;
 import botan.algo_factory.algo_factory;
 import botan.utils.loadstor;
 
+// Toy cipher for draft-krovetz-ocb-wide KATs (C++ test_ocb.cpp).
+final class OcbWideTestBlockCipher : BlockCipher, SymmetricAlgorithm
+{
+    this(size_t bs) { m_bs = bs; }
+
+    override @property string name() const { return "OCB_ToyCipher"; }
+    override size_t blockSize() const { return m_bs; }
+    override @property size_t parallelism() const { return 1; }
+    override KeyLengthSpecification keySpec() const { return KeyLengthSpecification(m_bs); }
+    override void clear() { zap(m_key); }
+    override BlockCipher clone() const { return new OcbWideTestBlockCipher(m_bs); }
+
+    override void encryptN(const(ubyte)* input, ubyte* output, size_t blocks)
+    {
+        foreach (size_t b; 0 .. blocks)
+        {
+            SecureVector!ubyte tmp = SecureVector!ubyte(input[0 .. m_bs]);
+            auto doubled = CMAC.polyDouble(tmp);
+            foreach (size_t i; 0 .. m_bs)
+                output[i] = doubled[i] ^ m_key[i];
+            input += m_bs;
+            output += m_bs;
+        }
+    }
+
+    override void decryptN(const(ubyte)* input, ubyte* output, size_t blocks)
+    {
+        foreach (size_t b; 0 .. blocks)
+        {
+            foreach (size_t i; 0 .. m_bs)
+                output[i] = input[i] ^ m_key[i];
+
+            ubyte carry = input[m_bs - 1] & 0x01;
+            if (carry != 0)
+            {
+                if (m_bs == 16 || m_bs == 24)
+                    output[m_bs - 1] ^= 0x87;
+                else if (m_bs == 32)
+                {
+                    output[m_bs - 2] ^= 0x4;
+                    output[m_bs - 1] ^= 0x25;
+                }
+                else if (m_bs == 64)
+                {
+                    output[m_bs - 2] ^= 0x1;
+                    output[m_bs - 1] ^= 0x25;
+                }
+                else
+                    throw new Exception("Bad OCB test block size");
+            }
+
+            carry <<= 7;
+            foreach (size_t i; 0 .. m_bs)
+            {
+                const ubyte temp = output[i];
+                output[i] = cast(ubyte)((temp >> 1) | carry);
+                carry = (temp & 0x1);
+                carry <<= 7;
+            }
+
+            input += m_bs;
+            output += m_bs;
+        }
+    }
+
+protected:
+    override void keySchedule(const(ubyte)* key, size_t length)
+    {
+        m_key.length = length;
+        copyMem(m_key.ptr, key, length);
+    }
+
+private:
+    size_t m_bs;
+    SecureVector!ubyte m_key;
+}
+
 Vector!ubyte ocbEncrypt(OCBEncryption enc,
                         OCBDecryption dec,
                         const ref Vector!ubyte nonce,
@@ -626,6 +727,100 @@ size_t testOcbLong(ref AlgorithmFactory af, size_t keylen, size_t taglen, in str
     return 0;
 }
 
+void ocbEncryptWide(ref Vector!ubyte output_to,
+                    OCBEncryption enc,
+                    const ref Vector!ubyte nonce,
+                    const ref Vector!ubyte pt,
+                    const ref Vector!ubyte ad)
+{
+    enc.setAssociatedData(ad.ptr, ad.length);
+    enc.start(nonce.ptr, nonce.length);
+    SecureVector!ubyte buf = SecureVector!ubyte(pt.ptr[0 .. pt.length]);
+    enc.finish(buf, 0);
+    output_to ~= buf[];
+}
+
+size_t testOcbWideLong(string algo, in string expected)
+{
+    size_t bs;
+    BlockCipher cipher;
+    if (algo == "SHACAL2")
+    {
+        static if (BOTAN_HAS_SHACAL2)
+        {
+            import botan.block.shacal2;
+            cipher = new SHACAL2;
+            bs = 32;
+        }
+        else
+            return 0;
+    }
+    else if (algo == "Toy128")
+    {
+        bs = 16;
+        cipher = new OcbWideTestBlockCipher(bs);
+    }
+    else if (algo == "Toy192")
+    {
+        bs = 24;
+        cipher = new OcbWideTestBlockCipher(bs);
+    }
+    else if (algo == "Toy256")
+    {
+        bs = 32;
+        cipher = new OcbWideTestBlockCipher(bs);
+    }
+    else if (algo == "Toy512")
+    {
+        bs = 64;
+        cipher = new OcbWideTestBlockCipher(bs);
+    }
+    else
+        throw new Exception("Unknown cipher for OCB wide block long test: " ~ algo);
+
+    Unique!OCBEncryption enc = new OCBEncryption(cipher, std.algorithm.min(bs, 32));
+
+    Vector!ubyte key;
+    key.length = bs;
+    foreach (size_t i; 0 .. bs)
+        key[i] = cast(ubyte)(0xA0 + i);
+    enc.setKey(key);
+
+    const Vector!ubyte empty;
+    Vector!ubyte N = Vector!ubyte(2);
+    Vector!ubyte C;
+
+    for (size_t i = 0; i != 128; ++i)
+    {
+        Vector!ubyte S = Vector!ubyte(i);
+        foreach (size_t j; 0 .. S.length)
+            S[j] = cast(ubyte)(0x50 + j);
+
+        N[0] = cast(ubyte)(((3 * i + 1) >> 8) & 0xFF);
+        N[1] = cast(ubyte)((3 * i + 1) & 0xFF);
+        ocbEncryptWide(C, *enc, N, S, S);
+        N[0] = cast(ubyte)(((3 * i + 2) >> 8) & 0xFF);
+        N[1] = cast(ubyte)((3 * i + 2) & 0xFF);
+        ocbEncryptWide(C, *enc, N, S, empty);
+        N[0] = cast(ubyte)(((3 * i + 3) >> 8) & 0xFF);
+        N[1] = cast(ubyte)((3 * i + 3) & 0xFF);
+        ocbEncryptWide(C, *enc, N, empty, S);
+    }
+
+    N[0] = cast(ubyte)((385 >> 8) & 0xFF);
+    N[1] = cast(ubyte)(385 & 0xFF);
+    Vector!ubyte final_result;
+    ocbEncryptWide(final_result, *enc, N, empty, C);
+
+    const string cipher_hex = hexEncode(final_result);
+    if (cipher_hex != expected)
+    {
+        logTrace("OCB wide long ", algo, " mismatch ", cipher_hex, " != ", expected);
+        return 1;
+    }
+    return 0;
+}
+
 static if (BOTAN_HAS_TESTS && !SKIP_OCB_TEST) unittest
 {
     import botan.libstate.libstate;
@@ -635,14 +830,81 @@ static if (BOTAN_HAS_TESTS && !SKIP_OCB_TEST) unittest
 
     AlgorithmFactory af = globalState().algorithmFactory();
 
-    fails += testOcbLong(af, 128, 128, "67E944D23256C5E0B6C61FA22FDF1EA2");
-    fails += testOcbLong(af, 192, 128, "F673F2C3E7174AAE7BAE986CA9F29E17");
-    fails += testOcbLong(af, 256, 128, "D90EB8E9C977C88B79DD793D7FFA161C");
-    fails += testOcbLong(af, 128, 96, "77A3D8E73589158D25D01209");
-    fails += testOcbLong(af, 192, 96, "05D56EAD2752C86BE6932C5E");
-    fails += testOcbLong(af, 256, 96, "5458359AC23B0CBA9E6330DD");
-    fails += testOcbLong(af, 128, 64, "192C9B7BD90BA06A");
-    fails += testOcbLong(af, 192, 64, "0066BC6E0EF34E24");
-    fails += testOcbLong(af, 256, 64, "7D4EA5D445501CBE");
-    testReport("OCB long", 9, fails);
+    import memutils.hashmap;
+    import std.stdio : File;
+    File vec = File("test_data/ocb/ocb_long.vec", "r");
+    fails += runTestsBb(vec, "OCBLong", "Output", true,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Keylen" in m) || !("Taglen" in m) || !("Output" in m))
+                return 0;
+            return testOcbLong(af, m["Keylen"].to!size_t, m["Taglen"].to!size_t, m["Output"]);
+        });
+
+    File wide = File("test_data/ocb/ocb_wide.vec", "r");
+    fails += runTestsBb(wide, "OCBWide", "Out", true,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Key" in m) || !("Out" in m))
+                return 0;
+            auto key = hexDecode(m["Key"]);
+            auto nonce = hexDecode(("Nonce" in m) ? m["Nonce"] : "");
+            auto ad = hexDecode(("AD" in m) ? m["AD"] : "");
+            auto input = hexDecode(("In" in m) ? m["In"] : "");
+            auto expect = hexDecode(m["Out"]);
+            const size_t bs = key.length;
+            const size_t tag = std.algorithm.min(bs, 32);
+
+            Unique!OCBEncryption enc = new OCBEncryption(new OcbWideTestBlockCipher(bs), tag);
+            Unique!OCBDecryption dec = new OCBDecryption(new OcbWideTestBlockCipher(bs), tag);
+            enc.setKey(key);
+            dec.setKey(key);
+            enc.setAssociatedData(ad.ptr, ad.length);
+            enc.start(nonce.ptr, nonce.length);
+            auto buf = SecureVector!ubyte(input[]);
+            enc.finish(buf, 0);
+            if (buf[] != expect[])
+            {
+                logError("OCB wide enc got ", hexEncode(buf), " expected ", m["Out"]);
+                return 1;
+            }
+            dec.setAssociatedData(ad.ptr, ad.length);
+            dec.start(nonce.ptr, nonce.length);
+            dec.finish(buf, 0);
+            if (buf[] != input[])
+            {
+                logError("OCB wide decrypt mismatch");
+                return 1;
+            }
+            return 0;
+        });
+
+    File wide_long = File("test_data/ocb/ocb_wide_long.vec", "r");
+    fails += runTestsBb(wide_long, "OCBWideLong", "Output", true,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Output" in m))
+                return 0;
+            return testOcbWideLong(m["OCBWideLong"], m["Output"]);
+        });
+
+    fails += checkMemutilsRepeat("ocb_long", {
+        testOcbLong(af, 128, 64, "192C9B7BD90BA06A");
+    });
+
+    fails += checkMemutilsRepeat("ocb_wide", {
+        Unique!OCBEncryption enc = new OCBEncryption(new OcbWideTestBlockCipher(16), 16);
+        ubyte[16] key;
+        ubyte[12] nonce;
+        ubyte[8] pt;
+        key[0] = 1;
+        enc.setKey(key.ptr, key.length);
+        enc.start(nonce.ptr, nonce.length);
+        auto buf = SecureVector!ubyte(pt[]);
+        enc.finish(buf, 0);
+    });
+
+    if (fails)
+        logError("ocb failures: ", fails);
+    assert(fails == 0);
 }

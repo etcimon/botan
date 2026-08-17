@@ -2,8 +2,8 @@
 * RFC 6979 Deterministic Nonce Generator
 * 
 * Copyright:
-* (C) 2014 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014,2015,2024 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -82,23 +82,34 @@ size_t rfc6979Testcase(string q_str,
 
 static if (BOTAN_HAS_TESTS && !SKIP_RFC6979_TEST) unittest
 {
+    import botan.libstate.global_state;
+    import memutils.hashmap;
+    import std.stdio : File;
+    auto state = globalState();
     logDebug("Testing rfc6979.d ...");
-    
+
     size_t fails = 0;
-    
-    // From RFC 6979 A.1.1
-    fails += rfc6979Testcase("0x4000000000000000000020108A2E0CC0D99F8A5EF",
-                              "0x09A4D6792295A7F730FC3F2B49CBC0F62E862272F",
-                              "0x01795EDF0D54DB760F156D0DAC04C0322B3A204224",
-                              "0x23AF4074C90A02B3FE61D286D5C87F425E6BDD81B",
-                              "SHA-256", 1);
-    
-    // DSA 1024 bits test #1
-    fails += rfc6979Testcase("0x996F967F6C8E388D9E28D01E205FBA957A5698B1",
-                              "0x411602CB19A6CCC34494D79D98EF1E7ED5AF25F7",
-                              "0x8151325DCDBAE9E0FF95F9F9658432DBEDFDB209",
-                              "0x7BDB6B0FF756E1BB5D53583EF979082F9AD5BD5B",
-                              "SHA-1", 2);
-    
-    testReport("RFC 6979", 2, fails);
+    size_t n = 0;
+    File vec = File("test_data/rfc6979.vec", "r");
+    fails += runTestsBb(vec, "Hash", "K", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Q" in m) || !("X" in m) || !("H" in m) || !("K" in m))
+                return 0;
+            ++n;
+            return rfc6979Testcase(m["Q"], m["X"], m["H"], m["K"], m["Hash"], n);
+        });
+
+    fails += checkMemutilsRepeat("rfc6979", {
+        if (rfc6979Testcase("0x4000000000000000000020108A2E0CC0D99F8A5EF",
+                            "0x09A4D6792295A7F730FC3F2B49CBC0F62E862272F",
+                            "0x01795EDF0D54DB760F156D0DAC04C0322B3A204224",
+                            "0x23AF4074C90A02B3FE61D286D5C87F425E6BDD81B",
+                            "SHA-256", 0))
+            throw new Exception("rfc6979 leak probe");
+    });
+
+    if (fails)
+        logError("rfc6979 failures: ", fails);
+    assert(fails == 0);
 }

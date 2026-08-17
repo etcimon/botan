@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -45,11 +45,30 @@ public:
     /*
     * EMSA-Raw Encode Operation
     */
-    SecureVector!ubyte encodingOf(const ref SecureVector!ubyte msg,
-                                  size_t,
-                                  RandomNumberGenerator)
+    override SecureVector!ubyte encodingOf(const ref SecureVector!ubyte msg,
+                                           size_t output_bits,
+                                           RandomNumberGenerator)
     {
-        return msg.clone;
+        // FIPS leftmost output_bits (same shift as EMSA1); Raw used to ignore this.
+        if (8 * msg.length <= output_bits)
+            return msg.clone;
+        const size_t shift = 8 * msg.length - output_bits;
+        const size_t byte_shift = shift / 8;
+        const size_t bit_shift = shift % 8;
+        SecureVector!ubyte digest = SecureVector!ubyte(msg.length - byte_shift);
+        foreach (size_t j; 0 .. digest.length)
+            digest[j] = msg[j];
+        if (bit_shift)
+        {
+            ubyte carry = 0;
+            foreach (size_t j; 0 .. digest.length)
+            {
+                const ubyte temp = digest[j];
+                digest[j] = cast(ubyte)((temp >> bit_shift) | carry);
+                carry = cast(ubyte)(temp << (8 - bit_shift));
+            }
+        }
+        return digest.move();
     }
 
     /*

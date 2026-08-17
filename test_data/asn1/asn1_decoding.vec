@@ -1,0 +1,265 @@
+
+# DER-encoded BOOLEAN TRUE
+Input = 0101FF
+ResultBER = OK
+
+# DER-encoded BOOLEAN FALSE
+Input = 010100
+ResultBER = OK
+
+# BER-encoded BOOLEAN TRUE with non-canonical value 0x01
+Input = 010101
+ResultDER = Detected non-canonical boolean encoding in DER structure
+ResultBER = OK
+
+# BER-encoded BOOLEAN TRUE with non-canonical value 0x7F
+Input = 01017F
+ResultDER = Detected non-canonical boolean encoding in DER structure
+ResultBER = OK
+
+# DER-encoded INTEGER 0
+Input = 020100
+ResultBER = OK
+
+# DER-encoded INTEGER 1
+Input = 020101
+ResultBER = OK
+
+# DER-encoded INTEGER -1
+Input = 0201FF
+ResultBER = OK
+
+# DER-encoded INTEGER 128
+Input = 02020080
+ResultBER = OK
+
+# DER-encoded INTEGER -128
+Input = 020180
+ResultBER = OK
+
+# DER-encoded INTEGER -129
+Input = 0202FF7F
+ResultBER = OK
+
+# Non-minimal INTEGER encoding (leading zero not needed for value 1)
+Input = 02020001
+ResultDER = Detected non-minimal INTEGER encoding in DER structure
+ResultBER = OK
+
+# Non-minimal INTEGER encoding (two leading zeros)
+Input = 0203000001
+ResultDER = Detected non-minimal INTEGER encoding in DER structure
+ResultBER = OK
+
+# Non-minimal negative INTEGER encoding (leading FF not needed)
+Input = 0202FF80
+ResultDER = Detected non-minimal INTEGER encoding in DER structure
+ResultBER = OK
+
+# Non-minimal negative INTEGER (leading FF, next byte has high bit set)
+Input = 0202FFFF
+ResultDER = Detected non-minimal INTEGER encoding in DER structure
+ResultBER = OK
+
+# Empty INTEGER encoding (invalid in both BER and DER, X.690 8.3.1)
+Input = 0200
+ResultBER = INTEGER encoding has no content octets
+
+# DER-encoded NULL
+Input = 0500
+ResultBER = OK
+
+# DER-encoded SEQUENCE containing an INTEGER
+Input = 3003020101
+ResultBER = OK
+
+# DER-encoded SEQUENCE containing two INTEGERs
+Input = 3006020101020102
+ResultBER = OK
+
+# DER-encoded BIT STRING (no unused bits)
+Input = 030200FF
+ResultBER = OK
+
+# DER-encoded BIT STRING (zero-length content, just unused-bits byte)
+Input = 030100
+ResultBER = OK
+
+# BIT STRING with non-zero padding bits (3 unused, last byte 0xFF)
+Input = 030203FF
+ResultDER = Detected non-zero padding bits in BIT STRING in DER structure
+ResultBER = OK
+
+# BIT STRING with non-zero padding (1 unused, last byte 0x01)
+Input = 030201FF
+ResultDER = Detected non-zero padding bits in BIT STRING in DER structure
+ResultBER = OK
+
+# BIT STRING with 1 unused bit and clean padding
+Input = 030201FE
+ResultBER = OK
+
+# BIT STRING with 7 unused bits and clean padding
+Input = 03020780
+ResultBER = OK
+
+# DER-encoded OCTET STRING
+Input = 040568656C6C6F
+ResultBER = OK
+
+# Empty input
+Input =
+ResultBER = OK
+
+# Truncated value
+Input = 0402FF
+ResultBER = Value truncated
+
+# Length field not found (tag with no length)
+Input = 02
+ResultBER = Length field not found
+
+# EOC marker (00 00) followed by a valid INTEGER
+Input = 000002010A
+ResultDER = Detected EOC marker in DER structure
+ResultBER = OK
+
+# A constructed encoding of the EOC tag (0x20), rejected even in BER and even
+# when standalone EOC markers are tolerated
+Input = 2000
+ResultBER = EOC tag with constructed encoding
+
+# Same, with declared content
+Input = 20050102030405
+ResultBER = EOC tag with constructed encoding
+
+# Valid OID: 1.2.840.113549.1.1.11 (sha256WithRSAEncryption)
+Input = 06092A864886F70D01010B
+ResultBER = OK
+
+# Valid OID: 2.5.4.3 (commonName)
+Input = 0603550403
+ResultBER = OK
+
+# Valid OID: 0.0
+Input = 060100
+ResultBER = OK
+
+# Valid OID: 2.999 (largest second arc for root 2 that fits in one byte)
+Input = 06028837
+ResultBER = OK
+
+# Empty OID content
+Input = 0600
+ResultBER = OID encoding is too short
+
+# Leading zero byte in multibyte OID component encoding (X.690 8.19.2)
+# 2.0.1.128 but the 128 is encoded as 8001 instead of the minimal 8100
+Input = 0603500180
+ResultBER = Leading zero byte in multibyte OID encoding
+
+# Truncated multibyte OID component (high bit set on last byte)
+Input = 060350018101
+ResultBER = Truncated OID value
+
+# All continuation bytes, never terminated
+Input = 060450018181
+ResultBER = Truncated OID value
+
+# OID component overflow: 2.1.4294967296 (exceeds 32-bit)
+Input = 0606519080808000
+ResultBER = OID component overflow
+
+# OID component overflow: 2.4294967216 (exceeds 32-bit second arc)
+Input = 06059080808000
+ResultBER = OID component overflow
+
+# Tag 06 with zero-length content (duplicate of empty OID, different TLV)
+Input = 060000
+ResultBER = OID encoding is too short
+
+# Tag 06 with length 0xFF (invalid long-form length)
+Input = 06FF00
+ResultBER = Length field is too large
+
+# OCTET STRING declaring 256 MiB of content, over the default 128 MiB object
+# size limit (the actual content is absent, but the size is rejected first)
+Input = 048410000000
+ResultBER = Encoded object exceeds maximum size
+
+# Leading zero in multibyte encoding with many continuation bytes
+# 0.1 followed by a component starting with 0x80 (leading zero)
+Input = 06070180808080807F
+ResultBER = Leading zero byte in multibyte OID encoding
+
+# Component encoded as 80 01 - leading zero, should be just 01
+Input = 06028001
+ResultBER = Leading zero byte in multibyte OID encoding
+
+# Component encoded as 80 7F - leading zero, should be just 7F
+Input = 0602807F
+ResultBER = Leading zero byte in multibyte OID encoding
+
+# Single continuation byte with no terminator
+Input = 060181
+ResultBER = Truncated OID value
+
+# Multibyte component that overflows 32 bits
+Input = 0606FFFFFFFFFF7F
+ResultBER = OID component overflow
+
+# Long-form tag with 0x80 as first subsequent octet (continuation, no data)
+# X.690 8.1.2.4.2(c) forbids bits 7-1 of the first subsequent octet being all zero
+Input = 1F8001
+ResultBER = Long form tag with leading zero
+
+# Long-form tag with 0x00 as first subsequent octet (encoding of tag value 0)
+# Without this check the 2-byte tag decodes as (Eoc, Universal) and collides
+# with the EOC marker, enabling BER malleability inside indefinite-length TLVs
+Input = 1F0000
+ResultBER = Long form tag with leading zero
+
+# Indefinite-length SEQUENCE whose content is a single fake-EOC TLV 1F 00 00
+# encoded with a long-form tag. Before the 0x00 check was added, find_eoc
+# stopped at the fake EOC and decode_length under-reported content_length
+# by one byte, silently accepting the input with truncated content.
+Input = 30801F0000000000
+ResultDER = Detected indefinite-length encoding in DER structure
+ResultBER = Long form tag with leading zero
+
+# Same malleability embedded after a valid INTEGER: find_eoc would accept the
+# 3-byte fake EOC and the trailing real 00 00 passed the EOC validator.
+Input = 30800201421F00000000
+ResultDER = Detected indefinite-length encoding in DER structure
+ResultBER = Long form tag with leading zero
+
+# Indefinite-length SEQUENCE whose first inner TLV is a malformed EOC
+# 00 02 00 00 (tag 0, length 2, content 00 00). Per X.690 8.1.5 EOC must be
+# exactly 00 00; find_eoc previously terminated on any (Eoc, Universal) tag
+# regardless of length and assigned bytes to the outer content.
+Input = 308000020000
+ResultDER = Detected indefinite-length encoding in DER structure
+ResultBER = EOC marker with non-zero length
+
+# Same bug with long-form (non-canonical) length on the EOC tag: 00 81 00 is
+# still tag 0 length 0, but the length field is 2 bytes not 1.
+Input = 3080008100
+ResultDER = Detected indefinite-length encoding in DER structure
+ResultBER = EOC marker with non-zero length
+
+# Malformed EOC at top level (outside any indefinite-length context). The
+# get_next_object loop used to read "content" bytes and continue silently;
+# the tag+length must be rejected before any content is consumed.
+Input = 00020000
+ResultBER = EOC marker with non-zero length
+
+# Long-form tag encoding of tag 1 (Boolean). Per X.690 8.1.2.2 tag values
+# 0-30 must use short form; long form is reserved for tag >= 31. Accepting
+# this produces a parser differential with strict BER parsers since the
+# bytes 1F 01 01 FF decode to the same value as short-form 01 01 FF.
+Input = 1F0101FF
+ResultBER = Long-form tag encoding used for small tag value
+
+# Long-form tag encoding of tag 30 (BMPString) - boundary case.
+Input = 1F1E00
+ResultBER = Long-form tag encoding used for small tag value

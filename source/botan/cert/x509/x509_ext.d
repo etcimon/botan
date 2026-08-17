@@ -2,8 +2,11 @@
 * X.509 Certificate Extensions
 * 
 * Copyright:
-* (C) 1999-2007,2012 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2010,2012 Jack Lloyd
+* (C) 2016 René Korthaus, Rohde & Schwarz Cybersecurity
+* (C) 2017 Fabian Weissberg, Rohde & Schwarz Cybersecurity
+* (C) 2024 Anton Einax, Dominik Schricker
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -30,6 +33,9 @@ import std.algorithm;
 import botan.utils.types;
 import botan.utils.mem_ops;
 import memutils.dictionarylist;
+import botan.cert.x509.name_constraint_parse;
+import botan.cert.x509.as_blocks;
+import botan.cert.x509.ip_addr_blocks;
 
 /**
 * X.509 Certificate Extension
@@ -138,14 +144,24 @@ public:
                 try
                 {
                     ext.decodeInner(value);
+                    m_extensions.pushBack(makePair(ext, critical));
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
-                    throw new DecodingError("Exception while decoding extension " ~
-                                             oid.toString() ~ ": " ~ e.msg);
+                    // C++ SAN `add_dns` throws; create_extn_obj then keeps the cert
+                    // and reports EXTENSION_ENCODING_ERROR. Other extensions still
+                    // fail the decode (NIST empty NameConstraints).
+                    if (OIDS.nameOf(oid, "X509v3.SubjectAlternativeName")
+                        || OIDS.nameOf(oid, "X509v3.IssuerAlternativeName")
+                        || OIDS.nameOf(oid, "PKIX.IPAddrBlocks"))
+                    {
+                        m_decode_failed = true;
+                        destroy(ext);
+                    }
+                    else
+                        throw new DecodingError("Exception while decoding extension " ~
+                                                 oid.toString() ~ ": " ~ e.msg);
                 }
-                
-                m_extensions.pushBack(makePair(ext, critical));
             }
         }
         
@@ -157,6 +173,8 @@ public:
     {
         foreach (extension; m_extensions[])
             extension.first.contentsTo(subject_info, issuer_info);
+        if (m_decode_failed)
+            subject_info.add("X509v3.ExtensionEncodingError", "1");
     }
 
     void add(CertificateExtension extn, bool critical = false)
@@ -175,6 +193,7 @@ public:
         
         foreach (extension; other.m_extensions[])
             m_extensions.pushBack(makePair(extension.first.copy(), extension.second));
+        m_decode_failed = other.m_decode_failed;
         
         return this;
     }
@@ -224,6 +243,9 @@ private:
         mixin( X509_EXTENSION!("PKIX.AuthorityInformationAccess", "AuthorityInformationAccess") );
         mixin( X509_EXTENSION!("X509v3.CRLNumber", "CRLNumber") );
         mixin( X509_EXTENSION!("X509v3.ReasonCode", "CRLReasonCode") );
+        mixin( X509_EXTENSION!("X509v3.NameConstraints", "NameConstraints") );
+        mixin( X509_EXTENSION!("PKIX.ASIdentifiers", "ASBlocks") );
+        mixin( X509_EXTENSION!("PKIX.IPAddrBlocks", "IPAddressBlocks") );
         
         return null;
     }
@@ -231,6 +253,7 @@ private:
 
     Vector!( Pair!(CertificateExtension, bool)  ) m_extensions;
     bool m_throw_on_unknown_critical;
+    bool m_decode_failed;
 }
 
 __gshared immutable size_t NO_CERT_PATH_LIMIT = 0xFFFFFFF0;
@@ -978,6 +1001,257 @@ protected:
     Vector!( DistributionPoint ) m_distribution_points;
 }
 
+
+/**
+* RFC 5280 NameConstraints — structure check plus dNSName subtree lists.
+*/
+final class NameConstraints : CertificateExtension
+{
+public:
+    override NameConstraints copy() const
+    {
+        auto n = new NameConstraints;
+        n.m_permitted = m_permitted;
+        n.m_excluded = m_excluded;
+        n.m_permitted_dns = m_permitted_dns;
+        n.m_excluded_dns = m_excluded_dns;
+        return n;
+    }
+
+    size_t permittedCount() const { return m_permitted; }
+    size_t excludedCount() const { return m_excluded; }
+
+protected:
+    override bool shouldEncode() const { return m_permitted || m_excluded; }
+    string oidName() const { return "X509v3.NameConstraints"; }
+
+    Vector!ubyte encodeInner() const
+    {
+        throw new InvalidState("NameConstraints encode is not implemented");
+    }
+
+    void decodeInner(const ref Vector!ubyte input)
+    {
+        auto inner = BERDecoder(input).startCons(ASN1Tag.SEQUENCE);
+        m_permitted = 0;
+        m_excluded = 0;
+        m_permitted_dns = null;
+        m_excluded_dns = null;
+        while (inner.moreItems())
+        {
+            BERObject obj = inner.getNextObject();
+            if (obj.type_tag == cast(ASN1Tag)0 && (obj.class_tag & ASN1Tag.CONTEXT_SPECIFIC))
+            {
+                m_permitted = nameConstraintParseSubtrees(obj.value.ptr, obj.value.length, m_permitted_dns);
+                if (m_permitted == 0)
+                    throw new DecodingError("Empty NameConstraint permitted list");
+            }
+            else if (obj.type_tag == cast(ASN1Tag)1 && (obj.class_tag & ASN1Tag.CONTEXT_SPECIFIC))
+            {
+                m_excluded = nameConstraintParseSubtrees(obj.value.ptr, obj.value.length, m_excluded_dns);
+                if (m_excluded == 0)
+                    throw new DecodingError("Empty NameConstraint excluded list");
+            }
+            else if (obj.type_tag != ASN1Tag.NO_OBJECT)
+                throw new DecodingError("Unexpected NameConstraint field");
+        }
+        inner.verifyEnd().endCons();
+        if (m_permitted == 0 && m_excluded == 0)
+            throw new DecodingError("Empty NameConstraint extension");
+    }
+
+    void contentsTo(ref DataStore subject, ref DataStore) const
+    {
+        subject.add("X509v3.NameConstraints.permitted", m_permitted);
+        subject.add("X509v3.NameConstraints.excluded", m_excluded);
+        size_t i;
+        while (i < m_permitted_dns.length)
+        {
+            size_t j = i;
+            while (j < m_permitted_dns.length && m_permitted_dns[j] != '\n')
+                ++j;
+            if (j > i)
+                subject.add("X509v3.NameConstraints.permitted_dns", m_permitted_dns[i .. j]);
+            i = j + 1;
+        }
+        i = 0;
+        while (i < m_excluded_dns.length)
+        {
+            size_t j = i;
+            while (j < m_excluded_dns.length && m_excluded_dns[j] != '\n')
+                ++j;
+            if (j > i)
+                subject.add("X509v3.NameConstraints.excluded_dns", m_excluded_dns[i .. j]);
+            i = j + 1;
+        }
+    }
+
+private:
+    size_t m_permitted;
+    size_t m_excluded;
+    string m_permitted_dns;
+    string m_excluded_dns;
+}
+
+/// C++ `Cert_Extension::ASBlocks` (RFC 3779) decode-only.
+final class ASBlocks : CertificateExtension
+{
+public:
+    override ASBlocks copy() const
+    {
+        auto n = new ASBlocks;
+        n.m_asnum = m_asnum;
+        n.m_rdi = m_rdi;
+        n.m_asnum_inherit = m_asnum_inherit;
+        n.m_rdi_inherit = m_rdi_inherit;
+        return n;
+    }
+
+protected:
+    override bool shouldEncode() const
+    {
+        return m_asnum.length || m_rdi.length || m_asnum_inherit || m_rdi_inherit;
+    }
+    string oidName() const { return "PKIX.ASIdentifiers"; }
+
+    Vector!ubyte encodeInner() const
+    {
+        throw new InvalidState("ASBlocks encode is not implemented");
+    }
+
+    void decodeInner(const ref Vector!ubyte input)
+    {
+        m_asnum = null;
+        m_rdi = null;
+        m_asnum_inherit = false;
+        m_rdi_inherit = false;
+        auto seq = BERDecoder(input).startCons(ASN1Tag.SEQUENCE);
+        while (seq.moreItems())
+        {
+            BERObject obj = seq.getNextObject();
+            if (obj.type_tag == cast(ASN1Tag)0 && (obj.class_tag & ASN1Tag.CONTEXT_SPECIFIC))
+                asIdentDecodeChoice(obj.value.ptr, obj.value.length, m_asnum, m_asnum_inherit);
+            else if (obj.type_tag == cast(ASN1Tag)1 && (obj.class_tag & ASN1Tag.CONTEXT_SPECIFIC))
+                asIdentDecodeChoice(obj.value.ptr, obj.value.length, m_rdi, m_rdi_inherit);
+            else if (obj.type_tag != ASN1Tag.NO_OBJECT)
+                throw new DecodingError("Unexpected ASIdentifiers field");
+        }
+        seq.endCons();
+        if (!m_asnum.length && !m_rdi.length && !m_asnum_inherit && !m_rdi_inherit)
+            throw new DecodingError("Empty ASIdentifiers");
+    }
+
+    void contentsTo(ref DataStore subject, ref DataStore) const
+    {
+        if (m_asnum_inherit)
+            subject.add("X509v3.ASIdentifiers.asnum_inherit", "1");
+        asIdentAddPacked(subject, "X509v3.ASIdentifiers.asnum", m_asnum);
+        if (m_rdi_inherit)
+            subject.add("X509v3.ASIdentifiers.rdi_inherit", "1");
+        asIdentAddPacked(subject, "X509v3.ASIdentifiers.rdi", m_rdi);
+    }
+
+private:
+    string m_asnum;
+    string m_rdi;
+    bool m_asnum_inherit;
+    bool m_rdi_inherit;
+}
+
+/// C++ `Cert_Extension::IPAddressBlocks` (RFC 3779) decode-only.
+final class IPAddressBlocks : CertificateExtension
+{
+public:
+    override IPAddressBlocks copy() const
+    {
+        auto n = new IPAddressBlocks;
+        n.m_v4 = m_v4;
+        n.m_v6 = m_v6;
+        n.m_v4_inherit = m_v4_inherit;
+        n.m_v6_inherit = m_v6_inherit;
+        n.m_families = m_families;
+        return n;
+    }
+
+protected:
+    override bool shouldEncode() const { return m_families != 0; }
+    string oidName() const { return "PKIX.IPAddrBlocks"; }
+
+    Vector!ubyte encodeInner() const
+    {
+        throw new InvalidState("IPAddressBlocks encode is not implemented");
+    }
+
+    void decodeInner(const ref Vector!ubyte input)
+    {
+        m_v4 = null;
+        m_v6 = null;
+        m_v4_inherit = false;
+        m_v6_inherit = false;
+        m_families = 0;
+        auto outer = BERDecoder(input).startCons(ASN1Tag.SEQUENCE);
+        while (outer.moreItems())
+        {
+            BERObject famobj = outer.getNextObject();
+            if (famobj.type_tag != ASN1Tag.SEQUENCE)
+                throw new DecodingError("IPAddressFamily must be a SEQUENCE");
+            auto fam = BERDecoder(famobj.value.ptr, famobj.value.length);
+            Vector!ubyte afam;
+            fam.decode(afam, ASN1Tag.OCTET_STRING);
+            if (afam.length != 2 && afam.length != 3)
+                throw new DecodingError("(S)AFI can only contain 2 or 3 bytes");
+            const uint afi = (afam[0] << 8) | afam[1];
+            size_t version_octets;
+            if (afi == 1)
+                version_octets = 4;
+            else if (afi == 2)
+                version_octets = 16;
+            else
+                throw new DecodingError("Only AFI IPv4 and IPv6 are supported");
+            Vector!ubyte choice_bits;
+            fam.rawBytes(choice_bits);
+            bool inherit;
+            if (choice_bits.length >= 2 && choice_bits[0] == 0x05 && choice_bits[1] == 0x00)
+                inherit = true;
+            else
+            {
+                auto choice = BERDecoder(choice_bits.ptr, choice_bits.length);
+                if (version_octets == 4)
+                    ipAddrDecodeChoice(choice, version_octets, m_v4, inherit);
+                else
+                    ipAddrDecodeChoice(choice, version_octets, m_v6, inherit);
+            }
+            if (inherit)
+            {
+                if (version_octets == 4)
+                    m_v4_inherit = true;
+                else
+                    m_v6_inherit = true;
+            }
+            ++m_families;
+        }
+        outer.endCons();
+        if (!m_families)
+            throw new DecodingError("Empty IPAddrBlocks");
+    }
+
+    void contentsTo(ref DataStore subject, ref DataStore) const
+    {
+        if (m_v4_inherit)
+            subject.add("X509v3.IPAddrBlocks.v4_inherit", "1");
+        ipAddrAddPacked(subject, "X509v3.IPAddrBlocks.v4", m_v4);
+        if (m_v6_inherit)
+            subject.add("X509v3.IPAddrBlocks.v6_inherit", "1");
+        ipAddrAddPacked(subject, "X509v3.IPAddrBlocks.v6", m_v6);
+    }
+
+private:
+    string m_v4;
+    string m_v6;
+    bool m_v4_inherit;
+    bool m_v6_inherit;
+    size_t m_families;
+}
 
 alias PolicyInformation = RefCounted!PolicyInformationImpl;
 

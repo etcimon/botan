@@ -1,8 +1,9 @@
 /*
 * SHA-3
 * (C) 2010,2016 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
-* Botan is released under the Simplified BSD License (see license.txt)
+* Botan is released under the Simplified BSD License (see LICENSE.md)
 */
 module botan.hash.sha3;
 
@@ -231,6 +232,38 @@ public:
             if(output_length > 0)
                 SHA3.permute(*cast(ulong[25]*) S.ptr);
         }
+    }
+
+    /**
+    * Incremental squeeze. `S_pos` is a byte cursor into the current rate
+    * block (0 after `finish`). Permutes when a rate block is exhausted.
+    */
+    static size_t squeeze(size_t bitrate, ref SecureVector!ulong S, size_t S_pos,
+                          ubyte* output, size_t length)
+    {
+        if (bitrate % 64 != 0)
+            throw new InvalidArgument("SHA-3 bitrate must be multiple of 64");
+
+        const size_t byterate = bitrate / 8;
+
+        while (length > 0)
+        {
+            if (S_pos == byterate)
+            {
+                SHA3.permute(*cast(ulong[25]*) S.ptr);
+                S_pos = 0;
+            }
+
+            const size_t take = min(length, byterate - S_pos);
+            foreach (size_t i; 0 .. take)
+                output[i] = get_byte(7 - ((S_pos + i) % 8), S[(S_pos + i) / 8]);
+
+            output += take;
+            length -= take;
+            S_pos += take;
+        }
+
+        return S_pos;
     }
 
 protected:

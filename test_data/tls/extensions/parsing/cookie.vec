@@ -1,0 +1,37 @@
+# Cookie extension consists of:
+#     - Cookie length (2 bytes)
+#     - Cookie content (vector of bytes[Cookie length])
+
+[cookie]
+Buffer = 00020304
+Expected_Content = 0304
+Exception =
+
+Buffer = 000401020304
+Expected_Content = 01020304
+Exception =
+
+# Empty extension data (no length field, no cookie value).
+# RFC 8446 4.2.2 requires opaque cookie<1..2^16-1> so this is illegal.
+Buffer =
+Exception = Empty cookie extension is illegal
+
+# Truncated length field (only 1 byte) is also below the minimum.
+Buffer = 00
+Exception = Empty cookie extension is illegal
+
+# Length field present but no cookie data following it.
+Buffer = 0000
+Exception = Empty cookie extension is illegal
+
+# Length field claims zero, with trailing bytes.
+Buffer = 00000304
+Exception = Inconsistent length in cookie extension
+
+# Length field claims fewer bytes than are present (trailing data).
+Buffer = 000103040506
+Exception = Inconsistent length in cookie extension
+
+# Length field claims more bytes than are present.
+Buffer = 000203
+Exception = Inconsistent length in cookie extension

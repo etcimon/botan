@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -15,7 +15,7 @@ import botan.rng.rng;
 import botan.utils.parsing;
 import botan.filters.filters;
 import botan.algo_factory.algo_factory;
-import botan.modes.mode_pad;
+static if (BOTAN_HAS_CIPHER_MODE_PADDING) import botan.modes.mode_pad;
 import botan.filters.transform_filter;
 import botan.math.numbertheory.def_powm;
 import botan.algo_base.scan_token;
@@ -48,10 +48,24 @@ static if (BOTAN_HAS_NYBERG_RUEPPEL)  import  botan.pubkey.algo.nr;
 static if (BOTAN_HAS_DIFFIE_HELLMAN)  import botan.pubkey.algo.dh;
 static if (BOTAN_HAS_ECDH)            import botan.pubkey.algo.ecdh;
 static if (BOTAN_HAS_CURVE25519)      import botan.pubkey.algo.curve25519;
+static if (BOTAN_HAS_ED25519)         import botan.pubkey.algo.ed25519;
+static if (BOTAN_HAS_ED448)           import botan.pubkey.algo.ed448;
+static if (BOTAN_HAS_X448)            import botan.pubkey.algo.x448;
+static if (BOTAN_HAS_SM2)             import botan.pubkey.algo.sm2;
+static if (BOTAN_HAS_ECGDSA)          import botan.pubkey.algo.ecgdsa;
+static if (BOTAN_HAS_ECKCDSA)         import botan.pubkey.algo.eckcdsa;
+static if (BOTAN_HAS_ML_DSA)          import botan.pubkey.algo.ml_dsa;
+static if (BOTAN_HAS_SLH_DSA)         import botan.pubkey.algo.slh_dsa;
+static if (BOTAN_HAS_XMSS)            import botan.pubkey.algo.xmss;
+static if (BOTAN_HAS_HSS_LMS)         import botan.pubkey.algo.hss_lms;
 /// Blocks
 static if (BOTAN_HAS_AES)             import botan.block.aes;
 static if (BOTAN_HAS_BLOWFISH)        import botan.block.blowfish;
 static if (BOTAN_HAS_CAMELLIA)        import botan.block.camellia;
+static if (BOTAN_HAS_ARIA)            import botan.block.aria;
+static if (BOTAN_HAS_SHACAL2)         import botan.block.shacal2;
+static if (BOTAN_HAS_SM4)             import botan.block.sm4;
+static if (BOTAN_HAS_KUZNYECHIK)      import botan.block.kuznyechik;
 static if (BOTAN_HAS_CAST) {
                                       import botan.block.cast128;
                                       import botan.block.cast256;
@@ -84,6 +98,11 @@ static if (BOTAN_HAS_ADLER32)         import botan.checksum.adler32;
 static if (BOTAN_HAS_CRC24)           import botan.checksum.crc24;
 static if (BOTAN_HAS_CRC32)           import botan.checksum.crc32;
 static if (BOTAN_HAS_BLAKE2B)         import botan.hash.blake2b;
+static if (BOTAN_HAS_BLAKE2S)         import botan.hash.blake2s;
+static if (BOTAN_HAS_SM3)             import botan.hash.sm3;
+static if (BOTAN_HAS_STREEBOG)        import botan.hash.streebog;
+static if (BOTAN_HAS_ASCON_HASH256)   import botan.hash.ascon_hash256;
+static if (BOTAN_HAS_TRUNCATED_HASH)  import botan.hash.trunc_hash;
 static if (BOTAN_HAS_GOST_34_11)      import botan.hash.gost_3411;
 static if (BOTAN_HAS_HAS_160)         import botan.hash.has160;
 static if (BOTAN_HAS_KECCAK)          import botan.hash.keccak;
@@ -105,6 +124,10 @@ static if (BOTAN_HAS_COMB4P)          import botan.hash.comb4p;
 
 /// MAC
 static if (BOTAN_HAS_POLY1305)        import botan.mac.poly1305;
+static if (BOTAN_HAS_SIPHASH)         import botan.mac.siphash;
+static if (BOTAN_HAS_GMAC)            import botan.mac.gmac;
+static if (BOTAN_HAS_KMAC)            import botan.mac.kmac;
+static if (BOTAN_HAS_BLAKE2BMAC)      import botan.mac.blake2bmac;
 static if (BOTAN_HAS_CBC_MAC)         import botan.mac.cbc_mac;
 static if (BOTAN_HAS_CMAC)            import botan.mac.cmac;
 static if (BOTAN_HAS_HMAC)            import botan.mac.hmac;
@@ -114,11 +137,17 @@ static if (BOTAN_HAS_ANSI_X919_MAC)   import botan.mac.x919_mac;
 /// PBKDF
 static if (BOTAN_HAS_PBKDF1)          import botan.pbkdf.pbkdf1;
 static if (BOTAN_HAS_PBKDF2)          import botan.pbkdf.pbkdf2;
+static if (BOTAN_HAS_ARGON2)          import botan.pbkdf.argon2;
+static if (BOTAN_HAS_SCRYPT)          import botan.pbkdf.scrypt;
+static if (BOTAN_HAS_PBKDF_BCRYPT)    import botan.pbkdf.bcrypt_pbkdf;
+static if (BOTAN_HAS_PGP_S2K)         import botan.pbkdf.pgp_s2k;
+static if (BOTAN_HAS_PKCS12_KDF)      import botan.pbkdf.pkcs12_kdf;
 
 /// STREAM
 static if (BOTAN_HAS_RC4)             import botan.stream.rc4;
 static if (BOTAN_HAS_CHACHA)          import botan.stream.chacha;
 static if (BOTAN_HAS_SALSA20)         import botan.stream.salsa20;
+static if (BOTAN_HAS_SHAKE_CIPHER)    import botan.stream.shake_cipher;
 
 /**
 * Core Engine
@@ -210,6 +239,30 @@ public:
                 return new Camellia192;
             if (request.algoName == "Camellia-256")
                 return new Camellia256;
+        }
+
+        static if (BOTAN_HAS_ARIA) {
+            if (request.algoName == "ARIA-128")
+                return new ARIA128;
+            if (request.algoName == "ARIA-192")
+                return new ARIA192;
+            if (request.algoName == "ARIA-256")
+                return new ARIA256;
+        }
+
+        static if (BOTAN_HAS_SHACAL2) {
+            if (request.algoName == "SHACAL2")
+                return new SHACAL2;
+        }
+
+        static if (BOTAN_HAS_SM4) {
+            if (request.algoName == "SM4")
+                return new SM4;
+        }
+
+        static if (BOTAN_HAS_KUZNYECHIK) {
+            if (request.algoName == "Kuznyechik")
+                return new Kuznyechik;
         }
         
         static if (BOTAN_HAS_CAST) {
@@ -350,10 +403,14 @@ public:
         }
         
         static if (BOTAN_HAS_CTR_BE) {
-            if (request.algoName == "CTR-BE" && request.argCount() == 1)
+            if (request.algoName == "CTR-BE" && request.argCount() >= 1)
             {
                 if (auto proto = af.prototypeBlockCipher(request.arg(0)))
+                {
+                    if (request.argCount() >= 2)
+                        return new CTRBE(proto.clone(), request.arg(1).to!size_t);
                     return new CTRBE(proto.clone());
+                }
             }
         }
         
@@ -372,6 +429,16 @@ public:
         static if (BOTAN_HAS_SALSA20) {
             if (request.algoName == "Salsa20")
                 return new Salsa20;
+        }
+
+        static if (BOTAN_HAS_SHAKE_CIPHER) {
+            if (request.argCount() == 0)
+            {
+                if (request.algoName == "SHAKE-128" || request.algoName == "SHAKE-128-XOF")
+                    return makeSHAKE128Cipher();
+                if (request.algoName == "SHAKE-256" || request.algoName == "SHAKE-256-XOF")
+                    return makeSHAKE256Cipher();
+            }
         }
         
         return null;
@@ -398,6 +465,11 @@ public:
         static if (BOTAN_HAS_BLAKE2B) {
             if (request.algoName == "BLAKE2b")
                 return new Blake2b(request.argAsInteger(0, 512));
+        }
+
+        static if (BOTAN_HAS_BLAKE2S) {
+            if (request.algoName == "BLAKE2s" || request.algoName == "Blake2s")
+                return new Blake2s(request.argAsInteger(0, 256));
         }
         
         static if (BOTAN_HAS_GOST_34_11) {
@@ -452,12 +524,46 @@ public:
             if (request.algoName == "SHA-256")
                 return new SHA256;
         }
+
+        static if (BOTAN_HAS_SM3) {
+            if (request.algoName == "SM3")
+                return new SM3;
+        }
+
+        static if (BOTAN_HAS_STREEBOG) {
+            if (request.algoName == "Streebog-256")
+                return new Streebog(256);
+            if (request.algoName == "Streebog-512")
+                return new Streebog(512);
+            if (request.algoName == "Streebog")
+                return new Streebog(request.argAsInteger(0, 512));
+        }
+
+        static if (BOTAN_HAS_ASCON_HASH256) {
+            if (request.algoName == "Ascon-Hash256")
+                return new AsconHash256;
+        }
+
+        static if (BOTAN_HAS_TRUNCATED_HASH) {
+            if (request.algoName == "Truncated" && request.argCount() == 2)
+            {
+                const HashFunction h = af.prototypeHashFunction(request.arg(0));
+                if (h)
+                    return new TruncatedHash(h.clone(), request.argAsInteger(1));
+            }
+        }
         
         static if (BOTAN_HAS_SHA2_64) {
             if (request.algoName == "SHA-384")
                 return new SHA384;
+            if (request.algoName == "SHA-512-256")
+                return new SHA512_256;
             if (request.algoName == "SHA-512")
+            {
+                if (request.argCount() >= 1 && request.arg(0) == "256")
+                    return new SHA512_256;
                 return new SHA512;
+            }
         }
 
         static if (BOTAN_HAS_SHA3) {
@@ -551,6 +657,28 @@ public:
 			}
 		}
 
+        static if (BOTAN_HAS_SIPHASH) {
+            if (request.algoName == "SipHash")
+                return new SipHash(request.argAsInteger(0, 2), request.argAsInteger(1, 4));
+        }
+
+        static if (BOTAN_HAS_GMAC) {
+            if (request.algoName == "GMAC" && request.argCount() == 1)
+                return new GMAC(af.makeBlockCipher(request.arg(0)));
+        }
+
+        static if (BOTAN_HAS_KMAC) {
+            if (request.algoName == "KMAC-128")
+                return new KMAC128(request.argAsInteger(0, 256));
+            if (request.algoName == "KMAC-256")
+                return new KMAC256(request.argAsInteger(0, 512));
+        }
+
+        static if (BOTAN_HAS_BLAKE2BMAC) {
+            if (request.algoName == "BLAKE2b" || request.algoName == "Blake2b")
+                return new Blake2bMAC(request.argAsInteger(0, 512));
+        }
+
 		static if (BOTAN_HAS_CBC_MAC) {
 			if (request.algoName == "CBC-MAC" && request.argCount() == 1)
 				return new CBCMAC(af.makeBlockCipher(request.arg(0)));
@@ -587,6 +715,45 @@ public:
                 return new PKCS5_PBKDF2(af.makeMac("HMAC(" ~ algo_spec.arg(0) ~ ")"));
             }
         }
+
+        static if (BOTAN_HAS_ARGON2) {
+            if (algo_spec.algoName == "Argon2d" || algo_spec.algoName == "Argon2i"
+                || algo_spec.algoName == "Argon2id")
+            {
+                const ubyte family = algo_spec.algoName == "Argon2d" ? 0
+                    : (algo_spec.algoName == "Argon2i" ? 1 : 2);
+                const size_t M = algo_spec.argAsInteger(0, 65536);
+                const size_t t = algo_spec.argAsInteger(1, 1);
+                const size_t p = algo_spec.argAsInteger(2, 1);
+                return new Argon2(family, M, t, p);
+            }
+        }
+
+        static if (BOTAN_HAS_SCRYPT) {
+            if (algo_spec.algoName == "Scrypt")
+            {
+                const size_t N = algo_spec.argAsInteger(0, 32768);
+                const size_t r = algo_spec.argAsInteger(1, 8);
+                const size_t p = algo_spec.argAsInteger(2, 1);
+                return new Scrypt(N, r, p);
+            }
+        }
+
+        static if (BOTAN_HAS_PBKDF_BCRYPT) {
+            if (algo_spec.algoName == "Bcrypt-PBKDF")
+                return new BcryptPBKDF;
+        }
+
+        static if (BOTAN_HAS_PGP_S2K) {
+            if (algo_spec.algoName == "OpenPGP-S2K" && algo_spec.argCount() == 1)
+                return new OpenPGP_S2K(af.makeHashFunction(algo_spec.arg(0)));
+        }
+
+        static if (BOTAN_HAS_PKCS12_KDF) {
+            if (algo_spec.algoName == "PKCS12-KDF" && algo_spec.argCount() == 2)
+                return new PKCS12_KDF(af.makeHashFunction(algo_spec.arg(0)),
+                                      cast(ubyte) algo_spec.argAsInteger(1));
+        }
         
         return null;
     }
@@ -609,6 +776,11 @@ public:
 			if (Curve25519PrivateKey.algoName == key.algoName)
 				return new Curve25519KAOperation(key);
 		}
+
+        static if (BOTAN_HAS_X448) {
+            if (X448PrivateKey.algoName == key.algoName)
+                return new X448KAOperation(key);
+        }
 
         static if (BOTAN_HAS_DIFFIE_HELLMAN) {
             if (DHPrivateKey.algoName == key.algoName)
@@ -655,6 +827,51 @@ public:
             if (NRPrivateKey.algoName == key.algoName)
                 return new NRSignatureOperation(key);
         }
+
+        static if (BOTAN_HAS_ED25519) {
+            if (Ed25519PrivateKey.algoName == key.algoName)
+                return new Ed25519SignatureOperation(key);
+        }
+
+        static if (BOTAN_HAS_ED448) {
+            if (Ed448PrivateKey.algoName == key.algoName)
+                return new Ed448SignatureOperation(key);
+        }
+
+        static if (BOTAN_HAS_SM2) {
+            if (SM2PrivateKey.algoName == key.algoName)
+                return new SM2SignatureOperation(key);
+        }
+
+        static if (BOTAN_HAS_ECGDSA) {
+            if (ECGDSAPrivateKey.algoName == key.algoName)
+                return new ECGDSASignatureOperation(key);
+        }
+
+        static if (BOTAN_HAS_ECKCDSA) {
+            if (ECKCDSAPrivateKey.algoName == key.algoName)
+                return new ECKCDSASignatureOperation(key);
+        }
+
+        static if (BOTAN_HAS_ML_DSA) {
+            if (isMldsaOrDilithiumName(key.algoName))
+                return new MLDSASignatureOperation(key);
+        }
+
+        static if (BOTAN_HAS_SLH_DSA) {
+            if (isSlhOrSphincsName(key.algoName))
+                return new SLHDSASignatureOperation(key);
+        }
+
+        static if (BOTAN_HAS_XMSS) {
+            if (key.algoName == "XMSS")
+                return new XMSSSignatureOperation(key);
+        }
+
+        static if (BOTAN_HAS_HSS_LMS) {
+            if (key.algoName == "HSS-LMS")
+                return new HSSLMSSignatureOperation(key);
+        }
         
         return null;
     }
@@ -690,6 +907,51 @@ public:
             if (NRPublicKey.algoName == key.algoName)
                 return new NRVerificationOperation(key);
         }
+
+        static if (BOTAN_HAS_ED25519) {
+            if (Ed25519PublicKey.algoName == key.algoName)
+                return new Ed25519VerificationOperation(key);
+        }
+
+        static if (BOTAN_HAS_ED448) {
+            if (Ed448PublicKey.algoName == key.algoName)
+                return new Ed448VerificationOperation(key);
+        }
+
+        static if (BOTAN_HAS_SM2) {
+            if (SM2PublicKey.algoName == key.algoName)
+                return new SM2VerificationOperation(key);
+        }
+
+        static if (BOTAN_HAS_ECGDSA) {
+            if (ECGDSAPublicKey.algoName == key.algoName)
+                return new ECGDSAVerificationOperation(key);
+        }
+
+        static if (BOTAN_HAS_ECKCDSA) {
+            if (ECKCDSAPublicKey.algoName == key.algoName)
+                return new ECKCDSAVerificationOperation(key);
+        }
+
+        static if (BOTAN_HAS_ML_DSA) {
+            if (isMldsaOrDilithiumName(key.algoName))
+                return new MLDSAVerificationOperation(key);
+        }
+
+        static if (BOTAN_HAS_SLH_DSA) {
+            if (isSlhOrSphincsName(key.algoName))
+                return new SLHDSAVerificationOperation(key);
+        }
+
+        static if (BOTAN_HAS_XMSS) {
+            if (key.algoName == "XMSS")
+                return new XMSSVerificationOperation(key);
+        }
+
+        static if (BOTAN_HAS_HSS_LMS) {
+            if (key.algoName == "HSS-LMS")
+                return new HSSLMSVerificationOperation(key);
+        }
         
         return null;
     }
@@ -706,6 +968,11 @@ public:
             if (ElGamalPublicKey.algoName == key.algoName)
                 return new ElGamalEncryptionOperation(key);
         }
+
+        static if (BOTAN_HAS_SM2) {
+            if (SM2PublicKey.algoName == key.algoName)
+                return new SM2EncryptionOperation(key);
+        }
         
         return null;
     }
@@ -720,6 +987,11 @@ public:
         static if (BOTAN_HAS_ELGAMAL) {
             if (ElGamalPrivateKey.algoName == key.algoName)
                 return new ElGamalDecryptionOperation(key, rng);
+        }
+
+        static if (BOTAN_HAS_SM2) {
+            if (SM2PrivateKey.algoName == key.algoName)
+                return new SM2DecryptionOperation(key);
         }
         
         return null;
@@ -870,6 +1142,7 @@ KeyedFilter getCipherMode(const BlockCipher block_cipher,
     return null;
 }
 
+static if (BOTAN_HAS_CIPHER_MODE_PADDING) {
 private {
     
     /**
@@ -877,22 +1150,23 @@ private {
     */
     BlockCipherModePaddingMethod getBcPad(in string algo_spec, in string def_if_empty)
     {
-        static if (BOTAN_HAS_CIPHER_MODE_PADDING) {
-            if (algo_spec == "NoPadding" || (algo_spec == "" && def_if_empty == "NoPadding"))
-                return new NullPadding;
-            
-            if (algo_spec == "PKCS7" || (algo_spec == "" && def_if_empty == "PKCS7"))
-                return new PKCS7Padding;
-            
-            if (algo_spec == "OneAndZeros")
-                return new OneAndZerosPadding;
-            
-            if (algo_spec == "X9.23")
-                return new ANSIX923Padding;
-            
-        }
-        
+        if (algo_spec == "NoPadding" || (algo_spec == "" && def_if_empty == "NoPadding"))
+            return new NullPadding;
+
+        if (algo_spec == "PKCS7" || (algo_spec == "" && def_if_empty == "PKCS7"))
+            return new PKCS7Padding;
+
+        if (algo_spec == "OneAndZeros")
+            return new OneAndZerosPadding;
+
+        if (algo_spec == "X9.23")
+            return new ANSIX923Padding;
+
+        if (algo_spec == "ESP")
+            return new ESPPadding;
+
         throw new AlgorithmNotFound(algo_spec);
     }
     
+}
 }

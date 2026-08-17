@@ -2,8 +2,8 @@
 * ASN.1 Internals
 * 
 * Copyright:
-* (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2007,2018 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -51,6 +51,7 @@ enum ASN1Tag {
     T61_STRING           = 0x14,
     IA5_STRING           = 0x16,
     VISIBLE_STRING       = 0x1A,
+    UNIVERSAL_STRING     = 0x1C,
     BMP_STRING           = 0x1E,
 
     UTC_TIME             = 0x17,

@@ -2,13 +2,16 @@
 * Auto Seeded RNG
 * 
 * Copyright:
-* (C) 2008 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2016 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
 */
 module botan.rng.auto_rng;
+
+import botan.constants;
+static if (BOTAN_HAS_AUTO_SEEDING_RNG):
 
 public import botan.rng.rng;
 import botan.utils.types;

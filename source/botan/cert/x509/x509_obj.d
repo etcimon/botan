@@ -2,8 +2,8 @@
 * X.509 SIGNED Object
 * 
 * Copyright:
-* (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2007,2020 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -11,6 +11,8 @@
 module botan.cert.x509.x509_obj;
 
 import botan.constants;
+static if (BOTAN_HAS_X509_CERTIFICATES):
+
 import botan.asn1.asn1_obj;
 import botan.filters.pipe;
 import botan.rng.rng;

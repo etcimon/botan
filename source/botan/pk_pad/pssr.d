@@ -2,8 +2,8 @@
 * PSSR
 * 
 * Copyright:
-* (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2007,2017,2023 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -166,4 +166,45 @@ public:
 private:
     size_t m_SALT_SIZE;
     Unique!HashFunction m_hash;
+}
+
+/**
+* PSS_Raw: same encoding as PSSR, but the input is already a hash digest.
+*/
+class PSSR_Raw : PSSR
+{
+public:
+    this(HashFunction hash)
+    {
+        m_hash_len = hash.outputLength;
+        super(hash);
+    }
+
+    this(HashFunction hash, size_t salt_size)
+    {
+        m_hash_len = hash.outputLength;
+        super(hash, salt_size);
+    }
+
+    override void update(const(ubyte)* input, size_t length)
+    {
+        if (length == 0)
+            return;
+        if (m_msg.length + length > m_hash_len)
+            throw new EncodingError("PSS_Raw: Input length exceeded hash output");
+        foreach (i; 0 .. length)
+            m_msg.pushBack(input[i]);
+    }
+
+    override SecureVector!ubyte rawData()
+    {
+        SecureVector!ubyte ret = m_msg.move();
+        if (ret.length != m_hash_len)
+            throw new EncodingError("PSS_Raw Bad input length, did not match hash");
+        return ret.move();
+    }
+
+private:
+    size_t m_hash_len;
+    SecureVector!ubyte m_msg;
 }

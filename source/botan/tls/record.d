@@ -2,8 +2,8 @@
 * TLS Record Handling
 * 
 * Copyright:
-* (C) 2004-2012,2014 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2012,2013,2014,2015,2016,2019 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -32,6 +32,7 @@ import botan.utils.rounding;
 import botan.utils.xor_buf;
 import botan.utils.loadstor;
 import botan.utils.types;
+import botan.utils.ct;
 import std.algorithm;
 import std.datetime;
 import memutils.refcounted;
@@ -726,4 +727,31 @@ void decryptRecord(ref SecureVector!ubyte output,
         
         output[] = plaintext_block[0 .. plaintext_length];
     }
+}
+
+/**
+* C++ `check_tls_cbc_padding`: 0 if invalid, otherwise padding_bytes + 1.
+* TLS 1.0+ requires every padding byte to equal the length byte.
+* Walk is CT (`CTMask`) so the pad-byte compare does not leak via early exit.
+*/
+public ushort checkTlsCbcPadding(const(ubyte)* record, size_t record_len)
+{
+    if (record_len == 0 || record_len > 0xFFFF)
+        return 0;
+    const ushort rec16 = cast(ushort) record_len;
+    const ushort to_check = rec16 < 256 ? rec16 : 256;
+    const ubyte pad_byte = record[record_len - 1];
+    const ushort pad_bytes = cast(ushort)(1 + pad_byte);
+    auto pad_invalid = CTMask!ushort.isLt(rec16, pad_bytes);
+    ushort i = cast(ushort)(rec16 - to_check);
+    while (i != rec16)
+    {
+        const ushort offset = cast(ushort)(rec16 - i);
+        const auto in_pad_range = CTMask!ushort.isLte(offset, pad_bytes);
+        const auto pad_correct = CTMask!ushort.isEqual(cast(ushort)record[i],
+                                                       cast(ushort)pad_byte);
+        pad_invalid = pad_invalid | (in_pad_range & ~pad_correct);
+        ++i;
+    }
+    return pad_invalid.ifNotSetReturn(pad_bytes);
 }

@@ -2,8 +2,8 @@
 * TLS Channel
 * 
 * Copyright:
-* (C) 2011,2012,2014 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2011,2012,2014,2015,2016 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -27,6 +27,10 @@ import botan.tls.messages;
 import botan.tls.heartbeats;
 import botan.tls.record;
 import botan.tls.seq_numbers;
+static if (BOTAN_HAS_TLS_13) {
+    import botan.tls.tls13.record_layer;
+    import botan.tls.tls13.cipher_state;
+}
 import botan.utils.rounding;
 import memutils.dictionarylist;
 import botan.utils.loadstor;
@@ -84,13 +88,43 @@ public:
         
         try
         {
-            while (!isClosed() && input_size)
+            while (!isClosed())
             {
+                bool try_tls13_rec;
+                static if (BOTAN_HAS_TLS_13)
+                    try_tls13_rec = m_tls13_cs && m_tls13_rl;
+                if (!try_tls13_rec && input_size == 0)
+                    break;
                 SecureVector!ubyte record;
                 ulong record_sequence = 0;
                 RecordType record_type = NO_RECORD;
                 TLSProtocolVersion record_version;
+                bool used_tls13;
 
+                static if (BOTAN_HAS_TLS_13)
+                {
+                    if (m_tls13_cs && m_tls13_rl)
+                    {
+                        if (input_size)
+                        {
+                            m_tls13_rl.copyData(input, input_size);
+                            input += input_size;
+                            input_size = 0;
+                        }
+                        auto got = m_tls13_rl.nextRecord(*m_tls13_cs);
+                        if (!got.has_record)
+                            return got.bytes_needed;
+                        record_type = got.record.type;
+                        record = got.record.fragment.move();
+                        record_sequence = got.record.seq_no;
+                        used_tls13 = true;
+                        if (record_type == CHANGE_CIPHER_SPEC)
+                            continue;
+                    }
+                }
+
+                if (!used_tls13)
+                {
                 size_t consumed = 0;
                 const size_t needed = .readRecord(m_readbuf,
                                                   input,
@@ -113,6 +147,7 @@ public:
                 
                 if (input_size == 0 && needed != 0)
                     return needed; // need more data to complete record
+                }
                 
                 if (record.length > max_fragment_size)
                     throw new TLSException(TLSAlert.RECORD_OVERFLOW, "Plaintext record is too large");
@@ -508,6 +543,31 @@ protected:
 
     abstract HandshakeState newHandshakeState(HandshakeIO io);
 
+    static if (BOTAN_HAS_TLS_13)
+    {
+        /**
+        * Install (or replace) the TLS 1.3 read/write traffic keys.
+        * Sequence numbers reset with the new TLS13CipherState.
+        */
+        void tls13SetRecordKeys(string aead_name, string hash_name,
+                                const(ubyte)* write_secret, size_t write_len,
+                                const(ubyte)* read_secret, size_t read_len,
+                                ConnectionSide side)
+        {
+            if (!m_tls13_rl)
+            {
+                m_tls13_rl = new TLS13RecordLayer(side);
+                m_tls13_rl.disableSendingCompatMode();
+            }
+            m_tls13_cs = TLS13CipherState.fromTrafficSecrets(aead_name, hash_name,
+                                                             write_secret, write_len,
+                                                             read_secret, read_len);
+            // RFC 8446 D.4 middlebox compat: one dummy CCS before the first
+            // protected record on this cipher state.
+            m_tls13_need_dummy_ccs = true;
+        }
+    }
+
     HandshakeState createHandshakeState(TLSProtocolVersion _version)
     {
         if (pendingState())
@@ -753,6 +813,24 @@ private:
 
     void sendRecordArray(ushort epoch, ubyte type, const(ubyte)* input, size_t length)
     {
+        static if (BOTAN_HAS_TLS_13)
+        {
+            if (m_tls13_cs && m_tls13_rl && type != CHANGE_CIPHER_SPEC)
+            {
+                if (m_tls13_need_dummy_ccs)
+                {
+                    ubyte[1] ccs = [0x01];
+                    auto ccs_wire = m_tls13_rl.prepareRecords(CHANGE_CIPHER_SPEC, ccs.ptr, 1, null);
+                    if (ccs_wire.length)
+                        m_output_fn(cast(ubyte[]) ccs_wire[]);
+                    m_tls13_need_dummy_ccs = false;
+                }
+                auto wire = m_tls13_rl.prepareRecords(cast(RecordType) type, input, length, *m_tls13_cs);
+                if (wire.length)
+                    m_output_fn(cast(ubyte[]) wire[]);
+                return;
+            }
+        }
         if (length == 0)
             return;
         /*
@@ -769,7 +847,7 @@ private:
         
         auto cipher_state = cast(ConnectionCipherState)writeCipherStateEpoch(epoch);
         
-        if (type == APPLICATION_DATA && cipher_state.cbcWithoutExplicitIv())
+        if (type == APPLICATION_DATA && cipher_state && cipher_state.cbcWithoutExplicitIv())
         {
             writeRecord(cipher_state, epoch, type, input, 1);
             input += 1;
@@ -841,6 +919,11 @@ private:
             v.destroy();
         }
         m_write_cipher_states.clear();
+        static if (BOTAN_HAS_TLS_13)
+        {
+            m_tls13_cs.free();
+            m_tls13_rl.free();
+        }
         foreach (const ref k, ref v; m_read_cipher_states)
         {
             v.destroy();
@@ -880,4 +963,11 @@ private:
     /* I/O buffers */
     SecureVector!ubyte m_writebuf;
     SecureVector!ubyte m_readbuf;
+
+    static if (BOTAN_HAS_TLS_13)
+    {
+        Unique!TLS13RecordLayer m_tls13_rl;
+        Unique!TLS13CipherState m_tls13_cs;
+        bool m_tls13_need_dummy_ccs;
+    }
 }

@@ -2,8 +2,8 @@
 * TLS Messages
 * 
 * Copyright:
-* (C) 2004-2011,2015 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2021-2022 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -31,6 +31,16 @@ public import botan.tls.version_;
 public import botan.tls.handshake_hash;
 public import botan.tls.magic;
 public import botan.tls.credentials_manager;
+static if (BOTAN_HAS_TLS_13) import botan.tls.tls13.hello_ext;
+static if (BOTAN_HAS_TLS_13 && BOTAN_HAS_CURVE25519) import botan.pubkey.algo.curve25519;
+static if (BOTAN_HAS_TLS_13_PQC) import botan.pubkey.algo.ml_kem;
+static if (BOTAN_HAS_TLS_13_PQC && BOTAN_HAS_FRODOKEM) import botan.pubkey.algo.frodo_kem;
+static if (BOTAN_HAS_TLS_13_PQC && BOTAN_HAS_X448) import botan.pubkey.algo.x448;
+static if (BOTAN_HAS_TLS_13_PQC && BOTAN_HAS_ECDH)
+{
+    import botan.pubkey.algo.ecdh;
+    import botan.pubkey.algo.ec_group;
+}
 import botan.constructs.srp6;
 import botan.utils.loadstor;
 import botan.constructs.srp6;
@@ -144,6 +154,30 @@ enum GreaseType : size_t {
 /**
 * TLSClient Hello Message
 */
+/// Named groups for ClientHello supported_groups. Prepends policy PQC/hybrid
+/// names when offering TLS 1.3.
+Vector!string tls13OfferedGroups(in TLSPolicy policy, TLSProtocolVersion offered)
+{
+    auto curves = policy.allowedEccCurves();
+    static if (BOTAN_HAS_TLS_13_PQC)
+    {
+        if (offered == TLSProtocolVersion(TLSProtocolVersion.TLS_V13))
+        {
+            auto extra = policy.tls13PqcKeyShareGroups();
+            if (!extra.empty)
+            {
+                Vector!string g;
+                foreach (n; extra[])
+                    g.pushBack(n);
+                foreach (c; curves[])
+                    g.pushBack(c);
+                return g.move();
+            }
+        }
+    }
+    return curves.move();
+}
+
 final class ClientHello : HandshakeMessage
 {
 public:
@@ -215,6 +249,11 @@ public:
     bool sentFallbackSCSV() const
     {
         return offeredSuite(cast(ushort) TLS_FALLBACK_SCSV);
+    }
+
+    bool supportsStatusRequest() const
+    {
+        return m_extensions.get!StatusRequest() !is null;
     }
 
     bool secureRenegotiation() const
@@ -293,6 +332,54 @@ public:
     const(Vector!HandshakeExtensionType) extensionTypes() const
     { return m_extensions.extensionTypes(); }
 
+    static if (BOTAN_HAS_TLS_13)
+    {
+        TLS13KeyShare tls13KeyShare() const { return m_extensions.get!TLS13KeyShare(); }
+        static if (BOTAN_HAS_CURVE25519)
+        {
+            bool hasTls13X25519() const { return m_has_tls13_x25519; }
+            ref const(Curve25519PrivateKey) tls13X25519() const { return m_tls13_x25519; }
+        }
+        static if (BOTAN_HAS_TLS_13_PQC)
+        {
+            bool hasTls13Mlkem() const { return !m_tls13_mlkem.isEmpty; }
+            const(MLKEMPrivateKey) tls13Mlkem() const { return m_tls13_mlkem; }
+            bool hasTls13Mlkem512() const { return !m_tls13_mlkem512.isEmpty; }
+            const(MLKEMPrivateKey) tls13Mlkem512() const { return m_tls13_mlkem512; }
+            bool hasTls13Mlkem1024() const { return !m_tls13_mlkem1024.isEmpty; }
+            const(MLKEMPrivateKey) tls13Mlkem1024() const { return m_tls13_mlkem1024; }
+            static if (BOTAN_HAS_ECDH)
+            {
+                bool hasTls13P256() const { return m_has_tls13_p256; }
+                ref const(ECDHPrivateKey) tls13P256() const { return m_tls13_p256; }
+                bool hasTls13P384() const { return m_has_tls13_p384; }
+                ref const(ECDHPrivateKey) tls13P384() const { return m_tls13_p384; }
+                bool hasTls13P521() const { return m_has_tls13_p521; }
+                ref const(ECDHPrivateKey) tls13P521() const { return m_tls13_p521; }
+            }
+            static if (BOTAN_HAS_X448)
+            {
+                bool hasTls13X448() const { return m_has_tls13_x448; }
+                ref const(X448PrivateKey) tls13X448() const { return m_tls13_x448; }
+            }
+            static if (BOTAN_HAS_FRODOKEM)
+            {
+                bool hasTls13Frodo(in string fname) const
+                {
+                    auto p = tls13FrodoSlot(fname);
+                    return p !is null && !(*p).isEmpty;
+                }
+                const(FrodoPrivateKey) tls13Frodo(in string fname) const
+                {
+                    auto p = tls13FrodoSlot(fname);
+                    if (p is null || (*p).isEmpty)
+                        return null;
+                    return cast(const(FrodoPrivateKey))(*p);
+                }
+            }
+        }
+    }
+
     /*
     * Create a new TLSClient Hello message
     */
@@ -320,7 +407,13 @@ public:
 			m_suites ~= grease(GreaseType.CIPHER);
 			m_extensions.grease(grease(GreaseType.EXTENSION_FIRST), grease(GreaseType.EXTENSION_LAST));
 		}
-		m_suites ~= policy.ciphersuiteList(m_version, (srp_identifier != ""));
+        auto suite_ver = m_version;
+        static if (BOTAN_HAS_TLS_13)
+        {
+            if (_version == TLSProtocolVersion(TLSProtocolVersion.TLS_V13))
+                suite_ver = TLSProtocolVersion(TLSProtocolVersion.TLS_V12);
+        }
+		m_suites ~= policy.ciphersuiteList(suite_ver, (srp_identifier != ""));
         m_comp_methods = policy.compression();
 
 		Vector!ubyte fmts = policy.ecPointFormats();
@@ -338,7 +431,7 @@ public:
 					m_extensions.add(new SupportedPointFormats(fmts.move()));
 					break;
 				case TLSEXT_USABLE_ELLIPTIC_CURVES:
-					m_extensions.add(new SupportedEllipticCurves(policy.allowedEccCurves(), grease(GreaseType.ELLIPTIC_CURVE)));
+					m_extensions.add(new SupportedEllipticCurves(tls13OfferedGroups(policy, _version), grease(GreaseType.ELLIPTIC_CURVE)));
 					break;
 				case TLSEXT_EXTENDED_MASTER_SECRET:
 					m_extensions.add(new ExtendedMasterSecret);
@@ -388,7 +481,55 @@ public:
         else if (has_safe_reneg)
             m_suites.pushBack(TLS_EMPTY_RENEGOTIATION_INFO_SCSV);
 
+        static if (BOTAN_HAS_TLS_13)
+        {
+            if (_version == TLSProtocolVersion(TLSProtocolVersion.TLS_V13))
+            {
+                // RFC 8446 4.1.2: legacy_version is 0x0303; 1.3 is in supported_versions.
+                m_version = TLSProtocolVersion(TLSProtocolVersion.TLS_V12);
+                Vector!TLSProtocolVersion offer;
+                offer.pushBack(TLSProtocolVersion(TLSProtocolVersion.TLS_V13));
+                offer.pushBack(TLSProtocolVersion(TLSProtocolVersion.TLS_V12));
+                m_extensions.add(new TLS13SupportedVersions(offer.move()));
+                Vector!TLS13KeyShareEntry ents;
+                static if (BOTAN_HAS_CURVE25519)
+                {
+                    m_tls13_x25519 = Curve25519PrivateKey(rng);
+                    m_has_tls13_x25519 = true;
+                }
+                static if (BOTAN_HAS_TLS_13_PQC)
+                {
+                    auto extra = policy.tls13PqcKeyShareGroups();
+                    foreach (n; extra[])
+                        tls13EmitPqcShare(ents, n, rng);
+                }
+                static if (BOTAN_HAS_CURVE25519)
+                {
+                    auto e = new TLS13KeyShareEntry;
+                    e.group = TLS13_GROUP_X25519;
+                    auto pub = m_tls13_x25519.publicValue();
+                    foreach (b; pub[])
+                        e.key_exchange.pushBack(b);
+                    ents.pushBack(e);
+                }
+                if (!ents.empty)
+                    m_extensions.add(new TLS13KeyShare(TLS13KeyShare.Kind.Client, ents.move()));
+                Vector!ushort with13;
+                with13.pushBack(0x1301);
+                with13.pushBack(0x1302);
+                with13.pushBack(0x1303);
+                foreach (s; m_suites[])
+                    with13.pushBack(s);
+                m_suites = with13.move();
+            }
+        }
+
         hash.update(io.send(this));
+        static if (BOTAN_HAS_TLS_13)
+        {
+            if (_version == TLSProtocolVersion(TLSProtocolVersion.TLS_V13))
+                m_version = TLSProtocolVersion(TLSProtocolVersion.TLS_V13);
+        }
     }
 
 
@@ -523,8 +664,15 @@ protected:
         Vector!ubyte buf;
 		buf.reserve(512);
 
-        buf.pushBack(m_version.majorVersion());
-        buf.pushBack(m_version.minorVersion());
+        TLSProtocolVersion wire_ver = m_version;
+        static if (BOTAN_HAS_TLS_13)
+        {
+            // RFC 8446 4.1.2: legacy_version is 0x0303 even when offering 1.3.
+            if (m_version == TLSProtocolVersion(TLSProtocolVersion.TLS_V13))
+                wire_ver = TLSProtocolVersion(TLSProtocolVersion.TLS_V12);
+        }
+        buf.pushBack(wire_ver.majorVersion());
+        buf.pushBack(wire_ver.minorVersion());
         buf ~= m_random[];
         
         appendTlsLengthValue(buf, m_session_id, 1);
@@ -592,7 +740,24 @@ protected:
         m_comp_methods = reader.getRangeVector!ubyte(1, 1, 255);
         
 		m_extensions.reserve(8);
-        m_extensions.deserialize(reader);
+        m_extensions.deserialize(reader, CLIENT_HELLO);
+
+        static if (BOTAN_HAS_TLS_13) {
+            import botan.tls.tls13.hello_ext;
+            if (auto sv = m_extensions.get!TLS13SupportedVersions())
+            {
+                if (sv.supports(TLSProtocolVersion(TLSProtocolVersion.TLS_V13)))
+                {
+                    if (m_version.majorVersion() == 3 && m_version.minorVersion() >= 4)
+                        throw new TLSException(TLSAlert.DECODE_ERROR,
+                                               "TLS 1.3 Client Hello has invalid legacy_version");
+                    if (m_comp_methods.length != 1 || m_comp_methods[0] != 0)
+                        throw new TLSException(TLSAlert.ILLEGAL_PARAMETER,
+                                               "Client did not offer NULL compression");
+                    m_version = TLSProtocolVersion(TLSProtocolVersion.TLS_V13);
+                }
+            }
+        }
         
         if (offeredSuite(cast(ushort)(TLS_EMPTY_RENEGOTIATION_INFO_SCSV)))
         {
@@ -620,6 +785,254 @@ protected:
 private:
 	bool m_grease;
 	bool m_has_padding;
+    static if (BOTAN_HAS_TLS_13 && BOTAN_HAS_CURVE25519)
+    {
+        Curve25519PrivateKey m_tls13_x25519;
+        bool m_has_tls13_x25519;
+    }
+    static if (BOTAN_HAS_TLS_13_PQC)
+    {
+        Unique!MLKEMPrivateKey m_tls13_mlkem;
+        Unique!MLKEMPrivateKey m_tls13_mlkem512;
+        Unique!MLKEMPrivateKey m_tls13_mlkem1024;
+        static if (BOTAN_HAS_ECDH)
+        {
+            ECDHPrivateKey m_tls13_p256;
+            bool m_has_tls13_p256;
+            ECDHPrivateKey m_tls13_p384;
+            bool m_has_tls13_p384;
+            ECDHPrivateKey m_tls13_p521;
+            bool m_has_tls13_p521;
+        }
+        static if (BOTAN_HAS_X448)
+        {
+            X448PrivateKey m_tls13_x448;
+            bool m_has_tls13_x448;
+        }
+        static if (BOTAN_HAS_FRODOKEM)
+        {
+            Unique!FrodoPrivateKey m_tls13_f640s;
+            Unique!FrodoPrivateKey m_tls13_f640a;
+            Unique!FrodoPrivateKey m_tls13_f976s;
+            Unique!FrodoPrivateKey m_tls13_f976a;
+            Unique!FrodoPrivateKey m_tls13_f1344s;
+            Unique!FrodoPrivateKey m_tls13_f1344a;
+
+            const(Unique!FrodoPrivateKey)* tls13FrodoSlot(in string fname) const
+            {
+                if (fname == "eFrodoKEM-640-SHAKE") return &m_tls13_f640s;
+                if (fname == "eFrodoKEM-640-AES") return &m_tls13_f640a;
+                if (fname == "eFrodoKEM-976-SHAKE") return &m_tls13_f976s;
+                if (fname == "eFrodoKEM-976-AES") return &m_tls13_f976a;
+                if (fname == "eFrodoKEM-1344-SHAKE") return &m_tls13_f1344s;
+                if (fname == "eFrodoKEM-1344-AES") return &m_tls13_f1344a;
+                return null;
+            }
+
+            Unique!FrodoPrivateKey* tls13FrodoSlot(in string fname)
+            {
+                if (fname == "eFrodoKEM-640-SHAKE") return &m_tls13_f640s;
+                if (fname == "eFrodoKEM-640-AES") return &m_tls13_f640a;
+                if (fname == "eFrodoKEM-976-SHAKE") return &m_tls13_f976s;
+                if (fname == "eFrodoKEM-976-AES") return &m_tls13_f976a;
+                if (fname == "eFrodoKEM-1344-SHAKE") return &m_tls13_f1344s;
+                if (fname == "eFrodoKEM-1344-AES") return &m_tls13_f1344a;
+                return null;
+            }
+
+            FrodoPrivateKey tls13EnsureFrodo(in string fname, RandomNumberGenerator rng)
+            {
+                auto slot = tls13FrodoSlot(fname);
+                if (slot is null)
+                    throw new TLSException(TLSAlert.INTERNAL_ERROR, "Unknown eFrodo mode");
+                if ((*slot).isEmpty)
+                    *slot = new FrodoPrivateKey(fname, rng);
+                return cast(FrodoPrivateKey)(*slot);
+            }
+        }
+
+        void tls13EnsureMlkem768(RandomNumberGenerator rng)
+        {
+            if (m_tls13_mlkem.isEmpty)
+                m_tls13_mlkem = new MLKEMPrivateKey(MLKEMMode.Kem768, rng);
+        }
+
+        void tls13PushBytes(TLS13KeyShareEntry e, const(ubyte)* p, size_t n)
+        {
+            foreach (i; 0 .. n)
+                e.key_exchange.pushBack(p[i]);
+        }
+
+        void tls13EmitPqcShare(ref Vector!TLS13KeyShareEntry ents, in string n, RandomNumberGenerator rng)
+        {
+            if (n == TLS13_GROUP_X25519_MLKEM768_NAME)
+            {
+                tls13EnsureMlkem768(rng);
+                auto hy = new TLS13KeyShareEntry;
+                hy.group = TLS13_GROUP_X25519_MLKEM768;
+                auto mk = m_tls13_mlkem.x509SubjectPublicKey();
+                auto xv = m_tls13_x25519.publicValue();
+                tls13PushBytes(hy, mk.ptr, mk.length);
+                tls13PushBytes(hy, xv.ptr, xv.length);
+                ents.pushBack(hy);
+            }
+            else if (n == TLS13_GROUP_MLKEM768_NAME)
+            {
+                tls13EnsureMlkem768(rng);
+                auto e = new TLS13KeyShareEntry;
+                e.group = TLS13_GROUP_MLKEM768;
+                auto mk = m_tls13_mlkem.x509SubjectPublicKey();
+                tls13PushBytes(e, mk.ptr, mk.length);
+                ents.pushBack(e);
+            }
+            else if (n == TLS13_GROUP_MLKEM512_NAME)
+            {
+                if (m_tls13_mlkem512.isEmpty)
+                    m_tls13_mlkem512 = new MLKEMPrivateKey(MLKEMMode.Kem512, rng);
+                auto e = new TLS13KeyShareEntry;
+                e.group = TLS13_GROUP_MLKEM512;
+                auto mk = m_tls13_mlkem512.x509SubjectPublicKey();
+                tls13PushBytes(e, mk.ptr, mk.length);
+                ents.pushBack(e);
+            }
+            else if (n == TLS13_GROUP_MLKEM1024_NAME)
+            {
+                if (m_tls13_mlkem1024.isEmpty)
+                    m_tls13_mlkem1024 = new MLKEMPrivateKey(MLKEMMode.Kem1024, rng);
+                auto e = new TLS13KeyShareEntry;
+                e.group = TLS13_GROUP_MLKEM1024;
+                auto mk = m_tls13_mlkem1024.x509SubjectPublicKey();
+                tls13PushBytes(e, mk.ptr, mk.length);
+                ents.pushBack(e);
+            }
+            static if (BOTAN_HAS_ECDH)
+            {
+                if (n == TLS13_GROUP_SECP256R1_MLKEM768_NAME)
+                {
+                    tls13EnsureMlkem768(rng);
+                    if (!m_has_tls13_p256)
+                    {
+                        auto grp = ECGroup("secp256r1");
+                        m_tls13_p256 = ECDHPrivateKey(rng, grp);
+                        m_has_tls13_p256 = true;
+                    }
+                    auto hy = new TLS13KeyShareEntry;
+                    hy.group = TLS13_GROUP_SECP256R1_MLKEM768;
+                    auto ev = m_tls13_p256.publicValue();
+                    auto mk = m_tls13_mlkem.x509SubjectPublicKey();
+                    tls13PushBytes(hy, ev.ptr, ev.length);
+                    tls13PushBytes(hy, mk.ptr, mk.length);
+                    ents.pushBack(hy);
+                }
+                else if (n == TLS13_GROUP_SECP384R1_MLKEM1024_NAME)
+                {
+                    if (m_tls13_mlkem1024.isEmpty)
+                        m_tls13_mlkem1024 = new MLKEMPrivateKey(MLKEMMode.Kem1024, rng);
+                    if (!m_has_tls13_p384)
+                    {
+                        auto grp = ECGroup("secp384r1");
+                        m_tls13_p384 = ECDHPrivateKey(rng, grp);
+                        m_has_tls13_p384 = true;
+                    }
+                    auto hy = new TLS13KeyShareEntry;
+                    hy.group = TLS13_GROUP_SECP384R1_MLKEM1024;
+                    auto ev = m_tls13_p384.publicValue();
+                    auto mk = m_tls13_mlkem1024.x509SubjectPublicKey();
+                    tls13PushBytes(hy, ev.ptr, ev.length);
+                    tls13PushBytes(hy, mk.ptr, mk.length);
+                    ents.pushBack(hy);
+                }
+            }
+            static if (BOTAN_HAS_FRODOKEM)
+            {
+                if (auto spec = tls13FrodoOqsByName(n))
+                    tls13EmitFrodoOqsShare(ents, *spec, rng);
+            }
+        }
+
+        static if (BOTAN_HAS_FRODOKEM)
+        {
+            void tls13EmitFrodoOqsShare(ref Vector!TLS13KeyShareEntry ents,
+                                        const ref Tls13FrodoOqsGroup spec,
+                                        RandomNumberGenerator rng)
+            {
+                auto fk = tls13EnsureFrodo(spec.frodo, rng);
+                auto pk = fk.x509SubjectPublicKey();
+                auto e = new TLS13KeyShareEntry;
+                e.group = spec.id;
+                if (spec.classical == TLS13_FRODO_CLASSICAL_X25519)
+                {
+                    auto xv = m_tls13_x25519.publicValue();
+                    tls13PushBytes(e, xv.ptr, xv.length);
+                }
+                else if (spec.classical == TLS13_FRODO_CLASSICAL_X448)
+                {
+                    static if (BOTAN_HAS_X448)
+                    {
+                        if (!m_has_tls13_x448)
+                        {
+                            m_tls13_x448 = X448PrivateKey(rng);
+                            m_has_tls13_x448 = true;
+                        }
+                        auto xv = m_tls13_x448.publicValue();
+                        tls13PushBytes(e, xv.ptr, xv.length);
+                    }
+                    else
+                        return;
+                }
+                else if (spec.classical == TLS13_FRODO_CLASSICAL_P256)
+                {
+                    static if (BOTAN_HAS_ECDH)
+                    {
+                        if (!m_has_tls13_p256)
+                        {
+                            auto grp = ECGroup("secp256r1");
+                            m_tls13_p256 = ECDHPrivateKey(rng, grp);
+                            m_has_tls13_p256 = true;
+                        }
+                        auto ev = m_tls13_p256.publicValue();
+                        tls13PushBytes(e, ev.ptr, ev.length);
+                    }
+                    else
+                        return;
+                }
+                else if (spec.classical == TLS13_FRODO_CLASSICAL_P384)
+                {
+                    static if (BOTAN_HAS_ECDH)
+                    {
+                        if (!m_has_tls13_p384)
+                        {
+                            auto grp = ECGroup("secp384r1");
+                            m_tls13_p384 = ECDHPrivateKey(rng, grp);
+                            m_has_tls13_p384 = true;
+                        }
+                        auto ev = m_tls13_p384.publicValue();
+                        tls13PushBytes(e, ev.ptr, ev.length);
+                    }
+                    else
+                        return;
+                }
+                else if (spec.classical == TLS13_FRODO_CLASSICAL_P521)
+                {
+                    static if (BOTAN_HAS_ECDH)
+                    {
+                        if (!m_has_tls13_p521)
+                        {
+                            auto grp = ECGroup("secp521r1");
+                            m_tls13_p521 = ECDHPrivateKey(rng, grp);
+                            m_has_tls13_p521 = true;
+                        }
+                        auto ev = m_tls13_p521.publicValue();
+                        tls13PushBytes(e, ev.ptr, ev.length);
+                    }
+                    else
+                        return;
+                }
+                tls13PushBytes(e, pk.ptr, pk.length);
+                ents.pushBack(e);
+            }
+        }
+    }
     TLSProtocolVersion m_version;
     Vector!ubyte m_session_id;
     Vector!ubyte m_random;
@@ -708,6 +1121,11 @@ public:
     const(Vector!HandshakeExtensionType) extensionTypes() const
     { return m_extensions.extensionTypes(); }
 
+    static if (BOTAN_HAS_TLS_13)
+    {
+        TLS13KeyShare tls13KeyShare() const { return m_extensions.get!TLS13KeyShare(); }
+    }
+
     /*
     * Create a new TLSServer Hello message
     */
@@ -726,7 +1144,9 @@ public:
          bool client_has_alpn,
          in string next_protocol,
          bool client_has_heartbeat,
-         RandomNumberGenerator rng) 
+         RandomNumberGenerator rng,
+         ushort tls13_group = 0,
+         const(ubyte)[] tls13_share = null) 
     {
         m_version = ver;
         m_session_id = session_id.move();
@@ -734,6 +1154,28 @@ public:
         m_ciphersuite = ciphersuite;
         m_comp_method = compression;
 		m_extensions.reserve(8);
+
+        static if (BOTAN_HAS_TLS_13)
+        {
+            if (ver == TLSProtocolVersion(TLSProtocolVersion.TLS_V13))
+            {
+                // RFC 8446 4.1.3: legacy_version 0x0303 + selected supported_versions.
+                m_extensions.add(new TLS13SupportedVersions(
+                    TLSProtocolVersion(TLSProtocolVersion.TLS_V13)));
+                if (tls13_group)
+                {
+                    auto e = new TLS13KeyShareEntry;
+                    e.group = tls13_group;
+                    foreach (b; tls13_share)
+                        e.key_exchange.pushBack(b);
+                    Vector!TLS13KeyShareEntry ents;
+                    ents.pushBack(e);
+                    m_extensions.add(new TLS13KeyShare(TLS13KeyShare.Kind.Server, ents.move()));
+                }
+                hash.update(io.send(this));
+                return;
+            }
+        }
 
 		if (client_has_extended_master_secret)
 			m_extensions.add(new ExtendedMasterSecret);
@@ -780,7 +1222,27 @@ public:
         m_comp_method = reader.get_byte();
         
 		m_extensions.reserve(8);
-        m_extensions.deserialize(reader);
+        m_extensions.deserialize(reader, SERVER_HELLO);
+
+        static if (BOTAN_HAS_TLS_13) {
+            import botan.tls.tls13.hello_ext;
+            if (auto sv = m_extensions.get!TLS13SupportedVersions())
+            {
+                if (sv.versions().length)
+                    m_version = sv.versions()[0];
+            }
+        }
+    }
+
+    bool isHelloRetryRequest() const
+    {
+        static immutable ubyte[32] hrr = [
+            0xCF, 0x21, 0xAD, 0x74, 0xE5, 0x9A, 0x61, 0x11,
+            0xBE, 0x1D, 0x8C, 0x02, 0x1E, 0x65, 0xB8, 0x91,
+            0xC2, 0xA2, 0x11, 0x16, 0x7A, 0xBB, 0x8C, 0x5E,
+            0x07, 0x9E, 0x09, 0xE2, 0xC8, 0xA8, 0x33, 0x9C
+        ];
+        return m_random.length == 32 && m_random[] == hrr[];
     }
 
 protected:
@@ -792,8 +1254,15 @@ protected:
         Vector!ubyte buf;
 		buf.reserve(512);
 
-        buf.pushBack(m_version.majorVersion());
-        buf.pushBack(m_version.minorVersion());
+        TLSProtocolVersion wire_ver = m_version;
+        static if (BOTAN_HAS_TLS_13)
+        {
+            // RFC 8446 4.1.3: ServerHello.legacy_version is 0x0303.
+            if (m_version == TLSProtocolVersion(TLSProtocolVersion.TLS_V13))
+                wire_ver = TLSProtocolVersion(TLSProtocolVersion.TLS_V12);
+        }
+        buf.pushBack(wire_ver.majorVersion());
+        buf.pushBack(wire_ver.minorVersion());
         buf ~= m_random[];
         
         appendTlsLengthValue(buf, m_session_id, 1);
@@ -1262,6 +1731,14 @@ public:
     }
 
     /**
+    * Store a certificate chain without sending (TLS 1.3 uses TLS13Certificate on the wire).
+    */
+    this()(auto ref Vector!X509Certificate cert_list)
+    {
+        m_certs = cert_list.cloneToRef;
+    }
+
+    /**
     * Deserialize a Certificate message
     */
     this()(const auto ref Vector!ubyte buf)
@@ -1531,8 +2008,9 @@ public:
         
         if (_version.supportsNegotiableSignatureAlgorithms())
         {
-            m_hash_algo = SignatureAlgorithms.hashAlgoName(reader.get_byte());
-            m_sig_algo = SignatureAlgorithms.sigAlgoName(reader.get_byte());
+            const ushort alg = reader.get_ushort();
+            m_hash_algo = SignatureAlgorithms.hashAlgoName(cast(ubyte)(alg >> 8));
+            m_sig_algo = SignatureAlgorithms.sigAlgoName(cast(ubyte) alg);
         }
         
         m_signature = reader.getRange!ubyte(2, 0, 65535);
@@ -1596,6 +2074,13 @@ public:
     {
         m_verification_data = finishedComputeVerify(state, side);
         state.hash().update(io.send(this));
+    }
+
+    /// TLS 1.3: verify_data already computed (HMAC of transcript hash).
+    this(HandshakeIO io, ref HandshakeHash hash, Vector!ubyte verify_data)
+    {
+        m_verification_data = verify_data.move();
+        hash.update(io.send(this));
     }
 
     /*
@@ -1977,6 +2462,222 @@ protected:
     }
 }
 
+static if (BOTAN_HAS_TLS_13):
+/**
+* RFC 8446 4.3.1 EncryptedExtensions (handshake type 8).
+* Subsequent handshake flight is still the next T13d slice; this type is
+* parse/emit only until TLSChannel wires 1.3 record protection.
+*/
+final class TLS13EncryptedExtensions : HandshakeMessage
+{
+public:
+    override const(HandshakeType) type() const { return ENCRYPTED_EXTENSIONS; }
+
+    this() {}
+
+    this(in ClientHello ch, string alpn = "")
+    {
+        if (ch.sniHostname().length)
+            m_extensions.add(new ServerNameIndicator("", true));
+        if (alpn.length)
+            m_extensions.add(new ApplicationLayerProtocolNotification(alpn));
+    }
+
+    this(HandshakeIO io, ref HandshakeHash hash, in ClientHello ch, string alpn = "")
+    {
+        this(ch, alpn);
+        hash.update(io.send(this));
+    }
+
+    this(const ref Vector!ubyte buf)
+    {
+        if (buf.length < 2)
+            throw new TLSException(TLSAlert.DECODE_ERROR, "Server sent an empty Encrypted Extensions message");
+        TLSDataReader reader = TLSDataReader("EncryptedExtensions", buf);
+        m_extensions.deserialize(reader, ENCRYPTED_EXTENSIONS);
+    }
+
+    const(Vector!HandshakeExtensionType) extensionTypes() const
+    { return m_extensions.extensionTypes(); }
+
+    string nextProtocol() const
+    {
+        if (auto alpn = m_extensions.get!ApplicationLayerProtocolNotification())
+            return alpn.singleProtocol();
+        return "";
+    }
+
+    override Vector!ubyte serialize() const
+    {
+        auto vec = m_extensions.serialize();
+        // RFC 8446 4.3.1: empty list is still a 2-byte length prefix.
+        if (vec.empty)
+        {
+            vec.pushBack(0);
+            vec.pushBack(0);
+        }
+        return vec.move();
+    }
+
+private:
+    TLSExtensions m_extensions;
+}
+
+/**
+* RFC 8446 4.4.2 Certificate (request_context + CertificateEntry list).
+* Optional leaf OCSP staple is a status_request extension on the first entry.
+*/
+final class TLS13Certificate : HandshakeMessage
+{
+public:
+    override const(HandshakeType) type() const { return CERTIFICATE; }
+
+    ref const(Vector!X509Certificate) certChain() const { return m_certs; }
+    ref const(Vector!ubyte) ocspStaple() const { return m_ocsp_staple; }
+    @property bool empty() const { return m_certs.empty; }
+
+    this(Vector!X509Certificate certs, Vector!ubyte ocsp_staple = Vector!ubyte())
+    {
+        m_certs = certs.move();
+        m_ocsp_staple = ocsp_staple.move();
+    }
+
+    this(HandshakeIO io, ref HandshakeHash hash, Vector!X509Certificate certs,
+         Vector!ubyte ocsp_staple = Vector!ubyte())
+    {
+        this(certs.move(), ocsp_staple.move());
+        hash.update(io.send(this));
+    }
+
+    this(const ref Vector!ubyte buf, ConnectionSide side)
+    {
+        TLSDataReader reader = TLSDataReader("Certificate13", buf);
+        auto ctx = reader.getRange!ubyte(1, 0, 255);
+        if (side == SERVER && ctx.length)
+            throw new TLSException(TLSAlert.ILLEGAL_PARAMETER,
+                                   "Server Certificate message must not contain a request context");
+        if (reader.remainingBytes() < 3)
+            throw new DecodingError("Certificate: Message malformed");
+        const size_t list_len = make_uint(0, reader.get_byte(), reader.get_byte(), reader.get_byte());
+        if (reader.remainingBytes() != list_len)
+            throw new DecodingError("Certificate: Message malformed");
+        bool first = true;
+        while (reader.hasRemaining())
+        {
+            if (reader.remainingBytes() < 3)
+                throw new DecodingError("Certificate: Message malformed");
+            const size_t cert_size = make_uint(0, reader.get_byte(), reader.get_byte(), reader.get_byte());
+            auto raw = reader.getFixed!ubyte(cert_size);
+            m_certs.pushBack(X509Certificate(raw));
+            if (reader.remainingBytes() < 2)
+                throw new DecodingError("Certificate: Message malformed");
+            const ushort extn_size = reader.get_ushort();
+            if (extn_size)
+            {
+                Vector!ubyte ext_buf;
+                ext_buf.pushBack(get_byte(0, extn_size));
+                ext_buf.pushBack(get_byte(1, extn_size));
+                auto ext_body = reader.getFixed!ubyte(extn_size);
+                ext_buf ~= ext_body[];
+                if (first)
+                {
+                    TLSDataReader er = TLSDataReader("Certificate13Ext", ext_buf);
+                    TLSExtensions entry_ext;
+                    entry_ext.deserialize(er, CERTIFICATE);
+                    if (auto sr = entry_ext.get!StatusRequest())
+                        m_ocsp_staple = sr.ocspResponse().clone;
+                }
+            }
+            first = false;
+        }
+        if (side == SERVER && m_certs.empty)
+            throw new TLSException(TLSAlert.DECODE_ERROR, "No certificates sent by server");
+    }
+
+    override Vector!ubyte serialize() const
+    {
+        Vector!ubyte buf;
+        buf.pushBack(0); // empty request_context
+        Vector!ubyte entries;
+        bool first = true;
+        foreach (const ref cert; m_certs[])
+        {
+            auto raw = cert.BER_encode();
+            foreach (size_t j; 0 .. 3)
+                entries.pushBack(get_byte!uint(j + 1, cast(uint) raw.length));
+            entries ~= raw[];
+            TLSExtensions entry_ext;
+            static if (BOTAN_HAS_OCSP_STAPLE)
+            {
+                if (first && m_ocsp_staple.length)
+                    entry_ext.add(new StatusRequest(m_ocsp_staple.clone));
+            }
+            first = false;
+            auto extn = entry_ext.serialize();
+            if (extn.empty)
+            {
+                entries.pushBack(0);
+                entries.pushBack(0);
+            }
+            else
+                entries ~= extn[];
+        }
+        foreach (size_t j; 0 .. 3)
+            buf.pushBack(get_byte!uint(j + 1, cast(uint) entries.length));
+        buf ~= entries[];
+        return buf.move();
+    }
+
+private:
+    Vector!X509Certificate m_certs;
+    Vector!ubyte m_ocsp_staple;
+}
+
+/// RFC 8446 4.4.3 rsa_pss_rsae_sha256
+enum ushort TLS13_RSA_PSS_RSAE_SHA256 = 0x0804;
+
+/**
+* RFC 8446 4.4.3 CertificateVerify (SignatureScheme + signature).
+*/
+final class TLS13CertificateVerify : HandshakeMessage
+{
+public:
+    override const(HandshakeType) type() const { return CERTIFICATE_VERIFY; }
+
+    this(HandshakeIO io, ref HandshakeHash hash, ushort scheme, Vector!ubyte signature)
+    {
+        m_scheme = scheme;
+        m_signature = signature.move();
+        hash.update(io.send(this));
+    }
+
+    this(const ref Vector!ubyte buf)
+    {
+        TLSDataReader reader = TLSDataReader("CertificateVerify13", buf);
+        m_scheme = reader.get_ushort();
+        m_signature = reader.getRange!ubyte(2, 0, 65535);
+    }
+
+    ushort scheme() const { return m_scheme; }
+    ref const(Vector!ubyte) signature() const { return m_signature; }
+
+    override Vector!ubyte serialize() const
+    {
+        Vector!ubyte buf;
+        buf.pushBack(get_byte(0, m_scheme));
+        buf.pushBack(get_byte(1, m_scheme));
+        const ushort sig_len = cast(ushort) m_signature.length;
+        buf.pushBack(get_byte(0, sig_len));
+        buf.pushBack(get_byte(1, sig_len));
+        buf ~= m_signature[];
+        return buf.move();
+    }
+
+private:
+    ushort m_scheme;
+    Vector!ubyte m_signature;
+}
+
 /**
  * New EncryptedExtensions Message used mainly for ChannelIDExtension
  */
@@ -2067,6 +2768,45 @@ protected:
 private:
     Duration m_ticket_lifetime_hint;
     Vector!ubyte m_ticket;
+}
+
+/**
+* RFC 6066 CertificateStatus handshake message (type 22).
+* Body: status_type (1 = OCSP) + 3-byte length + OCSP response.
+*/
+final class CertificateStatus : HandshakeMessage
+{
+public:
+    override const(HandshakeType) type() const { return CERTIFICATE_STATUS; }
+
+    ref const(Vector!ubyte) response() const { return m_response; }
+
+    this(const ref Vector!ubyte buf)
+    {
+        if (buf.length < 5)
+            throw new DecodingError("Invalid Certificate_Status message: too small");
+        if (buf[0] != 1)
+            throw new DecodingError("Unexpected Certificate_Status message: unexpected response type");
+        const size_t len = make_uint(0, buf[1], buf[2], buf[3]);
+        if (buf.length != len + 4)
+            throw new DecodingError("Invalid Certificate_Status: invalid length field");
+        m_response[] = buf.ptr[4 .. buf.length];
+    }
+
+    override Vector!ubyte serialize() const
+    {
+        if (m_response.length > 0xFFFFFF)
+            throw new EncodingError("OCSP response too long to encode in TLS");
+        Vector!ubyte buf;
+        buf.pushBack(1);
+        foreach (size_t j; 0 .. 3)
+            buf.pushBack(get_byte!uint(j + 1, cast(uint) m_response.length));
+        buf ~= m_response[];
+        return buf.move();
+    }
+
+private:
+    Vector!ubyte m_response;
 }
 
 /**

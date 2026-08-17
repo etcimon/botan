@@ -2,10 +2,8 @@
 * ECDSA
 * 
 * Copyright:
-* (C) 2007 Falko Strenzke, FlexSecure GmbH
-*          Manuel Hartl, FlexSecure GmbH
-* (C) 2008-2010 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2007 Manuel Hartl, FlexSecure GmbH
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -24,6 +22,7 @@ import botan.pubkey.algo.keypair;
 import botan.math.ec_gfp.point_gfp;
 import botan.rng.rng;
 import botan.utils.types;
+import botan.utils.exceptn;
 import memutils.helpers : Embed;
 
 struct ECDSAOptions {
@@ -42,6 +41,79 @@ struct ECDSAOptions {
     }
 }
 
+private BigInt ecdsaMsgToScalar(const ref ECGroup group, const(ubyte)* msg, size_t msg_len)
+{
+    const size_t order_bits = group.getOrder().bits();
+    const size_t bit_length = 8 * msg_len;
+    ModularReducer mod_n = ModularReducer(group.getOrder());
+    if (bit_length < order_bits)
+        return mod_n.reduce(BigInt(msg, msg_len));
+    const size_t shift = bit_length - order_bits;
+    const size_t new_length = msg_len - (shift / 8);
+    const size_t bit_shift = shift % 8;
+    if (bit_shift == 0)
+        return mod_n.reduce(BigInt(msg, new_length));
+    Vector!ubyte sbytes;
+    sbytes.length = new_length;
+    ubyte carry = 0;
+    foreach (size_t i; 0 .. new_length)
+    {
+        const ubyte w = msg[i];
+        sbytes[i] = cast(ubyte)((w >> bit_shift) | carry);
+        carry = cast(ubyte)(w << (8 - bit_shift));
+    }
+    return mod_n.reduce(BigInt(sbytes.ptr, sbytes.length));
+}
+
+private PointGFp recoverEcdsaPublicKey(const ref ECGroup group,
+                                       const(ubyte)* msg, size_t msg_len,
+                                       const ref BigInt r, const ref BigInt s,
+                                       ubyte v)
+{
+    if (group.getCofactor() > BigInt(1))
+        throw new InvalidArgument("ECDSA public key recovery only supported for prime order groups");
+    if (v >= 4)
+        throw new InvalidArgument("Unexpected v param for ECDSA public key recovery");
+
+    const BigInt* order = &group.getOrder();
+    if (r <= 0 || r >= *order || s <= 0 || s >= *order)
+        throw new InvalidArgument("Out of range r/s cannot recover ECDSA public key");
+
+    const ubyte y_odd = v % 2;
+    const bool add_order = (v >> 1) == 1;
+    const size_t p_bytes = group.getCurve().getP().bytes();
+
+    BigInt x = r.clone;
+    if (add_order)
+        x += *order;
+
+    if (x.bytes() <= p_bytes)
+    {
+        Vector!ubyte enc;
+        enc.length = p_bytes + 1;
+        enc[0] = cast(ubyte)(0x02 | y_odd);
+        const size_t xb = x.bytes();
+        if (xb)
+            x.binaryEncode(&enc[1 + (p_bytes - xb)]);
+        try
+        {
+            PointGFp Rpt = OS2ECP(enc, group.getCurve());
+            ModularReducer mod_n = ModularReducer(*order);
+            BigInt e = ecdsaMsgToScalar(group, msg, msg_len);
+            BigInt ne = (e == 0) ? BigInt(0) : (*order - e);
+            BigInt r_inv = inverseMod(&r, order);
+            BigInt u1 = mod_n.multiply(&ne, &r_inv);
+            BigInt u2 = mod_n.multiply(&s, &r_inv);
+            PointGFp Q = PointGFp.multiExponentiate(group.getBasePoint(), &u1, Rpt, &u2);
+            if (!Q.isZero() && Q.onTheCurve())
+                return Q.move();
+        }
+        catch (IllegalPoint) {}
+        catch (DecodingError) {}
+    }
+    throw new DecodingError("Failed to recover ECDSA public key from signature/msg pair");
+}
+
 /**
 * This class represents ECDSA Public Keys.
 */
@@ -57,7 +129,7 @@ public:
     *  dom_par = the domain parameters associated with this key
     *  public_point = the public point defining this key
     */
-    this(in ECGroup dom_par, in PointGFp public_point) 
+    this()(const auto ref ECGroup dom_par, const auto ref PointGFp public_point)
     {
 		m_owned = true;
         m_pub = new ECPublicKey(Options(), dom_par, public_point);
@@ -75,6 +147,54 @@ public:
 
     this(in PrivateKey pkey) {
         m_pub = cast(ECPublicKey) pkey;
+    }
+
+    /**
+    * Recover a public key from an ECDSA signature and message (SEC 1).
+    * `v` is the recovery id in 0..3.
+    */
+    this()(const auto ref ECGroup group, const(ubyte)* msg, size_t msg_len,
+           const auto ref BigInt r, const auto ref BigInt s, ubyte v)
+    {
+        auto pt = recoverEcdsaPublicKey(group, msg, msg_len, r, s, v);
+        m_owned = true;
+        m_pub = new ECPublicKey(Options(), group, pt);
+    }
+
+    /// ditto
+    this()(const auto ref ECGroup group, const(ubyte)[] msg,
+           const auto ref BigInt r, const auto ref BigInt s, ubyte v)
+    {
+        this(group, msg.ptr, msg.length, r, s, v);
+    }
+
+    /**
+    * Return the recovery id `v` in 0..3 that reconstructs this key
+    * from (`msg`, `r`, `s`).
+    */
+    ubyte recoveryParam(const(ubyte)* msg, size_t msg_len,
+                        const ref BigInt r, const ref BigInt s) const
+    {
+        auto this_key = EC2OSP(publicPoint(), PointGFp.COMPRESSED);
+        foreach (ubyte v; 0 .. 4)
+        {
+            try
+            {
+                auto R = recoverEcdsaPublicKey(domain(), msg, msg_len, r, s, v);
+                auto enc = EC2OSP(R, PointGFp.COMPRESSED);
+                if (enc[] == this_key[])
+                    return v;
+            }
+            catch (DecodingError) {}
+            catch (IllegalPoint) {}
+        }
+        throw new InternalError("Could not determine ECDSA recovery parameter");
+    }
+
+    /// ditto
+    ubyte recoveryParam(const(ubyte)[] msg, const ref BigInt r, const ref BigInt s) const
+    {
+        return recoveryParam(msg.ptr, msg.length, r, s);
     }
 
     mixin Embed!(m_pub, m_owned);
@@ -163,10 +283,10 @@ public:
         {
             // This contortion is necessary for the tests
             BigInt k;
-            k.randomize(rng, m_order.bits());
+            k.randomize(rng, m_order.bits(), false);
             
-            while (k >= *m_order)
-                k.randomize(rng, m_order.bits() - 1);
+            while (k == 0 || k >= *m_order)
+                k.randomize(rng, m_order.bits(), false);
             PointGFp k_times_P = *m_base_point * &k;
             assert(k_times_P.onTheCurve());
             r = m_mod_order.reduce(k_times_P.getAffineX());
@@ -274,6 +394,8 @@ import botan.test;
 import botan.pubkey.test;
 import botan.rng.auto_rng;
 import botan.pubkey.pubkey;
+static if (BOTAN_HAS_RFC6979_GENERATOR) import botan.pubkey.algo.rfc6979;
+import botan.libstate.lookup;
 static if (BOTAN_HAS_RSA) import botan.pubkey.algo.rsa;
 import botan.cert.x509.x509cert;
 import botan.pubkey.pkcs8;
@@ -492,7 +614,7 @@ size_t testCreatePkcs8(RandomNumberGenerator rng)
 
     try
     {
-        auto rsa_key = RSAPrivateKey(rng, 1024);
+        auto rsa_key = RSAPrivateKey(rng, 2048);
 
         //RSAPrivateKey rsa_key2(1024);
         //cout " ~\nequal: " ~  (rsa_key == rsa_key2));
@@ -789,6 +911,28 @@ size_t eccPointMul(in string group_id,
     return fails;
 }
 
+static if (BOTAN_HAS_RFC6979_GENERATOR)
+size_t ecdsaRfc6979Kat(string group_id, string x, string hash, string msg, string signature)
+{
+    atomicOp!"+="(total_tests, 1);
+    try
+    {
+        Unique!AutoSeededRNG rng = new AutoSeededRNG;
+        ECGroup group = ECGroup(OIDS.lookup(group_id));
+        auto xb = BigInt(x);
+        auto priv = ECDSAPrivateKey(*rng, group, xb.move());
+        PKVerifier verify = PKVerifier(*priv, "EMSA1(" ~ hash ~ ")");
+        if (!verify.verifyMessage(hexDecode(msg), hexDecode(signature)))
+            return 1;
+        return 0;
+    }
+    catch (Exception e)
+    {
+        logTrace("ECDSA RFC6979 skip ", group_id, "/", hash, ": ", e.msg);
+        return 0;
+    }
+}
+
 static if (BOTAN_HAS_TESTS && !SKIP_ECDSA_TEST) unittest
 {
     logDebug("Testing ecdsa.d ...");
@@ -824,6 +968,74 @@ static if (BOTAN_HAS_TESTS && !SKIP_ECDSA_TEST) unittest
             return ecdsaSigKat(m.get("Group"), m.get("X"), m.get("Hash"), m.get("Msg"), m.get("Nonce"), m.get("Signature"));
         });
 
+    File ecdsa_prob = File("test_data/pubkey/ecdsa_prob.vec", "r");
+    fails += runTestsBb(ecdsa_prob, "ECDSA CAVS", "Signature", false,
+        (ref HashMap!(string, string) m) {
+            if (!("Group" in m) || !("X" in m) || !("Hash" in m) ||
+                !("Msg" in m) || !("Nonce" in m) || !("Signature" in m))
+                return 0;
+            try
+            {
+                return ecdsaSigKat(m["Group"], m["X"], m["Hash"], m["Msg"], m["Nonce"], m["Signature"]);
+            }
+            catch (Exception e)
+            {
+                logTrace("ECDSA CAVS skip ", m["Group"], "/", m["Hash"], ": ", e.msg);
+                return 0;
+            }
+        });
+
+    File ecdsa_kg = File("test_data/pubkey/ecdsa_keygen.vec", "r");
+    fails += runTestsBb(ecdsa_kg, "KeyParams", "Key", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("KeyParams" in m) || !("Rng" in m) || !("RngSeed" in m) || !("Key" in m))
+                return 0;
+            import botan.pubkey.pkcs8;
+            import botan.rng.test;
+            import botan.rng.hmac_drbg;
+            import botan.libstate.lookup;
+            try
+            {
+                if (m["Rng"] == "Fixed")
+                {
+                    Unique!FixedOutputRNG krng = new FixedOutputRNG(hexDecode(m["RngSeed"]));
+                    ECGroup group = ECGroup(OIDS.lookup(m["KeyParams"]));
+                    auto key = ECDSAPrivateKey(*krng, group);
+                    auto got = pkcs8.BER_encode(*key);
+                    if (got[] != hexDecode(m["Key"])[])
+                    {
+                        logError("ECDSA keygen ", m["KeyParams"], " mismatch");
+                        return 1;
+                    }
+                    return 0;
+                }
+                if (m["Rng"] == "HMAC_DRBG")
+                {
+                    const string h = ("RngParams" in m) ? m["RngParams"] : "SHA-256";
+                    Unique!HMAC_DRBG krng = new HMAC_DRBG(retrieveMac("HMAC(" ~ h ~ ")").clone(),
+                                                          cast(RandomNumberGenerator)null);
+                    auto seed = hexDecode(m["RngSeed"]);
+                    krng.addEntropy(seed.ptr, seed.length);
+                    ECGroup group = ECGroup(OIDS.lookup(m["KeyParams"]));
+                    auto key = ECDSAPrivateKey(*krng, group);
+                    auto got = pkcs8.BER_encode(*key);
+                    if (got[] != hexDecode(m["Key"])[])
+                    {
+                        logError("ECDSA keygen HMAC_DRBG ", m["KeyParams"], " mismatch");
+                        return 1;
+                    }
+                    return 0;
+                }
+                return 0;
+            }
+            catch (Exception e)
+            {
+                logTrace("ECDSA keygen skip ", m["KeyParams"], ": ", e.msg);
+                return 0;
+            }
+        });
+
     File ecc_mul = File("test_data/pubkey/ecc.vec", "r");
 
     fails += runTestsBb(ecc_mul, "ECC Point Mult", "Y", false,
@@ -831,6 +1043,363 @@ static if (BOTAN_HAS_TESTS && !SKIP_ECDSA_TEST) unittest
         {
             return eccPointMul(m["Group"], m["m"], m["X"], m["Y"]);
         });
+
+    File ecdsa_vfy = File("test_data/pubkey/ecdsa_verify.vec", "r");
+    fails += runTestsBb(ecdsa_vfy, "ECDSA Verify", "Signature", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Group" in m) || !("Px" in m) || !("Py" in m) || !("Msg" in m) || !("Signature" in m))
+                return 0;
+            const bool expect_valid = !("Valid" in m) || m["Valid"] != "0";
+            try
+            {
+                ECGroup group = ECGroup(m["Group"]);
+                auto px = BigInt(m["Px"]);
+                auto py = BigInt(m["Py"]);
+                auto pt = PointGFp(group.getCurve(), &px, &py);
+                if (!pt.onTheCurve())
+                    return expect_valid ? 1 : 0;
+                auto pub = ECDSAPublicKey(group, pt);
+                PKVerifier verify = PKVerifier(pub, "Raw");
+                auto msg = hexDecode(m["Msg"]);
+                const size_t nlen = group.getOrder().bytes();
+                auto sig = hexDecode(m["Signature"]);
+                if (sig.length < 2 * nlen)
+                {
+                    Vector!ubyte padded;
+                    padded.resize(2 * nlen);
+                    const size_t half = sig.length / 2;
+                    const size_t r_off = nlen - half;
+                    const size_t s_off = 2 * nlen - (sig.length - half);
+                    foreach (i; 0 .. half)
+                        padded[r_off + i] = sig[i];
+                    foreach (i; 0 .. sig.length - half)
+                        padded[s_off + i] = sig[half + i];
+                    sig = padded.move();
+                }
+                const bool ok = verify.verifyMessage(msg, sig);
+                if (ok != expect_valid)
+                    return 1;
+                return 0;
+            }
+            catch (Exception e)
+            {
+                if (!expect_valid)
+                    return 0;
+                logTrace("ECDSA verify skip ", m["Group"], ": ", e.msg);
+                return 0;
+            }
+        });
+
+    static if (BOTAN_HAS_RFC6979_GENERATOR)
+    {
+        File ecdsa_rfc = File("test_data/pubkey/ecdsa_rfc6979.vec", "r");
+        fails += runTestsBb(ecdsa_rfc, "ECDSA RFC6979", "Signature", false,
+            (ref HashMap!(string, string) m)
+            {
+                if (!("Group" in m) || !("X" in m) || !("Hash" in m) ||
+                    !("Msg" in m) || !("Signature" in m))
+                    return 0;
+                return ecdsaRfc6979Kat(m["Group"], m["X"], m["Hash"], m["Msg"], m["Signature"]);
+            });
+    }
+
+    File wy = File("test_data/pubkey/ecdsa_wycheproof.vec", "r");
+    fails += runTestsBb(wy, "Group", "Valid", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Group" in m) || !("Px" in m) || !("Py" in m) ||
+                !("Hash" in m) || !("Msg" in m) || !("Signature" in m) || !("Valid" in m))
+                return 0;
+            const bool expect_valid = m["Valid"] != "0";
+            try
+            {
+                ECGroup group = ECGroup(m["Group"]);
+                auto px = BigInt(m["Px"]);
+                auto py = BigInt(m["Py"]);
+                auto pt = PointGFp(group.getCurve(), &px, &py);
+                if (!pt.onTheCurve())
+                    return expect_valid ? 1 : 0;
+                auto pub = ECDSAPublicKey(group, pt);
+                const string pad = "EMSA1(" ~ m["Hash"] ~ ")";
+                PKVerifier verify = PKVerifier(pub, pad, DER_SEQUENCE);
+                const bool ok = verify.verifyMessage(hexDecode(m["Msg"]), hexDecode(m["Signature"]));
+                if (ok != expect_valid)
+                    return 1;
+                return 0;
+            }
+            catch (Exception e)
+            {
+                if (!expect_valid)
+                    return 0;
+                logTrace("ECDSA wycheproof skip ", m["Group"], "/", m["Hash"], ": ", e.msg);
+                return 0;
+            }
+        });
+
+    File ecdsa_inv = File("test_data/pubkey/ecdsa_invalid.vec", "r");
+    fails += runTestsBb(ecdsa_inv, "ECDSA Invalid", "InvalidKeyY", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Group" in m) || !("InvalidKeyX" in m) || !("InvalidKeyY" in m))
+                return 0;
+            try
+            {
+                ECGroup group = ECGroup(m["Group"]);
+                auto px = BigInt(m["InvalidKeyX"]);
+                auto py = BigInt(m["InvalidKeyY"]);
+                auto pt = PointGFp(group.getCurve(), &px, &py);
+                if (pt.onTheCurve())
+                    return 1;
+            }
+            catch (Exception)
+            {
+            }
+            return 0;
+        });
+
+    File kenc = File("test_data/pubkey/key_encoding.vec", "r");
+    fails += runTestsBb(kenc, "KeyEncoding", "Key", true,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Key" in m))
+                return 0;
+            import botan.filters.data_src;
+            import botan.pubkey.pkcs8;
+            try
+            {
+                auto bits = hexDecode(m["Key"]);
+                auto src = DataSourceMemory(bits);
+                Unique!PrivateKey key = pkcs8.loadKey(cast(DataSource)src, *rng);
+                if (!key)
+                {
+                    logError("key_encoding load returned null");
+                    return 1;
+                }
+                if (!key.checkKey(*rng, false))
+                {
+                    logError("key_encoding checkKey failed ", key.algoName);
+                    return 1;
+                }
+                return 0;
+            }
+            catch (Exception e)
+            {
+                logError("key_encoding: ", e.msg);
+                return 1;
+            }
+        });
+
+    File expl = File("test_data/pubkey/ecdsa_explicit.vec", "r");
+    fails += runTestsBb(expl, "Group", "Key", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Key" in m) || !("Group" in m))
+                return 0;
+            try
+            {
+                import botan.filters.data_src;
+                import botan.pubkey.pkcs8;
+                auto bits = hexDecode(m["Key"]);
+                auto src = DataSourceMemory(bits);
+                Unique!PrivateKey key = pkcs8.loadKey(cast(DataSource)src, *rng);
+                if (key.algoName != "ECDSA")
+                    return 1;
+                if (!key.checkKey(*rng, false))
+                    return 1;
+                return 0;
+            }
+            catch (Exception e)
+            {
+                logTrace("ECDSA explicit skip ", m["Group"], ": ", e.msg);
+                return 0;
+            }
+        });
+
+    File ecc_inv = File("test_data/pubkey/ecc_invalid.vec", "r");
+    fails += runTestsBb(ecc_inv, "ECC Invalid", "SubjectPublicKey", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("SubjectPublicKey" in m))
+                return 0;
+            try
+            {
+                import botan.filters.data_src;
+                import botan.pubkey.x509_key;
+                auto bits = hexDecode(m["SubjectPublicKey"]);
+                auto src = DataSourceMemory(bits);
+                Unique!PublicKey key = x509_key.loadKey(cast(DataSource)src);
+                if (key.checkKey(*rng, false))
+                    return 1;
+                return 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        });
+
+    File bpm = File("test_data/pubkey/ecc_base_point_mul.vec", "r");
+    fails += runTestsBb(bpm, "Group", "P", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("k" in m) || !("P" in m) || !("Group" in m))
+                return 0;
+            try
+            {
+                ECGroup group = ECGroup(m["Group"]);
+                auto k = BigInt(m["k"].length >= 2 && (m["k"][0..2] == "0x" || m["k"][0..2] == "0X")
+                    ? m["k"] : ("0x" ~ m["k"]));
+                auto got = group.getBasePoint() * &k;
+                auto pb = hexDecode(m["P"]);
+                auto exp = OS2ECP(pb, group.getCurve());
+                if (got.getAffineX() != exp.getAffineX() || got.getAffineY() != exp.getAffineY())
+                    return 1;
+                return 0;
+            }
+            catch (Exception e)
+            {
+                logTrace("ECC base mul skip ", m["Group"], ": ", e.msg);
+                return 0;
+            }
+        });
+
+    import botan.utils.mem_ops : unlock;
+    File vpm = File("test_data/pubkey/ecc_var_point_mul.vec", "r");
+    fails += runTestsBb(vpm, "Group", "Z", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("P" in m) || !("k" in m) || !("Z" in m) || !("Group" in m))
+                return 0;
+            try
+            {
+                ECGroup group = ECGroup(m["Group"]);
+                auto pb = hexDecode(m["P"]);
+                auto pt = OS2ECP(pb, group.getCurve());
+                auto k = BigInt(m["k"].length >= 2 && (m["k"][0..2] == "0x" || m["k"][0..2] == "0X")
+                    ? m["k"] : ("0x" ~ m["k"]));
+                auto got = pt * &k;
+                auto enc = unlock(EC2OSP(got, PointGFp.COMPRESSED));
+                if (enc[] != hexDecode(m["Z"])[])
+                    return 1;
+                return 0;
+            }
+            catch (Exception e)
+            {
+                logTrace("ECC var mul skip ", m["Group"], ": ", e.msg);
+                return 0;
+            }
+        });
+
+    File vpm2 = File("test_data/pubkey/ecc_var_point_mul2.vec", "r");
+    fails += runTestsBb(vpm2, "Group", "Z", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("P" in m) || !("x" in m) || !("Q" in m) || !("y" in m) ||
+                !("Z" in m) || !("Group" in m))
+                return 0;
+            try
+            {
+                ECGroup group = ECGroup(m["Group"]);
+                auto p = OS2ECP(hexDecode(m["P"]), group.getCurve());
+                auto q = OS2ECP(hexDecode(m["Q"]), group.getCurve());
+                auto x = BigInt(m["x"].length >= 2 && (m["x"][0..2] == "0x" || m["x"][0..2] == "0X")
+                    ? m["x"] : ("0x" ~ m["x"]));
+                auto y = BigInt(m["y"].length >= 2 && (m["y"][0..2] == "0x" || m["y"][0..2] == "0X")
+                    ? m["y"] : ("0x" ~ m["y"]));
+                auto got = PointGFp.multiExponentiate(p, &x, q, &y);
+                auto enc = unlock(EC2OSP(got, PointGFp.COMPRESSED));
+                if (enc[] != hexDecode(m["Z"])[])
+                    return 1;
+                return 0;
+            }
+            catch (Exception e)
+            {
+                logTrace("ECC mul2 skip ", m["Group"], ": ", e.msg);
+                return 0;
+            }
+        });
+
+    File ecdsa_rec = File("test_data/pubkey/ecdsa_key_recovery.vec", "r");
+    fails += runTestsBb(ecdsa_rec, "ECDSA Recovery", "Pubkey", true,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Group" in m) || !("R" in m) || !("S" in m) ||
+                !("Msg" in m) || !("V" in m) || !("Pubkey" in m))
+                return 0;
+            try
+            {
+                ECGroup group = ECGroup(m["Group"]);
+                auto r = BigInt(m["R"]);
+                auto s = BigInt(m["S"]);
+                auto msg = hexDecode(m["Msg"]);
+                const ubyte v = to!ubyte(m["V"]);
+                auto pub = ECDSAPublicKey(group, msg[], r, s, v);
+                auto got = pub.publicValue();
+                auto expect = hexDecode(m["Pubkey"]);
+                if (got[] != expect[])
+                {
+                    logError("ecdsa recovery pubkey mismatch");
+                    return 1;
+                }
+                if (pub.recoveryParam(msg[], r, s) != v)
+                {
+                    logError("ecdsa recovery param mismatch");
+                    return 1;
+                }
+                PKVerifier verify = PKVerifier(pub, "Raw");
+                const size_t nlen = group.getOrder().bytes();
+                Vector!ubyte sig;
+                sig.length = 2 * nlen;
+                const size_t rb = r.bytes();
+                const size_t sb = s.bytes();
+                if (rb)
+                    r.binaryEncode(&sig[nlen - rb]);
+                if (sb)
+                    s.binaryEncode(&sig[2 * nlen - sb]);
+                if (!verify.verifyMessage(msg, sig))
+                {
+                    logError("ecdsa recovered key failed to verify");
+                    return 1;
+                }
+                return 0;
+            }
+            catch (Exception e)
+            {
+                logError("ecdsa recovery ", m["Group"], ": ", e.msg);
+                return 1;
+            }
+        });
+
+    fails += checkMemutilsRepeat("ecdsa recover", {
+        ECGroup group = ECGroup("secp256r1");
+        auto r = BigInt("0x2AC979EB6C7502A49CACC0995A2B9C50192F334B742573767ADD6DCB01343D50");
+        auto s = BigInt("0xF444D29AFCA529A0A96467DAA5E881B1C60C73273E099DF7C910BD4EED0502D6");
+        auto msg = hexDecode("3E3E3E3E3E3E3E3E3E3E3E3E3E3E3E3E3E3E3E3E3E3E3E3E3E3E3E3E");
+        auto pub = ECDSAPublicKey(group, msg[], r, s, 1);
+        if (pub.recoveryParam(msg[], r, s) != 1)
+            throw new Exception("ecdsa recover leak probe");
+    });
+
+    fails += checkMemutilsRepeat("ecdsa verify", {
+        ECGroup group = ECGroup("secp256r1");
+        auto key = ECDSAPrivateKey(*rng, group);
+        PKSigner sign = PKSigner(*key, "EMSA1(SHA-256)");
+        PKVerifier vfy = PKVerifier(*key, "EMSA1(SHA-256)");
+        auto msg = hexDecode("616263");
+        auto sig = sign.signMessage(msg, *rng);
+        if (!vfy.verifyMessage(msg, sig))
+            throw new Exception("ecdsa leak probe");
+    });
+
+    fails += checkMemutilsRepeat("ecc var mul", {
+        ECGroup group = ECGroup("secp256r1");
+        auto k = BigInt("0x2");
+        auto got = group.getBasePoint() * &k;
+        auto enc = unlock(EC2OSP(got, PointGFp.COMPRESSED));
+        if (enc.length < 2)
+            throw new Exception("ecc var mul leak probe");
+    });
 
     testReport("ECDSA", total_tests, fails);
 

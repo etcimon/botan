@@ -2,8 +2,9 @@
 * DSA
 * 
 * Copyright:
-* (C) 1999-2010 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2010,2014,2016,2023 Jack Lloyd
+* (C) 2016 René Korthaus
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -165,8 +166,8 @@ public:
         {
             BigInt k;
             do
-                k.randomize(rng, m_q.bits());
-            while (k >= *m_q);
+                k.randomize(rng, m_q.bits(), false);
+            while (k == 0 || k >= *m_q);
             version(Botan_Threading) {                    
                 import core.sync.mutex, core.sync.condition;
                 Mutex mutex = ThreadMem.alloc!Mutex();
@@ -362,6 +363,8 @@ import botan.rng.auto_rng;
 import botan.pubkey.pubkey;
 import botan.codec.hex;
 import memutils.hashmap;
+static if (BOTAN_HAS_RFC6979_GENERATOR) import botan.pubkey.algo.rfc6979;
+import botan.libstate.lookup;
 
 import core.atomic;
 private shared size_t total_tests;
@@ -423,7 +426,99 @@ static if (BOTAN_HAS_TESTS && !SKIP_DSA_TEST) unittest
             return dsaSigKat(m["P"], m["Q"], m["G"], m["X"], m["Hash"], m["Msg"], m["Nonce"], m["Signature"]);
         });
 
+    File dsa_prob = File("test_data/pubkey/dsa_prob.vec", "r");
+    fails += runTestsBb(dsa_prob, "DSA CAVS", "Signature", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("P" in m) || !("Q" in m) || !("G" in m) || !("X" in m) ||
+                !("Hash" in m) || !("Msg" in m) || !("Nonce" in m) || !("Signature" in m))
+                return 0;
+            try
+            {
+                return dsaSigKat(m["P"], m["Q"], m["G"], m["X"], m["Hash"], m["Msg"], m["Nonce"], m["Signature"]);
+            }
+            catch (Exception e)
+            {
+                logError("DSA CAVS ", m["Hash"], ": ", e.msg);
+                return 1;
+            }
+        });
+
+    static if (BOTAN_HAS_RFC6979_GENERATOR)
+    {
+        File dsa_rfc = File("test_data/pubkey/dsa_rfc6979.vec", "r");
+        fails += runTestsBb(dsa_rfc, "DSA RFC6979", "Signature", false,
+            (ref HashMap!(string, string) m)
+            {
+                if (!("P" in m) || !("Q" in m) || !("G" in m) || !("X" in m) ||
+                    !("Hash" in m) || !("Msg" in m) || !("Signature" in m))
+                    return 0;
+                try
+                {
+                    atomicOp!"+="(total_tests, 1);
+                    Unique!AutoSeededRNG rng = new AutoSeededRNG;
+                    auto p = BigInt(m["P"]);
+                    auto q = BigInt(m["Q"]);
+                    auto g = BigInt(m["G"]);
+                    auto x = BigInt(m["X"]);
+                    DLGroup group = DLGroup(p, q, g);
+                    auto priv = DSAPrivateKey(*rng, group.move(), x.move());
+                    PKVerifier verify = PKVerifier(*priv, "EMSA1(" ~ m["Hash"] ~ ")");
+                    if (!verify.verifyMessage(hexDecode(m["Msg"]), hexDecode(m["Signature"])))
+                        return 1;
+                    return 0;
+                }
+                catch (Exception e)
+                {
+                    logTrace("DSA RFC6979 skip ", m["Hash"], ": ", e.msg);
+                    return 0;
+                }
+            });
+    }
+
+    File dsa_vfy = File("test_data/pubkey/dsa_verify.vec", "r");
+    fails += runTestsBb(dsa_vfy, "DSA Verify", "Signature", true,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("P" in m) || !("Y" in m) || !("Msg" in m) || !("Signature" in m))
+                return 0;
+            atomicOp!"+="(total_tests, 1);
+            auto p = BigInt(m["P"]);
+            auto q = BigInt(m["Q"]);
+            auto g = BigInt(m["G"]);
+            auto y = BigInt(m["Y"]);
+            DLGroup group = DLGroup(p, q, g);
+            auto pub = DSAPublicKey(group.move(), y.move());
+            PKVerifier verify = PKVerifier(*pub, "Raw");
+            if (!verify.verifyMessage(hexDecode(m["Msg"]), hexDecode(m["Signature"])))
+                return 1;
+            return 0;
+        });
+
     fails += testPkKeygen(*rng);
+
+    fails += checkMemutilsRepeat("dsa verify", {
+        File once = File("test_data/pubkey/dsa_verify.vec", "r");
+        size_t seen;
+        auto n = runTestsBb(once, "DSA Verify", "Signature", true,
+            (ref HashMap!(string, string) m)
+            {
+                if (seen++)
+                    return 0;
+                auto p = BigInt(m["P"]);
+                auto q = BigInt(m["Q"]);
+                auto g = BigInt(m["G"]);
+                auto y = BigInt(m["Y"]);
+                DLGroup group = DLGroup(p, q, g);
+                auto pub = DSAPublicKey(group.move(), y.move());
+                PKVerifier verify = PKVerifier(*pub, "Raw");
+                if (!verify.verifyMessage(hexDecode(m["Msg"]), hexDecode(m["Signature"])))
+                    throw new Exception("dsa leak probe");
+                return 0;
+            });
+        if (n)
+            throw new Exception("dsa leak probe fails");
+    });
     
     testReport("dsa", total_tests, fails);
 }

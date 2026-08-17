@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -116,10 +116,14 @@ protected:
 
         m_MK.resize(48);
         m_RK.resize(48);
-        
+
+        // C++ 3.13: zero-pad to 16 then load_be, so leftover bytes sit in the MSB.
+        ubyte[16] key16;
+        key16[] = 0;
+        key16[0 .. length] = key[0 .. length];
         SecureVector!uint X = SecureVector!uint(4);
-        foreach (size_t i; 0 .. length)
-            X[i/4] = (X[i/4] << 8) + key[i];
+        foreach (size_t i; 0 .. 4)
+            X[i] = loadBigEndian!uint(key16.ptr, i);
         
         cast_ks(m_MK, X);
         

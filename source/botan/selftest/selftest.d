@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -11,7 +11,7 @@
 module botan.selftest.selftest;
 
 import botan.constants;
-static if (BOTAN_HAS_SELFTESTS && BOTAN_HAS_PUBLIC_KEY_CRYPTO):
+static if (BOTAN_HAS_SELFTESTS && BOTAN_HAS_PUBLIC_KEY_CRYPTO && BOTAN_HAS_CODEC_FILTERS):
 
 import botan.algo_factory.algo_factory;
 import botan.algo_base.scan_token;

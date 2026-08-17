@@ -1,0 +1,56 @@
+
+# Empty string is accepted by all supported string types
+Input =
+ValidNumeric = true
+ValidPrintable = true
+ValidIa5 = true
+ValidVisible = true
+ValidUtf8 = true
+
+# Digits are accepted by all subset string types
+Input = 9999
+ValidNumeric = true
+ValidPrintable = true
+ValidIa5 = true
+ValidVisible = true
+ValidUtf8 = true
+
+# Lower-case ASCII is not NumericString
+Input = notnumeric
+ValidNumeric = false
+ValidPrintable = true
+ValidIa5 = true
+ValidVisible = true
+ValidUtf8 = true
+
+# Apostrophe is allowed in PrintableString
+Input = O'Paddigons
+ValidNumeric = false
+ValidPrintable = true
+ValidIa5 = true
+ValidVisible = true
+ValidUtf8 = true
+
+# Asterisk is visible IA5 but not PrintableString
+Input = Wildcard*Time
+ValidNumeric = false
+ValidPrintable = false
+ValidIa5 = true
+ValidVisible = true
+ValidUtf8 = true
+
+# Contains a literal tab between 'a' and 'b'
+Input = a	b
+ValidNumeric = false
+ValidPrintable = false
+ValidIa5 = true
+ValidVisible = false
+ValidUtf8 = true
+
+# Valid UTF-8, not an ASCII subset
+Input = Fancé
+ValidNumeric = false
+ValidPrintable = false
+ValidIa5 = false
+ValidVisible = false
+ValidUtf8 = true

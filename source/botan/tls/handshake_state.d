@@ -2,8 +2,8 @@
 * TLS Handshake State
 * 
 * Copyright:
-* (C) 2004-2006,2011,2012,2015 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2004-2006,2011,2012,2015,2016 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -397,6 +397,36 @@ public:
 
     ref const(SecureVector!ubyte) originalHandshakeHash() const { return m_orig_hs_hash; }
 
+    static if (BOTAN_HAS_TLS_13)
+    {
+        void tls13SetHsTraffic(string hash_name,
+                              SecureVector!ubyte handshake_secret,
+                              SecureVector!ubyte client_hs,
+                              SecureVector!ubyte server_hs)
+        {
+            m_tls13_hash = hash_name;
+            m_tls13_hs_secret = handshake_secret.move();
+            m_tls13_c_hs = client_hs.move();
+            m_tls13_s_hs = server_hs.move();
+        }
+
+        string tls13HashName() const { return m_tls13_hash; }
+        ref const(SecureVector!ubyte) tls13HandshakeSecret() const { return m_tls13_hs_secret; }
+        ref const(SecureVector!ubyte) tls13ClientHs() const { return m_tls13_c_hs; }
+        ref const(SecureVector!ubyte) tls13ServerHs() const { return m_tls13_s_hs; }
+        bool tls13HaveHsTraffic() const { return m_tls13_c_hs.length != 0 && m_tls13_s_hs.length != 0; }
+
+        void tls13SetAppTraffic(SecureVector!ubyte client_ap, SecureVector!ubyte server_ap)
+        {
+            m_tls13_c_ap = client_ap.move();
+            m_tls13_s_ap = server_ap.move();
+        }
+
+        ref const(SecureVector!ubyte) tls13ClientApp() const { return m_tls13_c_ap; }
+        ref const(SecureVector!ubyte) tls13ServerApp() const { return m_tls13_s_ap; }
+        bool tls13HaveAppTraffic() const { return m_tls13_c_ap.length != 0 && m_tls13_s_ap.length != 0; }
+    }
+
     ref HandshakeHash hash() { return m_handshake_hash; }
 
     ref const(HandshakeHash) hash() const { return m_handshake_hash; }
@@ -436,6 +466,15 @@ private:
     Unique!NewSessionTicket m_new_session_ticket;
     Unique!Finished m_server_finished;
     Unique!Finished m_client_finished;
+    static if (BOTAN_HAS_TLS_13)
+    {
+        string m_tls13_hash;
+        SecureVector!ubyte m_tls13_hs_secret;
+        SecureVector!ubyte m_tls13_c_hs;
+        SecureVector!ubyte m_tls13_s_hs;
+        SecureVector!ubyte m_tls13_c_ap;
+        SecureVector!ubyte m_tls13_s_ap;
+    }
 }
 
 
@@ -489,6 +528,12 @@ uint bitmaskForHandshakeType(HandshakeType type)
             
         case HANDSHAKE_CCS:
             return (1 << 13);
+
+        case ENCRYPTED_EXTENSIONS:
+            return (1 << 15);
+
+        case END_OF_EARLY_DATA:
+            return (1 << 16);
             
         case FINISHED:
             return (1 << 14);

@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 1999-2008 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -47,6 +47,10 @@ static if (BOTAN_HAS_ENTROPY_SRC_HIGH_RESOLUTION_TIMER)
     import botan.entropy.hres_timer;
 static if (BOTAN_HAS_ENTROPY_SRC_RDRAND)
     import botan.entropy.rdrand;
+static if (BOTAN_HAS_ENTROPY_SRC_RDSEED)
+    import botan.entropy.rdseed;
+static if (BOTAN_HAS_ENTROPY_SRC_GETENTROPY)
+    import botan.entropy.getentropy;
 static if (BOTAN_HAS_ENTROPY_SRC_DEV_RANDOM)
     import botan.entropy.dev_random;
 static if (BOTAN_HAS_ENTROPY_SRC_EGD)
@@ -192,6 +196,12 @@ private:
 
         static if (BOTAN_HAS_ENTROPY_SRC_RDRAND)
             sources.pushBack(new IntelRdrand);
+
+        static if (BOTAN_HAS_ENTROPY_SRC_RDSEED)
+            sources.pushBack(new IntelRdseed);
+
+        static if (BOTAN_HAS_ENTROPY_SRC_GETENTROPY)
+            sources.pushBack(new Getentropy);
 
         static if (BOTAN_HAS_ENTROPY_SRC_DEV_RANDOM) version(Posix)
             sources.pushBack(new DeviceEntropySource(

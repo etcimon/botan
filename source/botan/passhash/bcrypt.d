@@ -2,8 +2,8 @@
 * Bcrypt Password Hashing
 * 
 * Copyright:
-* (C) 2011 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2010,2018,2020 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -46,7 +46,8 @@ string generateBcrypt(in string password,
 bool checkBcrypt(in string password, in string hash)
 {
     if (hash.length != 60 ||
-        hash[0] != '$' || hash[1] != '2' || hash[2] != 'a' ||
+        hash[0] != '$' || hash[1] != '2' ||
+        (hash[2] != 'a' && hash[2] != 'b' && hash[2] != 'y') ||
         hash[3] != '$' || hash[6] != '$')
     {
         return false;
@@ -63,6 +64,9 @@ bool checkBcrypt(in string password, in string hash)
 		foreach (i, immutable(char) c; hash) {
 			foreach (j, immutable(char) c2; compare) {
 				if (i != j) continue;
+				// $2b$ / $2y$ store the same 2a crypt; only the version letter differs.
+				if (i == 2)
+					continue;
 				if (c != c2) {
 					valid = false;
 				}
@@ -162,7 +166,7 @@ string makeBcrypt()(in string pass,
     
     Unique!Blowfish blowfish = new Blowfish;
     
-    // Include the trailing NULL ubyte
+    // Include the trailing NULL ubyte (eksKeySchedule caps at 72)
     blowfish.eksKeySchedule(cast(const(ubyte)*) pass.toStringz, pass.length + 1, salt.ptr[0 .. 16], work_factor);
     
     foreach (size_t i; 0 .. 64)  {
@@ -182,6 +186,9 @@ string makeBcrypt()(in string pass,
 static if (BOTAN_TEST):
 import botan.test;
 import botan.rng.auto_rng;
+import botan.codec.hex;
+import memutils.hashmap;
+import std.stdio : File;
 
 static if (BOTAN_HAS_TESTS && !SKIP_BCRYPT_TEST) unittest
 {
@@ -204,6 +211,19 @@ static if (BOTAN_HAS_TESTS && !SKIP_BCRYPT_TEST) unittest
         fails++;
     }
     
+    File bvec = File("test_data/passhash/bcrypt.vec", "r");
+    fails += runTestsBb(bvec, "Bcrypt", "Passhash", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Passhash" in m) || !("Password" in m))
+                return 0;
+            auto pw = hexDecode(m["Password"]);
+            string pass = cast(string) pw[];
+            if (!checkBcrypt(pass, m["Passhash"]))
+                return 1;
+            return 0;
+        });
+
     Unique!AutoSeededRNG rng = new AutoSeededRNG;
     
     for(ushort level = 1; level != 5; ++level)
@@ -218,5 +238,12 @@ static if (BOTAN_HAS_TESTS && !SKIP_BCRYPT_TEST) unittest
         }
     }
     
+    fails += checkMemutilsRepeat("bcrypt", {
+        if (!checkBcrypt("abc", "$2a$05$DfPyLs.G6.To9fXEFgUL1O6HpYw3jIXgPcl/L3Qt3jESuWmhxtmpS"))
+            throw new Exception("bcrypt leak probe");
+    });
+
     testReport("Bcrypt", 6, fails);
+    if (fails)
+        assert(fails == 0);
 }

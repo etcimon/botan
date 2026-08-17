@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 2011 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -192,34 +192,30 @@ size_t keywrapTest(string key_str,
 
 static if (BOTAN_HAS_TESTS && !SKIP_RFC3394_TEST) unittest
 {
+    import botan.libstate.global_state;
+    import memutils.hashmap;
+    import std.stdio : File;
+    auto state = globalState();
     logDebug("Testing rfc3394.d ...");
 
     size_t fails = 0;
-    
-    fails += keywrapTest("00112233445566778899AABBCCDDEEFF",
-                         "1FA68B0A8112B447AEF34BD8FB5A7B829D3E862371D2CFE5",
-                         "000102030405060708090A0B0C0D0E0F");
-    
-    fails += keywrapTest("00112233445566778899AABBCCDDEEFF",
-                         "96778B25AE6CA435F92B5B97C050AED2468AB8A17AD84E5D",
-                         "000102030405060708090A0B0C0D0E0F1011121314151617");
-    
-    fails += keywrapTest("00112233445566778899AABBCCDDEEFF",
-                         "64E8C3F9CE0F5BA263E9777905818A2A93C8191E7D6E8AE7",
-                         "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F");
-    
-    fails += keywrapTest("00112233445566778899AABBCCDDEEFF0001020304050607",
-                         "031D33264E15D33268F24EC260743EDCE1C6C7DDEE725A936BA814915C6762D2",
-                         "000102030405060708090A0B0C0D0E0F1011121314151617");
-    
-    fails += keywrapTest("00112233445566778899AABBCCDDEEFF0001020304050607",
-                         "A8F9BC1612C68B3FF6E6F4FBE30E71E4769C8B80A32CB8958CD5D17D6B254DA1",
-                         "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F");
-    
-    fails += keywrapTest("00112233445566778899AABBCCDDEEFF000102030405060708090A0B0C0D0E0F",
-                         "28C9F404C4B810F4CBCCB35CFB87F8263F5786E2D80ED326CBC7F0E71A99F43BFB988B9B7A02DD21",
-                         "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F");
-    
-    testReport("rfc3394", 6, fails);
+    File vec = File("test_data/keywrap/rfc3394.vec", "r");
+    fails += runTestsBb(vec, "RFC3394", "Output", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Key" in m) || !("KEK" in m) || !("Output" in m))
+                return 0;
+            return keywrapTest(m["Key"], m["Output"], m["KEK"]);
+        });
 
+    fails += checkMemutilsRepeat("rfc3394", {
+        if (keywrapTest("00112233445566778899AABBCCDDEEFF",
+                        "1FA68B0A8112B447AEF34BD8FB5A7B829D3E862371D2CFE5",
+                        "000102030405060708090A0B0C0D0E0F"))
+            throw new Exception("rfc3394 leak probe");
+    });
+
+    if (fails)
+        logError("rfc3394 failures: ", fails);
+    assert(fails == 0);
 }

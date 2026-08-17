@@ -3,9 +3,8 @@
 * 
 * Copyright:
 * (C) 2007 Falko Strenzke, FlexSecure GmbH
-*             Manuel Hartl, FlexSecure GmbH
-* (C) 2008-2010 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2008-2010,2015,2018,2024 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -22,6 +21,7 @@ import botan.pubkey.algo.gost_3410;
 import botan.asn1.der_enc;
 import botan.asn1.ber_dec;
 import botan.math.ec_gfp.point_gfp;
+import botan.math.ec_gfp.curve_gfp;
 import botan.rng.rng;
 import std.algorithm;
 import memutils.helpers : Embed;
@@ -384,6 +384,119 @@ static if (BOTAN_HAS_TESTS && !SKIP_GOST_TEST) unittest
         (ref HashMap!(string, string) m) {
             return gostVerify(m["Group"], m["Pubkey"], m["Hash"], m["Msg"], m["Signature"]);
         });
+
+    File gost_vfy = File("test_data/pubkey/gost_3410_verify.vec", "r");
+    fails += runTestsBb(gost_vfy, "GOST Explicit", "Signature", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("P" in m) || !("A" in m) || !("B" in m) || !("Gx" in m) ||
+                !("Gy" in m) || !("Order" in m) || !("Px" in m) || !("Py" in m) ||
+                !("Hash" in m) || !("Msg" in m) || !("Signature" in m))
+                return 0;
+            atomicOp!"+="(total_tests, 1);
+            try
+            {
+                auto p = BigInt(m["P"]);
+                auto a = BigInt(m["A"]);
+                auto b = BigInt(m["B"]);
+                auto curve = CurveGFp(&p, &a, &b);
+                auto gx = BigInt(m["Gx"]);
+                auto gy = BigInt(m["Gy"]);
+                auto G = PointGFp(curve, &gx, &gy);
+                auto n = BigInt(m["Order"]);
+                auto h = BigInt(1);
+                auto oid = ("Oid" in m) ? m["Oid"] : "";
+                ECGroup group = ECGroup(curve, G, n, h, oid);
+                auto px = BigInt(m["Px"]);
+                auto py = BigInt(m["Py"]);
+                auto pt = PointGFp(group.getCurve(), &px, &py);
+                auto gost = GOST3410PublicKey(group, pt);
+                string padding = m["Hash"];
+                if (padding != "Raw")
+                    padding = "EMSA1(" ~ padding ~ ")";
+                PKVerifier v = PKVerifier(gost, padding);
+                if (!v.verifyMessage(hexDecode(m["Msg"]), hexDecode(m["Signature"])))
+                    return 1;
+                return 0;
+            }
+            catch (Exception e)
+            {
+                logError("GOST explicit verify: ", e.msg);
+                return 1;
+            }
+        });
+
+    File gost_sign = File("test_data/pubkey/gost_3410_sign.vec", "r");
+    fails += runTestsBb(gost_sign, "GOST Sign", "Signature", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("P" in m) || !("A" in m) || !("B" in m) || !("Gx" in m) ||
+                !("Gy" in m) || !("Order" in m) || !("X" in m) || !("Hash" in m) ||
+                !("Msg" in m) || !("Signature" in m))
+                return 0;
+            atomicOp!"+="(total_tests, 1);
+            try
+            {
+                auto p = BigInt(m["P"]);
+                auto a = BigInt(m["A"]);
+                auto b = BigInt(m["B"]);
+                auto curve = CurveGFp(&p, &a, &b);
+                auto gx = BigInt(m["Gx"]);
+                auto gy = BigInt(m["Gy"]);
+                auto G = PointGFp(curve, &gx, &gy);
+                auto n = BigInt(m["Order"]);
+                auto h = BigInt(1);
+                auto oid = ("Oid" in m) ? m["Oid"] : "";
+                ECGroup group = ECGroup(curve, G, n, h, oid);
+                auto x = BigInt(m["X"]);
+                auto priv = GOST3410PrivateKey(*rng, group, x.move());
+                string padding = m["Hash"];
+                if (padding != "Raw")
+                    padding = "EMSA1(" ~ padding ~ ")";
+                PKVerifier v = PKVerifier(priv, padding);
+                if (!v.verifyMessage(hexDecode(m["Msg"]), hexDecode(m["Signature"])))
+                    return 1;
+                return 0;
+            }
+            catch (Exception e)
+            {
+                logError("GOST sign verify: ", e.msg);
+                return 1;
+            }
+        });
+
+    fails += checkMemutilsRepeat("gost explicit", {
+        File once = File("test_data/pubkey/gost_3410_verify.vec", "r");
+        size_t seen;
+        auto n = runTestsBb(once, "GOST Explicit", "Signature", false,
+            (ref HashMap!(string, string) m)
+            {
+                if (seen++)
+                    return 0;
+                if (!("P" in m) || !("Px" in m) || !("Signature" in m))
+                    return 0;
+                auto p = BigInt(m["P"]);
+                auto a = BigInt(m["A"]);
+                auto b = BigInt(m["B"]);
+                auto curve = CurveGFp(&p, &a, &b);
+                auto gx = BigInt(m["Gx"]);
+                auto gy = BigInt(m["Gy"]);
+                auto G = PointGFp(curve, &gx, &gy);
+                auto ord = BigInt(m["Order"]);
+                auto cof = BigInt(1);
+                ECGroup group = ECGroup(curve, G, ord, cof, m.get("Oid", ""));
+                auto px = BigInt(m["Px"]);
+                auto py = BigInt(m["Py"]);
+                auto pt = PointGFp(group.getCurve(), &px, &py);
+                auto gost = GOST3410PublicKey(group, pt);
+                PKVerifier v = PKVerifier(gost, "Raw");
+                if (!v.verifyMessage(hexDecode(m["Msg"]), hexDecode(m["Signature"])))
+                    throw new Exception("gost leak probe");
+                return 0;
+            });
+        if (n)
+            throw new Exception("gost leak probe");
+    });
     
     testReport("gost_3410", total_tests, fails);
 }

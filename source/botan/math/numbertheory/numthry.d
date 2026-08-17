@@ -2,8 +2,9 @@
 * Number Theory Functions
 * 
 * Copyright:
-* (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2011,2016,2018,2019 Jack Lloyd
+* (C) 2007,2008 Falko Strenzke, FlexSecure GmbH
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -101,7 +102,18 @@ BigInt subMul(const(BigInt)* a, const(BigInt)* b, const(BigInt)* c)
 */
 BigInt gcd(const(BigInt)* a, const(BigInt)* b)
 {
-    if (a.isZero() || b.isZero()) return BigInt(0);
+    if (a.isZero())
+    {
+        BigInt r = b.clone;
+        r.setSign(BigInt.Positive);
+        return r.move();
+    }
+    if (b.isZero())
+    {
+        BigInt r = a.clone;
+        r.setSign(BigInt.Positive);
+        return r.move();
+    }
     if (*a == 1 || *b == 1)         return BigInt(1);
     
     BigInt x = a.clone, y = b.clone;
@@ -372,6 +384,43 @@ BigInt ressol(const(BigInt)* a, const(BigInt)* p)
     return r.move();
 }
 
+/**
+* Integer square-root test (C++ `is_perfect_square`).
+* Returns the non-negative root if `C` is a perfect square, else 0.
+*/
+BigInt isPerfectSquare(const(BigInt)* C)
+{
+    if (*C < 1)
+        throw new InvalidArgument("isPerfectSquare requires C >= 1");
+    if (*C == 1)
+        return BigInt(1);
+
+    const size_t n = C.bits();
+    const size_t m = (n + 1) / 2;
+    auto p2 = BigInt.powerOf2(m);
+    auto B = (*C) + p2;
+
+    auto X = BigInt.powerOf2(m);
+    auto one = BigInt(1);
+    X -= one;
+    auto X2 = X * X;
+
+    for (;;)
+    {
+        auto two_x = X.clone;
+        two_x <<= 1;
+        auto num = X2 + *C;
+        X = num / two_x;
+        X2 = X * X;
+        if (X2 < B)
+            break;
+    }
+
+    if (X2 == *C)
+        return X.move();
+    return BigInt(0);
+}
+
 /*
 * Compute -input^-1 mod 2^MP_WORD_BITS. Returns zero if input
 * is even. If input is odd, input and 2^n are relatively prime
@@ -467,7 +516,7 @@ bool isPrime(const(BigInt)* n, RandomNumberGenerator rng, size_t prob = 56, bool
     if (*n <= PRIMES[PRIME_TABLE_SIZE-1])
     {
         const ushort num = cast(ushort) n.wordAt(0);
-        auto r = assumeSorted(PRIMES[0..$]);
+        auto r = assumeSorted(PRIMES[0 .. PRIME_TABLE_SIZE]);
         return !r.equalRange(num).empty;
     }
 
@@ -587,6 +636,90 @@ BigInt randomPrime(RandomNumberGenerator rng,
 }
 
 /**
+* C++ `generate_rsa_prime`: p ≡ 3 (mod 4), high two bits set, step 4.
+* First a single Miller–Rabin trial, then C++ 3.13 random-candidate counts
+* (prob 128) so HMAC_DRBG KATs consume the same witness stream.
+*/
+BigInt generateRsaPrime(RandomNumberGenerator rng, size_t bits, const(BigInt)* coprime, size_t prob = 128)
+{
+    if (bits < 512)
+        throw new InvalidArgument("generateRsaPrime bits too small");
+    if (*coprime <= 1 || coprime.isEven() || coprime.bits() > 64)
+        throw new InvalidArgument("generateRsaPrime coprime must be small odd positive integer");
+
+    const size_t MAX_ATTEMPTS = 32 * 1024;
+    const size_t sieve_size = min(bits, PRIME_TABLE_SIZE);
+    // C++ miller_rabin_test_iterations(bits, 128, true)
+    size_t mr_trials = (128 + 2) / 2;
+    if (bits >= 1536) mr_trials = 4;
+    else if (bits >= 1024) mr_trials = 6;
+    else if (bits >= 512) mr_trials = 12;
+    else if (bits >= 256) mr_trials = 29;
+
+    bool rsaMr(const(BigInt)* cand, size_t trials)
+    {
+        if (*cand < 3 || cand.isEven())
+            return false;
+        auto two = BigInt(2);
+        auto n_minus_1 = *cand - 1;
+        const size_t s = lowZeroBits(&n_minus_1);
+        auto nm1s = n_minus_1 >> s;
+        auto pow_mod = scoped!FixedExponentPowerModImpl(&nm1s, cast(BigInt*) cand);
+        ModularReducer reducer = ModularReducer(*cand);
+        foreach (i; 0 .. trials)
+        {
+            const BigInt a = BigInt.randomInteger(rng, two, *cand);
+            BigInt y = cast(BigInt) pow_mod.opCall(cast(BigInt*)&a);
+            if (mrWitness(y, reducer, &n_minus_1, s))
+                return false;
+        }
+        return true;
+    }
+
+    while (true)
+    {
+        BigInt p = BigInt(rng, bits);
+        p.setBit(bits - 1);
+        p.setBit(bits - 2);
+        p.setBit(1);
+        p.setBit(0);
+
+        auto sieve = new uint[sieve_size];
+        foreach (j; 0 .. sieve_size)
+            sieve[j] = cast(uint)(p % PRIMES[j]);
+
+        foreach (attempt; 0 .. MAX_ATTEMPTS + 1)
+        {
+            p += 4;
+            bool passes = true;
+            foreach (j; 0 .. sieve_size)
+            {
+                sieve[j] = (sieve[j] + 4) % cast(uint) PRIMES[j];
+                if (sieve[j] == 0)
+                    passes = false;
+            }
+            if (!passes)
+                continue;
+            if (!rsaMr(&p, 1))
+                continue;
+            auto one = BigInt(1);
+            auto p_1 = p - one;
+            if (gcd(&p_1, coprime) > one)
+                continue;
+            if (p.bits() > bits)
+                break;
+            if (rsaMr(&p, mr_trials))
+                return p.move();
+        }
+    }
+}
+
+BigInt generateRsaPrime()(RandomNumberGenerator rng, size_t bits, const auto ref BigInt coprime, size_t prob = 128)
+{
+    return generateRsaPrime(rng, bits, &coprime, prob);
+}
+
+/**
 * Return a random 'safe' prime, of the form p=2*q+1 with q prime
 * Params:
 *  rng = a random number generator
@@ -649,7 +782,8 @@ bool generateDsaPrimes()(RandomNumberGenerator rng,
                          AlgorithmFactory af,
                          ref BigInt p_out, ref BigInt q_out,
                          size_t pbits, size_t qbits,
-                         const auto ref Vector!ubyte seed_c)
+                         const auto ref Vector!ubyte seed_c,
+                         size_t offset = 0)
 {
     if (!fips1863ValidSize(pbits, qbits))
         throw new InvalidArgument(
@@ -658,8 +792,9 @@ bool generateDsaPrimes()(RandomNumberGenerator rng,
     if (seed_c.length * 8 < qbits)
         throw new InvalidArgument("Generating a DSA parameter set with a " ~ to!string(qbits) ~ 
                                    "long q requires a seed at least as many bits long");
-    
-    Unique!HashFunction hash = af.makeHashFunction("SHA-" ~ to!string(qbits));
+
+    const string hash_name = (qbits == 160) ? "SHA-1" : ("SHA-" ~ to!string(qbits));
+    Unique!HashFunction hash = af.makeHashFunction(hash_name);
     
     const size_t HASH_SIZE = hash.outputLength;
     
@@ -698,7 +833,8 @@ bool generateDsaPrimes()(RandomNumberGenerator rng,
     BigInt X;
     Vector!ubyte V = Vector!ubyte(HASH_SIZE * (n+1));
     
-    foreach (size_t j; 0 .. 4096)
+    const size_t rounds = 4 * pbits;
+    foreach (size_t j; 0 .. rounds)
     {
         for (size_t k = 0; k <= n; ++k)
         {
@@ -706,14 +842,17 @@ bool generateDsaPrimes()(RandomNumberGenerator rng,
             hash.update(seed);
             hash.flushInto(&V[HASH_SIZE * (n-k)]);
         }
-        
-        X.binaryDecode(&V[HASH_SIZE - 1 - b/8], V.length - (HASH_SIZE - 1 - b/8));
-        X.setBit(pbits-1);
-        
-        p_out = X - (X % (q_out*2) - 1);
-        
-        if (p_out.bits() == pbits && isPrime(&p_out, rng))
-            return true;
+
+        if (j >= offset)
+        {
+            X.binaryDecode(&V[HASH_SIZE - 1 - b/8], V.length - (HASH_SIZE - 1 - b/8));
+            X.setBit(pbits-1);
+
+            p_out = X - (X % (q_out*2) - 1);
+
+            if (p_out.bits() == pbits && isPrime(&p_out, rng))
+                return true;
+        }
     }
     return false;
 }

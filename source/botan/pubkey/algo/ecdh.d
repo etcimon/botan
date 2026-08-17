@@ -2,10 +2,8 @@
 * ECDH
 * 
 * Copyright:
-* (C) 2007 Falko Strenzke, FlexSecure GmbH
-*          Manuel Hartl, FlexSecure GmbH
-* (C) 2008-2010 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2007 Manuel Hartl, FlexSecure GmbH
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -151,6 +149,10 @@ import botan.pubkey.pubkey;
 import botan.cert.x509.x509self;
 import botan.asn1.der_enc;
 import botan.rng.auto_rng;
+import botan.codec.hex;
+import botan.math.bigint.bigint;
+import memutils.hashmap;
+import std.stdio : File;
 import core.atomic : atomicOp;
 shared(size_t) total_tests;
 
@@ -254,6 +256,81 @@ static if (BOTAN_HAS_TESTS && !SKIP_ECDH_TEST) unittest
     fails += testEcdhNormalDerivation(*rng);
     fails += testEcdhSomeDp(*rng);
     fails += testEcdhDerDerivation(*rng);
+
+    File ecdh_vec = File("test_data/pubkey/ecdh.vec", "r");
+    fails += runTestsBb(ecdh_vec, "Group", "K", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Secret" in m) || !("CounterKey" in m) || !("K" in m))
+                return 0;
+            try
+            {
+                ECGroup group = ECGroup(m["Group"]);
+                auto x = BigInt(m["Secret"]);
+                auto priv = ECDHPrivateKey(*rng, group, x.move());
+                auto ka = scoped!PKKeyAgreement(priv, "Raw");
+                auto peer = hexDecode(m["CounterKey"]);
+                auto got = ka.deriveKey(0, peer);
+                auto expect = hexDecode(m["K"]);
+                if (got.bitsOf()[] != expect[])
+                    return 1;
+                return 0;
+            }
+            catch (Exception e)
+            {
+                logError("ECDH KAT ", m["Group"], ": ", e.msg);
+                return 2;
+            }
+        });
+
+    File ecp = File("test_data/pubkey/ecc-key-and-param.vec", "r");
+    fails += runTestsBb(ecp, "ECC Key+Param", "valid", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("key" in m) || !("valid" in m))
+                return 0;
+            import botan.asn1.alg_id;
+            import botan.asn1.oids;
+            import botan.asn1.der_enc;
+            const bool want_ok = m["valid"] == "true";
+            const string param = ("param" in m) ? m["param"] : "";
+            try
+            {
+                auto oid = OID("1.3.132.1.12");
+                Vector!ubyte enc;
+                if (param.length)
+                {
+                    auto poid = OID(param);
+                    enc = DEREncoder().encode(poid).getContentsUnlocked();
+                }
+                auto alg = AlgorithmIdentifier(oid, enc);
+                auto bits = SecureVector!ubyte(hexDecode(m["key"])[]);
+                auto key = ECDHPrivateKey(alg, bits);
+                if (!want_ok)
+                {
+                    logError("ecc-key-and-param accepted invalid pair");
+                    return 1;
+                }
+                return 0;
+            }
+            catch (Exception)
+            {
+                if (want_ok)
+                    return 1;
+                return 0;
+            }
+        });
+
+    fails += checkMemutilsRepeat("ecdh secp256r1", {
+        ECGroup group = ECGroup("secp256r1");
+        auto x = BigInt("0x2");
+        auto priv = ECDHPrivateKey(*rng, group, x.move());
+        auto ka = scoped!PKKeyAgreement(priv, "Raw");
+        auto peer = priv.publicValue();
+        auto got = ka.deriveKey(0, peer);
+        if (!got.length)
+            throw new Exception("ecdh leak probe");
+    });
     
     testReport("ECDH", total_tests, fails);
 }

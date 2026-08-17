@@ -4,7 +4,7 @@ License
 Botan (http://botan.randombit.net/) is distributed under these terms:
 
 ```
-  Copyright (C) 1999-2015 Jack Lloyd
+  Copyright (C) 1999-2026 Jack Lloyd
                 2001 Peter J Jones
                 2004-2007 Justin Karneges
                 2004 Vaclav Ovsik
@@ -25,7 +25,30 @@ Botan (http://botan.randombit.net/) is distributed under these terms:
                 2012-2014 Markus Wanner
                 2013 Joel Low
                 2014 Andrew Moon
-                2014-2015 Etienne Cimon
+                2014-2026 Etienne Cimon
+                2015 Simon Warta (Kullo GmbH)
+                2016 René Korthaus
+                2016 Daniel Neus
+                2016 Matthias Gierlings
+                2016 Tobias Niemann
+                2016 Philipp Weber
+                2016 Juraj Somorovsky
+                2016 Christian Mainka
+                2016 Kai Michaelis
+                2017 Harry Reimann
+                2017 Fabian Weissberg
+                2017-2018 Ribose Inc
+                2018-2019 Patrik Fiedler, Tim Oesterreich
+                2019 Patrick Schmidt
+                2020-2021 Tom Crowley
+                2021 Elektrobit Automotive GmbH
+                2021-2026 René Meusel
+                2022 Michael Boric
+                2022 Hannes Rantzsch
+                2022-2024 Fabian Albert
+                2023 Philippe Lieser
+                2025 Amos Treiber
+                2026 Damiano Mazzella
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without

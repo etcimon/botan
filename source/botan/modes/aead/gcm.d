@@ -2,8 +2,9 @@
 * GCM Mode
 * 
 * Copyright:
-* (C) 2013 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2013,2015 Jack Lloyd
+* (C) 2016 Daniel Neus, Rohde & Schwarz Cybersecurity
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -41,7 +42,15 @@ static if (BOTAN_HAS_GCM_CLMUL) {
 abstract class GCMMode : AEADMode, Transformation
 {
 public:
-    ~this() { destroy(m_ctr); destroy(m_ghash); } // TODO: for some reason CTR needs to be destroyed before ghash
+    ~this()
+    {
+        // Member dtor order is m_ghash then m_ctr; CTR must go first. Skip in a
+        // GC finalizer — Unique!(T,void) also refuses to .destroy payloads there.
+        if (botanInGcFinalizer())
+            return;
+        m_ctr.free();
+        m_ghash.free();
+    }
 
     override SecureVector!ubyte startRaw(const(ubyte)* nonce, size_t nonce_len)
     {
@@ -129,9 +138,9 @@ protected:
         
         m_ghash = new GHASH;
 
-        m_ctr = new CTRBE(cipher); // CTR_BE takes ownership of cipher
+        m_ctr = new CTRBE(cipher, 4); // C++ GCM uses a 32-bit CTR
         
-        if (m_tag_size != 8 && m_tag_size != 16)
+        if (m_tag_size != 8 && (m_tag_size < 12 || m_tag_size > 16))
             throw new InvalidArgument(name ~ ": Bad tag size " ~ to!string(m_tag_size));
     }
 

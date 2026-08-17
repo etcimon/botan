@@ -3,8 +3,9 @@
 *
 * Copyright:
 * (C) 2007 Falko Strenzke, FlexSecure GmbH
-*     2008-2010 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2008,2018,2024 Jack Lloyd
+* (C) 2018 Tobias Niemann
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -323,7 +324,7 @@ private:
                 "-----BEGIN EC PARAMETERS-----"
                 ~ "MHMCAQEwGgYHKoZIzj0BAQIPANt8Kr9i415mgHa+rSCLMCAEDmEnwkwF84oKqvZc"
                 ~ "DvAsBA5R3vGBXbXtdPzDTIXXCQQdBEujCrXokrThZJ3QkoZDrc1G9YguN0fe826V"
-                ~ "bpcCDjbfCq/YuNdZfKEFINBLAgEB"
+                ~ "bpcCDjbfCq/YuNdZfKEFINBLAgEE"
                 ~ "-----END EC PARAMETERS-----";
         
         if (name == "secp128r1")
@@ -599,6 +600,52 @@ private:
                 ~ "AAAAAAAAAAAAAAAAAY2R5HHgmJzaJ99QWkU/K3Y1KU8t3yPjsSKsyZyenx4UAiEA"
                 ~ "/////////////////////2xhEHCZWtEARYQbCbdhuJMCAQE="
                 ~ "-----END EC PARAMETERS-----";
+
+        if (name == "frp256v1")
+        {
+            auto p = BigInt("0xF1FD178C0B3AD58F10126DE8CE42435B3961ADBCABC8CA6DE8FCF353D86E9C03");
+            auto a = BigInt("0xF1FD178C0B3AD58F10126DE8CE42435B3961ADBCABC8CA6DE8FCF353D86E9C00");
+            auto b = BigInt("0xEE353FCA5428A9300D4ABA754A44C00FDFEC0C9AE4B1A1803075ED967B7BB73F");
+            auto curve = CurveGFp(&p, &a, &b);
+            auto gx = BigInt("0xB6B3D4C356C139EB31183D4749D423958C27D2DCAF98B70164C97A2DD98F5CFF");
+            auto gy = BigInt("0x6142E0F7C8B204911F9271F0F3ECEF8C2701C307E8E4C9E183115A1554062CFB");
+            auto G = PointGFp(curve, &gx, &gy);
+            auto n = BigInt("0xF1FD178C0B3AD58F10126DE8CE42435B53DC67E140D2BF941FFDD459C6D655E1");
+            auto h = BigInt(1);
+            auto grp = ECGroup(curve, G, n, h, "1.2.250.1.223.101.256.1");
+            return grp.PEM_encode();
+        }
+
+        if (name == "sm2p256v1")
+        {
+            auto p = BigInt("0xFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF");
+            auto a = BigInt("0xFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFC");
+            auto b = BigInt("0x28E9FA9E9D9F5E344D5A9E4BCF6509A7F39789F515AB8F92DDBCBD414D940E93");
+            auto curve = CurveGFp(&p, &a, &b);
+            auto gx = BigInt("0x32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7");
+            auto gy = BigInt("0xBC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0");
+            auto G = PointGFp(curve, &gx, &gy);
+            auto n = BigInt("0xFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFF7203DF6B21C6052B53BBF40939D54123");
+            auto h = BigInt(1);
+            auto grp = ECGroup(curve, G, n, h, "1.2.156.10197.1.301");
+            return grp.PEM_encode();
+        }
+
+        if (name == "numsp512d1")
+        {
+            // Microsoft NUMS numsp512d1 (C++ pcurves_numsp512d1 / OID 1.3.6.1.4.1.25258.4.3)
+            auto p = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFDC7");
+            auto a = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFDC4");
+            auto b = BigInt("0x1D99B");
+            auto curve = CurveGFp(&p, &a, &b);
+            auto gx = BigInt(2);
+            auto gy = BigInt("0x1C282EB23327F9711952C250EA61AD53FCC13031CF6DD336E0B9328433AFBDD8CC5A1C1F0C716FDC724DDE537C2B0ADB00BB3D08DC83755B205CC30D7F83CF28");
+            auto G = PointGFp(curve, &gx, &gy);
+            auto n = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5B3CA4FB94E7831B4FC258ED97D0BDC63B568B36607CD243CE153F390433555D");
+            auto h = BigInt(1);
+            auto grp = ECGroup(curve, G, n, h, "1.3.6.1.4.1.25258.4.3");
+            return grp.PEM_encode();
+        }
 
 		return null;
     }

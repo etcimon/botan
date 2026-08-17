@@ -2,9 +2,8 @@
 * SHA-{224,256}
 * 
 * Copyright:
-* (C) 1999-2011 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
-*      2007 FlexSecure GmbH
+* (C) 1999-2010,2017 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -25,7 +24,7 @@ import std.format : format;
 /**
 * SHA-224
 */
-final class SHA224 : MDxHashFunction, HashFunction
+class SHA224 : MDxHashFunction, HashFunction
 {
 public:
     

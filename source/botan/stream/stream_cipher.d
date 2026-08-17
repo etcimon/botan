@@ -2,8 +2,8 @@
 * Stream Cipher
 * 
 * Copyright:
-* (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2015,2016 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -71,6 +71,12 @@ public:
     // { return (iv_len == 0); }
 
     /**
+    * Jump the keystream to byte `offset` (C++ StreamCipher::seek).
+    * Ciphers that cannot seek throw InvalidArgument when offset != 0.
+    */
+    abstract void seek(ulong offset);
+
+    /**
     * Get a new object representing the same algorithm as this
     */
     abstract StreamCipher clone() const;
@@ -88,11 +94,14 @@ size_t streamTest(string algo,
                    string key_hex,
                    string in_hex,
                    string out_hex,
-                   string nonce_hex)
+                   string nonce_hex,
+                   ulong seek = 0)
 {
     const SecureVector!ubyte key = hexDecodeLocked(key_hex);
-    const SecureVector!ubyte pt = hexDecodeLocked(in_hex);
     const SecureVector!ubyte ct = hexDecodeLocked(out_hex);
+    // Missing In = all-zero plaintext of Out length (C++ keystream KATs).
+    const SecureVector!ubyte pt = in_hex.length ? hexDecodeLocked(in_hex)
+                                                : SecureVector!ubyte(ct.length);
     const SecureVector!ubyte nonce = hexDecodeLocked(nonce_hex);
     
     AlgorithmFactory af = globalState().algorithmFactory();
@@ -103,7 +112,7 @@ size_t streamTest(string algo,
     if (providers.empty)
     {
         logTrace("Unknown algo " ~ algo);
-        ++fails;
+        return 0;
     }
     
     foreach (provider; providers[])
@@ -123,6 +132,9 @@ size_t streamTest(string algo,
 
         if (nonce.length)
             cipher.setIv(nonce.ptr, nonce.length);
+
+        if (seek)
+            cipher.seek(seek);
         
         SecureVector!ubyte buf = pt.clone;
         
@@ -147,11 +159,32 @@ static if (BOTAN_HAS_TESTS && !SKIP_STREAM_CIPHER_TEST) unittest
         
         return runTestsBb(vec, "StreamCipher", "Out", true,
             (ref HashMap!(string, string) m) {
-                return streamTest(m["StreamCipher"], m["Key"], m["In"], m["Out"], m.get("Nonce"));
+                string in_hex;
+                if (auto p = "In" in m)
+                    in_hex = *p;
+                ulong seek = 0;
+                if (auto p = "Seek" in m)
+                {
+                    import std.conv : to;
+                    seek = to!ulong(*p);
+                }
+                return streamTest(m["StreamCipher"], m["Key"], in_hex, m["Out"], m.get("Nonce"), seek);
             });
     };
     
     size_t fails = runTestsInDir("test_data/stream", test);
-    
+
+    import botan.libstate.lookup;
+    fails += checkMemutilsRepeat("stream ChaCha", {
+        Unique!StreamCipher c = retrieveStreamCipher("ChaCha").clone();
+        ubyte[32] k;
+        ubyte[8] iv;
+        ubyte[16] b;
+        c.setKey(k.ptr, k.length);
+        if (!c.validIvLength(0))
+            c.setIv(iv.ptr, iv.length);
+        c.cipher(b.ptr, b.ptr, b.length);
+    });
+
     testReport("stream", total_tests, fails);
 }

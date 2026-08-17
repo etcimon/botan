@@ -2,8 +2,8 @@
 * Discrete Logarithm Group
 * 
 * Copyright:
-* (C) 1999-2008 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2008,2015,2018 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -96,6 +96,24 @@ public:
     *  strong = whether to perform stronger by lengthier tests
     * Returns: true if the object is consistent, false otherwise
     */
+    /**
+    * C++ `DL_Group::verify_public_element`: y in (1, p-1) and, when q
+    * is present, y^q ≡ 1 (mod p).
+    */
+    bool verifyPublicElement(const ref BigInt y) const
+    {
+        initCheck();
+        auto pm1 = m_p - 1;
+        if (y <= 1 || y >= pm1)
+            return false;
+        if (m_q != 0)
+        {
+            if (powerMod(&y, &m_q, &m_p) != 1)
+                return false;
+        }
+        return true;
+    }
+
     bool verifyGroup(RandomNumberGenerator rng, bool strong) const
     {
         initCheck();
@@ -256,6 +274,15 @@ public:
     */
     this(in string name)
     {
+        if (name == "ffdhe/ietf/2048")
+        {
+            // RFC 7919 ffdhe2048 (C++ dl_named.cpp). g = 2, q = (p-1)/2.
+            auto p = BigInt("0xFFFFFFFFFFFFFFFFADF85458A2BB4A9AAFDC5620273D3CF1D8B9C583CE2D3695A9E13641146433FBCC939DCE249B3EF97D2FE363630C75D8F681B202AEC4617AD3DF1ED5D5FD65612433F51F5F066ED0856365553DED1AF3B557135E7F57C935984F0C70E0E68B77E2A689DAF3EFE8721DF158A136ADE73530ACCA4F483A797ABC0AB182B324FB61D108A94BB2C8E3FBB96ADAB760D7F4681D4F42A3DE394DF4AE56EDE76372BB190B07A7C8EE0A6D709E02FCE1CDF7E2ECC03404CD28342F619172FE9CE98583FF8E4F1232EEF28183C3FE3B1B4C6FAD733BB5FCBC2EC22005C58EF1837D1683B2C6F34A26C1B2EFFA886B423861285C97FFFFFFFFFFFFFFFF");
+            auto g = BigInt(2);
+            auto q = (p - 1) / 2;
+            initialize(p, q, g);
+            return;
+        }
         string pem = getPemForNamedGroup(name);
         
         if (!pem)

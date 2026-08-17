@@ -2,8 +2,8 @@
 * ASN.1 string type
 * 
 * Copyright:
-* (C) 1999-2010 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2007,2020 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -121,6 +121,11 @@ private:
             m_tag != ASN1Tag.BMP_STRING)
             throw new InvalidArgument("ASN1String: Unknown string type " ~
                                        to!string(m_tag));
+        if ((m_tag == ASN1Tag.NUMERIC_STRING || m_tag == ASN1Tag.PRINTABLE_STRING ||
+             m_tag == ASN1Tag.VISIBLE_STRING || m_tag == ASN1Tag.IA5_STRING ||
+             m_tag == ASN1Tag.UTF8_STRING) &&
+            !isValidAsn1StringContent(str, m_tag))
+            throw new InvalidArgument("ASN1String: Invalid encoding for tag " ~ to!string(m_tag));
     }
 
     string m_iso_8859_str;
@@ -167,4 +172,76 @@ ASN1Tag chooseEncoding(in string str,
         }
     }
     return ASN1Tag.PRINTABLE_STRING;
+}
+
+/// C++ 3 `is_valid_asn1_string_content` (Numeric/Printable/IA5/Visible/UTF-8).
+bool isValidAsn1StringContent(in string str, ASN1Tag tag)
+{
+    if (tag == ASN1Tag.UTF8_STRING)
+    {
+        import std.utf : validate, UTFException;
+        try { validate(str); return true; }
+        catch (UTFException) { return false; }
+    }
+    foreach (immutable(char) ch; str)
+    {
+        const ubyte c = cast(ubyte) ch;
+        bool ok = false;
+        if (tag == ASN1Tag.NUMERIC_STRING)
+            ok = (c == ' ' || (c >= '0' && c <= '9'));
+        else if (tag == ASN1Tag.PRINTABLE_STRING)
+            ok = ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                  (c >= '0' && c <= '9') || c == ' ' || c == '\'' ||
+                  c == '(' || c == ')' || c == '+' || c == ',' ||
+                  c == '-' || c == '.' || c == '/' || c == ':' ||
+                  c == '=' || c == '?');
+        else if (tag == ASN1Tag.IA5_STRING)
+            ok = (c >= 1 && c <= 0x7F);
+        else if (tag == ASN1Tag.VISIBLE_STRING)
+            ok = (c >= 0x20 && c <= 0x7E);
+        if (!ok)
+            return false;
+    }
+    return true;
+}
+
+static if (BOTAN_HAS_TESTS && !SKIP_ASN1_TEST) unittest
+{
+    import botan.test;
+    import memutils.hashmap;
+    import std.stdio : File;
+    import std.conv : to;
+
+    logDebug("Testing asn1_str.d ...");
+    size_t fails = 0;
+
+    File vec = File("test_data/asn1/asn1_string_validation.vec", "r");
+    fails += runTestsBb(vec, "ASN1String", "ValidUtf8", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("ValidNumeric" in m) || !("ValidPrintable" in m) ||
+                !("ValidIa5" in m) || !("ValidVisible" in m) || !("ValidUtf8" in m))
+                return 0;
+            const string input = m.get("Input", "");
+            size_t bad;
+            void check(ASN1Tag tag, string key)
+            {
+                const bool expect = m[key] == "true";
+                if (isValidAsn1StringContent(input, tag) != expect)
+                    ++bad;
+            }
+            check(ASN1Tag.NUMERIC_STRING, "ValidNumeric");
+            check(ASN1Tag.PRINTABLE_STRING, "ValidPrintable");
+            check(ASN1Tag.IA5_STRING, "ValidIa5");
+            check(ASN1Tag.VISIBLE_STRING, "ValidVisible");
+            check(ASN1Tag.UTF8_STRING, "ValidUtf8");
+            return bad;
+        });
+
+    fails += checkMemutilsRepeat("asn1 string", {
+        if (!isValidAsn1StringContent("TEST", ASN1Tag.PRINTABLE_STRING))
+            throw new Exception("asn1 string leak probe");
+    });
+
+    testReport("asn1_str", 0, fails);
 }

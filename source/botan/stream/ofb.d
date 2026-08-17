@@ -17,6 +17,7 @@ import botan.stream.stream_cipher;
 import botan.block.block_cipher;
 import botan.utils.xor_buf;
 import botan.utils.mem_ops;
+import botan.utils.exceptn;
 
 /**
 * Output Feedback Mode
@@ -53,6 +54,12 @@ public:
 
     override bool validIvLength(size_t iv_len) const
     { return (iv_len <= m_cipher.blockSize()); }
+
+    override void seek(ulong offset)
+    {
+        if (offset)
+            throw new InvalidArgument(name ~ " does not support seek");
+    }
 
     KeyLengthSpecification keySpec() const
     {

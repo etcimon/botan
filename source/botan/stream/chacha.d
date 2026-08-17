@@ -2,8 +2,8 @@
 * ChaCha20
 * 
 * Copyright:
-* (C) 2014 Jack Lloyd
-* (C) 2014-2018 Etienne Cimon
+* (C) 2014,2018,2023 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -21,6 +21,10 @@ import botan.utils.types;
 import botan.utils.mem_ops;
 import botan.utils.cpuid;
 import std.format : format;
+static if (BOTAN_HAS_CHACHA_SIMD && BOTAN_HAS_SIMD_SSE2)
+    import botan.stream.chacha_sse2;
+static if (BOTAN_HAS_CHACHA_AVX2)
+    import botan.stream.chacha_avx2;
 
 /**
 * DJB's ChaCha (http://cr.yp.to/chacha.html)
@@ -45,13 +49,7 @@ public:
             length -= (m_buffer.length - m_position);
             input += (m_buffer.length - m_position);
             output += (m_buffer.length - m_position);
-			version(SIMD_SSE2) {
-				if (CPUID.hasSse2())
-					chachaSSE2x4(*cast(ubyte[64*4]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
-				else 
-					chachax4(*cast(ubyte[64*4]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
-			} else 
-				chachax4(*cast(ubyte[64*4]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
+			chachaRefill(m_buffer, m_state, m_rounds);
 			m_position = 0;
         }
         
@@ -105,12 +103,29 @@ public:
 			m_state[14] = loadLittleEndian!uint(iv, 4);
 			m_state[15] = loadLittleEndian!uint(iv, 5);
 		}
-		version(SIMD_SSE2) {
-			if (CPUID.hasSse2())
-				chachaSSE2x4(*cast(ubyte[64*4]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
-			else chachax4(*cast(ubyte[64*4]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
-		} else chachax4(*cast(ubyte[64*4]*) m_buffer.ptr, *cast(uint[16]*) m_state.ptr, m_rounds);
+		m_iv_length = length;
+		m_state13_post_iv = m_state[13];
+		chachaRefill(m_buffer, m_state, m_rounds);
 		m_position = 0;
+    }
+
+    override void seek(ulong offset)
+    {
+        const ulong block = offset / 64;
+        if (m_iv_length == 12)
+        {
+            if ((block >> 32) != 0)
+                throw new InvalidArgument("ChaCha seek with 96-bit nonce limited to 2^32 blocks");
+            m_state[12] = cast(uint) block;
+            m_state[13] = m_state13_post_iv;
+        }
+        else
+        {
+            m_state[12] = cast(uint) block;
+            m_state[13] = m_state13_post_iv + cast(uint)(block >> 32);
+        }
+        chachaRefill(m_buffer, m_state, m_rounds);
+        m_position = cast(size_t)(offset % 64);
     }
 
     override bool validIvLength(size_t iv_len) const
@@ -130,6 +145,8 @@ public:
         zap(m_state);
         zap(m_buffer);
         m_position = 0;
+        m_iv_length = 0;
+        m_state13_post_iv = 0;
     }
 
     /*
@@ -197,7 +214,10 @@ protected:
         loadLittleEndian!uint(m_key.ptr, key, m_key.length);
 
         m_state.resize(16);
-        m_buffer.resize(4*64);
+        static if (BOTAN_HAS_CHACHA_AVX2)
+            m_buffer.resize(8 * 64);
+        else
+            m_buffer.resize(4 * 64);
 
         setIv(null, 0);
     }
@@ -207,6 +227,8 @@ protected:
     SecureVector!ubyte m_buffer;
     size_t m_position = 0;
 	size_t m_rounds;
+    size_t m_iv_length = 0;
+    uint m_state13_post_iv = 0;
 }
 
 enum string CHACHA_QUARTER_ROUND(alias _a, alias _b, alias _c, alias _d) = q{
@@ -252,7 +274,58 @@ private void hchacha(ref uint[8] output, const(uint)[16] input, size_t rounds)
     output[7] = x15;
 }
 
-private void chachax4(ref ubyte[64*4] output, ref uint[16] input, size_t rounds)
+private void chachaOneBlock(ubyte* output, ref uint[16] input, size_t rounds)
+{
+    ubyte[64 * 4] tmp;
+    // Portable x4 would emit 4 blocks; do one via the first iteration only.
+    uint[16] one = input;
+    chachaPortableX4(tmp, one, rounds);
+    // chachaPortableX4 advances the counter by 4; restore a single-step increment.
+    input[12]++;
+    if (input[12] == 0)
+        input[13]++;
+    output[0 .. 64] = tmp[0 .. 64];
+}
+
+private void chachaRefill(ref SecureVector!ubyte buf, ref SecureVector!uint state, size_t rounds)
+{
+    auto st = *cast(uint[16]*) state.ptr;
+    const size_t nblocks = buf.length / 64;
+    // SIMD x4/x8 increments the 32-bit word by 4/8 without carrying mid-batch.
+    if (nblocks && st[12] > uint.max - (nblocks - 1))
+    {
+        foreach (i; 0 .. nblocks)
+            chachaOneBlock(buf.ptr + 64 * i, st, rounds);
+        state[] = st[];
+        return;
+    }
+    static if (BOTAN_HAS_CHACHA_AVX2)
+    {
+        if (CPUID.hasAvx2() && buf.length >= 64 * 8)
+        {
+            chachaAvx2x8(*cast(ubyte[64 * 8]*) buf.ptr, st, rounds);
+            state[] = st[];
+            return;
+        }
+    }
+    static if (BOTAN_HAS_CHACHA_SIMD && BOTAN_HAS_SIMD_SSE2)
+    {
+        if (CPUID.hasSse2())
+        {
+            chachaSse2x4(*cast(ubyte[64 * 4]*) buf.ptr, st, rounds);
+            if (buf.length >= 64 * 8)
+                chachaSse2x4(*cast(ubyte[64 * 4]*)(buf.ptr + 256), st, rounds);
+            state[] = st[];
+            return;
+        }
+    }
+    chachaPortableX4(*cast(ubyte[64 * 4]*) buf.ptr, st, rounds);
+    if (buf.length >= 64 * 8)
+        chachaPortableX4(*cast(ubyte[64 * 4]*)(buf.ptr + 256), st, rounds);
+    state[] = st[];
+}
+
+package void chachaPortableX4(ref ubyte[64*4] output, ref uint[16] input, size_t rounds)
 {
 	assert(rounds % 2 == 0, "Valid rounds");
 	for(int i = 0; i < 4; i++)
@@ -295,251 +368,8 @@ private void chachax4(ref ubyte[64*4] output, ref uint[16] input, size_t rounds)
 		storeLittleEndian(x15 + input[15], output.ptr + 64 * i + 4 * 15);
 
 		input[12]++;
-		input[13] += (input[12] < i) ? 1 : 0;
+		if (input[12] == 0)
+			input[13]++;
 	}
 }
 
-/** SSE2 ChaCha
-*   (C) 2016 Jack Lloyd
-*/
-version(SIMD_SSE2)
-private void chachaSSE2x4(ref ubyte[64*4] output, ref uint[16] input, size_t rounds)
-{
-	import botan.utils.simd.emmintrin;
-	assert(rounds % 2 == 0, "Valid rounds");
-	
-	const __m128i* input_mm = cast(const(__m128i*)) input;
-	__m128i* output_mm = cast(__m128i*) output;
-	
-	__m128i input0 = _mm_loadu_si128(input_mm);
-	__m128i input1 = _mm_loadu_si128(input_mm + 1);
-	__m128i input2 = _mm_loadu_si128(input_mm + 2);
-	__m128i input3 = _mm_loadu_si128(input_mm + 3);
-	
-	// TODO: try transposing, which would avoid the permutations each round
-
-	__m128i r0_0 = input0;
-	__m128i r0_1 = input1;
-	__m128i r0_2 = input2;
-	__m128i r0_3 = input3;
-	
-	__m128i r1_0 = input0;
-	__m128i r1_1 = input1;
-	__m128i r1_2 = input2;
-	__m128i r1_3 = input3;
-	r1_3 = _mm_add_epi64(r0_3, _mm_set_epi32(0, 0, 0, 1));
-	
-	__m128i r2_0 = input0;
-	__m128i r2_1 = input1;
-	__m128i r2_2 = input2;
-	__m128i r2_3 = input3;
-	r2_3 = _mm_add_epi64(r0_3, _mm_set_epi32(0, 0, 0, 2));
-	
-	__m128i r3_0 = input0;
-	__m128i r3_1 = input1;
-	__m128i r3_2 = input2;
-	__m128i r3_3 = input3;
-	r3_3 = _mm_add_epi64(r0_3, _mm_set_epi32(0, 0, 0, 3));
-	
-	for(size_t r = 0; r != rounds / 2; ++r)
-	{
-		r0_0 = _mm_add_epi32(r0_0, r0_1);
-		r1_0 = _mm_add_epi32(r1_0, r1_1);
-		r2_0 = _mm_add_epi32(r2_0, r2_1);
-		r3_0 = _mm_add_epi32(r3_0, r3_1);
-		
-		r0_3 = _mm_xor_si128(r0_3, r0_0);
-		r1_3 = _mm_xor_si128(r1_3, r1_0);
-		r2_3 = _mm_xor_si128(r2_3, r2_0);
-		r3_3 = _mm_xor_si128(r3_3, r3_0);
-		
-		r0_3 = _mm_or_si128(_mm_slli_epi32!16(r0_3), _mm_srli_epi32!16(r0_3)); //mm_rotl(r0_3, 16);
-		r1_3 = _mm_or_si128(_mm_slli_epi32!16(r1_3), _mm_srli_epi32!16(r1_3)); //mm_rotl(r1_3, 16);
-		r2_3 = _mm_or_si128(_mm_slli_epi32!16(r2_3), _mm_srli_epi32!16(r2_3)); //mm_rotl(r2_3, 16);
-		r3_3 = _mm_or_si128(_mm_slli_epi32!16(r3_3), _mm_srli_epi32!16(r3_3)); //mm_rotl(r3_3, 16);
-		
-		r0_2 = _mm_add_epi32(r0_2, r0_3);
-		r1_2 = _mm_add_epi32(r1_2, r1_3);
-		r2_2 = _mm_add_epi32(r2_2, r2_3);
-		r3_2 = _mm_add_epi32(r3_2, r3_3);
-		
-		r0_1 = _mm_xor_si128(r0_1, r0_2);
-		r1_1 = _mm_xor_si128(r1_1, r1_2);
-		r2_1 = _mm_xor_si128(r2_1, r2_2);
-		r3_1 = _mm_xor_si128(r3_1, r3_2);
-		
-		r0_1 = _mm_or_si128(_mm_slli_epi32!12(r0_1), _mm_srli_epi32!20(r0_1)); //mm_rotl(r0_1, 12);
-		r1_1 = _mm_or_si128(_mm_slli_epi32!12(r1_1), _mm_srli_epi32!20(r1_1)); //mm_rotl(r1_1, 12);
-		r2_1 = _mm_or_si128(_mm_slli_epi32!12(r2_1), _mm_srli_epi32!20(r2_1)); //mm_rotl(r2_1, 12);
-		r3_1 = _mm_or_si128(_mm_slli_epi32!12(r3_1), _mm_srli_epi32!20(r3_1)); //mm_rotl(r3_1, 12);
-		
-		r0_0 = _mm_add_epi32(r0_0, r0_1);
-		r1_0 = _mm_add_epi32(r1_0, r1_1);
-		r2_0 = _mm_add_epi32(r2_0, r2_1);
-		r3_0 = _mm_add_epi32(r3_0, r3_1);
-		
-		r0_3 = _mm_xor_si128(r0_3, r0_0);
-		r1_3 = _mm_xor_si128(r1_3, r1_0);
-		r2_3 = _mm_xor_si128(r2_3, r2_0);
-		r3_3 = _mm_xor_si128(r3_3, r3_0);
-		
-		r0_3 = _mm_or_si128(_mm_slli_epi32!8(r0_3), _mm_srli_epi32!24(r0_3)); //mm_rotl(r0_3, 8);
-		r1_3 = _mm_or_si128(_mm_slli_epi32!8(r1_3), _mm_srli_epi32!24(r1_3)); //mm_rotl(r1_3, 8);
-		r2_3 = _mm_or_si128(_mm_slli_epi32!8(r2_3), _mm_srli_epi32!24(r2_3)); //mm_rotl(r2_3, 8);
-		r3_3 = _mm_or_si128(_mm_slli_epi32!8(r3_3), _mm_srli_epi32!24(r3_3)); //mm_rotl(r3_3, 8);
-		
-		r0_2 = _mm_add_epi32(r0_2, r0_3);
-		r1_2 = _mm_add_epi32(r1_2, r1_3);
-		r2_2 = _mm_add_epi32(r2_2, r2_3);
-		r3_2 = _mm_add_epi32(r3_2, r3_3);
-		
-		r0_1 = _mm_xor_si128(r0_1, r0_2);
-		r1_1 = _mm_xor_si128(r1_1, r1_2);
-		r2_1 = _mm_xor_si128(r2_1, r2_2);
-		r3_1 = _mm_xor_si128(r3_1, r3_2);
-		
-		r0_1 = _mm_or_si128(_mm_slli_epi32!7(r0_1), _mm_srli_epi32!25(r0_1)); //mm_rotl(r0_1, 7);
-		r1_1 = _mm_or_si128(_mm_slli_epi32!7(r1_1), _mm_srli_epi32!25(r1_1)); //mm_rotl(r1_1, 7);
-		r2_1 = _mm_or_si128(_mm_slli_epi32!7(r2_1), _mm_srli_epi32!25(r2_1)); //mm_rotl(r2_1, 7);
-		r3_1 = _mm_or_si128(_mm_slli_epi32!7(r3_1), _mm_srli_epi32!25(r3_1)); //mm_rotl(r3_1, 7);
-		
-		r0_1 = _mm_shuffle_epi32!(_MM_SHUFFLE(0, 3, 2, 1))(r0_1);
-		r0_2 = _mm_shuffle_epi32!(_MM_SHUFFLE(1, 0, 3, 2))(r0_2);
-		r0_3 = _mm_shuffle_epi32!(_MM_SHUFFLE(2, 1, 0, 3))(r0_3);
-		
-		r1_1 = _mm_shuffle_epi32!(_MM_SHUFFLE(0, 3, 2, 1))(r1_1);
-		r1_2 = _mm_shuffle_epi32!(_MM_SHUFFLE(1, 0, 3, 2))(r1_2);
-		r1_3 = _mm_shuffle_epi32!(_MM_SHUFFLE(2, 1, 0, 3))(r1_3);
-		
-		r2_1 = _mm_shuffle_epi32!(_MM_SHUFFLE(0, 3, 2, 1))(r2_1);
-		r2_2 = _mm_shuffle_epi32!(_MM_SHUFFLE(1, 0, 3, 2))(r2_2);
-		r2_3 = _mm_shuffle_epi32!(_MM_SHUFFLE(2, 1, 0, 3))(r2_3);
-		
-		r3_1 = _mm_shuffle_epi32!(_MM_SHUFFLE(0, 3, 2, 1))(r3_1);
-		r3_2 = _mm_shuffle_epi32!(_MM_SHUFFLE(1, 0, 3, 2))(r3_2);
-		r3_3 = _mm_shuffle_epi32!(_MM_SHUFFLE(2, 1, 0, 3))(r3_3);
-		
-		r0_0 = _mm_add_epi32(r0_0, r0_1);
-		r1_0 = _mm_add_epi32(r1_0, r1_1);
-		r2_0 = _mm_add_epi32(r2_0, r2_1);
-		r3_0 = _mm_add_epi32(r3_0, r3_1);
-		
-		r0_3 = _mm_xor_si128(r0_3, r0_0);
-		r1_3 = _mm_xor_si128(r1_3, r1_0);
-		r2_3 = _mm_xor_si128(r2_3, r2_0);
-		r3_3 = _mm_xor_si128(r3_3, r3_0);
-		
-		r0_3 = _mm_or_si128(_mm_slli_epi32!16(r0_3), _mm_srli_epi32!16(r0_3)); //mm_rotl(r0_3, 16);
-		r1_3 = _mm_or_si128(_mm_slli_epi32!16(r1_3), _mm_srli_epi32!16(r1_3)); //mm_rotl(r1_3, 16);
-		r2_3 = _mm_or_si128(_mm_slli_epi32!16(r2_3), _mm_srli_epi32!16(r2_3)); //mm_rotl(r2_3, 16);
-		r3_3 = _mm_or_si128(_mm_slli_epi32!16(r3_3), _mm_srli_epi32!16(r3_3)); //mm_rotl(r3_3, 16);
-		
-		r0_2 = _mm_add_epi32(r0_2, r0_3);
-		r1_2 = _mm_add_epi32(r1_2, r1_3);
-		r2_2 = _mm_add_epi32(r2_2, r2_3);
-		r3_2 = _mm_add_epi32(r3_2, r3_3);
-		
-		r0_1 = _mm_xor_si128(r0_1, r0_2);
-		r1_1 = _mm_xor_si128(r1_1, r1_2);
-		r2_1 = _mm_xor_si128(r2_1, r2_2);
-		r3_1 = _mm_xor_si128(r3_1, r3_2);
-		
-		r0_1 = _mm_or_si128(_mm_slli_epi32!12(r0_1), _mm_srli_epi32!20(r0_1)); //mm_rotl(r0_1, 12);
-		r1_1 = _mm_or_si128(_mm_slli_epi32!12(r1_1), _mm_srli_epi32!20(r1_1)); //mm_rotl(r1_1, 12);
-		r2_1 = _mm_or_si128(_mm_slli_epi32!12(r2_1), _mm_srli_epi32!20(r2_1)); //mm_rotl(r2_1, 12);
-		r3_1 = _mm_or_si128(_mm_slli_epi32!12(r3_1), _mm_srli_epi32!20(r3_1)); //mm_rotl(r3_1, 12);
-		
-		r0_0 = _mm_add_epi32(r0_0, r0_1);
-		r1_0 = _mm_add_epi32(r1_0, r1_1);
-		r2_0 = _mm_add_epi32(r2_0, r2_1);
-		r3_0 = _mm_add_epi32(r3_0, r3_1);
-		
-		r0_3 = _mm_xor_si128(r0_3, r0_0);
-		r1_3 = _mm_xor_si128(r1_3, r1_0);
-		r2_3 = _mm_xor_si128(r2_3, r2_0);
-		r3_3 = _mm_xor_si128(r3_3, r3_0);
-		
-		r0_3 = _mm_or_si128(_mm_slli_epi32!8(r0_3), _mm_srli_epi32!24(r0_3)); //mm_rotl(r0_3, 8);
-		r1_3 = _mm_or_si128(_mm_slli_epi32!8(r1_3), _mm_srli_epi32!24(r1_3)); //mm_rotl(r1_3, 8);
-		r2_3 = _mm_or_si128(_mm_slli_epi32!8(r2_3), _mm_srli_epi32!24(r2_3)); //mm_rotl(r2_3, 8);
-		r3_3 = _mm_or_si128(_mm_slli_epi32!8(r3_3), _mm_srli_epi32!24(r3_3)); //mm_rotl(r3_3, 8);
-		
-		r0_2 = _mm_add_epi32(r0_2, r0_3);
-		r1_2 = _mm_add_epi32(r1_2, r1_3);
-		r2_2 = _mm_add_epi32(r2_2, r2_3);
-		r3_2 = _mm_add_epi32(r3_2, r3_3);
-		
-		r0_1 = _mm_xor_si128(r0_1, r0_2);
-		r1_1 = _mm_xor_si128(r1_1, r1_2);
-		r2_1 = _mm_xor_si128(r2_1, r2_2);
-		r3_1 = _mm_xor_si128(r3_1, r3_2);
-		
-		r0_1 = _mm_or_si128(_mm_slli_epi32!7(r0_1), _mm_srli_epi32!25(r0_1)); //mm_rotl(r0_1, 7);
-		r1_1 = _mm_or_si128(_mm_slli_epi32!7(r1_1), _mm_srli_epi32!25(r1_1)); //mm_rotl(r1_1, 7);
-		r2_1 = _mm_or_si128(_mm_slli_epi32!7(r2_1), _mm_srli_epi32!25(r2_1)); //mm_rotl(r2_1, 7);
-		r3_1 = _mm_or_si128(_mm_slli_epi32!7(r3_1), _mm_srli_epi32!25(r3_1)); //mm_rotl(r3_1, 7);
-		
-		r0_1 = _mm_shuffle_epi32!(_MM_SHUFFLE(2, 1, 0, 3))(r0_1);
-		r0_2 = _mm_shuffle_epi32!(_MM_SHUFFLE(1, 0, 3, 2))(r0_2);
-		r0_3 = _mm_shuffle_epi32!(_MM_SHUFFLE(0, 3, 2, 1))(r0_3);
-		
-		r1_1 = _mm_shuffle_epi32!(_MM_SHUFFLE(2, 1, 0, 3))(r1_1);
-		r1_2 = _mm_shuffle_epi32!(_MM_SHUFFLE(1, 0, 3, 2))(r1_2);
-		r1_3 = _mm_shuffle_epi32!(_MM_SHUFFLE(0, 3, 2, 1))(r1_3);
-		
-		r2_1 = _mm_shuffle_epi32!(_MM_SHUFFLE(2, 1, 0, 3))(r2_1);
-		r2_2 = _mm_shuffle_epi32!(_MM_SHUFFLE(1, 0, 3, 2))(r2_2);
-		r2_3 = _mm_shuffle_epi32!(_MM_SHUFFLE(0, 3, 2, 1))(r2_3);
-		
-		r3_1 = _mm_shuffle_epi32!(_MM_SHUFFLE(2, 1, 0, 3))(r3_1);
-		r3_2 = _mm_shuffle_epi32!(_MM_SHUFFLE(1, 0, 3, 2))(r3_2);
-		r3_3 = _mm_shuffle_epi32!(_MM_SHUFFLE(0, 3, 2, 1))(r3_3);
-	}
-	
-	r0_0 = _mm_add_epi32(r0_0, input0);
-	r0_1 = _mm_add_epi32(r0_1, input1);
-	r0_2 = _mm_add_epi32(r0_2, input2);
-	r0_3 = _mm_add_epi32(r0_3, input3);
-	
-	r1_0 = _mm_add_epi32(r1_0, input0);
-	r1_1 = _mm_add_epi32(r1_1, input1);
-	r1_2 = _mm_add_epi32(r1_2, input2);
-	r1_3 = _mm_add_epi32(r1_3, input3);
-	r1_3 = _mm_add_epi64(r1_3, _mm_set_epi32(0, 0, 0, 1));
-	
-	r2_0 = _mm_add_epi32(r2_0, input0);
-	r2_1 = _mm_add_epi32(r2_1, input1);
-	r2_2 = _mm_add_epi32(r2_2, input2);
-	r2_3 = _mm_add_epi32(r2_3, input3);
-	r2_3 = _mm_add_epi64(r2_3, _mm_set_epi32(0, 0, 0, 2));
-	
-	r3_0 = _mm_add_epi32(r3_0, input0);
-	r3_1 = _mm_add_epi32(r3_1, input1);
-	r3_2 = _mm_add_epi32(r3_2, input2);
-	r3_3 = _mm_add_epi32(r3_3, input3);
-	r3_3 = _mm_add_epi64(r3_3, _mm_set_epi32(0, 0, 0, 3));
-	
-	_mm_storeu_si128(output_mm + 0, r0_0);
-	_mm_storeu_si128(output_mm + 1, r0_1);
-	_mm_storeu_si128(output_mm + 2, r0_2);
-	_mm_storeu_si128(output_mm + 3, r0_3);
-	
-	_mm_storeu_si128(output_mm + 4, r1_0);
-	_mm_storeu_si128(output_mm + 5, r1_1);
-	_mm_storeu_si128(output_mm + 6, r1_2);
-	_mm_storeu_si128(output_mm + 7, r1_3);
-	
-	_mm_storeu_si128(output_mm + 8, r2_0);
-	_mm_storeu_si128(output_mm + 9, r2_1);
-	_mm_storeu_si128(output_mm + 10, r2_2);
-	_mm_storeu_si128(output_mm + 11, r2_3);
-	
-	_mm_storeu_si128(output_mm + 12, r3_0);
-	_mm_storeu_si128(output_mm + 13, r3_1);
-	_mm_storeu_si128(output_mm + 14, r3_2);
-	_mm_storeu_si128(output_mm + 15, r3_3);
-		
-	input[12] += 4;
-	if (input[12] < 4)
-		input[13]++;
-}

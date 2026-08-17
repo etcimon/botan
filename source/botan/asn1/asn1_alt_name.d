@@ -2,8 +2,8 @@
 * Common ASN.1 Objects
 * 
 * Copyright:
-* (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2007,2024 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *     2007 Yves Jerschow
 *
 * License:
@@ -26,9 +26,80 @@ import botan.utils.charset;
 import botan.utils.parsing;
 import botan.utils.loadstor;
 import botan.utils.types;
+import botan.utils.exceptn;
 import memutils.hashmap;
+import std.algorithm : canFind;
 
 alias AlternativeName = RefCounted!AlternativeNameImpl;
+
+/// C++ `DNSName::from_san_string` (RFC 6125 wildcard only in the leftmost label, ≥3 labels).
+bool dnsNameFromSan(string name)
+{
+    while (name.length && name[$ - 1] == 0)
+        name = name[0 .. $ - 1];
+    if (name.canFind('\0'))
+        return false;
+    if (!name.length || name.length > 253 || name[0] == '.' || name[$ - 1] == '.')
+        return false;
+    size_t label_len;
+    bool all_numeric = true;
+    size_t stars;
+    size_t first_star = size_t.max;
+    size_t first_dot = size_t.max;
+    size_t dots;
+    foreach (i, c; name)
+    {
+        if (c == '.')
+        {
+            if (i && name[i - 1] == '.')
+                return false;
+            if (!label_len)
+                return false;
+            if (first_dot == size_t.max)
+                first_dot = i;
+            ++dots;
+            label_len = 0;
+            continue;
+        }
+        ++label_len;
+        if (label_len > 63)
+            return false;
+        if (c == '*')
+        {
+            if (!stars)
+                first_star = i;
+            ++stars;
+            all_numeric = false;
+            continue;
+        }
+        bool ok = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-';
+        if (!ok)
+            return false;
+        if (c == '-')
+        {
+            if (i == 0 || name[i - 1] == '.')
+                return false;
+            if (i + 1 == name.length || name[i + 1] == '.')
+                return false;
+        }
+        if (!(c >= '0' && c <= '9'))
+            all_numeric = false;
+    }
+    if (!label_len || all_numeric)
+        return false;
+    if (stars)
+    {
+        if (stars > 1)
+            return false;
+        if (first_dot != size_t.max && first_dot < first_star)
+            return false;
+        if (name.length >= 4 && (name[0 .. 4] == "xn--" || name[0 .. 4] == "XN--"))
+            return false;
+        if (dots < 2)
+            return false;
+    }
+    return true;
+}
 
 /**
 * Alternative Name
@@ -110,7 +181,12 @@ public:
                                                LOCAL_CHARSET);
                 
                 if (tag == 1) addAttribute("RFC822", value);
-                if (tag == 2) addAttribute("DNS", value);
+                if (tag == 2)
+                {
+                    if (!dnsNameFromSan(value))
+                        throw new DecodingError("Invalid DNS name in SubjectAlternativeName");
+                    addAttribute("DNS", value);
+                }
                 if (tag == 6) addAttribute("URI", value);
             }
             else if (tag == 7)

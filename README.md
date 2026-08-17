@@ -4,135 +4,112 @@
 Botan Crypto Library
 ====================
 
-Botan is a very complete crypto powerhouse packaged in a D library.
+Botan is a crypto and TLS library for D (package **3.13.0**).
 
-It is a translation of the C++ library [Botan](http://botan.randombit.net/), although the code is now in D and uses the [memutils](https://github.com/etcimon/memutils) library as a replacement for the C++ STL.
+It is a translation of the C++ library [Botan](https://botan.randombit.net/)
+(synced toward the 3.13 line) and uses
+[memutils](https://github.com/etcimon/memutils) instead of the C++ STL.
 
-A TLS client/server with ALPN, SNI and HTTP/2 has been added to the [http2-botan vibe.d port](https://github.com/etcimon/vibe.0).
+The D API keeps the 1.12-era callback/delegate TLS surface (no C++ 3
+`Callbacks` type). A TLS client/server with ALPN, SNI, HTTP/2, TLS 1.2 and
+opt-in TLS 1.3 lives in the [vibe.0](https://github.com/etcimon/vibe.0) port.
 
 Getting Started
 ---------------
 
-Botan has been tested on Windows x86, Windows x64, OSX x64, Linux x86, Linux x64 with DMD v2.099.1+ and LDC v1.31.0+
+Tested on Windows, macOS and Linux with DMD v2.099.1+ and LDC v1.31.0+
+(LDC 1.42+ for current CI).
 
-- Install [DMD](http://dlang.org/download) v2.099.1+
+```
+dub test --compiler=ldc2 --combined --d-version=FocusTests --d-version=Test_TLS
+```
 
-- Compile Botan tests using `dub test --arch=x86_64` for x64, or `dub test --arch=x86_mscoff` for x86.
+Full `dub test` compiles every algorithm unittest in one process and can
+exhaust LDC on large suites. CI and local incremental work run **one family
+per process** (`scripts/ci-test.sh`, `scripts/inc-build.ps1 test tls`).
+
+```
+# Windows (after ldc2 is on PATH)
+.\scripts\inc-build.ps1 test tls
+.\scripts\inc-build.ps1 test x509
+```
+
+`full` is the default dub configuration (include-all). `standard` is the
+popular subset (TLS 1.2, X.509, AES/GCM, RSA/ECDSA/Ed25519, …) without
+TLS 1.3 or post-quantum suites.
 
 Learning
 --------
 
-For further information, start with the [GitHub Wiki](https://github.com/etcimon/botan/wiki) for information on how to use this library.
-
-You can read the API documentation in the [GitHub Pages](http://etcimon.github.io/botan)
+Start with the [GitHub Wiki](https://github.com/etcimon/botan/wiki) and the
+API docs on [GitHub Pages](http://etcimon.github.io/botan). In-tree notes
+for this port are under `architecture/`.
 
 Supported Algorithms
 --------------------
 
-Botan supports a range of cryptographic algorithms and protocols,
-including:
+### TLS / Public Key Infrastructure
 
-### TLS/Public Key Infrastructure
-
-  * SSL/TLS (from SSL v3 to TLS v1.2), including using preshared
-    keys (TLS-PSK) or passwords (TLS-SRP)
-  * X.509 certificates (including generating new self-signed and CA
-    certs) and CRLs
-  * Certificate path validation and OCSP
-  * PKCS #10 certificate requests (creation and certificate issue)
+  * TLS 1.0–1.2 (default offer is **1.2**; `latestTlsVersion()` stays 1.2)
+  * TLS 1.3 (`version(TLS_13)`): RFC 8446 record protection, hello
+    extensions, in-process handshake, RFC 8448 vectors. Offer 1.3
+    explicitly (`TLS_V13` / vibe `TLSVersion.tls1_3`); default policy
+    still rejects 1.3
+  * TLS 1.3 PQC hybrids (`version(TLS_13_PQC)`): X25519MLKEM768 and
+    optional ML-KEM / eFrodo groups
+  * DTLS 1.0 / 1.2
+  * ALPN, SNI, session tickets, OCSP status_request (staple when compiled)
+  * X.509 certificates, CRLs, path validation, name constraints
+  * System and PEM-bundle certificate stores
+  * OCSP (HTTP via an app-supplied `setHttpExchangeHandler`; vibe.0 wires
+    `requestHTTP` with `maxRedirects = 0`)
+  * PKCS #10 requests, PKCS #12, RFC 3779 AS/IP address blocks
 
 ### Public Key Cryptography
 
-  * Encryption algorithms RSA, ElGamal, DLIES
-    (padding schemes OAEP or PKCS #1 v1.5)
-  * Signature algorithms RSA, DSA, ECDSA, GOST 34.10-2001, Nyberg-Rueppel,
-    Rabin-Williams (padding schemes PSS, PKCS #1 v1.5, X9.31)
-  * Key agreement techniques Diffie-Hellman and ECDH
+  * RSA (OAEP, PKCS #1 v1.5, PSS), DSA, ECDSA, ECDH, Ed25519, Ed448, X25519, X448
+  * ElGamal, DLIES, ECIES (including ISO 18033-2), ECGDSA, ECKCDSA, SM2, GOST 34.10
+  * FIPS 203 ML-KEM, FIPS 204 ML-DSA, FIPS 205 SLH-DSA / SPHINCS+
+  * FrodoKEM, Classic McEliece, XMSS, HSS/LMS, Hybrid KEM
+  * Hash-to-curve / hash-to-scalar (RFC 9380)
 
-### Block ciphers
+### Block ciphers and modes
 
-  * Authenticated cipher modes EAX, OCB, GCM, SIV, and CCM
-  * Unauthenticated cipher modes CTR, CBC, XTS, CFB, OFB, and ECB
-  * AES (including constant time SSSE3 and AES-NI versions)
-  * AES candidates Serpent, Twofish, MARS, CAST-256, RC6
-  * DES, 3DES and DESX
-  * National/telecom block ciphers SEED, KASUMI, MISTY1, GOST 28147
-  * Other block ciphers including Threefish-512, Blowfish, CAST-128, IDEA,
-    Noekeon, TEA, XTEA, RC2, RC5, SAFER-SK
-  * Large block cipher construction Lion
+  * AEAD: GCM, GCM-SIV, EAX, OCB, SIV, CCM, ChaCha20-Poly1305, Ascon-AEAD128
+  * Modes: CTR, CBC, XTS, CFB, OFB, ECB
+  * AES (SSSE3 / AES-NI), ARIA, Camellia, Serpent, Twofish, SM4, SHACAL-2, Kuznyechik
+  * DES/3DES, SEED, Blowfish, CAST-128, IDEA, Threefish-512, and the rest of the 1.12 set
 
-### Stream Ciphers
+### Stream ciphers, hashes, MACs, KDFs
 
-  * RC4
-  * Salsa20/XSalsa20
-  * ChaCha20
+  * ChaCha20, Salsa20, RC4, SHAKE as a stream cipher
+  * SHA-1/2/3, SHAKE, BLAKE2b/s, SM3, Streebog, Ascon-Hash256, truncated hashes
+  * HMAC, CMAC, GMAC, KMAC, Poly1305, SipHash, BLAKE2b-MAC
+  * HKDF, HKDF-Expand-Label, SP 800-108/56A/56C, PBKDF2, Argon2, scrypt, bcrypt, PGP S2K
 
-### Hash functions
+### Other
 
-  * SHA-1, SHA-224, SHA-256, SHA-384, and SHA-512
-  * RIPEMD-160, RIPEMD-128, Tiger, Whirlpool
-  * SHA-3 winner Keccak-1600
-  * SHA-3 candidate Skein-512
-  * Hash function combiners (Parallel and Comb4P)
-  * National standard hashes HAS-160 and GOST 34.11
-  * Obsolete or insecure hashes MD5, MD4, MD2
-  * Non-cryptographic checksums Adler32, CRC24, CRC32
-
-### Authentication Codes
-
-  * HMAC
-  * CMAC (aka OMAC1)
-  * Obsolete designs CBC-MAC, ANSI X9.19 DES-MAC, and the
-    protocol-specific SSLv3 authentication code
-
-### Other Useful Things
-
-  * Key derivation functions for passwords, including PBKDF2
-  * Password hashing functions, including bcrypt
-  * General key derivation functions KDF1 and KDF2 from IEEE 1363
-  * PRFs from ANSI X9.42, SSL v3.0, TLS v1.0
+  * HMAC_DRBG, ChaCha RNG, system/processor RNGs
+  * HOTP/TOTP, SPAKE2+, SRP-6a, Roughtime, ZFEC, NIST key wrap, CryptoBox
 
 ### Recommended Algorithms
 
-This section is by no means the last word on selecting which algorithms to
-use.  However, botan includes a sometimes bewildering array of possible
-algorithms, and unless you're familiar with the latest developments in the
-field, it can be hard to know what is secure and what is not. The following
-attributes of the algorithms were evaluated when making this list: security,
-support by other implementations, patent/IP status, and efficiency (in
-roughly that order).
+If your data is in motion, use TLS 1.2 or (when both peers support it)
+TLS 1.3. For something custom:
 
-If your data is in motion, strongly consider using TLS v1.2 as a pre built,
-already standard and well studied protocol.
-
-Otherwise, if you simply *must* do something custom, use:
-
-* Message encryption: AES or Serpent in EAX or GCM mode
-
-* General hash functions: SHA-256 or SHA-512
-
-* Message authentication: HMAC with SHA-256
-
-* Public Key Encryption: RSA, 2048+ bit keys, with OAEP and SHA-256
-  ("EME1(SHA-256)")
-
-* Public Key Signatures: RSA, 2048+ bit keys with PSS and SHA-512
-  ("EMSA4(SHA-512)"), or ECDSA with SHA-256 or SHA-512
-
-* Key Agreement: Diffie-Hellman or ECDH, with "KDF2(SHA-256)"
+* Message encryption: AES-256/GCM or ChaCha20-Poly1305
+* Hash / MAC: SHA-256 or SHA-512, HMAC-SHA-256
+* Signatures: ECDSA P-256, Ed25519, or RSA-2048+ with PSS
+* Key agreement: X25519 or ECDH P-256; ML-KEM-768 when post-quantum is required
 
 Issues
 ------
 
-You can submit any issues in the github issue tracker. Any issue related to algorithms in the D library must also be
-submitted to the corresponding [Botan C++ issue tracker](https://github.com/randombit/botan/issues).
-
-TODO
-----
-
-- OCSP stapling
+File D-port issues on this tracker. Algorithm defects that also exist in
+C++ Botan should be reported upstream at
+[randombit/botan](https://github.com/randombit/botan/issues).
 
 License
 -------
 
-Botan is released under the Simplified BSD License (see LICENSE.md for the specifics).
+Botan is released under the Simplified BSD License (see LICENSE.md).

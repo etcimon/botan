@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 2013 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -138,13 +138,15 @@ protected:
     final void encodeLength(size_t len, ubyte* output)
     {
         const size_t len_bytes = L();
-        
-        assert(len_bytes < (size_t).sizeof, "Length field fits");
-        
+        if (len_bytes < 2 || len_bytes > 8)
+            throw new InvalidArgument("Invalid CCM L value " ~ to!string(len_bytes));
+
+        const ulong n = len;
         foreach (size_t i; 0 .. len_bytes)
-            output[len_bytes-1-i] = get_byte((size_t).sizeof-1-i, len);
-        
-        assert((len >> (len_bytes*8)) == 0, "Message length fits in field");
+            output[len_bytes - 1 - i] = cast(ubyte)(n >> (8 * i));
+
+        if (len_bytes < 8 && (n >> (len_bytes * 8)) != 0)
+            throw new EncodingError("CCM message length too long to encode in L field");
     }
 
     final void inc(ref SecureVector!ubyte C)

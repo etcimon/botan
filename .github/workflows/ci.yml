@@ -42,7 +42,8 @@ jobs:
         if: matrix.arch == 'x86' && matrix.os == 'ubuntu-latest'
         run: sudo apt-get install gcc-multilib
       - id: build
-        name: Test library
+        name: Build and test library
         run: |
-          dub test --arch=$ARCH
+          chmod +x scripts/ci-test.sh
+          ARCH="$ARCH" DC="${DC:-ldc2}" scripts/ci-test.sh
         shell: bash

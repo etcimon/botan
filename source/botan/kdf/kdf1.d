@@ -3,7 +3,8 @@
 * 
 * Copyright:
 * (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2024 René Meusel, Rohde & Schwarz Cybersecurity
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -15,6 +16,7 @@ static if (BOTAN_HAS_TLS || BOTAN_HAS_PUBLIC_KEY_CRYPTO):
 import botan.kdf.kdf;
 import botan.hash.hash;
 import botan.utils.types;
+import botan.utils.exceptn;
 
 /**
 * KDF1, from IEEE 1363
@@ -25,14 +27,19 @@ public:
     /*
     * KDF1 Key Derivation Mechanism
     */
-    override SecureVector!ubyte derive(size_t,
+    override SecureVector!ubyte derive(size_t key_len,
                             const(ubyte)* secret, size_t secret_len,
                             const(ubyte)* P, size_t P_len) const
     {
         HashFunction hash = (cast(HashFunction)*m_hash);
         hash.update(secret, secret_len);
         hash.update(P, P_len);
-        return hash.finished();
+        auto full = hash.finished();
+        if (key_len > full.length)
+            throw new InvalidArgument("KDF1 maximum output length exceeded");
+        auto outp = SecureVector!ubyte(key_len);
+        outp[] = full.ptr[0 .. key_len];
+        return outp;
     }
 
 

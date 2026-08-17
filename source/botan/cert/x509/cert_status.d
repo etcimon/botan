@@ -33,6 +33,7 @@ enum CertificateStatusCode {
     // Chain generation problems
     CERT_ISSUER_NOT_FOUND = 3000,
     CANNOT_ESTABLISH_TRUST,
+    CERT_CHAIN_LOOP,
 
     // Validation errors
     POLICY_ERROR = 4000,
@@ -44,6 +45,9 @@ enum CertificateStatusCode {
     CA_CERT_NOT_FOR_CRL_ISSUER,
     OCSP_CERT_NOT_LISTED,
     OCSP_BAD_STATUS,
+    CERT_NAME_NOMATCH,
+    NAME_CONSTRAINT_ERROR,
+    EXTENSION_ENCODING_ERROR,
 
     // Hard failures
     CERT_IS_REVOKED = 5000,

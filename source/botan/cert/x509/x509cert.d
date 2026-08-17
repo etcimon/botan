@@ -2,8 +2,9 @@
 * X.509 Certificates
 * 
 * Copyright:
-* (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2010,2015,2017,2026 Jack Lloyd
+* (C) 2016 René Korthaus, Rohde & Schwarz Cybersecurity
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -11,13 +12,14 @@
 module botan.cert.x509.x509cert;
 
 import botan.constants;
-version(X509):
+static if (BOTAN_HAS_X509_CERTIFICATES):
 public import botan.utils.datastor.datastor;
 public import botan.pubkey.x509_key;
 public import botan.cert.x509.x509_obj;
 public import botan.asn1.x509_dn;
 public import botan.cert.x509.certstor;
-import botan.cert.x509.key_constraint : KeyConstraints;
+import botan.cert.x509.key_constraint : KeyConstraints, UsageType;
+import std.string : indexOf;
 import botan.cert.x509.x509_ext;
 import botan.codec.pem;
 import botan.codec.hex;
@@ -227,6 +229,46 @@ public:
         return false;
     }
 
+    /// C++ `allowed_extended_usage`: empty EKU allows any usage.
+    bool allowedExtendedUsage(in string usage) const
+    {
+        auto constraints = exConstraints();
+        if (!constraints.length)
+            return true;
+        foreach (constraint; constraints[])
+        {
+            if (constraint == usage || constraint == "X509v3.AnyExtendedKeyUsage")
+                return true;
+        }
+        return false;
+    }
+
+    /// C++ `allowed_usage(Usage_Type)` RFC 5280 4.2.1.12.
+    bool allowedUsageType(UsageType usage) const
+    {
+        if (usage == UsageType.UNSPECIFIED)
+            return true;
+        if (usage == UsageType.TLS_SERVER_AUTH)
+            return (allowedUsage(KeyConstraints.KEY_AGREEMENT)
+                    || allowedUsage(KeyConstraints.KEY_ENCIPHERMENT)
+                    || allowedUsage(KeyConstraints.DIGITAL_SIGNATURE))
+                && allowedExtendedUsage("PKIX.ServerAuth");
+        if (usage == UsageType.TLS_CLIENT_AUTH)
+            return (allowedUsage(KeyConstraints.DIGITAL_SIGNATURE)
+                    || allowedUsage(KeyConstraints.KEY_AGREEMENT))
+                && allowedExtendedUsage("PKIX.ClientAuth");
+        if (usage == UsageType.OCSP_RESPONDER)
+            return (allowedUsage(KeyConstraints.DIGITAL_SIGNATURE)
+                    || allowedUsage(KeyConstraints.NON_REPUDIATION))
+                && allowedUsage("PKIX.OCSPSigning");
+        if (usage == UsageType.CERTIFICATE_AUTHORITY)
+            return isCACert();
+        if (usage == UsageType.ENCRYPTION)
+            return allowedUsage(KeyConstraints.KEY_ENCIPHERMENT)
+                || allowedUsage(KeyConstraints.DATA_ENCIPHERMENT);
+        return false;
+    }
+
     /**
     * Get the path limit as defined in the BasicConstraints extension of
     * this certificate.
@@ -432,14 +474,10 @@ public:
     {
         if (name == "")
             return false;
-        
-        if (certSubjectDnsMatch(name, subjectInfo("DNS")))
-            return true;
-        
-        if (certSubjectDnsMatch(name, subjectInfo("Name")))
-            return true;
-        
-        return false;
+        auto sans = subjectInfo("DNS");
+        if (sans.length)
+            return certSubjectDnsMatch(name, sans);
+        return certSubjectDnsMatch(name, subjectInfo("Name"));
     }
 
     /**
@@ -699,21 +737,88 @@ bool certSubjectDnsMatch(ALLOC)(in string name,
 {
     foreach (const cn; cert_names[])
     {
-        if (cn == name)
+        if (hostWildcardMatch(cn, name))
             return true;
-        
-        /*
-        * Possible wildcard match. We only support the most basic form of
-        * cert wildcarding ala RFC 2595
-        */
-        if (cn.length > 2 && cn[0] == '*' && cn[1] == '.' && name.length > cn.length)
+    }
+    return false;
+}
+
+private bool dnsCharEq(char a, char b)
+{
+    if (a == b)
+        return true;
+    auto la = cast(ubyte)(a | 0x20);
+    auto lb = cast(ubyte)(b | 0x20);
+    return la == lb && la >= 'a' && la <= 'z';
+}
+
+public import botan.asn1.asn1_alt_name : dnsNameFromSan;
+
+/// C++ `DNSName::host_wildcard_match` (RFC 6125 6.4.3).
+bool hostWildcardMatch(string issued, string host)
+{
+    while (issued.length && issued[$ - 1] == 0)
+        issued = issued[0 .. $ - 1];
+    while (host.length && host[$ - 1] == 0)
+        host = host[0 .. $ - 1];
+    if (!issued.length || !host.length || host.length > 253)
+        return false;
+    if (issued.length > host.length + 1)
+        return false;
+    if (issued.canFind('\0') || host.canFind('\0') || host.canFind('*'))
+        return false;
+    if (host[0] == '.' || host[$ - 1] == '.' || host.canFind(".."))
+        return false;
+    bool eqRange(string a, string b)
+    {
+        if (a.length != b.length)
+            return false;
+        foreach (i; 0 .. a.length)
+            if (!dnsCharEq(a[i], b[i]))
+                return false;
+        return true;
+    }
+    if (eqRange(issued, host))
+        return true;
+    auto first_star = issued.indexOf('*');
+    if (first_star < 0)
+        return false;
+    if (issued.indexOf('*', first_star + 1) >= 0)
+        return false;
+    auto issued_label = issued[0 .. (issued.indexOf('.') >= 0 ? issued.indexOf('.') : issued.length)];
+    bool idna(string label)
+    {
+        return label.length >= 4 && eqRange(label[0 .. 4], "xn--");
+    }
+    if (idna(issued_label))
+        return false;
+    auto host_dot = host.indexOf('.');
+    if (issued_label != "*" && idna(host[0 .. (host_dot >= 0 ? host_dot : host.length)]))
+        return false;
+    size_t dots_seen;
+    size_t host_idx;
+    foreach (i; 0 .. issued.length)
+    {
+        if (issued[i] == '.')
+            ++dots_seen;
+        if (issued[i] == '*')
         {
-            const string base = cn[1 .. $];
-            size_t start = name.length - base.length;
-            if (name[start .. start + base.length] == base)
-                return true;
+            if (dots_seen)
+                return false;
+            const size_t advance = host.length - issued.length + 1;
+            if (host_idx + advance > host.length)
+                return false;
+            foreach (k; host_idx .. host_idx + advance)
+                if (host[k] == '.')
+                    return false;
+            host_idx += advance;
+        }
+        else
+        {
+            if (host_idx >= host.length || !dnsCharEq(issued[i], host[host_idx]))
+                return false;
+            ++host_idx;
         }
     }
-    
-    return false;
+    return dots_seen >= 2 && host_idx == host.length;
 }

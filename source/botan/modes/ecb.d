@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 1999-2009,2013 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -12,6 +12,7 @@ module botan.modes.ecb;
 
 import botan.constants;
 static if (BOTAN_HAS_MODE_ECB):
+static assert(BOTAN_HAS_CIPHER_MODE_PADDING, "ECB requires Cipher_Mode_Padding");
 
 import botan.modes.cipher_mode;
 import botan.block.block_cipher;
@@ -192,6 +193,8 @@ public:
         
         const size_t pad_bytes = BS - padding().unpad(&buffer[buffer.length-BS], BS);
         buffer.resize(buffer.length - pad_bytes); // remove padding
+        if (pad_bytes == 0 && padding().name() != "NoPadding")
+            throw new DecodingError("Invalid ECB padding");
     }
 
     override size_t outputLength(size_t input_length) const

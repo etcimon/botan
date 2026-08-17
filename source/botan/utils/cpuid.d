@@ -2,8 +2,8 @@
 * Runtime CPU detection
 * 
 * Copyright:
-* (C) 2009-2010,2013 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2009,2010,2013,2017,2023 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -34,6 +34,11 @@ public:
         version(PPC)    
             if (altivecCheckSysctl() || altivecCheckPvrEmul())
                 m_altivec_capable = true;
+
+        version (PPC)
+            m_darn_capable = ppcProbeDarn();
+        else version (PPC64)
+            m_darn_capable = ppcProbeDarn();
 
 
         m_x86_processor_flags[0] = (cast(ulong)(miscfeatures) << 32) | features;
@@ -152,6 +157,19 @@ public:
     */
     static bool hasAltivec() { return m_altivec_capable; }
 
+    /**
+    * POWER DARN instruction (POWER9+). False on non-PPC.
+    */
+    static bool hasDarn()
+    {
+        version (PPC)
+            return m_darn_capable;
+        else version (PPC64)
+            return m_darn_capable;
+        else
+            return false;
+    }
+
     static string toString()
     {
         import std.array : Appender;
@@ -206,6 +224,7 @@ private:
     static ulong[2] m_x86_processor_flags;
     static size_t m_cache_line_size;
     static bool m_altivec_capable;
+    static bool m_darn_capable;
 }
 
 package:
@@ -503,6 +522,30 @@ version (PPC) {
         
         return altivec_capable;
         
+    }
+
+    bool ppcProbeDarn()
+    {
+        version (linux)
+        {
+            import std.stdio : File;
+            try
+            {
+                auto f = File("/proc/self/auxv", "rb");
+                ulong[2] pair;
+                while (f.rawRead(pair[]).length == 2)
+                {
+                    enum ulong AT_HWCAP2 = 26;
+                    enum ulong PPC_FEATURE2_DARN = 1UL << 21;
+                    if (pair[0] == AT_HWCAP2)
+                        return (pair[1] & PPC_FEATURE2_DARN) != 0;
+                    if (pair[0] == 0)
+                        break;
+                }
+            }
+            catch (Exception) {}
+        }
+        return false;
     }
     
 }

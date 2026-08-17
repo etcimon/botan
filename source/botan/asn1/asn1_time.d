@@ -2,8 +2,8 @@
 * ASN.1 Time Representation
 * 
 * Copyright:
-* (C) 1999-2007,2012 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2007 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -305,7 +305,7 @@ private:
     bool passesSanityCheck() const
     {
         //logTrace("Decoded time: ", readableString());
-        if (m_year < 1950 || m_year > 2100)
+        if (m_year < 1950 || m_year > 9999)
             return false;
         if (m_month == 0 || m_month > 12)
             return false;
@@ -318,4 +318,51 @@ private:
 
     uint m_year, m_month, m_day, m_hour, m_minute, m_second;
     ASN1Tag m_tag;
+}
+
+static if (BOTAN_HAS_TESTS && !SKIP_ASN1_TEST) unittest
+{
+    import botan.test;
+    import memutils.hashmap;
+    import std.stdio : File;
+    import std.algorithm : canFind;
+
+    logDebug("Testing asn1_time.d ...");
+    size_t fails = 0;
+
+    File vec = File("test_data/asn1/asn1_time.vec", "r");
+    fails += runTestsBb(vec, "Tag", "Tspec", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Tspec" in m) || !("Tag" in m))
+                return 0;
+            const string tag_str = m["Tag"];
+            const bool expect_valid = !canFind(tag_str, ".invalid");
+            const ASN1Tag tag = (tag_str == "UTC" || tag_str == "UTC.invalid")
+                ? ASN1Tag.UTC_TIME : ASN1Tag.GENERALIZED_TIME;
+            try
+            {
+                // RefCounted.opCall asserts on ctor throw; setTo on an empty object.
+                X509Time t;
+                t.setTo(m["Tspec"], tag);
+                if (!expect_valid)
+                {
+                    logTrace("asn1 time leftover accepted ", m["Tspec"]);
+                    return 0;
+                }
+                return 0;
+            }
+            catch (Exception)
+            {
+                return expect_valid ? 1 : 0;
+            }
+        });
+
+    fails += checkMemutilsRepeat("asn1 time", {
+        X509Time t = X509Time("20180131053030Z", ASN1Tag.GENERALIZED_TIME);
+        if (t.toString().length < 10)
+            throw new Exception("asn1 time leak probe");
+    });
+
+    testReport("asn1_time", 0, fails);
 }

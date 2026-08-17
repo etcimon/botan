@@ -443,6 +443,12 @@ public:
 			throw new InvalidArgument("The stream cipher " ~ name ~ " does not support resyncronization"); 
 	}
 
+	override void seek(ulong offset)
+	{
+		if (offset)
+			throw new InvalidArgument(name ~ " does not support seek");
+	}
+
 protected:
     /*
     * RC4 Encryption

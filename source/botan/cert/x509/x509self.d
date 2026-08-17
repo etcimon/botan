@@ -2,14 +2,15 @@
 * X.509 Self-Signed Certificate
 * 
 * Copyright:
-* (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2008,2018 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
 */
 module botan.cert.x509.x509self;
 import botan.constants;
+static if (BOTAN_HAS_X509_CERTIFICATES):
 
 alias x509self = botan.cert.x509.x509self;
 

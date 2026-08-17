@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 2009 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -93,49 +93,53 @@ struct CryptoBox {
     *  input_len = the length of input in bytes
     *  passphrase = the passphrase used to encrypt the message
     */
-    static string decrypt(const(ubyte)* input, size_t input_len, in string passphrase)
+    /// Decrypt the raw (version + salt + MAC + ciphertext) box used by C++ KATs.
+    static string decryptRaw(const(ubyte)* input, size_t input_len, in string passphrase)
     {
-        auto input_src = DataSourceMemory(input, input_len);
-        SecureVector!ubyte ciphertext = PEM.decodeCheckLabel(cast(DataSource)input_src, "BOTAN CRYPTOBOX MESSAGE");
-        
-        if (ciphertext.length < (VERSION_CODE_LEN + PBKDF_SALT_LEN + MAC_OUTPUT_LEN))
+        if (input_len < (VERSION_CODE_LEN + PBKDF_SALT_LEN + MAC_OUTPUT_LEN))
             throw new DecodingError("Invalid CryptoBox input");
-        
+
         foreach (size_t i; 0 .. VERSION_CODE_LEN)
-            if (ciphertext[i] != get_byte(i, CRYPTOBOX_VERSION_CODE))
+            if (input[i] != get_byte(i, CRYPTOBOX_VERSION_CODE))
                 throw new DecodingError("Bad CryptoBox version");
-        
-        const(ubyte)* pbkdf_salt = &ciphertext[VERSION_CODE_LEN];
-        
+
+        const(ubyte)* pbkdf_salt = input + VERSION_CODE_LEN;
+
         auto pbkdf = scoped!PKCS5_PBKDF2(new HMAC(new SHA512));
-        
+
         OctetString master_key = pbkdf.deriveKey(PBKDF_OUTPUT_LEN,
                                                  passphrase,
                                                  pbkdf_salt,
                                                  PBKDF_SALT_LEN,
                                                  PBKDF_ITERATIONS);
-        
+
         const(ubyte)* mk = master_key.ptr;
-        
+
         SymmetricKey cipher_key = SymmetricKey(mk, CIPHER_KEY_LEN);
         SymmetricKey mac_key = SymmetricKey(&mk[CIPHER_KEY_LEN], MAC_KEY_LEN);
         InitializationVector iv = InitializationVector(&mk[CIPHER_KEY_LEN + MAC_KEY_LEN], CIPHER_IV_LEN);
 
         Pipe pipe = Pipe(new Fork(getCipher("Serpent/CTR-BE", cipher_key, iv, DECRYPTION),
                                   new MACFilter(new HMAC(new SHA512), mac_key, MAC_OUTPUT_LEN)));
-        
+
         const size_t ciphertext_offset = VERSION_CODE_LEN + PBKDF_SALT_LEN + MAC_OUTPUT_LEN;
-        
-        pipe.processMsg(&ciphertext[ciphertext_offset],
-                            ciphertext.length - ciphertext_offset);
+
+        pipe.processMsg(input + ciphertext_offset, input_len - ciphertext_offset);
 
         ubyte[MAC_OUTPUT_LEN] computed_mac;
         pipe.read(computed_mac.ptr, MAC_OUTPUT_LEN, 1);
-        
-        if (!sameMem(computed_mac.ptr, &ciphertext[VERSION_CODE_LEN + PBKDF_SALT_LEN], MAC_OUTPUT_LEN))
+
+        if (!sameMem(computed_mac.ptr, input + VERSION_CODE_LEN + PBKDF_SALT_LEN, MAC_OUTPUT_LEN))
             throw new DecodingError("CryptoBox integrity failure");
-        
+
         return pipe.toString(0);
+    }
+
+    static string decrypt(const(ubyte)* input, size_t input_len, in string passphrase)
+    {
+        auto input_src = DataSourceMemory(input, input_len);
+        SecureVector!ubyte ciphertext = PEM.decodeCheckLabel(cast(DataSource)input_src, "BOTAN CRYPTOBOX MESSAGE");
+        return decryptRaw(ciphertext.ptr, ciphertext.length, passphrase);
     }
 
 
@@ -175,6 +179,9 @@ static if (BOTAN_TEST):
 
 import botan.test;
 import botan.rng.auto_rng;
+import botan.codec.hex;
+import memutils.hashmap;
+import std.stdio : File;
 
 static if (BOTAN_HAS_TESTS && !SKIP_CRYPTOBOX_TEST) unittest
 {
@@ -202,5 +209,32 @@ static if (BOTAN_HAS_TESTS && !SKIP_CRYPTOBOX_TEST) unittest
         ++fails;
     }
     
+    File cvec = File("test_data/cryptobox.vec", "r");
+    fails += runTestsBb(cvec, "CryptoBox", "Output", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Output" in m) || !("Passphrase" in m) || !("Input" in m))
+                return 0;
+            auto box = hexDecode(m["Output"]);
+            string got = CryptoBox.decryptRaw(box.ptr, box.length, m["Passphrase"]);
+            auto expect = hexDecode(m["Input"]);
+            if (got.length != expect.length ||
+                !sameMem(cast(const(ubyte)*) got.ptr, expect.ptr, expect.length))
+                return 1;
+            return 0;
+        });
+
+    fails += checkMemutilsRepeat("cryptobox raw", {
+        Unique!AutoSeededRNG rng = new AutoSeededRNG;
+        __gshared immutable ubyte[3] msg = [ 0xAA, 0xBB, 0xCC ];
+        string box = CryptoBox.encrypt(msg.ptr, msg.length, "secret password", *rng);
+        string pt = CryptoBox.decrypt(box, "secret password");
+        if (pt.length != msg.length)
+            throw new Exception("cryptobox leak probe");
+    });
+
     testReport("Cryptobox", 2, fails);
+    if (fails)
+        logError("cryptobox failures: ", fails);
+    assert(fails == 0);
 }

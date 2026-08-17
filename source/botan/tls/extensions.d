@@ -2,8 +2,13 @@
 * TLS Extensions
 * 
 * Copyright:
-* (C) 2011-2012,2015 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2011,2012,2015,2016 Jack Lloyd
+* (C) 2016 Juraj Somorovsky
+* (C) 2021 Elektrobit Automotive GmbH
+* (C) 2022 René Meusel, Hannes Rantzsch - neXenio GmbH
+* (C) 2023 Mateusz Berezecki
+* (C) 2023 Fabian Albert, René Meusel - Rohde & Schwarz Cybersecurity
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -31,9 +36,17 @@ public enum : HandshakeExtensionType {
     TLSEXT_ALPN                      = 16,
 	TLSEXT_SIGNED_CERT_TIMESTAMP     = 18,
 	TLSEXT_PADDING                   = 21,
+    TLSEXT_ENCRYPT_THEN_MAC          = 22,
 	TLSEXT_EXTENDED_MASTER_SECRET    = 23,
+    TLSEXT_RECORD_SIZE_LIMIT         = 28,
 
     TLSEXT_SESSION_TICKET            = 35,
+
+    TLSEXT_SUPPORTED_VERSIONS        = 43,
+    TLSEXT_COOKIE                    = 44,
+    TLSEXT_PSK_KEY_EXCHANGE_MODES    = 45,
+    TLSEXT_SIGNATURE_ALGORITHMS_CERT = 50,
+    TLSEXT_KEY_SHARE                 = 51,
 
 	TLSEXT_NPN                       = 13172,
 
@@ -51,8 +64,12 @@ import memutils.hashmap;
 import botan.tls.reader;
 import botan.tls.exceptn;
 import botan.tls.alert;
+import botan.tls.magic;
+static if (BOTAN_HAS_TLS_13)
+    import botan.tls.tls13.hello_ext;
 import botan.utils.types : Unique;
 import botan.utils.get_byte;
+import botan.utils.loadstor;
 import std.conv : to;
 import std.array : Appender;
 
@@ -93,32 +110,89 @@ class NPN : Extension
 }
 
 /**
- * OCSP Stapling
+ * OCSP status_request (RFC 6066 8 / RFC 8446 4.4.2.1).
+ * ClientHello: request. ServerHello / CertificateRequest: empty ack.
+ * Certificate entry: CertificateStatus body (type 1 + 3-byte OCSP response).
 */
 class StatusRequest : Extension
 {
 	static HandshakeExtensionType staticType() { return TLSEXT_STATUS_REQUEST; }
 	
 	override HandshakeExtensionType type() const { return staticType(); }
+
+	/// ClientHello request (status_type ocsp, empty responders/extensions).
+	this() { m_kind = Kind.Request; }
+
+	/// TLS 1.3 CertificateEntry staple (RFC 6066 CertificateStatus).
+	this(Vector!ubyte ocsp_response)
+	{
+		m_kind = Kind.Staple;
+		m_ocsp = ocsp_response.move();
+	}
+
+	this(ref TLSDataReader reader, ushort extension_size, HandshakeType msg)
+	{
+		if (msg == CERTIFICATE)
+		{
+			m_kind = Kind.Staple;
+			if (extension_size < 4)
+				throw new DecodingError("Truncated CertificateStatus in status_request");
+			const ubyte typ = reader.get_byte();
+			if (typ != 1)
+				throw new DecodingError("Unexpected CertificateStatus type");
+			const size_t len = make_uint(0, reader.get_byte(), reader.get_byte(), reader.get_byte());
+			if (len + 4 != extension_size)
+				throw new DecodingError("Inconsistent CertificateStatus length");
+			m_ocsp = reader.getFixed!ubyte(len);
+		}
+		else if (msg == SERVER_HELLO || msg == CERTIFICATE_REQUEST)
+		{
+			m_kind = Kind.EmptyAck;
+			if (extension_size != 0)
+				throw new DecodingError("Received an unexpectedly non-empty Certificate_Status_Request");
+		}
+		else
+		{
+			m_kind = Kind.Request;
+			if (extension_size)
+				reader.discardNext(extension_size);
+		}
+	}
 	
 	override Vector!ubyte serialize() const
 	{
+		if (m_kind == Kind.Staple)
+		{
+			Vector!ubyte buf;
+			buf.pushBack(1);
+			foreach (size_t j; 0 .. 3)
+				buf.pushBack(get_byte!uint(j + 1, cast(uint) m_ocsp.length));
+			buf ~= m_ocsp[];
+			return buf.move();
+		}
+		if (m_kind == Kind.EmptyAck)
+			return Vector!ubyte();
 		Vector!ubyte buf;
 		buf.reserve(5);
-		buf.pushBack(0x01); // OCSP
-
-		// Responders
+		buf.pushBack(0x01);
 		buf.pushBack(0x00);
 		buf.pushBack(0x00);
-
-		// Request Extensions
 		buf.pushBack(0x00);
 		buf.pushBack(0x00);
-		
 		return buf.move();
 	}
+
+	ref const(Vector!ubyte) ocspResponse() const { return m_ocsp; }
 	
-	override @property bool empty() const { return false; }
+	override @property bool empty() const
+	{
+		return m_kind == Kind.Staple && m_ocsp.empty;
+	}
+
+private:
+	enum Kind : ubyte { Request, EmptyAck, Staple }
+	Kind m_kind;
+	Vector!ubyte m_ocsp;
 }
 
 /**
@@ -143,6 +217,31 @@ class ExtendedMasterSecret : Extension
 	{
 		if (extension_size != 0)
 			throw new DecodingError("Invalid extended_master_secret extension");
+	}
+}
+
+/**
+* Encrypt-then-MAC (RFC 7366)
+*/
+class EncryptThenMAC : Extension
+{
+	static HandshakeExtensionType staticType() { return TLSEXT_ENCRYPT_THEN_MAC; }
+
+	override HandshakeExtensionType type() const { return staticType(); }
+
+	override Vector!ubyte serialize() const
+	{
+		return Vector!ubyte();
+	}
+
+	override @property bool empty() const { return false; }
+
+	this() {}
+
+	this(ref TLSDataReader reader, ushort extension_size)
+	{
+		if (extension_size != 0)
+			throw new DecodingError("Invalid encrypt_then_mac extension");
 	}
 }
 
@@ -279,6 +378,13 @@ public:
 		m_formats = formats.clone();
 	}
 
+	this(ref TLSDataReader reader, ushort extension_size)
+	{
+		m_formats = reader.getRange!ubyte(1, 1, 255);
+		if (m_formats.length + 1 != extension_size)
+			throw new DecodingError("Bad encoding of point formats extension");
+	}
+
 	override Vector!ubyte serialize() const
 	{
 		Vector!ubyte buf;
@@ -307,10 +413,11 @@ public:
 
     override HandshakeExtensionType type() const { return staticType(); }
 
-    this(in string host_name) 
+    this(in string host_name, bool allow_empty = false) 
     {
 		//logDebug("SNI loaded with host name: ", host_name);
         m_sni_host_name = host_name;
+        m_allow_empty = allow_empty;
     }
 
     this(ref TLSDataReader reader, ushort extension_size)
@@ -348,6 +455,10 @@ public:
 
     override Vector!ubyte serialize() const
     {
+        // RFC 6066 3 / 8446 4.3.1: server SNI acknowledgement is empty extension_data.
+        if (m_sni_host_name.length == 0)
+            return Vector!ubyte();
+
         Vector!ubyte buf;
         
         size_t name_len = m_sni_host_name.length;
@@ -364,9 +475,10 @@ public:
         return buf.move();
     }
 
-    override @property bool empty() const { return m_sni_host_name == ""; }
+    override @property bool empty() const { return !m_allow_empty && m_sni_host_name == ""; }
 private:
     string m_sni_host_name;
+    bool m_allow_empty;
 }
 
 /**
@@ -546,25 +658,31 @@ public:
 
     this(ref TLSDataReader reader, ushort extension_size)
     {
-        if (extension_size == 0)
-            return; // empty extension
-        
+        if (extension_size < 2)
+            throw new DecodingError("ALPN extension cannot be empty");
+
         const ushort name_bytes = reader.get_ushort();
-        
+
         size_t bytes_remaining = extension_size - 2;
 
         if (name_bytes != bytes_remaining)
             throw new DecodingError("Bad encoding of ALPN extension, bad length field");
 
+        // RFC 7301 3.1: ProtocolName protocol_name_list<2..2^16-1>
+        if (name_bytes == 0)
+            throw new DecodingError("Empty ALPN protocol_name_list not allowed");
+
         while (bytes_remaining)
         {
             const string p = reader.getString(1, 0, 255);
-            
+
             if (bytes_remaining < p.length + 1)
                 throw new DecodingError("Bad encoding of ALPN, length field too long");
-            
+
+            if (p.length == 0)
+                throw new DecodingError("Empty ALPN protocol not allowed");
+
             bytes_remaining -= (p.length + 1);
-			//logDebug("Got protocol: ", p); 
             m_protocols.pushBack(p);
         }
     }
@@ -721,6 +839,50 @@ public:
                 return "brainpool512r1";
 			case 29:
 				return "x25519";
+			case 0x0200:
+				return "ML-KEM-512";
+			case 0x0201:
+				return "ML-KEM-768";
+			case 0x0202:
+				return "ML-KEM-1024";
+			case 0x11EB:
+				return "secp256r1/ML-KEM-768";
+			case 0x11EC:
+				return "x25519/ML-KEM-768";
+			case 0x11ED:
+				return "secp384r1/ML-KEM-1024";
+			case 0xFE00:
+				return "eFrodoKEM-640-AES";
+			case 0xFE01:
+				return "secp256r1/eFrodoKEM-640-AES";
+			case 0xFE02:
+				return "x25519/eFrodoKEM-640-AES";
+			case 0xFE03:
+				return "eFrodoKEM-640-SHAKE";
+			case 0xFE04:
+				return "secp256r1/eFrodoKEM-640-SHAKE";
+			case 0xFE05:
+				return "x25519/eFrodoKEM-640-SHAKE";
+			case 0xFE06:
+				return "eFrodoKEM-976-AES";
+			case 0xFE07:
+				return "secp384r1/eFrodoKEM-976-AES";
+			case 0xFE08:
+				return "x448/eFrodoKEM-976-AES";
+			case 0xFE09:
+				return "eFrodoKEM-976-SHAKE";
+			case 0xFE0A:
+				return "secp384r1/eFrodoKEM-976-SHAKE";
+			case 0xFE0B:
+				return "x448/eFrodoKEM-976-SHAKE";
+			case 0xFE0C:
+				return "eFrodoKEM-1344-AES";
+			case 0xFE0D:
+				return "secp521r1/eFrodoKEM-1344-AES";
+			case 0xFE0E:
+				return "eFrodoKEM-1344-SHAKE";
+			case 0xFE0F:
+				return "secp521r1/eFrodoKEM-1344-SHAKE";
 			
             default:
                 return ""; // something we don't know or support
@@ -794,72 +956,121 @@ public:
             return 28;
 		if (name == "x25519")
 			return 29;
+		if (name == "ML-KEM-512")
+			return 0x0200;
+		if (name == "ML-KEM-768")
+			return 0x0201;
+		if (name == "ML-KEM-1024")
+			return 0x0202;
+		if (name == "secp256r1/ML-KEM-768")
+			return 0x11EB;
+		if (name == "x25519/ML-KEM-768")
+			return 0x11EC;
+		if (name == "secp384r1/ML-KEM-1024")
+			return 0x11ED;
+		if (name == "eFrodoKEM-640-AES")
+			return 0xFE00;
+		if (name == "secp256r1/eFrodoKEM-640-AES")
+			return 0xFE01;
+		if (name == "x25519/eFrodoKEM-640-AES")
+			return 0xFE02;
+		if (name == "eFrodoKEM-640-SHAKE")
+			return 0xFE03;
+		if (name == "secp256r1/eFrodoKEM-640-SHAKE")
+			return 0xFE04;
+		if (name == "x25519/eFrodoKEM-640-SHAKE")
+			return 0xFE05;
+		if (name == "eFrodoKEM-976-AES")
+			return 0xFE06;
+		if (name == "secp384r1/eFrodoKEM-976-AES")
+			return 0xFE07;
+		if (name == "x448/eFrodoKEM-976-AES")
+			return 0xFE08;
+		if (name == "eFrodoKEM-976-SHAKE")
+			return 0xFE09;
+		if (name == "secp384r1/eFrodoKEM-976-SHAKE")
+			return 0xFE0A;
+		if (name == "x448/eFrodoKEM-976-SHAKE")
+			return 0xFE0B;
+		if (name == "eFrodoKEM-1344-AES")
+			return 0xFE0C;
+		if (name == "secp521r1/eFrodoKEM-1344-AES")
+			return 0xFE0D;
+		if (name == "eFrodoKEM-1344-SHAKE")
+			return 0xFE0E;
+		if (name == "secp521r1/eFrodoKEM-1344-SHAKE")
+			return 0xFE0F;
         
         throw new InvalidArgument("name_to_curve_id unknown name " ~ name);
     }
 
     ref const(Vector!string) curves() const { return m_curves; }
+    ref const(Vector!ushort) groupIds() const { return m_group_ids; }
 
     override Vector!ubyte serialize() const
     {
-		Vector!ubyte buf;
-		buf.reserve(m_curves.length * 2 + 2);
-		buf.length = 2;
-        
-		if (m_grease > 0) {
-			buf.pushBack(get_byte(0, m_grease));
-			buf.pushBack(get_byte(1, m_grease));
-		}
-		
-		for (size_t i = 0; i != m_curves.length; ++i)
+        Vector!ubyte buf;
+        buf.reserve(m_group_ids.length * 2 + 2);
+        buf.length = 2;
+
+        foreach (id; m_group_ids[])
         {
-            const ushort id = nameToCurveId(m_curves[i]);
-			if (id > 0) {
-	            buf.pushBack(get_byte(0, id));
-	            buf.pushBack(get_byte(1, id));
-			}
+            if (id > 0)
+            {
+                buf.pushBack(get_byte(0, id));
+                buf.pushBack(get_byte(1, id));
+            }
         }
-        
-        buf[0] = get_byte(0, cast(ushort) (buf.length-2));
-        buf[1] = get_byte(1, cast(ushort) (buf.length-2));
-        
+
+        buf[0] = get_byte(0, cast(ushort)(buf.length - 2));
+        buf[1] = get_byte(1, cast(ushort)(buf.length - 2));
+
         return buf.move();
     }
 
-    this(Vector!string curves, const ushort grease = 0) 
+    this(Vector!string curves, const ushort grease = 0)
     {
         m_curves = curves.move();
-		m_grease = grease;
+        m_grease = grease;
+        if (grease > 0)
+            m_group_ids.pushBack(grease);
+        foreach (c; m_curves[])
+        {
+            const ushort id = nameToCurveId(c);
+            if (id > 0)
+                m_group_ids.pushBack(id);
+        }
     }
 
     this(ref TLSDataReader reader, ushort extension_size)
     {
         ushort len = reader.get_ushort();
-		m_curves.reserve(cast(size_t)len);
-		//logDebug("Got elliptic curves len: ", len, " ext size: ", extension_size);
         if (len + 2 != extension_size)
-            throw new DecodingError("Inconsistent length field in elliptic curve list");
-        
+            throw new DecodingError("Inconsistent length field in supported groups list");
+
+        // RFC 8446 4.2.7: NamedGroup named_group_list<2..2^16-1>
+        if (len == 0)
+            throw new DecodingError("Empty supported groups list");
+
         if (len % 2 == 1)
-            throw new DecodingError("Elliptic curve list of strange size");
-        
-        len /= 2;
-        
-        foreach (size_t i; 0 .. len)
+            throw new DecodingError("Supported groups list of strange size");
+
+        const size_t elems = len / 2;
+        foreach (size_t i; 0 .. elems)
         {
             const ushort id = reader.get_ushort();
+            m_group_ids.pushBack(id);
             const string name = curveIdToName(id);
-			//logDebug("Got curve name: ", name);
-            
             if (name != "")
                 m_curves.pushBack(name);
         }
     }
 
-    override @property bool empty() const { return m_curves.empty; }
+    override @property bool empty() const { return m_group_ids.empty; }
 private:
     Vector!string m_curves;
-	ushort m_grease;
+    Vector!ushort m_group_ids;
+    ushort m_grease;
 }
 
 /**
@@ -1052,6 +1263,50 @@ private:
 }
 
 /**
+* signature_algorithms_cert (RFC 8446 4.2.3, type 50). Wire format matches
+* signature_algorithms: a list of 16-bit SignatureScheme values.
+*/
+class SignatureAlgorithmsCert : Extension
+{
+public:
+    static HandshakeExtensionType staticType() { return TLSEXT_SIGNATURE_ALGORITHMS_CERT; }
+    override HandshakeExtensionType type() const { return staticType(); }
+
+    this(ref TLSDataReader reader, ushort extension_size)
+    {
+        ushort len = reader.get_ushort();
+        if (len + 2 != extension_size || (len % 2) == 1 || len == 0)
+            throw new DecodingError("Bad encoding on signature algorithms extension");
+        while (len)
+        {
+            m_schemes.pushBack(reader.get_ushort());
+            len -= 2;
+        }
+    }
+
+    ref const(Vector!ushort) schemes() const { return m_schemes; }
+
+    override Vector!ubyte serialize() const
+    {
+        Vector!ubyte buf;
+        const ushort len = cast(ushort)(m_schemes.length * 2);
+        buf.pushBack(get_byte(0, len));
+        buf.pushBack(get_byte(1, len));
+        foreach (s; m_schemes[])
+        {
+            buf.pushBack(get_byte(0, s));
+            buf.pushBack(get_byte(1, s));
+        }
+        return buf.move();
+    }
+
+    override @property bool empty() const { return m_schemes.empty; }
+
+private:
+    Vector!ushort m_schemes;
+}
+
+/**
 * Heartbeat Extension (RFC 6520)
 */
 class HeartbeatSupportIndicator : Extension
@@ -1177,8 +1432,9 @@ public:
         return buf.move();
     }
 
-    void deserialize(ref TLSDataReader reader)
+    void deserialize(ref TLSDataReader reader, HandshakeType msg = HANDSHAKE_NONE)
     {
+        m_extensions.clear();
         if (reader.hasRemaining())
         {
             const ushort all_extn_size = reader.get_ushort();
@@ -1191,7 +1447,7 @@ public:
                 const ushort extension_code = reader.get_ushort();
                 const ushort extension_size = reader.get_ushort();
 				//logDebug("Got extension: ", extension_code); 
-                Extension extn = makeExtension(reader, extension_code, extension_size);
+                Extension extn = makeExtension(reader, extension_code, extension_size, msg);
                 
                 if (extn)
                     this.add(extn);
@@ -1221,6 +1477,23 @@ private:
 	Vector!HandshakeExtensionType types;
 	Vector!Extension extensions;
 
+	/// Drop owned GC extensions. Safe from deserialize/remove (not a finalizer).
+	/// ~this skips this when GC is collecting — Unique!(T,void) does the same.
+	void clear()
+	{
+		foreach (e; extensions[])
+			botanDestroyIfLive(e);
+		types.clear();
+		extensions.clear();
+	}
+
+	~this()
+	{
+		if (botanInGcFinalizer())
+			return;
+		clear();
+	}
+
 	Extension get(HandshakeExtensionType type, Extension dflt) const {
 		size_t i;
 		foreach (HandshakeExtensionType t; types[]) {
@@ -1241,6 +1514,7 @@ private:
 		size_t i;
 		foreach (HandshakeExtensionType t; types[]) {
 			if (t == type) {
+				botanDestroyIfLive(extensions[i]);
 				Vector!HandshakeExtensionType tmp_types;
 				tmp_types.reserve(types.length - 1);
 				tmp_types ~= types[0 .. i];
@@ -1264,8 +1538,12 @@ private:
 
 private:
 
-Extension makeExtension(ref TLSDataReader reader, ushort code, ushort size)
+Extension makeExtension(ref TLSDataReader reader, ushort code, ushort size, HandshakeType msg = HANDSHAKE_NONE)
 {
+    static if (BOTAN_HAS_TLS_13) {
+        if (auto ext13 = makeTls13Extension(reader, code, size, msg == SERVER_HELLO))
+            return ext13;
+    }
     switch(code)
     {
         case TLSEXT_SERVER_NAME_INDICATION:
@@ -1273,6 +1551,9 @@ Extension makeExtension(ref TLSDataReader reader, ushort code, ushort size)
             
 		case TLSEXT_EXTENDED_MASTER_SECRET:
 			return new ExtendedMasterSecret(reader, size);
+
+		case TLSEXT_ENCRYPT_THEN_MAC:
+			return new EncryptThenMAC(reader, size);
 
         case TLSEXT_MAX_FRAGMENT_LENGTH:
             return new MaximumFragmentLength(reader, size);
@@ -1282,12 +1563,18 @@ Extension makeExtension(ref TLSDataReader reader, ushort code, ushort size)
             
         case TLSEXT_USABLE_ELLIPTIC_CURVES:
             return new SupportedEllipticCurves(reader, size);
+
+        case TLSEXT_EC_POINT_FORMATS:
+            return new SupportedPointFormats(reader, size);
             
         case TLSEXT_SAFE_RENEGOTIATION:
             return new RenegotiationExtension(reader, size);
             
         case TLSEXT_SIGNATURE_ALGORITHMS:
             return new SignatureAlgorithms(reader, size);
+
+        case TLSEXT_SIGNATURE_ALGORITHMS_CERT:
+            return new SignatureAlgorithmsCert(reader, size);
             
         case TLSEXT_ALPN:
             return new ApplicationLayerProtocolNotification(reader, size);
@@ -1300,6 +1587,9 @@ Extension makeExtension(ref TLSDataReader reader, ushort code, ushort size)
            
 		case TLSEXT_CHANNEL_ID:
 			return new ChannelIDSupport(reader, size);
+
+        case TLSEXT_STATUS_REQUEST:
+            return new StatusRequest(reader, size, msg);
 
         default:
             return null; // not known

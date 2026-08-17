@@ -2,8 +2,11 @@
 * TLS Server
 * 
 * Copyright:
-* (C) 2004-2011,2015 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2004-2011,2012,2016 Jack Lloyd
+* (C) 2016 Matthias Gierlings
+* (C) 2021 Elektrobit Automotive GmbH
+* (C) 2022 René Meusel, Hannes Rantzsch - neXenio GmbH
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -23,6 +26,7 @@ import memutils.dictionarylist;
 import memutils.hashmap;
 import botan.utils.types;
 import std.datetime;
+static if (BOTAN_HAS_TLS_13) import botan.tls.tls13.handshake;
 
 alias NextProtocolHandler = string delegate(in Vector!string);
 alias SNIHandler = SNIContextSwitchInfo delegate(string);
@@ -177,6 +181,9 @@ protected:
                 negotiated_version = latest_supported;
             }
             
+            static if (BOTAN_HAS_TLS_13)
+                negotiated_version = tls13SelectVersion(negotiated_version, m_policy);
+
             if (!m_policy.acceptableProtocolVersion(negotiated_version))
             {
                 throw new TLSException(TLSAlert.PROTOCOL_VERSION, "Client version " ~ negotiated_version.toString() ~ " is unacceptable by policy");
@@ -213,6 +220,128 @@ protected:
 
             if (m_choose_next_protocol && state.clientHello().supportsAlpn())
                 m_application_protocol = m_choose_next_protocol(state.clientHello().nextProtocols());
+
+            static if (BOTAN_HAS_TLS_13)
+            {
+                if (negotiated_version == TLSProtocolVersion(TLSProtocolVersion.TLS_V13))
+                {
+                    const ushort suite13 = tls13ChooseSuite(state.clientHello());
+                    if (!suite13)
+                        throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "No TLS 1.3 ciphersuite in common");
+                    ushort group;
+                    const(ubyte)[] share;
+                    Vector!ubyte share_buf;
+                    static if (BOTAN_HAS_CURVE25519)
+                    {
+                        auto agr = tls13AgreeFromClientShare(state.clientHello().tls13KeyShare(), rng());
+                        group = agr.group;
+                        share_buf = agr.server_public.move();
+                        share = share_buf[];
+                        state.serverHello(new ServerHello(state.handshakeIo(),
+                                                          state.hash(),
+                                                          m_policy,
+                                                          state.clientHello().sessionId().clone,
+                                                          negotiated_version,
+                                                          suite13,
+                                                          NO_COMPRESSION,
+                                                          0,
+                                                          false,
+                                                          false,
+                                                          Vector!ubyte(),
+                                                          false,
+                                                          false,
+                                                          "",
+                                                          false,
+                                                          rng(),
+                                                          group,
+                                                          share));
+                        const string hs_prf = state.ciphersuite().prfAlgo();
+                        const(ubyte)[] hs_msg = state.hash().getContents()[];
+                        auto sec = tls13HandshakeSecrets(hs_prf, agr.shared_secret.ptr, agr.shared_secret.length,
+                                                         hs_msg.ptr, hs_msg.length);
+                        state.tls13SetHsTraffic(hs_prf, sec.handshake_secret.move(),
+                                                sec.client_handshake_traffic.move(),
+                                                sec.server_handshake_traffic.move());
+                        tls13SetRecordKeys(tls13AeadName(state.ciphersuite()), hs_prf,
+                                           state.tls13ServerHs().ptr, state.tls13ServerHs().length,
+                                           state.tls13ClientHs().ptr, state.tls13ClientHs().length,
+                                           SERVER);
+                    }
+                    else
+                    {
+                        state.serverHello(new ServerHello(state.handshakeIo(),
+                                                          state.hash(),
+                                                          m_policy,
+                                                          state.clientHello().sessionId().clone,
+                                                          negotiated_version,
+                                                          suite13,
+                                                          NO_COMPRESSION,
+                                                          0,
+                                                          false,
+                                                          false,
+                                                          Vector!ubyte(),
+                                                          false,
+                                                          false,
+                                                          "",
+                                                          false,
+                                                          rng()));
+                    }
+                    {
+                        Unique!TLS13EncryptedExtensions ee = new TLS13EncryptedExtensions(
+                            state.handshakeIo(), state.hash(),
+                            state.clientHello(), m_application_protocol);
+                    }
+                    const string sni = state.clientHello().sniHostname();
+                    auto cert_chains = getServerCerts(sni, m_creds);
+                    auto rsa_certs = cert_chains.get("RSA", Array!X509Certificate(0));
+                    if (rsa_certs.length == 0)
+                        throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "No server certificate for TLS 1.3");
+                    Vector!X509Certificate chain;
+                    foreach (c; rsa_certs[])
+                        chain.pushBack(c);
+                    state.serverCerts(new Certificate(chain));
+                    {
+                        Vector!ubyte staple;
+                        static if (BOTAN_HAS_OCSP_STAPLE)
+                        {
+                            if (state.clientHello().supportsStatusRequest() && chain.length)
+                                staple = m_creds.ocspStaple("tls-server", sni, chain[0]);
+                        }
+                        Unique!TLS13Certificate c13 = new TLS13Certificate(
+                            state.handshakeIo(), state.hash(), chain.clone, staple.move());
+                    }
+                    PrivateKey priv = m_creds.privateKeyFor(chain[0], "tls-server", sni);
+                    if (!priv)
+                        throw new TLSException(TLSAlert.INTERNAL_ERROR, "No private key for TLS 1.3 certificate");
+                    {
+                        const string cv_prf = state.ciphersuite().prfAlgo();
+                        const(ubyte)[] cv_msg = state.hash().getContents()[];
+                        auto sig = tls13SignCertificateVerify(priv, SERVER, cv_prf, cv_msg.ptr, cv_msg.length, rng());
+                        Unique!TLS13CertificateVerify cv = new TLS13CertificateVerify(
+                            state.handshakeIo(), state.hash(), TLS13_RSA_PSS_RSAE_SHA256, sig.move());
+                    }
+                    if (state.tls13HaveHsTraffic())
+                    {
+                        const string fin_prf = state.ciphersuite().prfAlgo();
+                        const(ubyte)[] fin_msg = state.hash().getContents()[];
+                        auto vd = tls13FinishedMac(fin_prf, state.tls13ServerHs().ptr, state.tls13ServerHs().length,
+                                                   fin_msg.ptr, fin_msg.length);
+                        state.serverFinished(new Finished(state.handshakeIo(), state.hash(), vd.move()));
+                        const(ubyte)[] app_msg = state.hash().getContents()[];
+                        auto app = tls13AppSecrets(fin_prf, state.tls13HandshakeSecret().ptr,
+                                                   state.tls13HandshakeSecret().length,
+                                                   app_msg.ptr, app_msg.length);
+                        state.tls13SetAppTraffic(app.client_application_traffic.move(),
+                                                 app.server_application_traffic.move());
+                        tls13SetRecordKeys(tls13AeadName(state.ciphersuite()), fin_prf,
+                                           state.tls13ServerApp().ptr, state.tls13ServerApp().length,
+                                           state.tls13ClientHs().ptr, state.tls13ClientHs().length,
+                                           SERVER);
+                    }
+                    state.setExpectedNext(FINISHED);
+                    return;
+                }
+            }
 
             if (resuming)
             {
@@ -469,6 +598,48 @@ protected:
         }
         else if (type == FINISHED)
         {
+            static if (BOTAN_HAS_TLS_13)
+            {
+                if (state.Version() == TLSProtocolVersion(TLSProtocolVersion.TLS_V13))
+                {
+                    state.setExpectedNext(HANDSHAKE_NONE);
+                    state.clientFinished(new Finished(contents.clone));
+                    if (!state.tls13HaveHsTraffic())
+                        throw new TLSException(TLSAlert.INTERNAL_ERROR, "Missing TLS 1.3 handshake secrets");
+                    const string prf = state.ciphersuite().prfAlgo();
+                    const(ubyte)[] hs = state.hash().getContents()[];
+                    auto expect = tls13FinishedMac(prf, state.tls13ClientHs().ptr, state.tls13ClientHs().length,
+                                                   hs.ptr, hs.length);
+                    if (state.clientFinished().verifyData()[] != expect[])
+                        throw new TLSException(TLSAlert.DECRYPT_ERROR, "Finished message didn't verify");
+                    state.hash().update(state.handshakeIo().format(contents, type));
+                    auto session_info = new TLSSession(state.serverHello().sessionId().clone,
+                                                       state.tls13ServerHs().clone,
+                                                       SecureVector!ubyte(),
+                                                       state.serverHello().Version(),
+                                                       state.serverHello().ciphersuite(),
+                                                       state.serverHello().compressionMethod(),
+                                                       SERVER,
+                                                       state.serverHello().fragmentSize(),
+                                                       false,
+                                                       getPeerCertChain(state),
+                                                       Vector!ubyte(),
+                                                       TLSServerInformation(state.clientHello().sniHostname()),
+                                                       "");
+                    scope(exit) destroy(session_info);
+                    saveSession(session_info);
+                    if (state.tls13HaveAppTraffic())
+                    {
+                        const string prf_app = state.ciphersuite().prfAlgo();
+                        tls13SetRecordKeys(tls13AeadName(state.ciphersuite()), prf_app,
+                                           state.tls13ServerApp().ptr, state.tls13ServerApp().length,
+                                           state.tls13ClientApp().ptr, state.tls13ClientApp().length,
+                                           SERVER);
+                    }
+                    activateSession();
+                    return;
+                }
+            }
             state.setExpectedNext(HANDSHAKE_NONE);
             
             state.clientFinished(new Finished(contents.clone));

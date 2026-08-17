@@ -2,8 +2,8 @@
 * ElGamal
 * 
 * Copyright:
-* (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2007,2018,2019,2023 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -312,6 +312,63 @@ static if (BOTAN_HAS_TESTS && !SKIP_ELGAMAL_TEST) unittest
             return elgamalKat(m["P"], m["G"], m["X"], m["Msg"],
             m.get("Padding", ""), m["Nonce"], m["Ciphertext"]);
         });
+
+    File elg_named = File("test_data/pubkey/elgamal_encrypt.vec", "r");
+    fails += runTestsBb(elg_named, "ElGamal Named", "Ciphertext", true,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Group" in m) || !("Secret" in m) || !("Msg" in m) ||
+                !("Nonce" in m) || !("Ciphertext" in m))
+                return 0;
+            atomicOp!"+="(total_tests, 1);
+            DLGroup group = DLGroup(m["Group"]);
+            auto secret = BigInt(m["Secret"]);
+            auto privkey = ElGamalPrivateKey(*rng, group.move(), secret.move());
+            string padding = m.get("Padding", "");
+            if (padding == "")
+                padding = "Raw";
+            auto dec = scoped!PKDecryptorEME(privkey, padding);
+            import botan.utils.mem_ops : unlock;
+            auto got = unlock(dec.decrypt(hexDecode(m["Ciphertext"])));
+            if (got[] != hexDecode(m["Msg"])[])
+                return 1;
+            return 0;
+        });
+
+    File elg_dec = File("test_data/pubkey/elgamal_decrypt.vec", "r");
+    fails += runTestsBb(elg_dec, "ElGamal Decrypt", "Ciphertext", true,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("P" in m) || !("G" in m) || !("X" in m) || !("Msg" in m) || !("Ciphertext" in m))
+                return 0;
+            atomicOp!"+="(total_tests, 1);
+            auto p = BigInt(m["P"]);
+            auto g = BigInt(m["G"]);
+            auto x = BigInt(m["X"]);
+            DLGroup group = DLGroup(p, g);
+            auto privkey = ElGamalPrivateKey(*rng, group.move(), x.move());
+            auto dec = scoped!PKDecryptorEME(privkey, "Raw");
+            import botan.utils.mem_ops : unlock;
+            auto got = unlock(dec.decrypt(hexDecode(m["Ciphertext"])));
+            if (got[] != hexDecode(m["Msg"])[])
+                return 1;
+            return 0;
+        });
+
+    fails += checkMemutilsRepeat("elgamal decrypt", {
+        File once = File("test_data/pubkey/elgamal.vec", "r");
+        size_t seen;
+        auto n = runTestsBb(once, "ElGamal Encryption", "Ciphertext", true,
+            (ref HashMap!(string, string) m)
+            {
+                if (seen++)
+                    return 0;
+                return elgamalKat(m["P"], m["G"], m["X"], m["Msg"],
+                    m.get("Padding", ""), m["Nonce"], m["Ciphertext"]);
+            });
+        if (n)
+            throw new Exception("elgamal leak probe");
+    });
     
     testReport("elg", total_tests, fails);
 }

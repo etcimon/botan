@@ -1,0 +1,89 @@
+# Test for check_and_canonicalize_dns_name
+
+[Valid]
+DNS = localhost
+DNS = localhost.localdomain
+DNS = a.com
+DNS = a.b.com
+DNS = example.org
+DNS = a.longer.example.org
+DNS = sub.domain.net
+DNS = best.domain-ever123.io
+DNS = test.co.uk
+DNS = foo.bar.baz
+DNS = 0.com
+DNS = 123abc.com
+DNS = a1b2c3.d4e5f6
+DNS = a-1-b-2-c-3.com
+DNS = A.B.C
+DNS = SUB-DOMAIN.EXAMPLE.NET
+DNS = a1-B2.c3-D4
+DNS = x--x.com
+DNS = xn--test8t.example
+DNS = MixedCase123-Test-123.COM
+DNS = 123.456.789.com
+DNS = a-b-c.d.e.f
+DNS = this-is-a-valid-sixty-three-character-long-label-test-is--magic.com
+
+[ValidWildcard]
+# Names containing a single "*" in the leftmost label - rejected by
+# DNSName::from_string, accepted by DNSName::from_san_string. This is
+# the RFC 6125 6.4.3 form: complete leftmost label, or in-label partial
+# wildcards. is_wildcard() returns true for all of these.
+DNS = *.example.com
+DNS = foo*.example.com
+DNS = *bar.example.com
+DNS = foo*bar.example.com
+
+[Invalid]
+DNS = _acme-challenge.example.com
+DNS = _sip._tcp.example.com
+# Wildcard shapes that can never produce a match: more than one "*",
+# a "*" outside the leftmost label, or too few labels to ever match.
+# Also wildcards within an IDNA A-label. Rejected by both factories.
+DNS = *.*.example.com
+DNS = foo.*.example.com
+DNS = *foo.*.example.com
+DNS = *
+DNS = *.com
+DNS = foo*.com
+DNS = xn--f*.example.com
+DNS = xn--*.example.com
+# All-numeric names are rejected
+DNS = 1.2.3.4
+DNS = 123.456.789
+DNS = 12345
+DNS = 999.999.999.999
+DNS =
+DNS = .
+DNS = -bad.com
+DNS = bad-.com
+DNS = down.-bad.com
+DNS = down.bad-.com
+DNS = really.bad-
+DNS = really.-bad
+DNS = .startingdot.com
+DNS = endingdot.com.
+DNS = inv@lid.com
+DNS = surprise!.party.com
+DNS = sequential..period.com
+DNS = sequentialperiod..com
+DNS = too...many.dots
+DNS = ..thats-a-lot-of-dots.com
+DNS = spaces not allowed.com
+DNS = whitespace\tcharacter.com
+DNS = invalid@character
+DNS = invalid#character
+DNS = invalid$character
+DNS = invalid%character
+DNS = invalid&character
+DNS = invalid+character
+DNS = invalid=character
+DNS = invalid?character
+DNS = invalid!character
+DNS = exteñded.ascii.com
+DNS = (parentheses).com
+DNS = [brackets].com
+DNS = {braces}.com
+DNS = this-is-a-very-long-label-that-exceeds-sixty-for-characters-test
+DNS = toolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtool

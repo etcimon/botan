@@ -1,0 +1,32 @@
+# Application_Layer_Protocol_Notification (ALPN, RFC 7301) wire format:
+#     - protocol_name_list length (2 bytes)
+#     - sequence of:
+#         - ProtocolName length (1 byte)
+#         - ProtocolName bytes
+#
+# RFC 7301 3.1 specifies ProtocolName protocol_name_list<2..2^16-1>
+# (i.e. at least one non-empty protocol name).
+
+[alpn]
+Buffer = 0003026832
+Expected_Content = h2
+Exception =
+
+Buffer = 000c02683208687474702f312e31
+Expected_Content = h2,http/1.1
+Exception =
+
+Buffer =
+Exception = ALPN extension cannot be empty
+
+# protocol_name_list has an inconsistent length
+Buffer = 0004026832
+Exception = Bad encoding of ALPN extension, bad length field
+
+# empty protocol_name_list
+Buffer = 0000
+Exception = Empty ALPN protocol_name_list not allowed
+
+# valid list, empty protocol name
+Buffer = 000100
+Exception = Empty ALPN protocol not allowed

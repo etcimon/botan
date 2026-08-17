@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 2009 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -11,7 +11,7 @@
 module botan.pubkey.test;
 
 import botan.constants;
-static if (BOTAN_HAS_PUBLIC_KEY_CRYPTO && BOTAN_TEST):
+static if (BOTAN_HAS_PUBLIC_KEY_CRYPTO && BOTAN_TEST && BOTAN_HAS_CODEC_FILTERS):
 
 import botan.test;
 import botan.rng.test;
@@ -185,6 +185,8 @@ size_t validateSignature(ref PKVerifier v, ref PKSigner s, string algo,
     if (sig != expected)
     {
         logError("FAILED (sign): " ~ algo);
+        logError("Got: ", hexEncode(sig));
+        logError("Exp: ", hexEncode(expected));
         dumpData(sig, expected);
         ++fails;
 	}

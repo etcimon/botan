@@ -2,8 +2,8 @@
 * OCSP
 * 
 * Copyright:
-* (C) 2012 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2012,2013 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -300,10 +300,17 @@ struct OnlineCheck {
 	        return;
 	    }
 
+	    if (!hasHttpTransport())
+	    {
+	        logTrace("No HTTP transport for OCSP; skip");
+	        *cast(OCSPResponse*)resp = OCSPResponse.init;
+	        return;
+	    }
+
 	    OCSPRequest req = OCSPRequest(*cast(X509Certificate*)issuer, *cast(X509Certificate*)subject);
 	    
-	    logTrace("POST_sync");
-	    HTTPResponse res = POST_sync(responder_url, "application/ocsp-request", req.BER_encode());
+	    logTrace("ocspHttpPost");
+	    HTTPResponse res = ocspHttpPost(responder_url, req.BER_encode());
 	    
 	    res.throwUnlessOk();
 	    

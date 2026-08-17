@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 2014-2015 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -19,6 +19,7 @@ public import std.range : walkLength;
 public import std.string : indexOf, lastIndexOf;
 public import botan.utils.types;
 private import botan.libstate.libstate;
+import memutils.constants : HasDebugAllocations;
 import memutils.hashmap;
 import std.file;
 import std.array;
@@ -111,6 +112,95 @@ void testReport(string name, size_t ran, size_t failed)
 	last_msecs = g_sw.peek().total!"msecs";
 }
 
+/// Snapshot of memutils DebugAllocator live bytes (0/0 when the debugger is off).
+struct MemutilsSnap
+{
+    size_t lockless;
+    size_t cryptosafe;
+}
+
+/// Collect GC-owned objects that hold Vector/Unique, then read DebugAllocator counters.
+MemutilsSnap takeMemutilsSnap()
+{
+    MemutilsSnap s;
+    static if (HasDebugAllocations)
+    {
+        import core.memory : GC;
+        import memutils.allocators : getAllocator, LocklessAllocator, CryptoSafeAllocator;
+        GC.collect();
+        GC.minimize();
+        s.lockless = getAllocator!LocklessAllocator().bytesAllocated();
+        s.cryptosafe = getAllocator!CryptoSafeAllocator().bytesAllocated();
+    }
+    return s;
+}
+
+/**
+* Extra live bytes vs `before` after another collect.
+* Factory caches / LibraryState must already be in `before` (call after globalState()).
+* Returns 0 when HasDebugAllocations is false.
+*/
+size_t memutilsGrowth(MemutilsSnap before, string label = "")
+{
+    static if (!HasDebugAllocations)
+        return 0;
+    else
+    {
+        auto after = takeMemutilsSnap();
+        const grow_l = after.lockless > before.lockless ? after.lockless - before.lockless : 0;
+        const grow_c = after.cryptosafe > before.cryptosafe ? after.cryptosafe - before.cryptosafe : 0;
+        if ((grow_l || grow_c) && label.length)
+            logError("memutils growth ", label, ": lockless +", grow_l,
+                     " cryptosafe +", grow_c,
+                     " (now ", after.lockless, "/", after.cryptosafe, ")");
+        return grow_l + grow_c;
+    }
+}
+
+/**
+* Warm `body` once (factory / first-use caches), then run it again.
+* Returns 1 if DebugAllocator live bytes grew. `body` must Unique-wrap
+* anything that holds Vector/Unique so teardown is not a GC finalizer.
+*/
+size_t checkMemutilsRepeat(string label, void delegate() body)
+{
+    body();
+    auto snap = takeMemutilsSnap();
+    body();
+    return memutilsGrowth(snap, label) ? 1 : 0;
+}
+
+static if (HasDebugAllocations)
+{
+    import memutils.allocators : getAllocator, LocklessAllocator;
+    private __gshared int[size_t] g_memutils_net;
+    private void memutilsNetAlloc(size_t sz) { g_memutils_net[sz] = g_memutils_net.get(sz, 0) + 1; }
+    private void memutilsNetFree(size_t sz) { g_memutils_net[sz] = g_memutils_net.get(sz, 0) - 1; }
+}
+
+/// Hook DebugAllocator size callbacks. Call `memutilsNetStop` after the region of interest.
+void memutilsNetStart()
+{
+    static if (HasDebugAllocations)
+    {
+        g_memutils_net = null;
+        getAllocator!LocklessAllocator().setAllocSizeCallbacks(&memutilsNetAlloc, &memutilsNetFree);
+    }
+}
+
+/// Unhook callbacks and log sizes whose alloc count != free count.
+void memutilsNetStop(string label)
+{
+    static if (HasDebugAllocations)
+    {
+        getAllocator!LocklessAllocator().setAllocSizeCallbacks(null, null);
+        foreach (sz, n; g_memutils_net)
+            if (n)
+                logError("memutils net ", label, ": ", n, " x ", sz, " B");
+        g_memutils_net = null;
+    }
+}
+
 size_t runTestsBb(ref File src,
                   string name_key,
                   string output_key,
@@ -138,7 +228,9 @@ size_t runTestsBb(ref File src,
     {
 
         line = src.readln();
-        if (line.length > 0)
+        if (line.length && line[$-1] == '\n')
+            line = line[0 .. $-1];
+        if (line.length && line[$-1] == '\r')
             line = line[0 .. $-1];
 
         if (line.length == 0)
@@ -161,10 +253,11 @@ size_t runTestsBb(ref File src,
             continue;
         }
         import std.string : strip;
-        if (line.indexOf('=') == -1) continue;
-        assert(line[line.indexOf('=') - 1] == ' ' && line[line.indexOf('=') + 1] == ' ', "= must be wrapped with spaces");
-        const string key = line[0 .. line.indexOf('=') - 1].strip;
-        const string val = line[line.indexOf('=') + 2 .. $].strip;
+        const eq = line.indexOf('=');
+        if (eq < 1) continue;
+        const string key = line[0 .. eq].strip;
+        string val = (eq + 1 < line.length) ? line[eq + 1 .. $].strip : "";
+        if (!key.length) continue;
         
         vars[key] = val;
         

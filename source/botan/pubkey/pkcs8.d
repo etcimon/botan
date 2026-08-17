@@ -2,8 +2,8 @@
 * PKCS #8
 * 
 * Copyright:
-* (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2010,2014,2018 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -244,7 +244,34 @@ SecureVector!ubyte PKCS8_decode(DataSource source, in string delegate() get_pass
     bool is_encrypted = true;
     try {
         if (maybeBER(source) && !PEM.matches(source))
-            key_data = PKCS8_extract(source, pbe_alg_id);
+        {
+            ubyte b;
+            while (source.readByte(b))
+                key_data.pushBack(b);
+            // Unencrypted PrivateKeyInfo starts with INTEGER 0; EncryptedPrivateKeyInfo
+            // starts with AlgorithmIdentifier. Try the unencrypted form first (C++ 3
+            // PKCS8::load_key(span) path).
+            try
+            {
+                SecureVector!ubyte inner;
+                BERDecoder(key_data)
+                    .startCons(ASN1Tag.SEQUENCE)
+                    .decodeAndCheck!size_t(0, "Unknown PKCS #8 version number")
+                    .decode(pk_alg_id)
+                    .decode(inner, ASN1Tag.OCTET_STRING)
+                    .discardRemaining()
+                    .endCons();
+                if (inner.empty)
+                    throw new PKCS8Exception("No key data found");
+                return inner.move;
+            }
+            catch (DecodingError)
+            {
+                auto mem = DataSourceMemory(key_data);
+                key_data = PKCS8_extract(cast(DataSource)mem, pbe_alg_id);
+                is_encrypted = true;
+            }
+        }
         else
         {
             string label;

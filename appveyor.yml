@@ -126,4 +126,4 @@ test_script:
  - echo %DC%
  - echo %PATH%
  - '%DC% --version'
- - dub test --arch=%Darch% --compiler=%DC%
+ - ps: .\scripts\ci-test.ps1 -Arch $env:Darch -Compiler $env:DC

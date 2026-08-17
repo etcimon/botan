@@ -2,8 +2,8 @@
 * DL Scheme
 * 
 * Copyright:
-* (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2007,2016,2019,2023 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -37,7 +37,7 @@ public:
 
     final bool checkKey(RandomNumberGenerator rng, bool strong)
     {
-        if (m_y < 2 || m_y >= groupP())
+        if (!m_group.verifyPublicElement(m_y))
             return false;
         if (!m_group.verifyGroup(rng, strong))
             return false;

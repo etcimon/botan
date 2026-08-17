@@ -2,8 +2,8 @@
 * SCAN Name Abstraction
 * 
 * Copyright:
-* (C) 2008-2009 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2008-2009,2015 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -263,6 +263,7 @@ public:
         addAlias("CAST5",           "CAST-128");
         addAlias("SHA1",            "SHA-160");
         addAlias("SHA-1",           "SHA-160");
+        addAlias("SHA-512/256",     "SHA-512-256");
         addAlias("MARK-4",          "RC4(256)");
         addAlias("ARC4",            "RC4");
         addAlias("OMAC",            "CMAC");

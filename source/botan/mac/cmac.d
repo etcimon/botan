@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 1999-2007,2014 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -91,6 +91,9 @@ public:
                 case 16:
                     output.ptr[output.length-1] ^= 0x87;
                     break;
+                case 24:
+                    output.ptr[output.length-1] ^= 0x87;
+                    break;
                 case 32:
                     output.ptr[output.length-2] ^= 0x4;
                     output.ptr[output.length-1] ^= 0x25;
@@ -98,6 +101,10 @@ public:
                 case 64:
                     output.ptr[output.length-2] ^= 0x1;
                     output.ptr[output.length-1] ^= 0x25;
+                    break;
+                case 128:
+                    output.ptr[output.length-3] ^= 0x8;
+                    output.ptr[output.length-1] ^= 0x43;
                     break;
                 default:
                     throw new Exception("Unsupported CMAC size: " ~ input.length.to!string);
@@ -196,4 +203,44 @@ protected:
     Unique!BlockCipher m_cipher;
     SecureVector!ubyte m_buffer, m_state, m_B, m_P;
     size_t m_position;
+}
+
+static if (BOTAN_HAS_TESTS && !SKIP_MAC_TEST) unittest
+{
+    import botan.test;
+    import botan.codec.hex;
+    import memutils.hashmap;
+    import std.stdio : File;
+
+    logDebug("Testing poly_dbl ...");
+    size_t fails = 0;
+    File vec = File("test_data/poly_dbl.vec", "r");
+    fails += runTestsBb(vec, "PolyDbl", "Out", true,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("In" in m) || !("Out" in m))
+                return 0;
+            auto input = hexDecode(m["In"]);
+            auto expect = hexDecode(m["Out"]);
+            auto sv = SecureVector!ubyte(input[]);
+            auto got = CMAC.polyDouble(sv);
+            if (got[] != expect[])
+            {
+                logError("poly_dbl got ", hexEncode(got), " expected ", m["Out"]);
+                return 1;
+            }
+            return 0;
+        });
+
+    fails += checkMemutilsRepeat("poly_dbl", {
+        auto sv = SecureVector!ubyte(16);
+        sv[0] = 0x80;
+        auto got = CMAC.polyDouble(sv);
+        if (got.length != 16)
+            throw new Exception("poly_dbl leak probe");
+    });
+
+    if (fails)
+        logError("poly_dbl failures: ", fails);
+    assert(fails == 0);
 }

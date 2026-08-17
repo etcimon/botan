@@ -2,8 +2,11 @@
 * Hooks for application level policies on TLS connections
 * 
 * Copyright:
-* (C) 2004-2006,2013 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2004-2010,2012,2015,2016 Jack Lloyd
+* (C) 2016 Christian Mainka
+* (C) 2017 Harry Reimann, Rohde & Schwarz Cybersecurity
+* (C) 2022 René Meusel, Hannes Rantzsch - neXenio GmbH
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -36,14 +39,13 @@ class TLSPolicy
 {
 public:
 	Vector!HandshakeExtensionType enabledExtensions() const {
-		return Vector!HandshakeExtensionType([TLSEXT_SAFE_RENEGOTIATION,
+		auto ret = Vector!HandshakeExtensionType([TLSEXT_SAFE_RENEGOTIATION,
 				TLSEXT_SERVER_NAME_INDICATION,
 				TLSEXT_EC_POINT_FORMATS,
 				TLSEXT_USABLE_ELLIPTIC_CURVES,
 				TLSEXT_EXTENDED_MASTER_SECRET,
 				TLSEXT_SESSION_TICKET,
 				TLSEXT_SIGNATURE_ALGORITHMS,
-				//TLSEXT_STATUS_REQUEST,
 				//TLSEXT_NPN,
 				//TLSEXT_SIGNED_CERT_TIMESTAMP,
 				TLSEXT_ALPN,
@@ -51,6 +53,9 @@ public:
 				TLSEXT_SRP_IDENTIFIER,
 				TLSEXT_HEARTBEAT_SUPPORT,
 				TLSEXT_MAX_FRAGMENT_LENGTH]);
+		static if (BOTAN_HAS_OCSP_STAPLE)
+			ret.pushBack(TLSEXT_STATUS_REQUEST);
+		return ret.move();
 	}
 
 	/// Returns a list of EC Point Formats supported, only 0x00 (Uncompressed) is supported at the moment.
@@ -146,13 +151,46 @@ public:
     Vector!string allowedSignatureMethods() const
     {
         return Vector!string([
-			"RSA",
-			"ECDH",
-            //"DH",
             "ECDSA",
+            "ECDHE_ECDSA",
+			"RSA",
             "ECDHE_RSA",
-            "ECDHE_ECDSA"
+			//"ECDH",
+            //"DH",
         ]);
+    }
+
+    /**
+    * TLS 1.3 SignatureScheme names (IANA), in preference order.
+    * Handshake code maps these to certChain algoName tokens via
+    * certChainAlgoName before calling TLSCredentialsManager.certChain.
+    * CustomTLSPolicy need not override this.
+    */
+    Vector!string allowedSignatureSchemes() const
+    {
+        Vector!string schemes = Vector!string([
+            "ecdsa_secp256r1_sha256",
+            "ecdsa_secp384r1_sha384",
+            "ecdsa_secp521r1_sha512",
+            "rsa_pss_rsae_sha256",
+            "rsa_pss_rsae_sha384",
+            "rsa_pss_rsae_sha512",
+            "rsa_pkcs1_sha256",
+            "rsa_pkcs1_sha384",
+            "rsa_pkcs1_sha512",
+        ]);
+        static if (is(typeof(BOTAN_HAS_ED25519)) && BOTAN_HAS_ED25519)
+            schemes.pushBack("ed25519");
+        return schemes.move;
+    }
+
+    /**
+    * Unique certChain algoName tokens implied by allowedSignatureSchemes.
+    */
+    final Vector!string certKeyTypesFromSchemes() const
+    {
+        auto schemes = allowedSignatureSchemes();
+        return certChainAlgoNames(schemes);
     }
 
     /**
@@ -284,8 +322,60 @@ public:
     {
         if (_version.isDatagramProtocol())
             return (_version >= TLSProtocolVersion.DTLS_V12);
-        
-        return (_version >= TLSProtocolVersion.TLS_V10);
+        // Default still rejects 1.3. Offer 1.3 by passing TLS_V13 and a
+        // policy that accepts it (TestPolicy / Offer13Policy). latest stays 1.2.
+        return (_version >= TLSProtocolVersion.TLS_V10 &&
+                _version <= TLSProtocolVersion.TLS_V12);
+    }
+
+    /**
+    * Offer TLS 1.3 X25519MLKEM768 (IANA 0x11EC) in ClientHello key_share.
+    * Default false: default policy stays 1.2-only and does not advertise PQC.
+    * Ignored unless version(TLS_13_PQC) is compiled. TLS hybrid SS is
+    * concat (see tls13PqcKeyShareGroups). Not Hybrid-ML-KEM-768-X25519 SHA-3-256.
+    */
+    bool offerTls13PqcHybrid() const { return false; }
+    bool offerTls13Secp256Mlkem() const { return false; }
+    bool offerTls13Secp384Mlkem() const { return false; }
+    bool offerTls13Mlkem512() const { return false; }
+    bool offerTls13Mlkem768() const { return false; }
+    bool offerTls13Mlkem1024() const { return false; }
+    /// One extra NamedGroup name (copyable; used for Frodo/OQS leftovers).
+    string offerTls13PqcExtraGroup() const { return ""; }
+
+    /**
+    * Extra TLS 1.3 PQC/hybrid NamedGroup names to emit as key_share.
+    * Default: X25519MLKEM768 when offerTls13PqcHybrid() is true.
+    * Combiner is concat; ECDH-first for secp hybrids, ML-KEM-first
+    * for X25519MLKEM768 (draft-kwiatkowski); classical-first for
+    * libOQS eFrodo hybrids.
+    */
+    Vector!string tls13PqcKeyShareGroups() const
+    {
+        Vector!string g;
+        if (offerTls13PqcHybrid())
+            g.pushBack("x25519/ML-KEM-768");
+        if (offerTls13Secp256Mlkem())
+            g.pushBack("secp256r1/ML-KEM-768");
+        if (offerTls13Secp384Mlkem())
+            g.pushBack("secp384r1/ML-KEM-1024");
+        if (offerTls13Mlkem512())
+            g.pushBack("ML-KEM-512");
+        if (offerTls13Mlkem768())
+            g.pushBack("ML-KEM-768");
+        if (offerTls13Mlkem1024())
+            g.pushBack("ML-KEM-1024");
+        auto extra = offerTls13PqcExtraGroup();
+        if (extra.length)
+        {
+            bool seen;
+            foreach (n; g[])
+                if (n == extra)
+                    seen = true;
+            if (!seen)
+                g.pushBack(extra);
+        }
+        return g.move();
     }
     /**
      * Returns the more recent protocol version we are willing to
@@ -403,6 +493,120 @@ public:
     }
 
     ~this() {}
+}
+
+/**
+* Map a TLS 1.3 SignatureScheme name (or a 1.2 algoName) to the
+* TLSCredentialsManager.certChain key-type string.
+* Unknown names return an empty string.
+*/
+string certChainAlgoName(in string scheme_or_algo)
+{
+    if (scheme_or_algo.length == 0)
+        return "";
+
+    switch (scheme_or_algo)
+    {
+        case "RSA", "ECDSA", "DSA", "Ed25519", "Ed448",
+             "ECDHE_RSA", "ECDHE_ECDSA":
+            if (scheme_or_algo == "ECDHE_RSA")
+                return "RSA";
+            if (scheme_or_algo == "ECDHE_ECDSA")
+                return "ECDSA";
+            return scheme_or_algo.idup;
+
+        case "rsa_pkcs1_sha1", "rsa_pkcs1_sha256", "rsa_pkcs1_sha384", "rsa_pkcs1_sha512",
+             "rsa_pss_rsae_sha256", "rsa_pss_rsae_sha384", "rsa_pss_rsae_sha512",
+             "rsa_pss_pss_sha256", "rsa_pss_pss_sha384", "rsa_pss_pss_sha512":
+            return "RSA";
+
+        case "ecdsa_sha1",
+             "ecdsa_secp256r1_sha256", "ecdsa_secp384r1_sha384", "ecdsa_secp521r1_sha512",
+             "ecdsa_brainpoolP256r1tls13_sha256",
+             "ecdsa_brainpoolP384r1tls13_sha384",
+             "ecdsa_brainpoolP512r1tls13_sha512":
+            return "ECDSA";
+
+        case "dsa_sha1", "dsa_sha256", "dsa_sha384", "dsa_sha512":
+            return "DSA";
+
+        case "ed25519":
+            return "Ed25519";
+
+        case "ed448":
+            return "Ed448";
+
+        default:
+            break;
+    }
+
+    // Prefix fallback for future IANA names
+    if (scheme_or_algo.length >= 4 && scheme_or_algo[0 .. 4] == "rsa_")
+        return "RSA";
+    if (scheme_or_algo.length >= 6 && scheme_or_algo[0 .. 6] == "ecdsa_")
+        return "ECDSA";
+    if (scheme_or_algo.length >= 4 && scheme_or_algo[0 .. 4] == "dsa_")
+        return "DSA";
+    return "";
+}
+
+Vector!string certChainAlgoNames()(const auto ref Vector!string schemes)
+{
+    Vector!string names;
+    foreach (s; schemes[])
+    {
+        auto name = certChainAlgoName(s);
+        if (name.length && !valueExists(names, name))
+            names.pushBack(name);
+    }
+    return names.move;
+}
+
+static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
+{
+    auto p = new TLSPolicy;
+    auto list = p.ciphersuiteList(TLSProtocolVersion.latestTlsVersion(), false);
+    foreach (id; list[])
+    {
+        auto suite = TLSCiphersuite.byId(id);
+        assert(suite.kexAlgo() != "DH");
+        assert(suite.kexAlgo() != "RSA");
+        assert(suite.cipherAlgo() != "RC4");
+        assert(suite.cipherAlgo() != "3DES");
+        assert(suite.macAlgo() != "MD5");
+    }
+    auto sigs = p.allowedSignatureMethods();
+    size_t ecdsa_i = size_t.max, rsa_i = size_t.max;
+    foreach (i, s; sigs[])
+    {
+        if (s == "ECDSA" || s == "ECDHE_ECDSA")
+            if (ecdsa_i == size_t.max) ecdsa_i = i;
+        if (s == "RSA" || s == "ECDHE_RSA")
+            if (rsa_i == size_t.max) rsa_i = i;
+    }
+    assert(ecdsa_i < rsa_i);
+
+    assert(certChainAlgoName("rsa_pss_rsae_sha256") == "RSA");
+    assert(certChainAlgoName("rsa_pkcs1_sha256") == "RSA");
+    assert(certChainAlgoName("ecdsa_secp256r1_sha256") == "ECDSA");
+    assert(certChainAlgoName("ed25519") == "Ed25519");
+    assert(certChainAlgoName("RSA") == "RSA");
+    assert(certChainAlgoName("ECDSA") == "ECDSA");
+    assert(certChainAlgoName("ECDHE_RSA") == "RSA");
+    assert(certChainAlgoName("not_a_scheme") == "");
+    auto mapped = certChainAlgoNames(Vector!string([
+        "rsa_pss_rsae_sha256", "rsa_pkcs1_sha256", "ecdsa_secp256r1_sha256"
+    ]));
+    assert(mapped.length == 2);
+    assert(valueExists(mapped, "RSA"));
+    assert(valueExists(mapped, "ECDSA"));
+    auto from_policy = p.certKeyTypesFromSchemes();
+    assert(valueExists(from_policy, "RSA"));
+    assert(valueExists(from_policy, "ECDSA"));
+
+    assert(TLSProtocolVersion.latestTlsVersion() == TLSProtocolVersion(TLSProtocolVersion.TLS_V12));
+    assert(!p.acceptableProtocolVersion(TLSProtocolVersion(TLSProtocolVersion.TLS_V13)));
+    assert(p.acceptableProtocolVersion(TLSProtocolVersion(TLSProtocolVersion.TLS_V12)));
 }
 
 /**

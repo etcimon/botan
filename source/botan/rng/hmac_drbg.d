@@ -2,8 +2,8 @@
 * HMAC_DRBG (SP800-90A)
 * 
 * Copyright:
-* (C) 2014 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014,2015,2016 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -61,6 +61,8 @@ public:
         
         if (m_prng)
             m_prng.clear();
+
+        m_reseed_counter = 0;
     }
 
     override @property string name() const

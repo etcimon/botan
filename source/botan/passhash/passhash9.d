@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 2010 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -11,7 +11,7 @@
 module botan.passhash.passhash9;
 
 import botan.constants;
-static if (BOTAN_HAS_PASSHASH9 && BOTAN_HAS_PBKDF2):
+static if (BOTAN_HAS_PASSHASH9 && BOTAN_HAS_PBKDF2 && BOTAN_HAS_CODEC_FILTERS):
 
 import botan.rng.rng;
 import botan.utils.loadstor;
@@ -153,6 +153,9 @@ MessageAuthenticationCode getPbkdfPrf(ubyte alg_id)
 static if (BOTAN_TEST):
 import botan.test;
 import botan.rng.auto_rng;
+import botan.codec.hex;
+import memutils.hashmap;
+import std.stdio : File;
 
 static if (BOTAN_HAS_TESTS && !SKIP_PASSHASH9_TEST) unittest
 {
@@ -166,6 +169,19 @@ static if (BOTAN_HAS_TESTS && !SKIP_PASSHASH9_TEST) unittest
     
     size_t ran = 0;
     
+    File pvec = File("test_data/passhash/passhash9.vec", "r");
+    fails += runTestsBb(pvec, "Passhash9", "Passhash", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Passhash" in m) || !("Password" in m))
+                return 0;
+            auto pw = hexDecode(m["Password"]);
+            string pass = cast(string) pw[];
+            if (!checkPasshash9(pass, m["Passhash"]))
+                return 1;
+            return 0;
+        });
+
     ++ran;
     if (!checkPasshash9(input, fixed_hash))
     {
@@ -187,5 +203,12 @@ static if (BOTAN_HAS_TESTS && !SKIP_PASSHASH9_TEST) unittest
         }
     }
     
+    fails += checkMemutilsRepeat("passhash9", {
+        if (!checkPasshash9("secret", "$9$AAAKhiHXTIUhNhbegwBXJvk03XXJdzFMy+i3GFMIBYKtthTTmXZA"))
+            throw new Exception("passhash9 leak probe");
+    });
+
     testReport("Passhash9", ran, fails);
+    if (fails)
+        assert(fails == 0);
 }

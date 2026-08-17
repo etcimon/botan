@@ -2,8 +2,9 @@
 * X.509 Cert Path Validation
 * 
 * Copyright:
-* (C) 2010-2011 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2010,2011,2012,2014,2016,2026 Jack Lloyd
+* (C) 2017 Fabian Weissberg, Rohde & Schwarz Cybersecurity
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -55,6 +56,7 @@ public:
         m_require_revocation_information = require_rev;
         m_ocsp_all_intermediates = ocsp_all;
         m_minimum_key_strength = key_strength;
+        m_max_cert_chain_length = max_cert_chain_length;
         if (key_strength <= 80)
             m_trusted_hashes.insert("SHA-160");
         
@@ -93,8 +95,11 @@ public:
     bool requireRevocationInformation() const
     { return m_require_revocation_information; }
 
-    bool ocspAllIntermediates() const
+    @property bool ocspAllIntermediates() const
     { return m_ocsp_all_intermediates; }
+
+    @property void ocspAllIntermediates(bool b)
+    { m_ocsp_all_intermediates = b; }
 
     ref const(RBTree!string) trustedHashes() const return
     { 
@@ -221,11 +226,13 @@ public:
                 return "Certificate issuer not found";
             case CertificateStatusCode.CANNOT_ESTABLISH_TRUST:
                 return "Cannot establish trust";
+            case CertificateStatusCode.CERT_CHAIN_LOOP:
+                return "Loop in certificate chain";
                 
             case CertificateStatusCode.POLICY_ERROR:
-                return "TLSPolicy error";
+                return "Certificate policy error";
             case CertificateStatusCode.INVALID_USAGE:
-                return "Invalid usage";
+                return "Certificate does not allow the requested usage";
             case CertificateStatusCode.CERT_CHAIN_TOO_LONG:
                 return "Certificate chain too long";
             case CertificateStatusCode.CA_CERT_NOT_FOR_CERT_ISSUER:
@@ -236,6 +243,12 @@ public:
                 return "OCSP cert not listed";
             case CertificateStatusCode.OCSP_BAD_STATUS:
                 return "OCSP bad status";
+            case CertificateStatusCode.CERT_NAME_NOMATCH:
+                return "Certificate does not match provided name";
+            case CertificateStatusCode.NAME_CONSTRAINT_ERROR:
+                return "Certificate does not pass name constraint";
+            case CertificateStatusCode.EXTENSION_ENCODING_ERROR:
+                return "Certificate extension encoding error";
                 
             case CertificateStatusCode.CERT_IS_REVOKED:
                 return "Certificate is revoked";
@@ -283,7 +296,31 @@ private:
 PathValidationResult 
     x509PathValidate()(const ref Vector!X509Certificate end_certs,
                        const auto ref PathValidationRestrictions restrictions,
-                       const ref Vector!CertificateStore certstores)
+                       const ref Vector!CertificateStore certstores,
+                       string hostname = "",
+                       UsageType usage = UsageType.UNSPECIFIED)
+{
+    return x509PathValidateAt(end_certs, restrictions, certstores, hostname, usage,
+                             X509Time(Clock.currTime(UTC())));
+}
+
+PathValidationResult 
+    x509PathValidate()(const ref Vector!X509Certificate end_certs,
+                       const auto ref PathValidationRestrictions restrictions,
+                       const ref Vector!CertificateStore certstores,
+                       string hostname,
+                       UsageType usage,
+                       X509Time validation_time)
+{
+    return x509PathValidateAt(end_certs, restrictions, certstores, hostname, usage, validation_time);
+}
+
+private PathValidationResult x509PathValidateAt(const ref Vector!X509Certificate end_certs,
+                       const ref PathValidationRestrictions restrictions,
+                       const ref Vector!CertificateStore certstores,
+                       string hostname,
+                       UsageType usage,
+                       X509Time validation_time)
 {
 	const size_t max_iterations = restrictions.maxCertChainLength();
     if (end_certs.empty) 
@@ -301,11 +338,16 @@ PathValidationResult
         if (!cert) {
             return PathValidationResult(CertificateStatusCode.CERT_ISSUER_NOT_FOUND);
         }
+        foreach (seen; cert_path[])
+        {
+            if (seen == cert)
+                return PathValidationResult(CertificateStatusCode.CERT_CHAIN_LOOP);
+        }
         cert_path.pushBack(cert);
     }
 	if (i >= max_iterations)
 		throw new PKCS8Exception("Max iterations reached when attempting to find root certificate");
-    auto chain = checkChain(cert_path, restrictions, certstores);
+    auto chain = checkChain(cert_path, restrictions, certstores, hostname, usage, validation_time);
 
     return PathValidationResult(chain, cert_path);
 }
@@ -316,11 +358,25 @@ PathValidationResult
 */
 PathValidationResult x509PathValidate()(in X509Certificate end_cert,
                                         const auto ref PathValidationRestrictions restrictions,
-                                        const ref Vector!CertificateStore certstores)
+                                        const ref Vector!CertificateStore certstores,
+                                        string hostname = "",
+                                        UsageType usage = UsageType.UNSPECIFIED)
 {
     Vector!X509Certificate certs;
     certs.pushBack(cast(X509Certificate)end_cert);
-    return x509PathValidate(certs, restrictions, certstores);
+    return x509PathValidate(certs, restrictions, certstores, hostname, usage);
+}
+
+PathValidationResult x509PathValidate()(in X509Certificate end_cert,
+                                        const auto ref PathValidationRestrictions restrictions,
+                                        const ref Vector!CertificateStore certstores,
+                                        string hostname,
+                                        UsageType usage,
+                                        X509Time validation_time)
+{
+    Vector!X509Certificate certs;
+    certs.pushBack(cast(X509Certificate)end_cert);
+    return x509PathValidateAt(certs, restrictions, certstores, hostname, usage, validation_time);
 }
 
 /**
@@ -328,7 +384,9 @@ PathValidationResult x509PathValidate()(in X509Certificate end_cert,
 */
 PathValidationResult x509PathValidate()(in X509Certificate end_cert,
                                         const auto ref PathValidationRestrictions restrictions,
-                                        in CertificateStore store)
+                                        in CertificateStore store,
+                                        string hostname = "",
+                                        UsageType usage = UsageType.UNSPECIFIED)
 {
     Vector!X509Certificate certs;
     certs.pushBack(cast(X509Certificate)end_cert);
@@ -336,7 +394,23 @@ PathValidationResult x509PathValidate()(in X509Certificate end_cert,
     Vector!CertificateStore certstores;
     certstores.pushBack(cast(CertificateStore) store);
     
-    return x509PathValidate(certs, restrictions, certstores);
+    return x509PathValidate(certs, restrictions, certstores, hostname, usage);
+}
+
+PathValidationResult x509PathValidate()(in X509Certificate end_cert,
+                                        const auto ref PathValidationRestrictions restrictions,
+                                        in CertificateStore store,
+                                        string hostname,
+                                        UsageType usage,
+                                        X509Time validation_time)
+{
+    Vector!X509Certificate certs;
+    certs.pushBack(cast(X509Certificate)end_cert);
+    
+    Vector!CertificateStore certstores;
+    certstores.pushBack(cast(CertificateStore) store);
+    
+    return x509PathValidateAt(certs, restrictions, certstores, hostname, usage, validation_time);
 }
 
 /**
@@ -344,12 +418,27 @@ PathValidationResult x509PathValidate()(in X509Certificate end_cert,
 */
 PathValidationResult x509PathValidate()(const ref Vector!X509Certificate end_certs,
                                         const auto ref PathValidationRestrictions restrictions,
-                                        in CertificateStore store)
+                                        in CertificateStore store,
+                                        string hostname = "",
+                                        UsageType usage = UsageType.UNSPECIFIED)
 {
     Vector!CertificateStore certstores;
     certstores.pushBack(cast(CertificateStore)store);
     
-    return x509PathValidate(end_certs, restrictions, certstores);
+    return x509PathValidate(end_certs, restrictions, certstores, hostname, usage);
+}
+
+PathValidationResult x509PathValidate()(const ref Vector!X509Certificate end_certs,
+                                        const auto ref PathValidationRestrictions restrictions,
+                                        in CertificateStore store,
+                                        string hostname,
+                                        UsageType usage,
+                                        X509Time validation_time)
+{
+    Vector!CertificateStore certstores;
+    certstores.pushBack(cast(CertificateStore)store);
+    
+    return x509PathValidateAt(end_certs, restrictions, certstores, hostname, usage, validation_time);
 }
 
 X509Certificate findIssuingCert(in X509Certificate cert_,
@@ -411,14 +500,17 @@ const(X509CRL) findCrlsFor(in X509Certificate cert,
 Vector!( RBTreeRef!CertificateStatusCode )
     checkChain(const ref Vector!X509Certificate cert_path,
                const ref PathValidationRestrictions restrictions,
-               const ref Vector!CertificateStore certstores)
+               const ref Vector!CertificateStore certstores,
+               string hostname,
+               UsageType usage,
+               X509Time validation_time)
 {
 	//import core.memory : GC; GC.disable(); scope(exit) GC.enable();
 	const RBTree!string* trusted_hashes = &restrictions.trustedHashes();
     
     const bool self_signed_ee_cert = (cert_path.length == 1);
     
-    X509Time current_time = X509Time(Clock.currTime(UTC()));
+    X509Time current_time = validation_time;
 
     Vector!(OCSPResponse) ocsp_data = Vector!OCSPResponse(8);
     
@@ -442,13 +534,15 @@ Vector!( RBTreeRef!CertificateStatusCode )
         
         const CertificateStore* trusted = certstores.ptr;
         
-        if (i == 0 || restrictions.ocspAllIntermediates()) {
-
-			if (certstores.length >= 1) {
-				ocsp_data.length = i + 1;
-	            OnlineCheck oc = OnlineCheck(i,  &ocsp_data[i], &issuer, &subject, trusted );
-				oc.run();
-			}
+        // C++ only fetches OCSP when a timeout is set; default path checks are CRL-only.
+        if (restrictions.ocspAllIntermediates() && certstores.length >= 1) {
+            ocsp_data.length = i + 1;
+            try
+            {
+                OnlineCheck oc = OnlineCheck(i,  &ocsp_data[i], &issuer, &subject, trusted );
+                oc.run();
+            }
+            catch (Exception) {}
         }
         // Check all certs for valid time range
         if (current_time < X509Time(subject.startTime()))
@@ -465,6 +559,33 @@ Vector!( RBTreeRef!CertificateStatusCode )
         
         if (issuer.pathLimit() < i)
             status.insert(CertificateStatusCode.CERT_CHAIN_TOO_LONG);
+        if (subject.subjectInfo("X509v3.ExtensionEncodingError").length)
+            status.insert(CertificateStatusCode.EXTENSION_ENCODING_ERROR);
+        if (i == 0)
+        {
+            try
+            {
+                bool san_bad;
+                foreach (n; cert_path[0].subjectInfo("DNS")[])
+                {
+                    if (n.canFind('*') && !dnsNameFromSan(n))
+                    {
+                        san_bad = true;
+                        break;
+                    }
+                }
+                if (san_bad)
+                    status.insert(CertificateStatusCode.EXTENSION_ENCODING_ERROR);
+                else if (hostname.length && !cert_path[0].matchesDnsName(hostname))
+                    status.insert(CertificateStatusCode.CERT_NAME_NOMATCH);
+                if (!cert_path[0].allowedUsageType(usage))
+                    status.insert(CertificateStatusCode.INVALID_USAGE);
+            }
+            catch (Exception)
+            {
+                status.insert(CertificateStatusCode.EXTENSION_ENCODING_ERROR);
+            }
+        }
         const PublicKey issuer_key = issuer.subjectPublicKey();
         logTrace("Got issuer key");
         if (subject.checkSignature(issuer_key) == false)
@@ -537,8 +658,95 @@ Vector!( RBTreeRef!CertificateStatusCode )
             status.insert(CertificateStatusCode.CERT_IS_REVOKED);
     }
 
+    foreach (size_t i; 0 .. cert_path.length)
+    {
+        auto permitted = cert_path[i].subjectInfo("X509v3.NameConstraints.permitted_dns");
+        auto excluded = cert_path[i].subjectInfo("X509v3.NameConstraints.excluded_dns");
+        if (!permitted.length && !excluded.length)
+            continue;
+        if (!cert_path[i].isCACert())
+            cert_status[i].insert(CertificateStatusCode.NAME_CONSTRAINT_ERROR);
+        foreach (size_t j; 0 .. i)
+        {
+            if (j > 0 && cert_path[j].issuerDn() == cert_path[j].subjectDn())
+                continue;
+            if (!nameConstraintAllows(cert_path[j], permitted, excluded))
+                cert_status[j].insert(CertificateStatusCode.NAME_CONSTRAINT_ERROR);
+        }
+    }
+
     if (self_signed_ee_cert)
         cert_status.back().insert(CertificateStatusCode.CANNOT_ESTABLISH_TRUST);
     
     return cert_status.move();
+}
+
+private bool dnsSubtreeMatch(string name, string constraint)
+{
+    if (name == constraint)
+        return true;
+    if (constraint.length > name.length)
+        return false;
+    if (!constraint.length)
+        return true;
+    auto substr = name[$ - constraint.length .. $];
+    if (constraint[0] == '.')
+        return substr == constraint;
+    return substr == constraint && name[$ - constraint.length - 1] == '.';
+}
+
+private bool nameConstraintAllows(in X509Certificate cert,
+                                  const ref Vector!string permitted,
+                                  const ref Vector!string excluded)
+{
+    auto dns_names = cert.subjectInfo("DNS");
+    auto cn_names = cert.subjectInfo("Name");
+    const bool have_dns = dns_names.length != 0;
+    bool nameOk(string n, const ref Vector!string permitted)
+    {
+        foreach (c; permitted[])
+            if (dnsSubtreeMatch(n, c))
+                return true;
+        return false;
+    }
+    bool nameExcl(string n, const ref Vector!string excluded)
+    {
+        foreach (c; excluded[])
+            if (dnsSubtreeMatch(n, c))
+                return true;
+        return false;
+    }
+    if (permitted.length)
+    {
+        if (have_dns)
+        {
+            foreach (n; dns_names[])
+                if (!nameOk(n, permitted))
+                    return false;
+        }
+        else if (cn_names.length)
+        {
+            foreach (n; cn_names[])
+                if (!nameOk(n, permitted))
+                    return false;
+        }
+        else
+            return false;
+    }
+    if (excluded.length)
+    {
+        if (have_dns)
+        {
+            foreach (n; dns_names[])
+                if (nameExcl(n, excluded))
+                    return false;
+        }
+        else
+        {
+            foreach (n; cn_names[])
+                if (nameExcl(n, excluded))
+                    return false;
+        }
+    }
+    return true;
 }

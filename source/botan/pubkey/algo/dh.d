@@ -2,8 +2,8 @@
 * Diffie-Hellman
 * 
 * Copyright:
-* (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2007,2016,2019,2023 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -254,6 +254,49 @@ static if (BOTAN_HAS_TESTS && !SKIP_DH_TEST) unittest
         (ref HashMap!(string, string) m) {
             return dhSigKat(m["P"], m["G"], m["X"], m["Y"], m.get("KDF"), m.get("OutLen"), m["K"]);
         });
+
+    File dh_inv = File("test_data/pubkey/dh_invalid.vec", "r");
+    fails += runTestsBb(dh_inv, "DH Invalid", "InvalidKey", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("P" in m) || !("Q" in m) || !("G" in m) || !("InvalidKey" in m))
+                return 0;
+            atomicOp!"+="(total_tests, 1);
+            auto p = BigInt(m["P"]);
+            auto q = BigInt(m["Q"]);
+            auto g = BigInt(m["G"]);
+            auto y = BigInt(m["InvalidKey"]);
+            DLGroup group = DLGroup(p, q, g);
+            auto key = DHPublicKey(group.move(), y.move());
+            if (key.checkKey(*rng, false))
+                return 1;
+            return 0;
+        });
+
+    fails += checkMemutilsRepeat("dh invalid", {
+        File once = File("test_data/pubkey/dh_invalid.vec", "r");
+        size_t seen;
+        auto n = runTestsBb(once, "DH Invalid", "InvalidKey", false,
+            (ref HashMap!(string, string) m)
+            {
+                if (seen++)
+                    return 0;
+                if (!("P" in m) || !("Q" in m) || !("G" in m) || !("InvalidKey" in m))
+                    return 0;
+                auto p = BigInt(m["P"]);
+                auto q = BigInt(m["Q"]);
+                auto g = BigInt(m["G"]);
+                auto y = BigInt(m["InvalidKey"]);
+                DLGroup group = DLGroup(p, q, g);
+                auto key = DHPublicKey(group.move(), y.move());
+                if (key.checkKey(*rng, false))
+                    throw new Exception("dh invalid leak probe");
+                return 0;
+            });
+        if (n)
+            throw new Exception("dh invalid leak probe");
+    });
+
     fails += testPkKeygen(*rng);
 
     testReport("DH", total_tests, fails);

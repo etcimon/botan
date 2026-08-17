@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 1999-2009 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -24,6 +24,8 @@ static if (BOTAN_HAS_NOEKEON_SIMD)       import botan.block.noekeon_simd;
 static if (BOTAN_HAS_XTEA_SIMD)          import botan.block.xtea_simd;
 static if (BOTAN_HAS_IDEA_SSE2)          import botan.block.idea_sse2;
 static if (BOTAN_HAS_SHA1_SSE2)          import botan.hash.sha1_sse2;
+static if (BOTAN_HAS_SHA2_32_SSE2)       import botan.hash.sha2_32_sse2;
+static if (BOTAN_HAS_SHA2_32_X86)        import botan.hash.sha2_32_x86;
 
 /**
 * Engine for implementations that use some kind of SIMD
@@ -77,6 +79,18 @@ public:
         static if (BOTAN_HAS_SHA1_SSE2) {
             if (request.algoName == "SHA-160" && CPUID.hasSse2())
                 return new SHA160SSE2;
+        }
+        static if (BOTAN_HAS_SHA2_32_X86) {
+            if (request.algoName == "SHA-256" && CPUID.hasIntelSha())
+                return new SHA256X86;
+            if (request.algoName == "SHA-224" && CPUID.hasIntelSha())
+                return new SHA224X86;
+        }
+        static if (BOTAN_HAS_SHA2_32_SSE2) {
+            if (request.algoName == "SHA-256" && CPUID.hasSse2())
+                return new SHA256SSE2;
+            if (request.algoName == "SHA-224" && CPUID.hasSse2())
+                return new SHA224SSE2;
         }
 
         return null;

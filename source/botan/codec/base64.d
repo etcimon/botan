@@ -2,13 +2,14 @@
 * Base64 Encoding and Decoding
 * 
 * Copyright:
-* (C) 2010 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2010,2015,2020 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
 */
 module botan.codec.base64;
+import botan.constants;
 import memutils.vector;
 import botan.codec.base64;
 import botan.utils.mem_ops;
@@ -16,6 +17,22 @@ import botan.utils.rounding;
 import botan.utils.types;
 import std.exception;
 // import string;
+
+private __gshared immutable ubyte[64] BIN_TO_BASE64 = [
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+    'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'
+];
+
+private void doBase64Encode(ref char[4] output, in ubyte[3] input)
+{
+    output[0] = BIN_TO_BASE64[((input[0] & 0xFC) >> 2)];
+    output[1] = BIN_TO_BASE64[((input[0] & 0x03) << 4) | (input[1] >> 4)];
+    output[2] = BIN_TO_BASE64[((input[1] & 0x0F) << 2) | (input[2] >> 6)];
+    output[3] = BIN_TO_BASE64[((input[2] & 0x3F)      )];
+}
 
 /**
 * Perform base64 encoding
@@ -87,6 +104,8 @@ string base64Encode(const(ubyte)* input,
                      size_t input_length)
 {
     import std.conv : to;
+    if (input_length == 0)
+        return "";
     char[] output;
     output.length = roundUp!size_t(input_length, 3) / 3 * 4;
     
@@ -171,6 +190,7 @@ size_t base64Decode(ubyte* output,
     ubyte[4] decode_buf;
     size_t decode_buf_pos = 0;
     size_t final_truncate = 0;
+    bool seen_pad = false;
     
     clearMem(output, input_length * 3 / 4);
     
@@ -180,10 +200,16 @@ size_t base64Decode(ubyte* output,
         
         if (bin <= 0x3F)
         {
+            if (seen_pad)
+                throw new InvalidArgument("base64Decode: padding not at end");
             decode_buf[decode_buf_pos] = bin;
             decode_buf_pos += 1;
         }
-        else if (!(bin == 0x81 || (bin == 0x80 && ignore_ws)))
+        else if (bin == 0x81)
+        {
+            seen_pad = true;
+        }
+        else if (!(bin == 0x80 && ignore_ws))
         {
             string bad_char;
             if (input[i] == '\t')
@@ -203,6 +229,12 @@ size_t base64Decode(ubyte* output,
         */
         if (final_inputs && (i == input_length - 1))
         {
+            if (decode_buf_pos == 1)
+                throw new InvalidArgument("base64Decode: incomplete final quantum");
+            if (decode_buf_pos == 2 && (decode_buf[1] & 0x0F))
+                throw new InvalidArgument("base64Decode: nonzero padding bits");
+            if (decode_buf_pos == 3 && (decode_buf[2] & 0x03))
+                throw new InvalidArgument("base64Decode: nonzero padding bits");
             if (decode_buf_pos)
             {
                 foreach (size_t j; decode_buf_pos .. 4)
@@ -303,22 +335,57 @@ SecureVector!ubyte base64Decode(const ref Vector!char input, bool ignore_ws = tr
     return base64Decode(cast(string)input[], ignore_ws);
 }
 
+static if (BOTAN_TEST):
 
+import botan.test;
+import botan.constants;
+import botan.libstate.global_state;
+import botan.codec.hex;
+import memutils.hashmap;
+import std.stdio : File;
 
-package:
-    
-__gshared immutable ubyte[64] BIN_TO_BASE64 = [
-    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-    'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'
-];
-
-void doBase64Encode(ref char[4] output, in ubyte[3] input)
+static if (BOTAN_HAS_TESTS && !SKIP_BASE64_TEST) unittest
 {
-    output[0] = BIN_TO_BASE64[((input[0] & 0xFC) >> 2)];
-    output[1] = BIN_TO_BASE64[((input[0] & 0x03) << 4) | (input[1] >> 4)];
-    output[2] = BIN_TO_BASE64[((input[1] & 0x0F) << 2) | (input[2] >> 6)];
-    output[3] = BIN_TO_BASE64[((input[2] & 0x3F)      )];
+    auto state = globalState();
+    logDebug("Testing base64.d ...");
+    size_t fails = 0;
+
+    File vec = File("test_data/codec/base64.vec", "r");
+    fails += runTestsBb(vec, "Type", "Base64", false,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Base64" in m))
+                return 0;
+            const bool valid = m["Type"] == "valid";
+            try
+            {
+                auto dec = base64Decode(m["Base64"]);
+                if (!valid)
+                    return 1;
+                auto bin = hexDecode(m.get("Binary"));
+                if (dec[] != bin[])
+                    return 2;
+                if (base64Encode(bin) != m["Base64"])
+                    return 3;
+            }
+            catch (Exception)
+            {
+                if (valid)
+                    return 4;
+            }
+            return 0;
+        });
+
+    fails += checkMemutilsRepeat("base64", {
+        auto bin = hexDecode("68656C6C6F");
+        auto enc = base64Encode(bin);
+        auto dec = base64Decode(enc);
+        if (dec[] != bin[])
+            throw new Exception("base64 leak probe");
+    });
+
+    if (fails)
+        logError("base64 failures: ", fails);
+    assert(fails == 0);
 }
+

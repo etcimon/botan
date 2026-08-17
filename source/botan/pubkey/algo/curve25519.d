@@ -3,7 +3,7 @@
 *
 * Copyright:
 * (C) 2014 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -256,6 +256,7 @@ import botan.pubkey.test;
 import botan.rng.auto_rng;
 import botan.pubkey.pubkey;
 import botan.asn1.oids;
+import botan.pubkey.pk_algs;
 import botan.codec.hex;
 import core.atomic;
 import memutils.hashmap;
@@ -355,7 +356,38 @@ static if (BOTAN_HAS_TESTS && !SKIP_CURVE25519_TEST) unittest
 		(ref HashMap!(string, string) m) {
 			return curve25519ScalarKat(m["Secret"], m["Basepoint"], m["Out"]);
 		});
+
+	File x25519 = File("test_data/pubkey/x25519.vec", "r");
+	fails += runTestsBb(x25519, "X25519", "K", true,
+		(ref HashMap!(string, string) m) {
+			return curve25519ScalarKat(m["Secret"], m["CounterKey"], m["K"]);
+		});
 	fails += c25519Roundtrip();
+
+	{
+		atomicOp!"+="(total_tests, 1);
+		if (OIDS.lookup("X25519").toString() != "1.3.101.110")
+			++fails;
+		if (OIDS.lookup(OID("1.3.101.110")) != "X25519")
+			++fails;
+		else
+		{
+			try
+			{
+				Unique!AutoSeededRNG rng = new AutoSeededRNG;
+				auto priv = Curve25519PrivateKey(*rng);
+				auto bits = SecureVector!ubyte(priv.x509SubjectPublicKey()[]);
+				auto alg = AlgorithmIdentifier("X25519", AlgorithmIdentifierImpl.USE_NULL_PARAM);
+				Unique!PublicKey via_x = makePublicKey(alg, bits);
+				if (!via_x || via_x.algoName != "Curve25519")
+					++fails;
+			}
+			catch (Exception)
+			{
+				++fails;
+			}
+		}
+	}
 
 	testReport("curve25519", total_tests, fails);
 }

@@ -2,8 +2,8 @@
 * OAEP
 * 
 * Copyright:
-* (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2010,2015,2018,2024 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -20,6 +20,7 @@ import botan.rng.rng;
 import botan.pk_pad.mgf1;
 import botan.utils.mem_ops;
 import botan.utils.types;
+import memutils.unique;
 
 /**
 * OAEP (called EME1 in IEEE 1363 and in earlier versions of the library)
@@ -46,6 +47,20 @@ public:
     this(HashFunction hash, in string P = "")
     {
         m_hash = hash;
+        m_mgf1_hash = m_hash.clone();
+        m_Phash = m_hash.process(P);
+    }
+
+    /**
+    * Params:
+    *  hash = label / P hash (takes ownership)
+    *  mgf1_hash = MGF1 hash (takes ownership); may differ from `hash`
+    *  P = an optional label. Normally empty.
+    */
+    this(HashFunction hash, HashFunction mgf1_hash, in string P = "")
+    {
+        m_hash = hash;
+        m_mgf1_hash = mgf1_hash;
         m_Phash = m_hash.process(P);
     }
 
@@ -67,9 +82,9 @@ public:
         output[output.length - in_length - 1] = 0x01;
         bufferInsert(output, output.length - in_length, input, in_length);
         
-        mgf1Mask(cast() *m_hash, output.ptr, m_Phash.length, &output[m_Phash.length], output.length - m_Phash.length);
+        mgf1Mask(cast() *m_mgf1_hash, output.ptr, m_Phash.length, &output[m_Phash.length], output.length - m_Phash.length);
         
-        mgf1Mask(cast() *m_hash, &output[m_Phash.length], output.length - m_Phash.length,
+        mgf1Mask(cast() *m_mgf1_hash, &output[m_Phash.length], output.length - m_Phash.length,
         output.ptr, m_Phash.length);
         
         return output;
@@ -101,8 +116,8 @@ public:
         SecureVector!ubyte input = SecureVector!ubyte(key_length);
         bufferInsert(input, key_length - in_length, input_, in_length);
         
-        mgf1Mask(cast() *m_hash, &input[m_Phash.length], input.length - m_Phash.length, input.ptr, m_Phash.length);        
-        mgf1Mask(cast() *m_hash, input.ptr, m_Phash.length, &input[m_Phash.length], input.length - m_Phash.length);
+        mgf1Mask(cast() *m_mgf1_hash, &input[m_Phash.length], input.length - m_Phash.length, input.ptr, m_Phash.length);        
+        mgf1Mask(cast() *m_mgf1_hash, input.ptr, m_Phash.length, &input[m_Phash.length], input.length - m_Phash.length);
         
         bool waiting_for_delim = true;
         bool bad_input = false;
@@ -140,4 +155,5 @@ public:
 
     SecureVector!ubyte m_Phash;
     Unique!HashFunction m_hash;
+    Unique!HashFunction m_mgf1_hash;
 }

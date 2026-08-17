@@ -2,8 +2,9 @@
 * Enumerations
 * 
 * Copyright:
-* (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2007,2016 Jack Lloyd
+* (C) 2016 René Korthaus, Rohde & Schwarz Cybersecurity
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -11,7 +12,7 @@
 module botan.cert.x509.key_constraint;
 
 import botan.constants;
-//static if (BOTAN_HAS_X509_CERTIFICATES):
+static if (BOTAN_HAS_X509_CERTIFICATES || BOTAN_HAS_CARD_VERIFIABLE_CERTIFICATES):
 
 import botan.asn1.ber_dec;
 import botan.pubkey.x509_key;
@@ -21,6 +22,16 @@ import botan.asn1.ber_dec;
 /**
 * X.509v3 Key Constraints.
 */
+/// C++ `Usage_Type` (RFC 5280 4.2.1.12 application of EKU + KU).
+enum UsageType {
+    UNSPECIFIED,
+    TLS_SERVER_AUTH,
+    TLS_CLIENT_AUTH,
+    OCSP_RESPONDER,
+    CERTIFICATE_AUTHORITY,
+    ENCRYPTION
+}
+
 enum KeyConstraints {
     NO_CONSTRAINTS      = 0,
     DIGITAL_SIGNATURE   = 32768,

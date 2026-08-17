@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 2012 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -31,11 +31,13 @@ public:
         TLS_V10             = 0x0301,
         TLS_V11             = 0x0302,
         TLS_V12             = 0x0303,
+        TLS_V13             = 0x0304,
 
         DTLS_V10            = 0xFEFF,
         DTLS_V12            = 0xFEFD
     }
 
+    /// Offer stays 1.2 even when `version(TLS_13)` is compiled (T13a).
     static TLSProtocolVersion latestTlsVersion()
     {
         return TLSProtocolVersion(TLS_V12);
@@ -75,11 +77,16 @@ public:
     */
     bool knownVersion() const
     {
-        return (m_version == TLSProtocolVersion.TLS_V10 ||
-                m_version == TLSProtocolVersion.TLS_V11 ||
-                m_version == TLSProtocolVersion.TLS_V12 ||
-                m_version == TLSProtocolVersion.DTLS_V10 ||
-                m_version == TLSProtocolVersion.DTLS_V12);
+        if (m_version == TLSProtocolVersion.TLS_V10 ||
+            m_version == TLSProtocolVersion.TLS_V11 ||
+            m_version == TLSProtocolVersion.TLS_V12 ||
+            m_version == TLSProtocolVersion.DTLS_V10 ||
+            m_version == TLSProtocolVersion.DTLS_V12)
+            return true;
+        static if (BOTAN_HAS_TLS_13)
+            if (m_version == TLSProtocolVersion.TLS_V13)
+                return true;
+        return false;
     }
 
     /**
@@ -123,8 +130,13 @@ public:
     */
     bool supportsNegotiableSignatureAlgorithms() const
     {
-        return (m_version == TLSProtocolVersion.TLS_V12 ||
-                m_version == TLSProtocolVersion.DTLS_V12);
+        if (m_version == TLSProtocolVersion.TLS_V12 ||
+            m_version == TLSProtocolVersion.DTLS_V12)
+            return true;
+        static if (BOTAN_HAS_TLS_13)
+            if (m_version == TLSProtocolVersion.TLS_V13)
+                return true;
+        return false;
     }
 
     /**

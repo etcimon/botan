@@ -3,8 +3,7 @@
 * 
 * Copyright:
 * (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
-*     2012 Markus Wanner
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -187,11 +186,13 @@ private:
     */
     void destroy()
     {
+        if (botanInGcFinalizer())
+            return;
         SecureQueueNode temp = m_head;
         while (temp)
         {
             SecureQueueNode holder = temp.m_next;
-            .destroy(temp);
+            botanDestroyIfLive(temp);
             temp = holder;
         }
         m_head = m_tail = null;

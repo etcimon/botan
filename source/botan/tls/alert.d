@@ -2,8 +2,8 @@
 * TLS Alert Message
 * 
 * Copyright:
-* (C) 2004-2006,2011,2012,2015 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2004-2006,2011 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -179,12 +179,12 @@ public:
     this(const ref SecureVector!ubyte buf)
     {
         if (buf.length != 2)
-            throw new DecodingError("TLSAlert: Bad size " ~ to!string(buf.length) ~ " for alert message");
+            throw new DecodingError("TLSAlert: Bad size (" ~ to!string(buf.length) ~ ") for TLS alert message");
         
         if (buf[0] == 1)          m_fatal = false;
         else if (buf[0] == 2)     m_fatal = true;
         else
-            throw new DecodingError("TLSAlert: Bad code for alert level");
+            throw new DecodingError("TLSAlert: Bad code for TLS alert level");
         
         const ubyte dc = buf[1];
         

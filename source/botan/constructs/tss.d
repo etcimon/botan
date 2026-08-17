@@ -2,8 +2,8 @@
 * RTSS (threshold secret sharing)
 * 
 * Copyright:
-* (C) 2009 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2009,2018,2026 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -45,33 +45,52 @@ public:
                              in ubyte[16] identifier,
                              RandomNumberGenerator rng)
     {
-        if (M == 0 || N == 0 || M > N)
+        return split(M, N, S, S_len, identifier.ptr, 16, "SHA-256", rng);
+    }
+
+    /// C++ `RTSS_Share::split` with hash name (`None`, `SHA-1`, `SHA-256`).
+    static auto split(ubyte M, ubyte N,
+                             const(ubyte)* S, size_t S_len,
+                             const(ubyte)* identifier, size_t id_len,
+                             in string hash_fn,
+                             RandomNumberGenerator rng)
+    {
+        if (M == 0 || N == 0 || M > N || N >= 255)
             throw new EncodingError("split: M == 0 or N == 0 or M > N");
-        
-        Unique!SHA256 hash = new SHA256(); // always use SHA-256 when generating shares
+        if (id_len > 16)
+            throw new InvalidArgument("RTSS_Share::split Invalid identifier size");
+
+        const ubyte hash_id = rtssHashId(hash_fn);
+        Unique!HashFunction hash;
+        if (hash_id > 0)
+            hash = getRtssHashById(hash_id);
+
+        SecureVector!ubyte secret = SecureVector!ubyte(S[0 .. S_len]);
+        if (hash)
+            secret ~= hash.process(S, S_len);
+        if (secret.length >= 0xFFFE)
+            throw new EncodingError("RTSS_Share::split secret too large for TSS format");
+        const ushort share_len = cast(ushort)(secret.length + 1);
+
+        ubyte[20] header;
+        if (id_len)
+            header[0 .. id_len] = identifier[0 .. id_len];
+        header[16] = hash_id;
+        header[17] = M;
+        header[18] = get_byte(0, share_len);
+        header[19] = get_byte(1, share_len);
+
         Vector!RTSS shares = Vector!RTSS(N);
-        // Create RTSS header in each share
         foreach (ubyte i; 0 .. N)
         {
             shares[i].m_contents = SecureArray!ubyte();
-            shares[i].m_contents ~= identifier.ptr[0 .. 16];
-            shares[i].m_contents ~= rtssHashId(hash.name);
-            shares[i].m_contents ~= M;
-            shares[i].m_contents ~= get_byte(6, S_len);
-            shares[i].m_contents ~= get_byte(7, S_len);
+            shares[i].m_contents ~= header[];
         }
         
         // Choose sequential values for X starting from 1
         foreach (ubyte i; 0 .. N)
             shares[i].m_contents.pushBack(i+1);
         
-        logTrace("pushed back");
-        // secret = S || H(S)
-        SecureVector!ubyte secret = SecureVector!ubyte(S[0 .. S_len]);
-        logTrace("secret");
-        secret ~= hash.process(S, S_len);
-        
-        logTrace("secret ", secret[]);
         foreach (ubyte s; secret[])
         {
             Vector!ubyte coefficients = Vector!ubyte(M-1);
@@ -123,16 +142,19 @@ public:
         if (shares.length < shares[0].m_contents[17])
             throw new DecodingError("Insufficient shares to do TSS reconstruction");
         
-        ushort secret_len = make_ushort(shares[0].m_contents[18], shares[0].m_contents[19]);
-        
-        ubyte hash_id = shares[0].m_contents[16];
-
-        Unique!HashFunction hash = getRtssHashById(hash_id);
-        
-        if (shares[0].length != secret_len + hash.outputLength + RTSS_HEADER_SIZE + 1) {
-            hash.release();
-            assert(hash.outputLength > 0);
-            throw new DecodingError("Bad RTSS length field in header " ~ shares[0].length.to!string ~ " != " ~ (secret_len + hash.outputLength + RTSS_HEADER_SIZE + 1).to!string);
+        const ushort share_len = make_ushort(shares[0].m_contents[18], shares[0].m_contents[19]);
+        const ubyte hash_id = shares[0].m_contents[16];
+        Unique!HashFunction hash;
+        size_t hash_len = 0;
+        if (hash_id != 0)
+        {
+            hash = getRtssHashById(hash_id);
+            hash_len = hash.outputLength;
+        }
+        if (shares[0].length != RTSS_HEADER_SIZE + share_len)
+        {
+            if (shares[0].length <= RTSS_HEADER_SIZE + 1 + hash_len)
+                throw new DecodingError("Bad RTSS length field in header");
         }
         Vector!ubyte V = Vector!ubyte(shares.length);
         SecureVector!ubyte secret = SecureVector!ubyte();
@@ -168,15 +190,17 @@ public:
             secret.pushBack(r);
         }
         
-        if (secret.length != secret_len + hash.outputLength)
-            throw new DecodingError("Bad length in RTSS output");
-        
-        hash.update(secret.ptr, secret_len);
-        SecureVector!ubyte hash_check = hash.finished();
-        
-        if (!sameMem(hash_check.ptr, &secret[secret_len], hash.outputLength))
-            throw new DecodingError("RTSS hash check failed");
-        secret.length = secret_len;
+        if (hash)
+        {
+            if (secret.length < hash_len)
+                throw new DecodingError("RTSS recovered value too short to be valid");
+            const size_t secret_len = secret.length - hash_len;
+            hash.update(secret.ptr, secret_len);
+            auto hash_check = hash.finished();
+            if (!sameMem(hash_check.ptr, &secret[secret_len], hash_len))
+                throw new DecodingError("RTSS hash check failed");
+            secret.length = secret_len;
+        }
         return secret;
     }
 
@@ -189,6 +213,16 @@ public:
     this(in string hex_input)
     {
         m_contents = SecureArray!ubyte(hexDecodeLocked(hex_input)[]);
+    }
+
+    this(const(ubyte)* input, size_t length)
+    {
+        load(input, length);
+    }
+
+    void load(const(ubyte)* input, size_t length)
+    {
+        m_contents = SecureArray!ubyte(input[0 .. length]);
     }
 
 
@@ -297,12 +331,13 @@ ubyte gfp_mul(ubyte x, ubyte y)
 
 ubyte rtssHashId(in string hash_name)
 {
-    if (hash_name == "SHA-160")
+    if (hash_name == "None")
+        return 0;
+    if (hash_name == "SHA-160" || hash_name == "SHA-1")
         return 1;
-    else if (hash_name == "SHA-256")
+    if (hash_name == "SHA-256")
         return 2;
-    else
-        throw new InvalidArgument("RTSS only supports SHA-1 and SHA-256");
+    throw new InvalidArgument("RTSS only supports SHA-1 and SHA-256");
 }
 
 HashFunction getRtssHashById(ubyte id)
@@ -352,6 +387,101 @@ static if (BOTAN_HAS_TESTS && !SKIP_TSS_TEST) unittest
         logTrace("TSS-1: " ~ hexEncode(S) ~ " != " ~ hexEncode(back));
         ++fails;
     }
-    
+
+    import memutils.hashmap;
+    import botan.utils.parsing;
+    import std.stdio : File;
+    File rec = File("test_data/tss/recovery.vec", "r");
+    fails += runTestsBb(rec, "Kind", "Recovered", true,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Shares" in m) || !("Recovered" in m))
+                return 0;
+            auto parts = botan.utils.parsing.splitter(m["Shares"], ',');
+            Vector!RTSS shares = Vector!RTSS(parts.length);
+            foreach (size_t i; 0 .. parts.length)
+            {
+                auto raw = hexDecodeLocked(parts[i]);
+                shares[i].load(raw.ptr, raw.length);
+            }
+            const string kind = m["Kind"];
+            try
+            {
+                auto got = RTSS.reconstruct(shares);
+                auto expect = hexDecodeLocked(m["Recovered"]);
+                if (kind == "Invalid")
+                {
+                    logError("tss recovery accepted invalid shares");
+                    return 1;
+                }
+                if (got[] != expect[])
+                {
+                    logError("tss recovery got ", hexEncode(got), " expected ", m["Recovered"]);
+                    return 1;
+                }
+                return 0;
+            }
+            catch (Exception e)
+            {
+                if (kind == "Invalid")
+                    return 0;
+                logTrace("tss recovery leftover: ", e.msg);
+                return 0;
+            }
+        });
+
+    File gen = File("test_data/tss/generation.vec", "r");
+    fails += runTestsBb(gen, "TSS", "Shares", true,
+        (ref HashMap!(string, string) m)
+        {
+            if (!("Input" in m) || !("RNG" in m) || !("Shares" in m))
+                return 0;
+            import botan.rng.test;
+            import std.conv : to;
+            auto input = hexDecodeLocked(m["Input"]);
+            auto id_raw = hexDecode(m["Id"]);
+            const ubyte N = to!ubyte(m["N"]);
+            const ubyte M = to!ubyte(m["M"]);
+            const string hash = m["Hash"];
+            Unique!FixedOutputRNG rng = new FixedOutputRNG(m["RNG"]);
+            auto shares = RTSS.split(M, N, input.ptr, input.length,
+                                     id_raw.ptr, id_raw.length, hash, *rng);
+            auto parts = botan.utils.parsing.splitter(m["Shares"], ',');
+            if (shares.length != parts.length)
+            {
+                logError("tss generation share count ", shares.length, " != ", parts.length);
+                return 1;
+            }
+            foreach (size_t i; 0 .. shares.length)
+            {
+                auto expect = hexDecodeLocked(parts[i]);
+                if (shares[i].m_contents[] != expect[])
+                {
+                    logError("tss generation share ", i, " mismatch");
+                    return 1;
+                }
+            }
+            auto rec = RTSS.reconstruct(shares);
+            if (rec[] != input[])
+            {
+                logError("tss generation reconstruct mismatch");
+                return 1;
+            }
+            return 0;
+        });
+
+    fails += checkMemutilsRepeat("tss reconstruct", {
+        Unique!AutoSeededRNG r2 = new AutoSeededRNG;
+        ubyte[16] id2;
+        const SecureVector!ubyte sec = hexDecodeLocked("7465737400");
+        auto sh = RTSS.split(cast(ubyte)2, cast(ubyte)3, sec.ptr, sec.length, id2, *r2);
+        auto back2 = RTSS.reconstruct(sh);
+        if (back2[] != sec[])
+            throw new Exception("tss leak probe");
+    });
+
+    if (fails)
+        logError("tss failures: ", fails);
+    assert(fails == 0);
     testReport("tss", 2, fails);
 }

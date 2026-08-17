@@ -2,8 +2,8 @@
 * PBKDF
 * 
 * Copyright:
-* (C) 1999-2007,2012 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2012 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -142,26 +142,60 @@ static if (BOTAN_HAS_TESTS && !SKIP_PBKDF_TEST) unittest {
     logDebug("Testing pbkdf.d ...");
     import botan.test;
     import botan.codec.hex;
+    import botan.utils.mem_ops;
     import memutils.hashmap;
-	import botan.libstate.libstate;
+    import botan.libstate.libstate;
+    import botan.libstate.lookup;
     int total_tests;
     auto test = delegate(string input) {
-        return runTests(input, "PBKDF", "Output", true,
-             (ref HashMap!(string, string) vec) {
+        File vec = File(input, "r");
+        return runTestsBb(vec, "PBKDF", "Output", true,
+             (ref HashMap!(string, string) m) {
                 total_tests += 1;
-                Unique!PBKDF pbkdf = getPbkdf(vec["PBKDF"]);
-                
-                const size_t iterations = to!size_t(vec["Iterations"]);
-                const size_t outlen = to!size_t(vec["OutputLen"]);
-                const auto salt = hexDecode(vec["Salt"]);
-                const string pass = vec["Passphrase"];
-				auto octet_string = pbkdf.deriveKey(outlen, pass, salt.ptr, salt.length, iterations);
+                PBKDF pbkdf;
+                try { pbkdf = getPbkdf(m["PBKDF"]); }
+                catch (AlgorithmNotFound)
+                {
+                    logTrace("Unknown PBKDF " ~ m["PBKDF"]);
+                    return 0;
+                }
+                Unique!PBKDF owned = pbkdf;
+
+                auto expected = hexDecode(m["Output"]);
+                size_t outlen;
+                if (auto p = "OutputLen" in m)
+                    outlen = to!size_t(*p);
+                else
+                    outlen = expected.length;
+
+                string salt_hex;
+                if (auto p = "Salt" in m)
+                    salt_hex = *p;
+                const auto salt = hexDecode(salt_hex);
+                string pass;
+                if (auto p = "Passphrase" in m)
+                    pass = *p;
+                const size_t iterations = to!size_t(m["Iterations"]);
+                auto octet_string = owned.deriveKey(outlen, pass, salt.ptr, salt.length, iterations);
                 const auto key = octet_string.bitsOf();
-                return hexEncode(key);
+                if (key.length != expected.length || !sameMem(key.ptr, expected.ptr, expected.length))
+                {
+                    logError(m["PBKDF"] ~ " got " ~ hexEncode(key) ~ " != " ~ hexEncode(expected));
+                    return 1;
+                }
+                return 0;
             });
     };
-    
+
     size_t fails = runTestsInDir("test_data/pbkdf", test);
+
+    fails += checkMemutilsRepeat("pbkdf2", {
+        Unique!PBKDF p = getPbkdf("PBKDF2(SHA-256)");
+        ubyte[8] salt;
+        auto k = p.deriveKey(16, "pass", salt.ptr, salt.length, 1);
+        if (k.length != 16)
+            throw new Exception("pbkdf leak probe");
+    });
 
     testReport("pbkdf", total_tests, fails);
 }

@@ -2,8 +2,8 @@
 * BER Decoder
 * 
 * Copyright:
-* (C) 1999-2010 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2008,2015,2017,2018,2026 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -40,15 +40,31 @@ public:
 
         if (next.type_tag == ASN1Tag.NO_OBJECT)
             return next.move();
-        
-        size_t length = decodeLength(m_source);
-        //logTrace("length: ", length);
+
+        const bool constructed = (next.class_tag & ASN1Tag.CONSTRUCTED) != 0;
+        size_t field_size;
+        const size_t allow_indef = m_require_der ? 0 : DefaultMaxNestedIndef;
+        size_t length = decodeLength(m_source, field_size, m_require_der, constructed, allow_indef);
+        if (next.type_tag == ASN1Tag.EOC && next.class_tag == ASN1Tag.UNIVERSAL && length != 0)
+            throw new BERDecodingError("EOC marker with non-zero length");
+        enum size_t DefaultMaxObjectSize = 128 * 1024 * 1024;
+        if (length > DefaultMaxObjectSize)
+            throw new BERDecodingError("Encoded object exceeds maximum size");
 
         next.value.resize(length);
         if (m_source.read(next.value.ptr, length) != length)
             throw new BERDecodingError("Value truncated");
+        // Indefinite BER: findEoc includes the trailing EOC. C++ 3's value
+        // excludes it, so strip 00 00 and leave the terminator out of `value`.
+        if (field_size == 1 && constructed && next.value.length >= 2 &&
+            next.value[next.value.length - 2] == 0 && next.value[next.value.length - 1] == 0)
+            next.value.length = next.value.length - 2;
         if (next.type_tag == ASN1Tag.EOC && next.class_tag == ASN1Tag.UNIVERSAL)
+        {
+            if (m_require_der)
+                throw new BERDecodingError("Detected EOC marker in DER structure");
             return getNextObject();
+        }
         return next.move();
     }
 
@@ -114,6 +130,7 @@ public:
         
         BERDecoder result = BERDecoder(obj.value.ptr, obj.value.length);
         result.m_parent = &this;
+        result.m_require_der = m_require_der;
         return result.move();
     }
 
@@ -228,8 +245,10 @@ public:
         
         if (obj.value.length != 1)
             throw new BERDecodingError("BER boolean value had invalid size");
-        
-        output = (obj.value[0]) ? true : false;
+        const ubyte val = obj.value[0];
+        if (m_require_der && val != 0x00 && val != 0xFF)
+            throw new BERDecodingError("Detected non-canonical boolean encoding in DER structure");
+        output = (val != 0) ? true : false;
         return this;
     }
     
@@ -263,10 +282,15 @@ public:
         BERObject obj = getNextObject();
         obj.assertIsA(type_tag, class_tag);
         
-        if (obj.value.empty) {
-            output = BigInt("0");
+        if (obj.value.empty)
+            throw new BERDecodingError("INTEGER encoding has no content octets");
+        if (m_require_der && obj.value.length > 1)
+        {
+            if (obj.value[0] == 0x00 && (obj.value[1] & 0x80) == 0)
+                throw new BERDecodingError("Detected non-minimal INTEGER encoding in DER structure");
+            if (obj.value[0] == 0xFF && (obj.value[1] & 0x80) != 0)
+                throw new BERDecodingError("Detected non-minimal INTEGER encoding in DER structure");
         }
-        else
         {
             const bool negative = (obj.value[0] & 0x80) ? true : false;
             
@@ -324,9 +348,17 @@ public:
 				throw new BERDecodingError("Invalid BIT STRING");
             if (obj.value[0] >= 8)
                 throw new BERDecodingError("Bad number of unused bits in BIT STRING");
-            
+            if (obj.value[0] > 0 && obj.value.length < 2)
+                throw new BERDecodingError("Invalid BIT STRING");
+            if (m_require_der && obj.value[0] > 0)
+            {
+                const ubyte last = obj.value[obj.value.length - 1];
+                if ((last & ((1 << obj.value[0]) - 1)) != 0)
+                    throw new BERDecodingError("Detected non-zero padding bits in BIT STRING in DER structure");
+            }
             buffer.resize(obj.value.length - 1);
-            copyMem(buffer.ptr, &obj.value[1], obj.value.length - 1);
+            if (obj.value.length > 1)
+                copyMem(buffer.ptr, &obj.value[1], obj.value.length - 1);
         }
 
         //logTrace("decode SecureVector: ", buffer[]);
@@ -352,9 +384,17 @@ public:
 				throw new BERDecodingError("Invalid BIT STRING");
             if (obj.value[0] >= 8)
                 throw new BERDecodingError("Bad number of unused bits in BIT STRING");
-            
+            if (obj.value[0] > 0 && obj.value.length < 2)
+                throw new BERDecodingError("Invalid BIT STRING");
+            if (m_require_der && obj.value[0] > 0)
+            {
+                const ubyte last = obj.value[obj.value.length - 1];
+                if ((last & ((1 << obj.value[0]) - 1)) != 0)
+                    throw new BERDecodingError("Detected non-zero padding bits in BIT STRING in DER structure");
+            }
             buffer.resize(obj.value.length - 1);
-            copyMem(buffer.ptr, &obj.value[1], obj.value.length - 1);
+            if (obj.value.length > 1)
+                copyMem(buffer.ptr, &obj.value[1], obj.value.length - 1);
         }
         //logTrace("decode Vector: ", buffer[]);
         return this;
@@ -631,12 +671,22 @@ public:
     @disable @property BERDecoder dup();
 
     @disable this(this);
+
+    ref BERDecoder setRequireDer(bool v = true) return
+    {
+        m_require_der = v;
+        return this;
+    }
+
+    bool requireDer() const { return m_require_der; }
+
 private:
 
     BERDecoder* m_parent;
     DataSource m_source;
     BERObject m_pushed;
     bool m_owns;
+    bool m_require_der;
 }
 
 private:
@@ -656,8 +706,9 @@ size_t decodeTag(DataSource ber, ref ASN1Tag type_tag, ref ASN1Tag class_tag)
     if ((b & 0x1F) != 0x1F)
     {
         type_tag = cast(ASN1Tag)(b & 0x1F);
-        //logTrace("tag: ", type_tag);
         class_tag = cast(ASN1Tag)(b & 0xE0);
+        if (type_tag == ASN1Tag.EOC && class_tag == ASN1Tag.CONSTRUCTED)
+            throw new BERDecodingError("EOC tag with constructed encoding");
         return 1;
     }
     
@@ -669,20 +720,28 @@ size_t decodeTag(DataSource ber, ref ASN1Tag type_tag, ref ASN1Tag class_tag)
     {
         if (!ber.readByte(b))
             throw new BERDecodingError("Long-form tag truncated");
-        if (tag_buf & 0xFF000000)
+        if ((tag_buf >> 25) != 0)
             throw new BERDecodingError("Long-form tag overflowed 32 bits");
+        if (tag_bytes == 1 && (b & 0x7F) == 0)
+            throw new BERDecodingError("Long form tag with leading zero");
         ++tag_bytes;
         tag_buf = (tag_buf << 7) | (b & 0x7F);
         if ((b & 0x80) == 0) break;
     }
+    if (tag_buf <= 30)
+        throw new BERDecodingError("Long-form tag encoding used for small tag value");
     type_tag = cast(ASN1Tag)(tag_buf);
     return tag_bytes;
 }
 
+enum size_t DefaultMaxNestedIndef = 16;
+
 /*
 * BER decode an ASN.1 length field
 */
-size_t decodeLength(DataSource ber, ref size_t field_size)
+size_t decodeLength(DataSource ber, ref size_t field_size,
+                    bool require_der = false, bool constructed = true,
+                    size_t allow_indef = DefaultMaxNestedIndef)
 {
     ubyte b;
     if (!ber.readByte(b))
@@ -692,7 +751,16 @@ size_t decodeLength(DataSource ber, ref size_t field_size)
         return b;
     
     field_size += (b & 0x7F);
-    if (field_size == 1) return findEoc(ber);
+    if (field_size == 1)
+    {
+        if (require_der)
+            throw new BERDecodingError("Detected indefinite-length encoding in DER structure");
+        if (!constructed)
+            throw new BERDecodingError("Indefinite-length encoding used with non-constructed type");
+        if (allow_indef == 0)
+            throw new BERDecodingError("Nested EOC markers too deep, rejecting to avoid stack exhaustion");
+        return findEoc(ber, allow_indef - 1);
+    }
     if (field_size > 5)
         throw new BERDecodingError("Length field is too large");
     
@@ -712,16 +780,16 @@ size_t decodeLength(DataSource ber, ref size_t field_size)
 /*
 * BER decode an ASN.1 length field
 */
-size_t decodeLength(DataSource ber)
+size_t decodeLength(DataSource ber, bool require_der = false, bool constructed = true)
 {
     size_t dummy;
-    return decodeLength(ber, dummy);
+    return decodeLength(ber, dummy, require_der, constructed);
 }
 
 /*
 * Find the EOC marker
 */
-size_t findEoc(DataSource ber)
+size_t findEoc(DataSource ber, size_t allow_indef = DefaultMaxNestedIndef)
 {
     SecureVector!ubyte buffer = SecureVector!ubyte(DEFAULT_BUFFERSIZE);
     SecureVector!ubyte data = SecureVector!ubyte();
@@ -745,7 +813,11 @@ size_t findEoc(DataSource ber)
             break;
         
         size_t length_size = 0;
-        size_t item_size = decodeLength(source, length_size);
+        const bool constructed = (class_tag & ASN1Tag.CONSTRUCTED) != 0;
+        size_t item_size = decodeLength(source, length_size, false, constructed, allow_indef);
+        if (type_tag == ASN1Tag.EOC && class_tag == ASN1Tag.UNIVERSAL
+            && (length_size != 1 || item_size != 0))
+            throw new BERDecodingError("EOC marker with non-zero length");
         source.discardNext(item_size);
         
         length += item_size + length_size + tag_size;
@@ -754,6 +826,61 @@ size_t findEoc(DataSource ber)
             break;
     }
     return length;
+}
+
+static if (BOTAN_HAS_TESTS && !SKIP_ASN1_TEST) unittest
+{
+    import botan.test;
+    import botan.libstate.global_state;
+    import botan.utils.exceptn;
+
+    auto state = globalState();
+    logDebug("Testing ber_dec.d S2 nest bound ...");
+    size_t fails;
+
+    ubyte[] nest(size_t depth)
+    {
+        auto v = new ubyte[depth * 4];
+        size_t o;
+        foreach (i; 0 .. depth)
+        {
+            v[o++] = 0x30;
+            v[o++] = 0x80;
+        }
+        foreach (i; 0 .. depth)
+        {
+            v[o++] = 0x00;
+            v[o++] = 0x00;
+        }
+        return v;
+    }
+
+    {
+        auto v = nest(2);
+        auto dec = BERDecoder(v.ptr, v.length);
+        auto obj = dec.getNextObject();
+        if (obj.type_tag != ASN1Tag.SEQUENCE)
+            ++fails;
+    }
+    {
+        auto v = nest(17);
+        bool threw;
+        try
+        {
+            auto dec = BERDecoder(v.ptr, v.length);
+            auto obj = dec.getNextObject();
+        }
+        catch (BERDecodingError)
+            threw = true;
+        if (!threw)
+        {
+            logError("S2 17-deep indefinite BER accepted");
+            ++fails;
+        }
+    }
+
+    testReport("ber_dec_s2", 2, fails);
+    assert(fails == 0);
 }
 
 

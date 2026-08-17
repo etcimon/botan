@@ -2,8 +2,8 @@
 * SHA-{384,512}
 * 
 * Copyright:
-* (C) 1999-2010 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2011,2015 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -129,6 +129,87 @@ protected:
     }
 
     SecureVector!ulong m_digest;
+}
+
+/**
+* SHA-512/256 (FIPS 180-4). Distinct IVs from truncated SHA-512.
+*/
+final class SHA512_256 : MDxHashFunction, HashFunction
+{
+public:
+    override @property size_t hashBlockSize() const { return super.hashBlockSize(); }
+    override @property string name() const { return "SHA-512-256"; }
+    override @property size_t outputLength() const { return 32; }
+    override HashFunction clone() const { return new SHA512_256; }
+
+    override void clear()
+    {
+        super.clear();
+        m_digest[0] = 0x22312194FC2BF72C;
+        m_digest[1] = 0x9F555FA3C84C64C2;
+        m_digest[2] = 0x2393B86B6F53B151;
+        m_digest[3] = 0x963877195940EABD;
+        m_digest[4] = 0x96283EE2A88EFFE3;
+        m_digest[5] = 0xBE5E1E2553863992;
+        m_digest[6] = 0x2B0199FC2C85B8AA;
+        m_digest[7] = 0x0EB72DDC81C52CA2;
+    }
+
+    this()
+    {
+        super(128, true, true, 16);
+        m_digest.length = 8;
+        clear();
+    }
+
+protected:
+    override void compressN(const(ubyte)* input, size_t blocks)
+    {
+        compress(m_digest, input, blocks);
+    }
+
+    override void copyOut(ubyte* output)
+    {
+        for (size_t i = 0; i != outputLength(); i += 8)
+            storeBigEndian(m_digest[i/8], output + i);
+    }
+
+    SecureVector!ulong m_digest;
+}
+
+static if (BOTAN_HAS_TESTS && !SKIP_HASH_TEST) unittest
+{
+    import botan.test;
+    import botan.libstate.global_state;
+    import botan.libstate.lookup;
+    import botan.hash.hash;
+
+    auto gs = globalState();
+    size_t fails;
+
+    auto proto_h = retrieveHash("SHA-512-256");
+    auto proto_s = retrieveHash("SHA-512/256");
+    if (!proto_h || !proto_s)
+    {
+        ++fails;
+        testReport("sha2_64_scan", 3, fails);
+        assert(fails == 0);
+        return;
+    }
+    Unique!HashFunction hyphen = proto_h.clone();
+    Unique!HashFunction slash = proto_s.clone();
+    if (hyphen.name != "SHA-512-256" || slash.name != "SHA-512-256")
+        ++fails;
+
+    hyphen.update(cast(const(ubyte)[]) "abc");
+    slash.update(cast(const(ubyte)[]) "abc");
+    auto a = hyphen.finished();
+    auto b = slash.finished();
+    if (a[] != b[] || a.length != 32)
+        ++fails;
+
+    testReport("sha2_64_scan", 3, fails);
+    assert(fails == 0);
 }
 
 private:

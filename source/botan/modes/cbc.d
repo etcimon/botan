@@ -1,7 +1,9 @@
 /*
 * CBC mode
-* (C) 1999-2007,2013 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 1999-2007,2013,2017 Jack Lloyd
+* (C) 2016 Daniel Neus, Rohde & Schwarz Cybersecurity
+* (C) 2018 Ribose Inc
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -10,6 +12,7 @@ module botan.modes.cbc;
 
 import botan.constants;
 static if (BOTAN_HAS_MODE_CBC):
+static assert(BOTAN_HAS_CIPHER_MODE_PADDING, "CBC requires Cipher_Mode_Padding");
 
 import botan.modes.cipher_mode;
 import botan.block.block_cipher;
@@ -325,6 +328,8 @@ public:
         assert(buffer.length >= BS);
         const size_t pad_bytes = BS - padding().unpad(&buffer[buffer.length-BS], BS);
         buffer.resize(buffer.length - pad_bytes); // remove padding
+        if (pad_bytes == 0 && padding().name() != "NoPadding")
+            throw new DecodingError("Invalid CBC padding");
     }
 
     override size_t outputLength(size_t input_length) const

@@ -1,0 +1,182 @@
+# Test vectors derived from from RFC 6125 and OpenSSL test suite
+# https://github.com/openssl/openssl/blob/master/test/v3nametest.c
+
+Issued = example
+Hostname = example
+
+Issued = example.com
+Hostname = example.com
+
+Issued = a.example.com
+Hostname = a.example.com
+
+Issued = test.www.example.com
+Hostname = test.www.example.com
+
+Issued = *.example.com
+Hostname = foo.example.com
+
+Issued = baz*.example.net
+Hostname = baz1.example.net
+
+Issued = baz*.example.net
+Hostname = baz.example.net
+
+Issued = *baz.example.net
+Hostname = foobaz.example.net
+
+Issued = *baz.example.net
+Hostname = baz.example.net
+
+Issued = b*z.example.net
+Hostname = buzz.example.net
+
+Issued = foo*bar.example.net
+Hostname = foobar.example.net
+
+Issued = *.www.example.com
+Hostname = test.www.example.com
+
+Issued = *www.example.com
+Hostname = www.example.com
+
+Issued = fluf*z.example.net
+Hostname = flufbaz.example.net
+
+Issued = example.com
+Hostname = EXAMPLE.com
+
+Issued = example.com
+Hostname = EXAMPLE.COM
+
+Issued = *.example.COM
+Hostname = a.EXAMPLE.com
+
+Issued = b*z.example.net
+Hostname = bz.example.net
+
+Issued = 1example.com
+Hostname = 1EXAMPLE.com
+
+Issued = my-host.example.com
+Hostname = my-HOST.example.com
+
+Issued = *.example.com
+Hostname = averylongsubdomainname.example.com
+
+Issued = www*.example.com
+Hostname = www.example.com
+
+# A whole-label wildcard may match an IDNA A-label
+Issued = *.example.com
+Hostname = xn--bcher-kva.example.com
+
+Issued = *.xn--p1ai.example
+Hostname = foo.xn--p1ai.example
+
+[Invalid]
+Issued =
+Hostname = empty.com
+
+Issued = empty.com
+Hostname =
+
+Issued =
+Hostname =
+
+Issued = *
+Hostname = *
+
+Issued = *
+Hostname = a
+
+Issued = *.com
+Hostname = a.com
+
+Issued = *.com
+Hostname = x.a.com
+
+# We reject hostnames with ..
+Issued = a*..com
+Hostname = aninvalidhostname..com
+
+Issued = f.*.com
+Hostname = f.a.com
+
+Issued = ample.com
+Hostname = example.com
+
+Issued = example.com
+Hostname = ample.com
+
+Issued = b*z.example.net
+Hostname = foobaz.example.net
+
+Issued = b*z.example.net
+Hostname = z.example.net
+
+Issued = flufb*z.example.net
+Hostname = foobaz.example.net
+
+Issued = b*z.example.net
+Hostname = baz.example.com
+
+Issued = example.com
+Hostname = www.example.com
+
+Issued = www.example.com
+Hostname = example.com
+
+Issued = bar.*.example.net
+Hostname = bar.foo.example.net
+
+Issued = bar.*.example.net
+Hostname = bar..example.net
+
+Issued = *.example.com
+Hostname = bar.foo.example.com
+
+Issued = *.example.com
+Hostname = example.com
+
+Issued = foo*foo.example.com
+Hostname = foo.example.com
+
+Issued = foo.exa*ple.com
+Hostname = foo.example.com
+
+Issued = exa*ple.com
+Hostname = example.com
+
+Issued = **.example.com
+Hostname = foo.example.com
+
+Issued = *.*.example.com
+Hostname = foo.bar.example.com
+
+Issued = O.example.com
+Hostname = 0.example.com
+
+Issued = @.example.com
+Hostname = `.example.com
+
+# Hostnames cannot start with a dot
+Issued = *.example.com
+Hostname = .example.com
+
+Issued = .example.com
+Hostname = .example.com
+
+# RFC 6125 does not allow wildcards within an IDNA A-label
+Issued = xn--b*r.example.com
+Hostname = xn--bar.example.com
+
+Issued = XN--b*r.example.com
+Hostname = xn--bar.example.com
+
+# Nor may a partial wildcard match into an A-label of the host
+Issued = x*.example.com
+Hostname = xn--bcher-kva.example.com
+
+Issued = x*.example.com
+Hostname = XN--bcher-kva.example.com

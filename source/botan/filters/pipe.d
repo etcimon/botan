@@ -3,8 +3,7 @@
 * 
 * Copyright:
 * (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
-*     2012 Markus Wanner
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -636,7 +635,7 @@ private:
             return;
         for (size_t j = 0; j != to_kill.totalPorts(); ++j)
             if (to_kill.m_next[j]) destruct(to_kill.m_next[j]);
-        destroy(to_kill);
+        botanDestroyIfLive(to_kill);
     }
 
     /*

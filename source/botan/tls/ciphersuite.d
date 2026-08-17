@@ -2,8 +2,8 @@
 * TLS Cipher Suites
 * 
 * Copyright:
-* (C) 2004-2011,2012 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2004-2010,2012,2013 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -36,6 +36,12 @@ public:
     {
         switch(suite)
         {
+            case 0x1301: // TLS_AES_128_GCM_SHA256
+                return TLSCiphersuite(0x1301, "", "", "AES-128/GCM", 16, 12, 0, "AEAD", 0, "SHA-256");
+            case 0x1302: // TLS_AES_256_GCM_SHA384
+                return TLSCiphersuite(0x1302, "", "", "AES-256/GCM", 32, 12, 0, "AEAD", 0, "SHA-384");
+            case 0x1303: // TLS_CHACHA20_POLY1305_SHA256
+                return TLSCiphersuite(0x1303, "", "", "ChaCha20Poly1305", 32, 12, 0, "AEAD", 0, "SHA-256");
             case 0x0013: // DHE_DSS_WITH_3DES_EDE_CBC_SHA
                 return TLSCiphersuite(0x0013, "DSA", "DH", "3DES", 24, 8, 0, "SHA-1", 20);
             case 0x0032: // DHE_DSS_WITH_AES_128_CBC_SHA
@@ -397,6 +403,17 @@ public:
         Appender!string output;
         
         output ~= "TLS_";
+
+        if (kexAlgo() == "" && sigAlgo() == "")
+        {
+            if (cipherAlgo() == "ChaCha20Poly1305")
+                output ~= "CHACHA20_POLY1305_";
+            else
+                output ~= replaceChars(cipherAlgo(), ['-', '/'], '_') ~ "_";
+            if (macAlgo() == "AEAD")
+                output ~= eraseChars(prfAlgo(), ['-']);
+            return output.data;
+        }
         
         if (kexAlgo() != "RSA")
         {

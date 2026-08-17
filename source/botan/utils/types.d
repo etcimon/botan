@@ -3,7 +3,9 @@
 * 
 * Copyright:
 * (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2015 Simon Warta (Kullo GmbH)
+* (C) 2016 René Korthaus, Rohde & Schwarz Cybersecurity
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -19,6 +21,33 @@ public import std.typecons : scoped;
 public import std.conv : to;
 
 alias Scoped(T) = typeof(scoped!T());
+
+// Module-level like memutils.unique: a nested extern(C) does not link on LDC.
+static if (__VERSION__ >= 2071)
+{
+    extern (C) bool gc_inFinalizer();
+    enum BotanHasGcFinalizerCheck = true;
+}
+else
+    enum BotanHasGcFinalizerCheck = false;
+
+/// Same gate Unique!(T,void) uses: do not .destroy other GC objects from a finalizer.
+bool botanInGcFinalizer()
+{
+    static if (BotanHasGcFinalizerCheck)
+        return gc_inFinalizer();
+    else
+        return false;
+}
+
+/// Deterministic teardown for GC `new` objects that hold Vector/Unique. No-op in a GC finalizer.
+void botanDestroyIfLive(T)(T obj)
+    if (is(T == class) || is(T == interface))
+{
+    if (!obj || botanInGcFinalizer())
+        return;
+    .destroy(obj);
+}
 
 /**
 * The two possible directions for cipher filters, determining whether they

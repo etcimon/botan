@@ -2,8 +2,8 @@
 * Exceptions
 * 
 * Copyright:
-* (C) 1999-2009 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2017 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -152,6 +152,14 @@ class DecodingError : InvalidArgument
 * IntegrityFailure Exception
 */
 final class IntegrityFailure : Exception
+{
+	@safe pure nothrow this(in string msg, Throwable next = null, string file = __FILE__, int line = __LINE__) {
+		super("Integrity failure: " ~ msg, next, file, line);
+    }
+}
+
+/// C++ `Invalid_Authentication_Tag` (MAC / AEAD tag failure).
+final class InvalidAuthenticationTag : Exception
 {
 	@safe pure nothrow this(in string msg, Throwable next = null, string file = __FILE__, int line = __LINE__) {
 		super("Integrity failure: " ~ msg, next, file, line);

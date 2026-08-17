@@ -1,9 +1,10 @@
 /**
 * Certificate Store
-* 
+*
 * Copyright:
 * (C) 1999-2010,2013 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2017 Fabian Weissberg, Rohde & Schwarz Cybersecurity
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -14,10 +15,14 @@ import botan.constants;
 
 import botan.cert.x509.x509cert;
 import botan.cert.x509.x509_crl;
+import botan.codec.pem;
+import botan.filters.data_src;
+import botan.utils.exceptn;
+import botan.utils.mem_ops;
 import botan.utils.types;
 import std.file;
 
-version(X509):
+static if (BOTAN_HAS_X509_CERTIFICATES):
 
 /**
 * Certificate Store Interface
@@ -65,11 +70,28 @@ public:
             return;
         foreach(string name; dirEntries(dir, SpanMode.breadth)) {
             if (isFile(name))
-                m_certs.pushBack(X509Certificate(name));
+            {
+                try
+                    addFromFile(name);
+                catch (Exception)
+                {}
+            }
         }
     }
 
     this() {}
+
+    /**
+    * Load every CERTIFICATE / X509 CERTIFICATE / TRUSTED CERTIFICATE
+    * block from a PEM bundle, or a single DER certificate. Duplicates
+    * are ignored (same as addCertificate).
+    */
+    void addFromFile(in string path)
+    {
+        auto loaded = loadCertificatesFromFile(path);
+        foreach (cert; loaded[])
+            addCertificate(cert);
+    }
 
     void addCertificate(X509Certificate cert)
     {
@@ -170,6 +192,57 @@ public:
     }
 private:
     Vector!X509Certificate m_certs;
+}
+
+/**
+* Decode every PEM certificate object in `source`. Non-certificate
+* labels are skipped. A trailing DecodingError (no further PEM header)
+* ends the scan, matching C++ Flatfile_Certificate_Store.
+*/
+Vector!X509Certificate decodeAllPemCertificates(DataSource source)
+{
+    Vector!X509Certificate certs;
+    while (!source.endOfData())
+    {
+        try
+        {
+            string label;
+            auto der = unlock(PEM.decode(source, label));
+            if (label == "CERTIFICATE" || label == "X509 CERTIFICATE" || label == "TRUSTED CERTIFICATE")
+                certs.pushBack(X509Certificate(der));
+        }
+        catch (DecodingError)
+        {
+            break;
+        }
+    }
+    return certs.move;
+}
+
+/**
+* Load certificates from a regular file.
+* PEM: every certificate block. DER: the single certificate.
+*/
+Vector!X509Certificate loadCertificatesFromFile(in string path)
+{
+    if (path.length == 0)
+        throw new InvalidArgument("loadCertificatesFromFile: empty path");
+    if (!exists(path) || !isFile(path))
+        throw new InvalidArgument("loadCertificatesFromFile: not a file: " ~ path);
+
+    auto raw = cast(const(ubyte)[]) read(path);
+    if (raw.length == 0)
+        return Vector!X509Certificate();
+
+    auto src = DataSourceMemory(raw.ptr, raw.length);
+    if (PEM.matches(cast(DataSource) src))
+        return decodeAllPemCertificates(cast(DataSource) src);
+
+    Vector!ubyte der;
+    der.insert(raw);
+    Vector!X509Certificate certs;
+    certs.pushBack(X509Certificate(der));
+    return certs.move;
 }
 
 X509Certificate certSearch(in X509DN subject_dn, 

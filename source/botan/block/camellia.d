@@ -2,8 +2,8 @@
 * Camellia
 * 
 * Copyright:
-* (C) 2012 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2012,2020 Jack Lloyd
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -18,6 +18,8 @@ import botan.utils.loadstor;
 import botan.utils.types;
 import botan.utils.rotate;
 import botan.utils.mem_ops;
+import botan.utils.cpuid;
+static if (BOTAN_HAS_CAMELLIA_HWAES) import botan.block.camellia_hwaes;
 
 /**
 * Camellia-128
@@ -26,21 +28,18 @@ final class Camellia128 : BlockCipherFixedParams!(16, 16), BlockCipher, Symmetri
 {
 public:
     override void encryptN(const(ubyte)* input, ubyte* output, size_t blocks)
-    {
-        .encrypt(input, output, blocks, m_SK, 9);
-    }
+    { camelliaMaybeHwaesEnc(input, output, blocks, m_SK, 9); }
 
     override void decryptN(const(ubyte)* input, ubyte* output, size_t blocks)
-    {
-        .decrypt(input, output, blocks, m_SK, 9);
-    }
+    { camelliaMaybeHwaesDec(input, output, blocks, m_SK, 9); }
 
     override void clear()
     {
         zap(m_SK);
     }
     @property string name() const { return "Camellia-128"; }
-    override @property size_t parallelism() const { return 1; }
+    override @property size_t parallelism() const { return camelliaHwaesParallelism(); }
+    package ref const(SecureVector!ulong) sk() const { return m_SK; }
     override BlockCipher clone() const { return new Camellia128; }
     override size_t blockSize() const { return super.blockSize(); }
     override KeyLengthSpecification keySpec() const { return super.keySpec(); }
@@ -60,21 +59,18 @@ final class Camellia192 : BlockCipherFixedParams!(16, 24), BlockCipher, Symmetri
 {
 public:
     override void encryptN(const(ubyte)* input, ubyte* output, size_t blocks)
-    {
-        .encrypt(input, output, blocks, m_SK, 12);
-    }
+    { camelliaMaybeHwaesEnc(input, output, blocks, m_SK, 12); }
 
     override void decryptN(const(ubyte)* input, ubyte* output, size_t blocks)
-    {
-        .decrypt(input, output, blocks, m_SK, 12);
-    }
+    { camelliaMaybeHwaesDec(input, output, blocks, m_SK, 12); }
 
     override void clear()
     {
         zap(m_SK);
     }
     @property string name() const { return "Camellia-192"; }
-    override @property size_t parallelism() const { return 1; }
+    override @property size_t parallelism() const { return camelliaHwaesParallelism(); }
+    package ref const(SecureVector!ulong) sk() const { return m_SK; }
     override BlockCipher clone() const { return new Camellia192; }
     override size_t blockSize() const { return super.blockSize(); }
     override KeyLengthSpecification keySpec() const { return super.keySpec(); }
@@ -94,21 +90,18 @@ final class Camellia256 : BlockCipherFixedParams!(16, 32), BlockCipher, Symmetri
 {
 public:
     override void encryptN(const(ubyte)* input, ubyte* output, size_t blocks)
-    {
-        .encrypt(input, output, blocks, m_SK, 12);
-    }
+    { camelliaMaybeHwaesEnc(input, output, blocks, m_SK, 12); }
 
     override void decryptN(const(ubyte)* input, ubyte* output, size_t blocks)
-    {
-        .decrypt(input, output, blocks, m_SK, 12);
-    }
+    { camelliaMaybeHwaesDec(input, output, blocks, m_SK, 12); }
 
     override void clear()
     {
         zap(m_SK);
     }
     @property string name() const { return "Camellia-256"; }
-    override @property size_t parallelism() const { return 1; }
+    override @property size_t parallelism() const { return camelliaHwaesParallelism(); }
+    package ref const(SecureVector!ulong) sk() const { return m_SK; }
     override BlockCipher clone() const { return new Camellia256; }
     override size_t blockSize() const { return super.blockSize(); }
     override KeyLengthSpecification keySpec() const { return super.keySpec(); }
@@ -123,6 +116,42 @@ protected:
 
 
 private:
+
+size_t camelliaHwaesParallelism()
+{
+    static if (BOTAN_HAS_CAMELLIA_HWAES)
+        return 2;
+    else
+        return 1;
+}
+
+void camelliaMaybeHwaesEnc(const(ubyte)* inn, ubyte* outp, size_t blocks,
+                           const ref SecureVector!ulong SK, size_t rounds)
+{
+    static if (BOTAN_HAS_CAMELLIA_HWAES)
+    {
+        if (CPUID.hasAesNi() && CPUID.hasSsse3())
+        {
+            camelliaHwaesEncrypt(inn, outp, blocks, SK.ptr, SK.length);
+            return;
+        }
+    }
+    camelliaPortableEncrypt(inn, outp, blocks, SK, rounds);
+}
+
+void camelliaMaybeHwaesDec(const(ubyte)* inn, ubyte* outp, size_t blocks,
+                           const ref SecureVector!ulong SK, size_t rounds)
+{
+    static if (BOTAN_HAS_CAMELLIA_HWAES)
+    {
+        if (CPUID.hasAesNi() && CPUID.hasSsse3())
+        {
+            camelliaHwaesDecrypt(inn, outp, blocks, SK.ptr, SK.length);
+            return;
+        }
+    }
+    camelliaPortableDecrypt(inn, outp, blocks, SK, rounds);
+}
 
 /*
 * We use the slow ubyte-wise version of F in the first and last rounds
@@ -225,9 +254,11 @@ ulong FLINV(ulong v, ulong K)
 /*
 * Camellia Encryption
 */
-void encrypt(const(ubyte)* input, ubyte* output, size_t blocks,
-             const ref SecureVector!ulong SK, in size_t rounds)
+package void camelliaPortableEncrypt(const(ubyte)* input, ubyte* output, size_t blocks,
+             const ref SecureVector!ulong SK, size_t rounds = 0)
 {
+    if (rounds == 0)
+        rounds = (SK.length == 26) ? 9 : 12;
     foreach (size_t i; 0 .. blocks)
     {
         ulong D1 = loadBigEndian!ulong(input, 0);
@@ -269,9 +300,11 @@ void encrypt(const(ubyte)* input, ubyte* output, size_t blocks,
 /*
 * Camellia Decryption
 */
-void decrypt(const(ubyte)* input, ubyte* output, size_t blocks,
-             const ref SecureVector!ulong SK, in size_t rounds)
+package void camelliaPortableDecrypt(const(ubyte)* input, ubyte* output, size_t blocks,
+             const ref SecureVector!ulong SK, size_t rounds = 0)
 {
+    if (rounds == 0)
+        rounds = (SK.length == 26) ? 9 : 12;
     foreach (size_t i; 0 .. blocks)
     {
         ulong D1 = loadBigEndian!ulong(input, 0);

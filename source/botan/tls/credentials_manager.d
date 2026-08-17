@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 2011,2012 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -116,7 +116,8 @@ public:
     /// ditto
     final Vector!X509Certificate certChain(T : string[])(auto ref T cert_key_types, in string type, in string context)
     {
-        return certChain(Vector!string(cert_key_types), type, context);
+        auto types = Vector!string(cert_key_types);
+        return certChain(types, type, context);
     }
 
     /**
@@ -159,6 +160,15 @@ public:
     abstract PrivateKey privateKeyFor(in X509Certificate cert, in string type, in string context)
     {
         return null;
+    }
+
+    /**
+    * Optional OCSP staple (DER) for `cert`. Default is empty — no staple.
+    * Used when the peer sent status_request and `BOTAN_HAS_OCSP_STAPLE`.
+    */
+    Vector!ubyte ocspStaple(in string type, in string context, in X509Certificate cert)
+    {
+        return Vector!ubyte();
     }
 
     /**

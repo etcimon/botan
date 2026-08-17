@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 2014-2015 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -203,6 +203,50 @@ static if (BOTAN_HAS_TESTS && !SKIP_RNG_TEST) unittest
             return x931Test(m["RNG"], m["IKM"], m["Out"], to!uint(m["L"]));
         });
 
+    {
+        import botan.rng.auto_rng;
+        Unique!AutoSeededRNG arng = new AutoSeededRNG;
+        arng.clear();
+        atomicOp!"+="(total_tests, 1);
+        if (arng.isSeeded())
+            ++fails;
+        ubyte[0] empty;
+        arng.randomize(empty.ptr, 0);
+        atomicOp!"+="(total_tests, 1);
+        if (!arng.isSeeded())
+            ++fails;
+        atomicOp!"+="(total_tests, 1);
+        if (arng.randomVec(16).length != 16)
+            ++fails;
+    }
+
+    static if (BOTAN_HAS_HMAC_DRBG) {
+        import botan.rng.hmac_drbg;
+        import botan.rng.auto_rng;
+        // HMAC_DRBG takes Unique ownership of mac and prng — do not Unique-wrap those.
+        {
+            auto mac0 = globalState().algorithmFactory().makeMac("HMAC(SHA-256)");
+            Unique!HMAC_DRBG warm = new HMAC_DRBG(mac0, new AutoSeededRNG);
+            warm.reseed(256);
+        }
+        auto rng_snap = takeMemutilsSnap();
+        {
+            auto mac = globalState().algorithmFactory().makeMac("HMAC(SHA-256)");
+            Unique!HMAC_DRBG drbg = new HMAC_DRBG(mac, new AutoSeededRNG);
+            drbg.reseed(256);
+            drbg.clear();
+            atomicOp!"+="(total_tests, 1);
+            if (drbg.isSeeded())
+                ++fails;
+            ubyte[0] empty2;
+            drbg.randomize(empty2.ptr, 0);
+            atomicOp!"+="(total_tests, 1);
+            if (!drbg.isSeeded())
+                ++fails;
+        }
+        if (memutilsGrowth(rng_snap, "hmac_drbg unique"))
+            ++fails;
+    }
 
     testReport("rng", total_tests, fails);
 }
