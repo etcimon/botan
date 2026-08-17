@@ -65,7 +65,12 @@
                 "CanTest", "HKDF", "Auto_Seeding_RNG", "Codec_Filters", "Cipher_Mode_Padding", "SHA2_32", "SHA2_64", "SHA3", "MD4", "MD5", "SHA1", "CRC24", "PBKDF1", "PBKDF2", "Argon2", "Argon2_Fmt", "Scrypt", "PBKDF_BCrypt", "PGP_S2K", "PKCS12_KDF", "CTR_BE", "HMAC", "POLY1305", "SipHash", "GMAC", "KMAC", "BLAKE2BMAC", "EMSA1", "EMSA1_BSI", "EMSA_X931", "EMSA_PKCS1", "EMSA_PSSR", "EMSA_RAW", "ISO9796", "EME_OAEP", "EME_PKCS1v15", "EME_RAW", "PBE_PKCSv20", "Self_Tests", "ECB", "CBC", "XTS", "OFB", "CFB", "AEAD_FILTER", "AEAD_CCM", "AEAD_EAX", "AEAD_OCB", "AEAD_GCM", "AEAD_GCM_SIV", "AEAD_ASCON128", "AEAD_SIV", "AEAD_CHACHA20_POLY1305", "RFC6979", "RSA", "RSA_Insecure", "RW", "DLIES", "DSA", "ECDSA", "ElGamal", "BLAKE2B", "BLAKE2S", "SM3", "Streebog", "Ascon_Hash256", "Truncated_Hash", "GOST_3410", "Curve25519", "Ed25519", "Ed448", "X448", "SM2", "ML_KEM", "ML_DSA", "SLH_DSA", "FrodoKEM", "XMSS", "HSS_LMS", "Hybrid_KEM", "Classic_McEliece", "ECGDSA", "ECKCDSA", "ECIES", "Nyberg_Rueppel", "Diffie_Hellman", "ECDH", "AES", "ARIA", "SHACAL2", "SM4", "Kuznyechik", "Blowfish", "Camellia", "CAST", "Cascade", "DES", "GOST_28147", "IDEA", "KASUMI", "LION", "MARS", "MISTY1", "NOEKEON", "RC2", "RC5", "RC6", "SAFER", "SEED", "Serpent", "TEA", "Twofish", "Threefish", "XTEA", "Adler32",  "CRC32", "GOST_3411", "HAS_160", "Keccak", "MD2",  "RIPEMD_128", "RIPEMD_160", "Shake", "SHAKE_XOF", "AES_CTR_XOF", "CSHAKE_XOF", "Ascon_XOF", "Skein_512", "Tiger", "Whirlpool", "ParallelHash", "Comb4P", "CBC_MAC", "CMAC", "SSL3_MAC", "ANSI_X919_MAC", "RC4", "ChaCha", "Salsa20", "SHAKE_Cipher", "Serpent_SIMD",  "SIMD_Scalar", "Noekeon_SIMD", "XTEA_SIMD", "Engine_AES_ISA", "Entropy_DevRand", "Entropy_EGD", "Entropy_UnixProc", "Entropy_Win32", "Entropy_ProcWalk", "Entropy_Getentropy", "X931_RNG", "HMAC_DRBG", "Stateful_RNG", "ChaCha_RNG", "System_RNG", "Processor_RNG", "KDF1", "KDF2", "KDF1_18033", "XMD", "SP800_108", "SP800_56A", "SP800_56C", "SSL_V3_PRF", "TLS_V10_PRF", "TLS_V12_PRF", "X942_PRF", "TLS", "TLS_13", "TLS_13_PQC", "TLS_NULL", "OCSP_Staple", "X509", "CertStore_Flatfile", "CertStore_System", "PUBKEY", "FPE_FE1", "RFC3394", "NIST_Keywrap", "HOTP", "SPAKE2P", "Roughtime", "Base32", "Base58", "PassHash9", "BCrypt", "SRP6", "TSS", "ZFEC", "PKCS12", "CryptoBox", "CryptoBox_PSK"
             ],
             "versions-x86_64": [
-                "Engine_ASM", "Entropy_Rdrand", "Entropy_Rdseed", "Entropy_HRTimer", "SHA1_x86_64","AES_NI", "SIMD_SSE2", "AES_SSSE3",  "IDEA_SSE2", "SHA1_SSE2", "SHA2_32_SSE2", "SHA2_32_X86", "ChaCha_SIMD", "ChaCha_AVX2", "SM4_HWAES", "ARIA_HWAES", "Camellia_HWAES", "Engine_SIMD", "ZLib"
+                "Engine_ASM", "Entropy_Rdrand", "Entropy_Rdseed", "Entropy_HRTimer", "ZLib"
+            ],
+            "versions-ldc-x86_64": [
+                "SHA1_x86_64", "AES_NI", "SIMD_SSE2", "AES_SSSE3", "IDEA_SSE2", "SHA1_SSE2",
+                "SHA2_32_SSE2", "SHA2_32_X86", "ChaCha_SIMD", "ChaCha_AVX2",
+                "SM4_HWAES", "ARIA_HWAES", "Camellia_HWAES", "Engine_SIMD"
             ],
             "versions-x86": [
                 "Entropy_Rdrand", "Entropy_Rdseed", "Entropy_HRTimer", "MD4_x86_32", "MD5_x86_32", "SHA1_x86_32", "Engine_ASM"
@@ -85,7 +90,11 @@
                 "Entropy_DevRand", "Entropy_UnixProc", "Entropy_Win32", "Entropy_ProcWalk", "Entropy_Getentropy"
             ],
             "versions-x86_64": [
-                "AES_NI", "SIMD_SSE2", "AES_SSSE3", "SHA2_32_SSE2", "SHA2_32_X86", "ChaCha_SIMD", "ChaCha_AVX2", "ARIA_HWAES", "Engine_AES_ISA", "Engine_SIMD", "Entropy_Rdrand", "Entropy_Rdseed", "Entropy_HRTimer"
+                "Entropy_Rdrand", "Entropy_Rdseed", "Entropy_HRTimer"
+            ],
+            "versions-ldc-x86_64": [
+                "AES_NI", "SIMD_SSE2", "AES_SSSE3", "SHA2_32_SSE2", "SHA2_32_X86",
+                "ChaCha_SIMD", "ChaCha_AVX2", "ARIA_HWAES", "Engine_AES_ISA", "Engine_SIMD"
             ]
         },
         {
