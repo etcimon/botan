@@ -368,7 +368,9 @@ private BigInt decodeDerInteger(const(ubyte)* p, size_t remaining, ref size_t co
     size_t len_cons;
     const size_t n = decodeDerLengthField(p + 1, remaining - 1, len_cons);
     const size_t hdr = 1 + len_cons;
-    if (n == 0 || hdr + n > remaining)
+    // Compare remaining-hdr, not hdr+n: on 32-bit hdr+n can wrap and
+    // binaryDecode then SecureMem-allocs a huge limb array (Win32 LDC AV).
+    if (n == 0 || hdr > remaining || n > remaining - hdr)
         throw new DecodingError("DER INTEGER truncated");
     const ubyte* v = p + hdr;
     if (n > 1)
@@ -408,7 +410,7 @@ private SecureVector!ubyte decodeDerSignaturePair(const(ubyte)* der, size_t der_
     size_t lcons;
     const size_t seq_len = decodeDerLengthField(der + 1, der_len - 1, lcons);
     const size_t hdr = 1 + lcons;
-    if (hdr + seq_len != der_len)
+    if (hdr > der_len || seq_len != der_len - hdr)
         throw new DecodingError("DER signature length mismatch");
     size_t off;
     size_t used;

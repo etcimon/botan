@@ -148,23 +148,31 @@ public:
     {
         if (m_write_seq == ulong.max)
             throw new InvalidState("TLS write sequence number overflow");
-        m_encrypt.setAssociatedData(header, header_len);
+        if (m_encrypt.isEmpty)
+            throw new InvalidState("TLS 1.3 encrypt AEAD missing");
+        // Pull the class ref out. Unique alias-this + template start() AVs
+        // on Win32 DMD (this==null inside GCM/GHASH).
+        AEADMode enc = *m_encrypt;
+        enc.setAssociatedData(header, header_len);
         auto nonce = nonceFor(m_write_seq, m_write_iv);
-        m_encrypt.start(nonce);
-        m_encrypt.finish(fragment);
+        enc.start(nonce.ptr, nonce.length);
+        enc.finish(fragment);
         return m_write_seq++;
     }
 
     ulong decryptRecordFragment(const(ubyte)* header, size_t header_len, ref SecureVector!ubyte fragment)
     {
-        if (fragment.length < m_decrypt.minimumFinalSize())
+        if (m_decrypt.isEmpty)
+            throw new InvalidState("TLS 1.3 decrypt AEAD missing");
+        if (fragment.length < (*m_decrypt).minimumFinalSize())
             throw new DecodingError("TLS 1.3 fragment too short to decrypt");
         if (m_read_seq == ulong.max)
             throw new InvalidState("TLS read sequence number overflow");
-        m_decrypt.setAssociatedData(header, header_len);
+        AEADMode dec = *m_decrypt;
+        dec.setAssociatedData(header, header_len);
         auto nonce = nonceFor(m_read_seq, m_read_iv);
-        m_decrypt.start(nonce);
-        m_decrypt.finish(fragment);
+        dec.start(nonce.ptr, nonce.length);
+        dec.finish(fragment);
         return m_read_seq++;
     }
 

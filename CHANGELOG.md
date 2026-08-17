@@ -21,6 +21,10 @@ v3.13.0
  - SIMD/AES-NI versions are LDC-only (`versions-x86_64-ldc`). DMD compiled
    those kernels into `AES_SSSE3` module constructors and exited
    `0xC000001D` / SIGILL before any unittest ran.
+ - Win32 DMD TLS: Unique alias-this + template `start()` called GCM with a
+   null `this`. Encrypt/decrypt now take the AEAD class ref first.
+ - Win32: DER INTEGER/SEQUENCE length checks use `remaining - hdr` so a
+   wrapped 32-bit `hdr + n` cannot reach `BigInt.binaryDecode`.
 
 v1.11.10
 -------------------
