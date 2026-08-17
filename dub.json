@@ -106,7 +106,7 @@
             ],
             "libs-windows": ["libcrypto", "libssl"],
             "dependencies": {
-                "openssl": { "version": ">=3.3.4", "optional": true, "default": false } 
+                "openssl": { "version": ">=3.3.4" } 
             }
         }, 
         {

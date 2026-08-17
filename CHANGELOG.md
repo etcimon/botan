@@ -28,7 +28,9 @@ v3.13.0
    wrapped 32-bit `hdr + n` cannot reach `BigInt.binaryDecode`.
  - `full_openssl` DUB range is `>=3.3.4`. Engine/curve BN traffic uses
    `BN_bin2bn` / `BN_bn2bin` (OpenSSL 3 opaque `BIGNUM`). Config sets
-   `DeimosOpenSSL_3_0`.
+   `DeimosOpenSSL_3_0`. CI runs Hash/Block/RSA under `full_openssl`
+   on Ubuntu LDC (`scripts/ci-test-openssl.sh`). OpenSSL Blowfish is
+   not registered (EVP max key 56 vs Botan 1..72); CAST uses `CAST-128`.
 
 v1.11.10
 -------------------

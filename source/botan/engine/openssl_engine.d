@@ -156,12 +156,11 @@ public:
             mixin(HANDLE_EVP_CIPHER_KEYLEN!("TripleDES", EVP_des_ede3_ecb, 16, 24, 8));
         }
         
-        static if (!BOTAN_HAS_OPENSSL_NO_BF) {
-            mixin(HANDLE_EVP_CIPHER_KEYLEN!("Blowfish", EVP_bf_ecb, 1, 56, 1));
-        }
-        
+        // OpenSSL EVP_bf_ecb advertises 1..56. Botan 3.13 Blowfish is 1..72
+        // (bcrypt / C++ 3.13 KATs). Do not claim the name: CoreEngine must
+        // supply the 72-byte spec or Test_Block fails on the openssl provider.
         static if (!BOTAN_HAS_OPENSSL_NO_CAST) {
-            mixin(HANDLE_EVP_CIPHER_KEYLEN!("Cast-128", EVP_cast5_ecb, 1, 16, 1));
+            mixin(HANDLE_EVP_CIPHER_KEYLEN!("CAST-128", EVP_cast5_ecb, 11, 16, 1));
         }
 
         static if (!BOTAN_HAS_OPENSSL_NO_CAMELLIA) {

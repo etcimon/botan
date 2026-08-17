@@ -54,3 +54,28 @@ jobs:
           chmod +x scripts/ci-test.sh
           ARCH="$ARCH" DC="${DC:-ldc2}" scripts/ci-test.sh
         shell: bash
+
+  openssl-engine:
+    name: 'full_openssl Hash/Block/RSA on x86_64-ubuntu-latest/ldc-latest'
+    runs-on: ubuntu-latest
+    env:
+      ARCH: x86_64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: etcimon/memutils
+          ref: v1.0.13
+          path: _ci/memutils
+      - uses: dlang-community/setup-dlang@v2
+        with:
+          compiler: ldc-latest
+      - name: Install OpenSSL 3 headers
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config
+      - name: Register memutils v1.0.13
+        run: dub add-local _ci/memutils
+      - name: Build and test OpenSSL engine
+        run: |
+          chmod +x scripts/ci-test-openssl.sh
+          ARCH=x86_64 DC="${DC:-ldc2}" scripts/ci-test-openssl.sh
+        shell: bash
