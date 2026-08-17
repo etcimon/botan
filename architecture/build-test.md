@@ -18,7 +18,8 @@ Top-level versions: `Have_botan`, `Botan`. Configurations add the long feature l
 
 Arch-specific extra versions (`full`):
 
-- **x86_64:** `Engine_ASM`, `Entropy_Rdrand`, `Entropy_HRTimer`, `SHA1_x86_64`, `AES_NI`, `SIMD_SSE2`, `AES_SSSE3`, `IDEA_SSE2`, `SHA1_SSE2`, `Engine_SIMD`, `ZLib`.
+- **x86_64 (all compilers):** `Engine_ASM`, `Entropy_Rdrand`, `Entropy_Rdseed`, `Entropy_HRTimer`, `ZLib`.
+- **x86_64 + LDC** (`versions-x86_64-ldc`; DUB requires compiler last): `SHA1_x86_64`, `AES_NI`, `SIMD_SSE2`, `AES_SSSE3`, `IDEA_SSE2`, `SHA1_SSE2`, `SHA2_32_SSE2`, `SHA2_32_X86`, `ChaCha_SIMD`, `ChaCha_AVX2`, `SM4_HWAES`, `ARIA_HWAES`, `Camellia_HWAES`, `Engine_SIMD`. DMD SIGILL'd these at startup.
 - **x86:** `Entropy_Rdrand`, `Entropy_HRTimer`, `MD4_x86_32`, `MD5_x86_32`, `SHA1_x86_32`, `Engine_ASM`.
 
 A non-x86 target (including RISC-V, if someone ever builds this there) gets only the portable `versions` list: `CoreEngine`, device/Win32/proc entropy flags, no AES-NI/SSE. `Entropy_Rdrand` / `Entropy_HRTimer` are **not** in the portable list of `full` — they are arch extras — so RISC-V `full` would still have `Entropy_DevRand` / `Entropy_UnixProc` / `Entropy_ProcWalk` / `Entropy_EGD`.

@@ -18,6 +18,9 @@ v3.13.0
    Ed25519/Ed448/X448, SM2, ECIES, Roughtime, Ascon, GCM-SIV, Argon2, scrypt.
  - SCAN/factory inheritance, Unique-wrapped allocations, `constants.d` versioning.
  - CI runs combined builds and one FocusTests family per process (LDC).
+ - SIMD/AES-NI versions are LDC-only (`versions-x86_64-ldc`). DMD compiled
+   those kernels into `AES_SSSE3` module constructors and exited
+   `0xC000001D` / SIGILL before any unittest ran.
 
 v1.11.10
 -------------------

@@ -431,10 +431,12 @@ static if (BOTAN_HAS_TESTS && !SKIP_ASN1_TEST) unittest
             continue;
         }
         auto input = cast(ubyte[])read(in_path);
-        auto expected = cast(string)read(out_path);
+        // Windows checkouts may keep CRLF in the KAT files; the printer emits LF.
+        import std.string : replace;
+        auto expected = (cast(string)read(out_path)).replace("\r\n", "\n").replace("\r", "\n");
         try
         {
-            const string got = printer.print(input);
+            const string got = printer.print(input).replace("\r\n", "\n").replace("\r", "\n");
             if (got != expected)
             {
                 logError("asn1_print ", n, " mismatch (got ", got.length,

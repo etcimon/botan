@@ -67,7 +67,7 @@
             "versions-x86_64": [
                 "Engine_ASM", "Entropy_Rdrand", "Entropy_Rdseed", "Entropy_HRTimer", "ZLib"
             ],
-            "versions-ldc-x86_64": [
+            "versions-x86_64-ldc": [
                 "SHA1_x86_64", "AES_NI", "SIMD_SSE2", "AES_SSSE3", "IDEA_SSE2", "SHA1_SSE2",
                 "SHA2_32_SSE2", "SHA2_32_X86", "ChaCha_SIMD", "ChaCha_AVX2",
                 "SM4_HWAES", "ARIA_HWAES", "Camellia_HWAES", "Engine_SIMD"
@@ -92,7 +92,7 @@
             "versions-x86_64": [
                 "Entropy_Rdrand", "Entropy_Rdseed", "Entropy_HRTimer"
             ],
-            "versions-ldc-x86_64": [
+            "versions-x86_64-ldc": [
                 "AES_NI", "SIMD_SSE2", "AES_SSSE3", "SHA2_32_SSE2", "SHA2_32_X86",
                 "ChaCha_SIMD", "ChaCha_AVX2", "ARIA_HWAES", "Engine_AES_ISA", "Engine_SIMD"
             ]

@@ -35,6 +35,8 @@ alias AlternativeName = RefCounted!AlternativeNameImpl;
 /// C++ `DNSName::from_san_string` (RFC 6125 wildcard only in the leftmost label, ≥3 labels).
 bool dnsNameFromSan(string name)
 {
+    if (name.ptr is null)
+        return false;
     while (name.length && name[$ - 1] == 0)
         name = name[0 .. $ - 1];
     if (name.canFind('\0'))

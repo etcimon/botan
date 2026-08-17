@@ -566,7 +566,9 @@ Vector!( RBTreeRef!CertificateStatusCode )
             try
             {
                 bool san_bad;
-                foreach (n; cert_path[0].subjectInfo("DNS")[])
+                // Hold the Vector so the string slices stay live for the loop.
+                auto dns_names = cert_path[0].subjectInfo("DNS");
+                foreach (n; dns_names[])
                 {
                     if (n.canFind('*') && !dnsNameFromSan(n))
                     {
@@ -586,9 +588,9 @@ Vector!( RBTreeRef!CertificateStatusCode )
                 status.insert(CertificateStatusCode.EXTENSION_ENCODING_ERROR);
             }
         }
-        const PublicKey issuer_key = issuer.subjectPublicKey();
+        Unique!PublicKey issuer_key = issuer.subjectPublicKey();
         logTrace("Got issuer key");
-        if (subject.checkSignature(issuer_key) == false)
+        if (subject.checkSignature(*issuer_key) == false)
             status.insert(CertificateStatusCode.SIGNATURE_ERROR);
         logTrace("Get estimated strength");
         if (issuer_key.estimatedStrength() < restrictions.minimumKeyStrength())

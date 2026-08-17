@@ -94,7 +94,7 @@ RNG / entropy / engines: `X931_RNG`, `HMAC_DRBG`, `Stateful_RNG`, `ChaCha_RNG`, 
 `Auto_Seeding_RNG`, `Entropy_*`, `Engine_ASM`, `Engine_AES_ISA`, `Engine_SIMD`, `Engine_GNU_MP`,
 `Engine_OPENSSL`.
 
-SIMD / ISA extras (usually `versions-x86_64` only): `AES_NI`, `AES_SSSE3`, `SIMD_SSE2`,
+SIMD / ISA extras (`versions-x86_64-ldc` only — DMD SIGILL at AES_SSSE3 module ctor): `AES_NI`, `AES_SSSE3`, `SIMD_SSE2`,
 `Serpent_SIMD`, `Noekeon_SIMD`, `XTEA_SIMD`, `IDEA_SSE2`, `SHA1_SSE2`, `SHA1_x86_64`, `SHA1_x86_32`,
 `MD4_x86_32`, `MD5_x86_32`, `GCM_CLMUL`, `ZLib`.
 
