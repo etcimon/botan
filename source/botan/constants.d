@@ -114,13 +114,13 @@ version(CanTest)     {    enum BOTAN_HAS_TESTS = true;                          
 else                      enum BOTAN_HAS_TESTS = false;
 
 
-// D package / release identifiers (match dub.json and git tag v3.13.0)
+// D package / release identifiers (match dub.json and git tag v3.13.1)
 enum BOTAN_VERSION_MAJOR = 3;
 enum BOTAN_VERSION_MINOR = 13;
-enum BOTAN_VERSION_PATCH = 0;
+enum BOTAN_VERSION_PATCH = 1;
 enum BOTAN_VERSION_DATESTAMP = 20260817;
 enum BOTAN_VERSION_RELEASE_TYPE = "release";
-enum BOTAN_VERSION_VC_REVISION = "git:v3.13.0";
+enum BOTAN_VERSION_VC_REVISION = "git:v3.13.1";
 enum BOTAN_DISTRIBUTION_INFO = "etcimon/botan";
 
 enum BOTAN_TARGET_CPU_HAS_KNOWN_ENDIANNESS = true;

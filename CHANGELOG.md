@@ -6,6 +6,16 @@ All Botan C++ algorithm changes are mirrored in this library.
 
 The C++ change log is at https://botan.randombit.net/news.html
 
+v3.13.1
+-------------------
+
+ - `BOTAN_VERSION_*` / DUB package **3.13.1**.
+ - `full_openssl` works against OpenSSL 3.4+ (opaque `BIGNUM`, `EVP_*_get_*`,
+   `DeimosOpenSSL_3_0`, `openssl >=3.3.4`).
+ - Ubuntu LDC CI job runs FocusTests Hash/Block/RSA under `full_openssl`.
+ - OpenSSL Blowfish is not registered (EVP max key 56 vs Botan 1..72);
+   CAST is advertised as `CAST-128`.
+
 v3.13.0
 -------------------
 

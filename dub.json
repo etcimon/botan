@@ -1,6 +1,6 @@
 {
     "name": "botan",
-    "version": "3.13.0",
+    "version": "3.13.1",
     "description": "A D library for crypto and TLS",
     "license": "BSD 2-clause",
     "authors": ["Jack Lloyd", "Etienne Cimon", "See CREDITS.md for more."],
