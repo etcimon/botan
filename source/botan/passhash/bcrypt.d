@@ -32,7 +32,7 @@ import std.conv : to;
 */
 string generateBcrypt(in string password,
                       RandomNumberGenerator rng,
-                      ushort work_factor = 10)
+                      ushort work_factor = 12)
 {
     return makeBcrypt(password, unlock(rng.randomVec(16)), work_factor);
 }
