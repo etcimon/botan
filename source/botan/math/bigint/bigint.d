@@ -34,8 +34,10 @@ import std.traits : isNumeric, isPointer;
 struct BigInt
 {
 public:
-    /*
-    * Write the BigInt into a vector
+    /**
+    * Write the BigInt into a vector of digits
+    * Params:
+    *  base = Decimal, Hexadecimal, or Binary
     */
     Vector!char toVector(Base base = Decimal) const
     {
@@ -48,8 +50,10 @@ public:
         return ret.move();
     }
 
-    /*
+    /**
     * Write the BigInt into a string
+    * Params:
+    *  base = Decimal, Hexadecimal, or Binary
     */
     string toString(Base base = Decimal) const
     {
@@ -94,6 +98,7 @@ public:
         m_reg.resize(4*limbs_needed);
         foreach (size_t i; 0 .. limbs_needed)
             m_reg[i] = ((n >> (i*MP_WORD_BITS)) & MP_WORD_MASK);
+        invalidateSigWords();
     }
     // Create BigInt from any integer
     void opAssign(T)(in T number) 
@@ -114,6 +119,7 @@ public:
 	void load(BigInt* other) {
 		m_reg[] = other.m_reg[];
 		m_signedness = other.m_signedness;
+		invalidateSigWords();
 	}
 
     /**
@@ -235,6 +241,7 @@ public:
     {
         m_reg.resize(roundUp!size_t(size, 8));
         m_signedness = s;
+        m_sig_words = 0; // resize is T.init zeros
     }
 
     /**
@@ -257,6 +264,7 @@ public:
         import std.algorithm : swap;
         m_reg.swap(reg);
         swap(m_signedness, sign);
+        invalidateSigWords();
     }
 
 	void reserve(size_t n) {
@@ -310,6 +318,7 @@ public:
             BigInt other = BigInt(other_);
             m_reg.swap(cast()other.m_reg);
             m_signedness = cast(Sign)other.m_signedness;
+            m_sig_words = other.m_sig_words;
         } catch(Throwable e) {}
     }
 
@@ -319,6 +328,9 @@ public:
             import std.algorithm.mutation : swap;
             m_reg.swap(cast()other_.m_reg[]);
             m_signedness = cast(Sign)other_.m_signedness;
+            auto sw = m_sig_words;
+            m_sig_words = other_.m_sig_words;
+            other_.m_sig_words = sw;
         } catch(Throwable e) {}
     }
 
@@ -328,6 +340,9 @@ public:
             import std.algorithm.mutation : swap;
             m_reg.swap(cast()other_.m_reg[]);
             m_signedness = cast(Sign)other_.m_signedness;
+            auto sw = m_sig_words;
+            m_sig_words = other_.m_sig_words;
+            other_.m_sig_words = sw;
         } catch(Throwable e) {}
     }
 
@@ -339,6 +354,7 @@ public:
     void swapReg(ref SecureVector!word reg)
     {
         m_reg.swap(reg);
+        invalidateSigWords();
     }
 
     /**
@@ -365,11 +381,13 @@ public:
 				SecureVector!word z = SecureVector!word(reg_size - 1);
 				bigint_sub3(z.ptr, y.ptr, reg_size - 1, mutablePtr(), x_sw);
 				m_reg[] = z;
+                invalidateSigWords();
                 setSign(y.sign());
             }
             else if (relative_size == 0)
             {
                 zeroise(m_reg);
+                m_sig_words = 0;
 		        setSign(Positive);
             }
             else if (relative_size > 0) 
@@ -559,6 +577,7 @@ public:
             clear();
             growTo(2);
             m_reg[0] = result;
+            invalidateSigWords();
             return;
         }
         
@@ -573,6 +592,7 @@ public:
             m_reg[0] = mod - remainder;
         else
             m_reg[0] = remainder;
+        invalidateSigWords();
         
         setSign(Positive);
     }
@@ -611,7 +631,8 @@ public:
             const size_t shift_words = shift / MP_WORD_BITS;
             const size_t shift_bits  = shift % MP_WORD_BITS;
             
-            bigint_shr1(mutablePtr(), sigWords(), shift_words, shift_bits);
+            const size_t sw = sigWords();
+            bigint_shr1(mutablePtr(), sw, shift_words, shift_bits);
             if (isZero())
                 setSign(Positive);
         }
@@ -653,8 +674,9 @@ public:
     { 
         import core.stdc.string : memset;
         if (!m_reg.empty){
-            memset(mutablePtr(), 0, word.sizeof*m_reg.length);
+            memset(m_reg.ptr, 0, word.sizeof*m_reg.length);
         }
+        m_sig_words = 0;
     }
 
     /**
@@ -742,6 +764,7 @@ public:
     * Test if the integer is zero
     * Returns: true if the integer is zero, false otherwise
     */
+    pragma(inline, true)
     bool isZero() const
     {
 		return sigWords() == 0;
@@ -758,6 +781,7 @@ public:
         const word mask = cast(word)(1) << (n % MP_WORD_BITS);
         if (which >= size()) growTo(which + 1);
         m_reg[which] |= mask;
+        invalidateSigWords();
     }
 
     /**
@@ -770,7 +794,10 @@ public:
         const size_t which = n / MP_WORD_BITS;
         const word mask = cast(word)(1) << (n % MP_WORD_BITS);
         if (which < size())
+        {
             m_reg[which] &= ~mask;
+            invalidateSigWords();
+        }
     }
 
     /**
@@ -790,6 +817,7 @@ public:
             clearMem(&m_reg[top_word+1], size() - (top_word + 1));
         
         m_reg[top_word] &= mask;
+        invalidateSigWords();
     }
 
     /**
@@ -950,11 +978,16 @@ public:
     */
     size_t sigWords() const
     {
+        size_t sig = m_sig_words;
+        const size_t len = m_reg.length;
+        if (sig != size_t.max && sig <= len)
+            return sig;
         const word* x = m_reg.ptr;
-        size_t sig = m_reg.length;
+        sig = len;
 
         while (sig && (x[sig-1] == 0))
             sig--;
+        (cast(BigInt*)&this).m_sig_words = sig;
         return sig;
     }
 
@@ -986,7 +1019,11 @@ public:
     * Return a mutable pointer to the register
     * Returns: a pointer to the start of the internal register
     */
-    word* mutablePtr() { return m_reg.ptr; }
+    word* mutablePtr()
+    {
+        invalidateSigWords();
+        return m_reg.ptr;
+    }
 
     /**
     * Return a const pointer to the register
@@ -1004,6 +1041,7 @@ public:
         if (n > size()) {
 			if (m_reg.capacity < n) m_reg.reserve(n*2);
             m_reg.resize(roundUp!size_t(n, 8));
+            // new limbs are T.init zeros: a valid cache stays valid
 		}
     }
 
@@ -1062,6 +1100,7 @@ public:
         
         clear();
         m_reg.resize(roundUp!size_t((length / WORD_BYTES) + 1, 8));
+        invalidateSigWords();
         foreach (size_t i; 0 .. (length / WORD_BYTES))
         {
             const size_t top = length - WORD_BYTES*i;
@@ -1615,7 +1654,9 @@ public:
     }
 
     @property BigInt move() {
-        return BigInt(m_reg, m_signedness);
+        auto r = BigInt(m_reg, m_signedness);
+        m_sig_words = 0;
+        return r;
     }
 
     @property BigInt clone() const {
@@ -1626,6 +1667,40 @@ public:
     
 private:
 
+    pragma(inline, true)
+    void invalidateSigWords()
+    {
+        m_sig_words = size_t.max;
+    }
+
     SecureVector!word m_reg;
     Sign m_signedness = Positive;
+    // size_t.max = dirty. C++ Botan caches this the same way; growTo of
+    // zeros does not dirty, mutablePtr() does.
+    size_t m_sig_words = size_t.max;
+}
+
+unittest
+{
+    BigInt z;
+    assert(z.isZero());
+    assert(z.sigWords() == 0);
+    z.growTo(64);
+    assert(z.isZero());
+    assert(z.sigWords() == 0);
+    z = BigInt(1);
+    assert(!z.isZero());
+    assert(z.sigWords() == 1);
+    z -= BigInt(1);
+    assert(z.isZero());
+    assert(z.sigWords() == 0);
+    z.setBit(0);
+    assert(!z.isZero());
+    z.clear();
+    assert(z.isZero());
+    auto c = BigInt(0x10000);
+    c.growTo(32);
+    assert(c.sigWords() == 1);
+    auto d = c.clone;
+    assert(d.sigWords() == 1);
 }

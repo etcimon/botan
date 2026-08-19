@@ -39,16 +39,33 @@ import botan.rng.rng;
 import botan.mac.mac;
 import botan.pubkey.pubkey;
 import botan.pubkey.pk_keys;
+import botan.pubkey.algo.ecc_key;
+
+/// Digest length without cloning a HashFunction every call.
+size_t tls13HashLen(string hash_name)
+{
+    if (hash_name == "SHA-256") return 32;
+    if (hash_name == "SHA-384") return 48;
+    if (hash_name == "SHA-512") return 64;
+    Unique!HashFunction h = retrieveHash(hash_name).clone();
+    return h.outputLength;
+}
 
 /// HKDF-Extract(salt, ikm) → Hash.length bytes. SCAN: HKDF-Extract(hash).
 SecureVector!ubyte tls13HkdfExtract(string hash_name,
                                     const(ubyte)* salt, size_t salt_len,
                                     const(ubyte)* ikm, size_t ikm_len)
 {
-    Unique!KDF ex = getKdf("HKDF-Extract(" ~ hash_name ~ ")");
-    Unique!HashFunction h = retrieveHash(hash_name).clone();
-    const size_t n = h.outputLength;
-    return ex.deriveKey(n, ikm, ikm_len, salt, salt_len);
+    static KDF cached;
+    static string cached_hash;
+    if (cached is null || cached_hash != hash_name)
+    {
+        Unique!KDF u = getKdf("HKDF-Extract(" ~ hash_name ~ ")");
+        cached = u.release();
+        cached_hash = hash_name.idup;
+    }
+    const size_t n = tls13HashLen(hash_name);
+    return cached.deriveKey(n, ikm, ikm_len, salt, salt_len);
 }
 
 /// Derive-Secret(secret, label, messages) = HKDF-Expand-Label(..., Hash(messages)).
@@ -58,7 +75,7 @@ SecureVector!ubyte tls13DeriveSecret(string hash_name,
                                      const(ubyte)* messages, size_t messages_len)
 {
     Unique!HashFunction h = retrieveHash(hash_name).clone();
-    const size_t n = h.outputLength;
+    const size_t n = tls13HashLen(hash_name);
     if (messages_len)
         h.update(messages, messages_len);
     auto ctx = h.finished();
@@ -82,8 +99,7 @@ TLS13HandshakeSecrets tls13HandshakeSecrets(string hash_name,
                                             const(ubyte)* ecdhe, size_t ecdhe_len,
                                             const(ubyte)* hello_hash, size_t hello_hash_len)
 {
-    Unique!HashFunction h = retrieveHash(hash_name).clone();
-    const size_t n = h.outputLength;
+    const size_t n = tls13HashLen(hash_name);
     auto zeros = SecureVector!ubyte(n);
     auto early = tls13HkdfExtract(hash_name, zeros.ptr, zeros.length, zeros.ptr, zeros.length);
     auto derived = tls13DeriveSecret(hash_name, early.ptr, early.length, "derived", null, 0);
@@ -110,8 +126,7 @@ TLS13AppSecrets tls13AppSecrets(string hash_name,
                                 const(ubyte)* messages, size_t messages_len)
 {
     auto derived = tls13DeriveSecret(hash_name, handshake_secret, handshake_len, "derived", null, 0);
-    Unique!HashFunction h = retrieveHash(hash_name).clone();
-    auto zeros = SecureVector!ubyte(h.outputLength);
+    auto zeros = SecureVector!ubyte(tls13HashLen(hash_name));
     auto master = tls13HkdfExtract(hash_name, derived.ptr, derived.length, zeros.ptr, zeros.length);
     TLS13AppSecrets outp;
     outp.client_application_traffic = tls13DeriveSecret(hash_name,
@@ -376,11 +391,22 @@ static if (BOTAN_HAS_CURVE25519)
         }
     }
 
-    TLS13X25519Agreement tls13AgreeFromClientShare(TLS13KeyShare client_ks, RandomNumberGenerator rng)
+    TLS13X25519Agreement tls13AgreeFromClientShare(TLS13KeyShare client_ks, RandomNumberGenerator rng,
+                                                   in TLSPolicy policy = null)
     {
         if (client_ks is null)
             throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "ClientHello missing key_share");
         static if (BOTAN_HAS_TLS_13_PQC)
+        {
+        const bool want_pqc = policy !is null && (
+            policy.offerTls13PqcHybrid() ||
+            policy.offerTls13Secp256Mlkem() ||
+            policy.offerTls13Secp384Mlkem() ||
+            policy.offerTls13Mlkem512() ||
+            policy.offerTls13Mlkem768() ||
+            policy.offerTls13Mlkem1024() ||
+            policy.offerTls13PqcExtraGroup().length != 0);
+        if (want_pqc)
         {
             if (auto e = tls13FindShare(client_ks, TLS13_GROUP_X25519_MLKEM768, TLS13_HYBRID_CH_SHARE_LEN))
             {
@@ -434,6 +460,7 @@ static if (BOTAN_HAS_CURVE25519)
                         return tls13AgreeFrodoOqs(spec, e.key_exchange.ptr, rng);
                 }
             }
+        }
         }
         foreach (e; client_ks.entries()[])
         {
@@ -564,27 +591,103 @@ SecureVector!ubyte tls13CertificateVerifyTbs(ConnectionSide side, const(ubyte)* 
     return msg.move();
 }
 
+/// EMSA + IANA SignatureScheme + wire encoding for TLS 1.3 CertificateVerify.
+/// RFC 8446 4.4.3 + 4.2.3: ECDSA is DER ECDSA-Sig-Value (RFC 4492 5.4);
+/// RSA-PSS and Ed25519/Ed448 are IEEE 1363 / raw. Ephemeral ECDH
+/// (key_share) is independent of this.
+struct TLS13CvParams
+{
+    ushort scheme;
+    string emsa;
+    SignatureFormat format;
+}
+
+TLS13CvParams tls13CvParamsForKey(PrivateKey key)
+{
+    const string algo = key.algoName;
+    if (algo == "RSA")
+        return TLS13CvParams(TLS13_RSA_PSS_RSAE_SHA256, "PSSR(SHA-256)", IEEE_1363);
+    if (algo == "ECDSA")
+    {
+        string oid;
+        if (auto ec = cast(ECPrivateKey) key)
+            oid = ec.domain().getOid();
+        if (oid == "1.3.132.0.34" || oid == "secp384r1")
+            return TLS13CvParams(TLS13_ECDSA_SECP384R1_SHA384, "EMSA1(SHA-384)", DER_SEQUENCE);
+        if (oid == "1.3.132.0.35" || oid == "secp521r1")
+            return TLS13CvParams(TLS13_ECDSA_SECP521R1_SHA512, "EMSA1(SHA-512)", DER_SEQUENCE);
+        return TLS13CvParams(TLS13_ECDSA_SECP256R1_SHA256, "EMSA1(SHA-256)", DER_SEQUENCE);
+    }
+    static if (BOTAN_HAS_ED25519)
+        if (algo == "Ed25519")
+            return TLS13CvParams(TLS13_ED25519, "Raw", IEEE_1363);
+    static if (is(typeof(BOTAN_HAS_ED448)) && BOTAN_HAS_ED448)
+        if (algo == "Ed448")
+            return TLS13CvParams(TLS13_ED448, "Raw", IEEE_1363);
+    throw new TLSException(TLSAlert.HANDSHAKE_FAILURE,
+                           "TLS 1.3 CertificateVerify: unsupported key " ~ algo);
+}
+
+TLS13CvParams tls13CvParamsForScheme(ushort scheme)
+{
+    switch (scheme)
+    {
+        case TLS13_RSA_PSS_RSAE_SHA256:
+            return TLS13CvParams(scheme, "PSSR(SHA-256)", IEEE_1363);
+        case TLS13_ECDSA_SECP256R1_SHA256:
+            return TLS13CvParams(scheme, "EMSA1(SHA-256)", DER_SEQUENCE);
+        case TLS13_ECDSA_SECP384R1_SHA384:
+            return TLS13CvParams(scheme, "EMSA1(SHA-384)", DER_SEQUENCE);
+        case TLS13_ECDSA_SECP521R1_SHA512:
+            return TLS13CvParams(scheme, "EMSA1(SHA-512)", DER_SEQUENCE);
+        case TLS13_ED25519:
+            return TLS13CvParams(scheme, "Raw", IEEE_1363);
+        case TLS13_ED448:
+            return TLS13CvParams(scheme, "Raw", IEEE_1363);
+        default:
+            throw new TLSException(TLSAlert.ILLEGAL_PARAMETER,
+                                   "TLS 1.3 CertificateVerify scheme not supported");
+    }
+}
+
 Vector!ubyte tls13SignCertificateVerify(PrivateKey key,
                                         ConnectionSide side,
                                         string hash_name,
                                         const(ubyte)* messages, size_t messages_len,
-                                        RandomNumberGenerator rng)
+                                        RandomNumberGenerator rng,
+                                        ref ushort scheme)
 {
+    auto p = tls13CvParamsForKey(key);
+    scheme = p.scheme;
     auto th = tls13TranscriptHash(hash_name, messages, messages_len);
     auto tbs = tls13CertificateVerifyTbs(side, th.ptr, th.length);
-    PKSigner signer = PKSigner(key, "PSSR(" ~ hash_name ~ ")", IEEE_1363);
-    return signer.signMessage(tbs, rng);
+    // One PKSigner per leaf key: EMSA + engine walk is a large
+    // fraction of ECDSA reconnect. Single-threaded event loops reuse it.
+    static PKSigner* cached;
+    static PrivateKey cached_key;
+    static string cached_emsa;
+    static SignatureFormat cached_fmt;
+    if (cached is null || cached_key !is key || cached_emsa != p.emsa || cached_fmt != p.format)
+    {
+        cached = new PKSigner(key, p.emsa, p.format);
+        cached_key = key;
+        cached_emsa = p.emsa;
+        cached_fmt = p.format;
+    }
+    return cached.signMessage(tbs, rng);
 }
 
 bool tls13VerifyCertificateVerify(PublicKey key,
                                   ConnectionSide side,
                                   string hash_name,
                                   const(ubyte)* messages, size_t messages_len,
+                                  ushort scheme,
                                   const(ubyte)* sig, size_t sig_len)
 {
+    auto p = tls13CvParamsForScheme(scheme);
     auto th = tls13TranscriptHash(hash_name, messages, messages_len);
     auto tbs = tls13CertificateVerifyTbs(side, th.ptr, th.length);
-    PKVerifier verifier = PKVerifier(key, "PSSR(" ~ hash_name ~ ")", IEEE_1363);
+    PKVerifier verifier = PKVerifier(key, p.emsa, p.format);
     return verifier.verifyMessage(tbs.ptr, tbs.length, sig, sig_len);
 }
 
@@ -592,8 +695,7 @@ Vector!ubyte tls13FinishedMac(string hash_name,
                               const(ubyte)* traffic_secret, size_t traffic_len,
                               const(ubyte)* messages, size_t messages_len)
 {
-    Unique!HashFunction h = retrieveHash(hash_name).clone();
-    const size_t n = h.outputLength;
+    const size_t n = tls13HashLen(hash_name);
     auto fin_key = tls13HkdfExpandLabel(hash_name, traffic_secret, traffic_len, "finished", null, 0, n);
     auto th = tls13TranscriptHash(hash_name, messages, messages_len);
     Unique!MessageAuthenticationCode hmac = retrieveMac("HMAC(" ~ hash_name ~ ")").clone();
@@ -832,7 +934,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
                 ++fails;
             else
             {
-                auto agr = tls13AgreeFromClientShare(ks, *rngp);
+                auto agr = tls13AgreeFromClientShare(ks, *rngp, *pqc);
                 if (agr.group != TLS13_GROUP_X25519_MLKEM768 ||
                     agr.server_public.length != TLS13_HYBRID_SH_SHARE_LEN ||
                     agr.shared_secret.length != TLS13_HYBRID_SS_LEN)
@@ -858,7 +960,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
             Unique!ClientHello ch = new ClientHello(io, hh,
                 TLSProtocolVersion(TLSProtocolVersion.TLS_V13),
                 *pqc, *rngp, Vector!ubyte(), Vector!string(), "server", "");
-            auto agr = tls13AgreeFromClientShare(ch.tls13KeyShare(), *rngp);
+            auto agr = tls13AgreeFromClientShare(ch.tls13KeyShare(), *rngp, *pqc);
             auto e = new TLS13KeyShareEntry;
             e.group = agr.group;
             foreach (bb; agr.server_public[])
@@ -921,7 +1023,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
             }
             else
             {
-                auto agr = tls13AgreeFromClientShare(ks, *rngp);
+                auto agr = tls13AgreeFromClientShare(ks, *rngp, *pol);
                 if (agr.group != group || agr.server_public.length != sh_len ||
                     agr.shared_secret.length != ss_len)
                 {
@@ -967,7 +1069,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
                 Unique!ClientHello ch = new ClientHello(io, hh,
                     TLSProtocolVersion(TLSProtocolVersion.TLS_V13),
                     pol, *rngp, Vector!ubyte(), Vector!string(), "server", "");
-                auto agr = tls13AgreeFromClientShare(ch.tls13KeyShare(), *rngp);
+                auto agr = tls13AgreeFromClientShare(ch.tls13KeyShare(), *rngp, *pol);
                 auto e = new TLS13KeyShareEntry;
                 e.group = agr.group;
                 foreach (bb; agr.server_public[])
@@ -1011,7 +1113,7 @@ static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
                 Unique!ClientHello ch = new ClientHello(io, hh,
                     TLSProtocolVersion(TLSProtocolVersion.TLS_V13),
                     pol, *rngp, Vector!ubyte(), Vector!string(), "server", "");
-                auto agr = tls13AgreeFromClientShare(ch.tls13KeyShare(), *rngp);
+                auto agr = tls13AgreeFromClientShare(ch.tls13KeyShare(), *rngp, *pol);
                 auto e = new TLS13KeyShareEntry;
                 e.group = agr.group;
                 foreach (bb; agr.server_public[])

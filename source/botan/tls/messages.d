@@ -14,8 +14,6 @@ import botan.constants;
 static if (BOTAN_HAS_TLS):
 package:
 
-import botan.tls.handshake_state;
-import botan.tls.session_key;
 import std.algorithm : canFind;
 import botan.tls.alert : TLSAlert;
 import memutils.dictionarylist;
@@ -27,6 +25,7 @@ public import botan.tls.ciphersuite;
 public import botan.tls.reader;
 public import botan.tls.extensions;
 public import botan.tls.handshake_io;
+public import botan.tls.session_msgs;
 public import botan.tls.version_;
 public import botan.tls.handshake_hash;
 public import botan.tls.magic;
@@ -69,17 +68,6 @@ import botan.utils.types;
 enum {
     TLS_EMPTY_RENEGOTIATION_INFO_SCSV  = 0x00FF,
     TLS_FALLBACK_SCSV                  = 0x5600
-}
-
-/**
-* TLS Handshake Message Base Class
-*/
-interface HandshakeMessage
-{
-public:
-    abstract HandshakeType type() const;
-    
-    abstract Vector!ubyte serialize() const;
 }
 
 /**
@@ -1300,8 +1288,8 @@ public:
     /*
     * Read a TLSClient Key Exchange message
     */
-    this(const ref Vector!ubyte contents,
-         in HandshakeState state,
+    this(HS)(const ref Vector!ubyte contents,
+         in HS state,
          in PrivateKey server_rsa_kex_key,
          TLSCredentialsManager creds,
          in TLSPolicy policy,
@@ -1451,8 +1439,8 @@ public:
     /*
     * Create a new TLSClient Key Exchange message
     */
-    this(HandshakeIO io,
-         HandshakeState state,
+    this(HS)(HandshakeIO io,
+         HS state,
          in TLSPolicy policy,
          TLSCredentialsManager creds,
          const PublicKey server_public_key,
@@ -1966,8 +1954,8 @@ public:
     *  cert = the purported certificate
     *  state = the handshake state
     */
-    bool verify(const X509Certificate cert,
-                const HandshakeState state) const
+    bool verify(HS)(const X509Certificate cert,
+                const HS state) const
     {
         Unique!PublicKey key = cert.subjectPublicKey();
         
@@ -1981,8 +1969,8 @@ public:
     /*
     * Create a new Certificate Verify message
     */
-    this(HandshakeIO io,
-         HandshakeState state,
+    this(HS)(HandshakeIO io,
+         HS state,
          in TLSPolicy policy,
          RandomNumberGenerator rng,
          const PrivateKey priv_key)
@@ -2060,7 +2048,7 @@ public:
     /*
     * Verify a Finished message
     */
-    bool verify(in HandshakeState state, ConnectionSide side) const
+    bool verify(HS)(in HS state, ConnectionSide side) const
     {
         return (m_verification_data == finishedComputeVerify(state, side));
     }
@@ -2068,8 +2056,8 @@ public:
     /*
     * Create a new Finished message
     */
-    this(HandshakeIO io,
-         HandshakeState state,
+    this(HS)(HandshakeIO io,
+         HS state,
          ConnectionSide side)
     {
         m_verification_data = finishedComputeVerify(state, side);
@@ -2152,8 +2140,8 @@ public:
     /**
     * Verify a TLSServer Key Exchange message
     */
-    bool verify(in PublicKey server_key,
-                const HandshakeState state) const
+    bool verify(HS)(in PublicKey server_key,
+                const HS state) const
     {
         Pair!(string, SignatureFormat) format = state.understandSigFormat(server_key, m_hash_algo, m_sig_algo, false);
 
@@ -2281,8 +2269,8 @@ public:
     /**
     * Create a new TLSServer Key Exchange message
     */
-    this(HandshakeIO io,
-         HandshakeState state,
+    this(HS)(HandshakeIO io,
+         HS state,
          in TLSPolicy policy,
          TLSCredentialsManager creds,
          RandomNumberGenerator rng,
@@ -2462,7 +2450,7 @@ protected:
     }
 }
 
-static if (BOTAN_HAS_TLS_13):
+static if (BOTAN_HAS_TLS_13) {
 /**
 * RFC 8446 4.3.1 EncryptedExtensions (handshake type 8).
 * Subsequent handshake flight is still the next T13d slice; this type is
@@ -2633,8 +2621,13 @@ private:
     Vector!ubyte m_ocsp_staple;
 }
 
-/// RFC 8446 4.4.3 rsa_pss_rsae_sha256
+/// RFC 8446 4.2.3 SignatureScheme
+enum ushort TLS13_ECDSA_SECP256R1_SHA256 = 0x0403;
+enum ushort TLS13_ECDSA_SECP384R1_SHA384 = 0x0503;
+enum ushort TLS13_ECDSA_SECP521R1_SHA512 = 0x0603;
 enum ushort TLS13_RSA_PSS_RSAE_SHA256 = 0x0804;
+enum ushort TLS13_ED25519 = 0x0807;
+enum ushort TLS13_ED448 = 0x0808;
 
 /**
 * RFC 8446 4.4.3 CertificateVerify (SignatureScheme + signature).
@@ -2678,97 +2671,7 @@ private:
     Vector!ubyte m_signature;
 }
 
-/**
- * New EncryptedExtensions Message used mainly for ChannelIDExtension
- */
-final class ChannelID : HandshakeMessage
-{
-    override const(HandshakeType) type() const { return CHANNEL_ID; }
-
-    this(HandshakeIO io, 
-         ref HandshakeHash hash,
-         TLSCredentialsManager creds, 
-         string hostname, 
-         SecureVector!ubyte hs_hash,
-         SecureVector!ubyte orig_hs_hash = SecureVector!ubyte())
-    {
-        m_channel_id = new EncryptedChannelID(creds.channelPrivateKey(hostname), hs_hash.move(), orig_hs_hash.move());
-        hash.update(io.send(this));
-    }
-
-    override Vector!ubyte serialize() const
-    {
-        Vector!ubyte buf;
-        buf.reserve(130);
-
-        const ushort extn_code = m_channel_id.type();
-        const Vector!ubyte extn_val = m_channel_id.serialize();
-        
-        buf.pushBack(get_byte(0, extn_code));
-        buf.pushBack(get_byte(1, extn_code));
-        
-        buf.pushBack(get_byte(0, cast(ushort) extn_val.length));
-        buf.pushBack(get_byte(1, cast(ushort) extn_val.length));
-        
-        buf ~= extn_val[];
-        return buf.move();
-    }
-
-private:
-    Unique!EncryptedChannelID m_channel_id;
-}
-
-/**
-* New TLS Session Ticket Message
-*/
-final class NewSessionTicket : HandshakeMessage
-{
-public:
-    override const(HandshakeType) type() const { return NEW_SESSION_TICKET; }
-
-    const(Duration) ticketLifetimeHint() const { return m_ticket_lifetime_hint; }
-    ref const(Vector!ubyte) ticket() const { return m_ticket; }
-
-    this(HandshakeIO io,
-         ref HandshakeHash hash,
-         Vector!ubyte ticket,
-         Duration lifetime) 
-        
-    {   
-        m_ticket_lifetime_hint = lifetime;
-        m_ticket = ticket.move();
-        hash.update = io.send(this);
-    }
-
-    this(const ref Vector!ubyte buf)
-    {
-        if (buf.length < 6)
-            throw new DecodingError("TLSSession ticket message too short to be valid");
-        
-        TLSDataReader reader = TLSDataReader("SessionTicket", buf);
-        
-        m_ticket_lifetime_hint = reader.get_uint().seconds;
-        m_ticket = reader.getRange!ubyte(2, 0, 65535);
-    }
-
-    this(HandshakeIO io, ref HandshakeHash hash)
-    {
-        hash.update(io.send(this));
-    }
-
-protected:
-    override Vector!ubyte serialize() const
-    {
-        Vector!ubyte buf = Vector!ubyte(4);
-        storeBigEndian(m_ticket_lifetime_hint.total!"seconds", buf.ptr);
-        appendTlsLengthValue(buf, m_ticket, 2);
-        return buf.move();
-    }
-
-private:
-    Duration m_ticket_lifetime_hint;
-    Vector!ubyte m_ticket;
-}
+} // static if (BOTAN_HAS_TLS_13)
 
 /**
 * RFC 6066 CertificateStatus handshake message (type 22).
@@ -2871,7 +2774,7 @@ SecureVector!ubyte stripLeadingZeros()(const auto ref SecureVector!ubyte input)
 /*
 * Compute the verifyData
 */
-Vector!ubyte finishedComputeVerify(in HandshakeState state, ConnectionSide side)
+Vector!ubyte finishedComputeVerify(HS)(in HS state, ConnectionSide side)
 {
     __gshared immutable const(ubyte)[] TLS_CLIENT_LABEL = [
         0x63, 0x6C, 0x69, 0x65, 0x6E, 0x74, 0x20, 0x66, 0x69, 0x6E, 0x69,

@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 2013 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -12,13 +12,36 @@ module botan.utils.mul128;
 import botan.constants;
 import botan.utils.types;
 
+// LDC also defines D_InlineAsm_X86_64, but the DMD Intel path takes
+// addresses of the result slots. Prefer GCC-style mulq so LLVM keeps
+// the product in RDX:RAX.
+version (LDC)
+{
+    version (X86_64)
+        enum BotanLdcX64Asm = true;
+    else
+        enum BotanLdcX64Asm = false;
+}
+else
+    enum BotanLdcX64Asm = false;
+
 /**
 * Perform a 64x64.128 bit multiplication
-* TODO: Optimize this further
 */
 void mul64x64_128(ulong a, ulong b, ref ulong[2] res) pure
 {
-    version (D_InlineAsm_X86_64) {
+    static if (BotanLdcX64Asm) {
+        ulong lo, hi;
+        asm pure nothrow @nogc {
+            "movq %2, %%rax\n\tmulq %3"
+            : "=&a"(lo), "=&d"(hi)
+            : "r"(a), "r"(b)
+            : "cc";
+        }
+        res[0] = lo;
+        res[1] = hi;
+    }
+    else version (D_InlineAsm_X86_64) {
         ulong* lo = res.ptr;
         ulong* hi = &res[1];
         asm pure nothrow @nogc {

@@ -38,11 +38,11 @@ public:
     BlockCipher findBlockCipher(in SCANToken request, AlgorithmFactory) const
     {
         static if (BOTAN_HAS_AES_SSSE3) {
-            if (request.algoName == "AES-128" && CPUID.hasSsse3())
+            if (request.algoName == "AES-128" && CPUID.hasSsse3() && CPUID.hasSse2())
                 return new AES128_SSSE3;
-            if (request.algoName == "AES-192" && CPUID.hasSsse3())
+            if (request.algoName == "AES-192" && CPUID.hasSsse3() && CPUID.hasSse2())
                 return new AES192_SSSE3;
-            if (request.algoName == "AES-256" && CPUID.hasSsse3())
+            if (request.algoName == "AES-256" && CPUID.hasSsse3() && CPUID.hasSse2())
                 return new AES256_SSSE3;
         }
         
@@ -81,9 +81,9 @@ public:
                 return new SHA160SSE2;
         }
         static if (BOTAN_HAS_SHA2_32_X86) {
-            if (request.algoName == "SHA-256" && CPUID.hasIntelSha())
+            if (request.algoName == "SHA-256" && CPUID.hasIntelSha() && CPUID.hasSse2())
                 return new SHA256X86;
-            if (request.algoName == "SHA-224" && CPUID.hasIntelSha())
+            if (request.algoName == "SHA-224" && CPUID.hasIntelSha() && CPUID.hasSse2())
                 return new SHA224X86;
         }
         static if (BOTAN_HAS_SHA2_32_SSE2) {

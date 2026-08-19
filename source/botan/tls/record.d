@@ -22,6 +22,8 @@ import botan.tls.seq_numbers;
 import botan.tls.session_key;
 import botan.tls.ciphersuite;
 import botan.tls.exceptn;
+import botan.tls.alert : TLSAlert;
+import botan.utils.get_byte;
 import botan.modes.aead.aead;
 import botan.mac.mac;
 import botan.algo_factory.algo_factory;
@@ -116,21 +118,29 @@ public:
 
     AEADMode aead() { return *m_aead; }
 
-    Vector!ubyte aeadNonce(ulong seq)
+    const(ubyte)[] fillAeadNonce(ulong seq)
     {
 		if (nonceBytesFromHandshake() == 12)
 		{
-			Vector!ubyte nonce = Vector!ubyte(12);
-			memset(nonce.ptr, 0, nonce.length);
-			storeBigEndian(seq, nonce.ptr + 4);
-			xorBuf(nonce.ptr, m_nonce.ptr, m_nonce.length);
-			return nonce.move();
+			if (m_nonce_scratch.length != 12) m_nonce_scratch.resize(12);
+			memset(m_nonce_scratch.ptr, 0, 12);
+			storeBigEndian(seq, m_nonce_scratch.ptr + 4);
+			xorBuf(m_nonce_scratch.ptr, m_nonce.ptr, m_nonce.length);
+			return m_nonce_scratch[];
 		}
 
-		Vector!ubyte nonce = m_nonce.clone;
-		storeBigEndian(seq, nonce.ptr + nonceBytesFromHandshake());
-		return nonce.move();
+		if (m_nonce_scratch.length != m_nonce.length)
+			m_nonce_scratch.resize(m_nonce.length);
+		if (m_nonce.length)
+			copyMem(m_nonce_scratch.ptr, m_nonce.ptr, m_nonce.length);
+		storeBigEndian(seq, m_nonce_scratch.ptr + nonceBytesFromHandshake());
+		return m_nonce_scratch[];
+    }
 
+    Vector!ubyte aeadNonce(ulong seq)
+    {
+		auto n = fillAeadNonce(seq);
+		return Vector!ubyte(n);
     }
 
     Vector!ubyte aeadNonce(const(ubyte)* record, size_t record_len, ulong seq)
@@ -164,18 +174,22 @@ public:
     }
 
 
+    const(ubyte)[] fillFormatAd(ulong seq, ubyte msg_type, TLSProtocolVersion _version, ushort msg_length)
+    {
+		if (m_ad_scratch.length != 13) m_ad_scratch.resize(13);
+		storeBigEndian(seq, m_ad_scratch.ptr);
+		m_ad_scratch[8] = msg_type;
+		m_ad_scratch[9] = _version.majorVersion();
+		m_ad_scratch[10] = _version.minorVersion();
+		m_ad_scratch[11] = get_byte(0, msg_length);
+		m_ad_scratch[12] = get_byte(1, msg_length);
+		return m_ad_scratch[];
+    }
+
     Vector!ubyte formatAd(ulong seq, ubyte msg_type, TLSProtocolVersion _version, ushort msg_length)
     {
-		Vector!ubyte ad = Vector!ubyte(13);
-		storeBigEndian(seq, ad.ptr);
-		ad[8] = msg_type;
-        ad[9] = _version.majorVersion();
-		ad[10] = _version.minorVersion();
-        
-		ad[11] = get_byte(0, msg_length);
-		ad[12] = get_byte(1, msg_length);
-        
-		return ad.move();
+		auto ad = fillFormatAd(seq, msg_type, _version, msg_length);
+		return Vector!ubyte(ad);
     }
 
     BlockCipher blockCipher() { return *m_block_cipher; }
@@ -213,6 +227,8 @@ private:
 
     Unique!AEADMode m_aead;
     Vector!ubyte m_nonce;
+    Vector!ubyte m_nonce_scratch;
+    Vector!ubyte m_ad_scratch;
 
     size_t m_block_size;
     size_t m_explicit_nonce_size;
@@ -265,28 +281,26 @@ void writeRecord(ref SecureVector!ubyte output,
     if (AEADMode aead = cs.aead())
     {
         const size_t ctext_size = aead.outputLength(msg_length);
-        
-        const Vector!ubyte nonce = cs.aeadNonce(seq);
-        
-        // wrong if start returns something
-		const size_t rec_size = ctext_size + cs.nonceBytesFromRecord();
-
+        const size_t rec_nonce = cs.nonceBytesFromRecord();
+        const size_t rec_size = ctext_size + rec_nonce;
         assert(rec_size <= 0xFFFF, "Ciphertext length fits in field");
-        
+
+        auto nonce = cs.fillAeadNonce(seq);
+        auto format_ad = cs.fillFormatAd(seq, msg_type, _version, cast(ushort) msg_length);
+        aead.setAssociatedData(format_ad.ptr, format_ad.length);
+
+        output.reserve(5 + rec_size);
         output.pushBack(get_byte!ushort(0, cast(ushort) rec_size));
         output.pushBack(get_byte!ushort(1, cast(ushort) rec_size));
-        
-		const Vector!ubyte format_ad = cs.formatAd(seq, msg_type, _version, cast(ushort) msg_length);
-		aead.setAssociatedDataVec(format_ad);
-        
-		if (cs.nonceBytesFromRecord() > 0)
-			output ~= nonce.ptr[cs.nonceBytesFromHandshake() .. cs.nonceBytesFromHandshake() + cs.nonceBytesFromRecord()];
 
-		auto start_vec = aead.start(nonce);
-		assert(start_vec.empty, "AEAD doesn't return anything from start");
-        
+        if (rec_nonce > 0)
+            output ~= nonce[cs.nonceBytesFromHandshake() .. cs.nonceBytesFromHandshake() + rec_nonce];
+
+        auto start_vec = aead.start(nonce.ptr, nonce.length);
+        assert(start_vec.empty, "AEAD doesn't return anything from start");
+
         const size_t offset = output.length;
-		output ~= msg[0 .. msg_length];
+        output ~= msg[0 .. msg_length];
         aead.finish(output, offset);
 
 		assert(output.length == offset + ctext_size, "Expected size");

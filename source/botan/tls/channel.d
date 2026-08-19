@@ -40,9 +40,13 @@ import memutils.hashmap;
 import std.string : toStringz;
 import std.algorithm;
 
+/// Ciphertext to the wire (vibe.0 `onWrite`).
 alias DataWriter = void delegate(in ubyte[]);
+/// Application plaintext after record decrypt.
 alias OnClearData = void delegate(in ubyte[]);
+/// Alert type plus optional payload (heartbeat).
 alias OnAlert = void delegate(in TLSAlert, in ubyte[]);
+/// Return false to drop the session from the session manager.
 alias OnHandshakeComplete = bool delegate(in TLSSession);
 
 /**
@@ -52,6 +56,17 @@ class TLSChannel
 {
 public:
 
+    /**
+    * Params:
+    *  output_fn = ciphertext for the outbound socket
+    *  data_cb = plaintext delivered to the application
+    *  alert_cb = called when a TLS alert is received
+    *  handshake_cb = called when a handshake completes
+    *  session_manager = stores resumable sessions
+    *  rng = random number generator
+    *  is_datagram = true for DTLS
+    *  reserved_io_buffer_size = preallocated read/write buffer size
+    */
 	this(DataWriter output_fn,
 		OnClearData data_cb,
 		OnAlert alert_cb,
@@ -78,6 +93,9 @@ public:
 
     /**
     * Inject TLS traffic received from counterparty
+    * Params:
+    *  input = ciphertext bytes from the socket
+    *  input_size = length of input
     * Returns: a hint as the how many more bytes we need to process the
     *            current record (this may be 0 if on a record boundary)
     */
@@ -307,7 +325,10 @@ public:
 
     /**
     * Inject plaintext intended for counterparty
-    * Throws an exception if isActive() is false
+    * Params:
+    *  buf = application data
+    *  buf_size = length of buf
+    * Notes: Throws if isActive() is false
     */
     void send(const(ubyte)* buf, size_t buf_size)
     {
@@ -367,11 +388,15 @@ public:
 
     /**
     * Send a warning alert
+    * Params:
+    *  type = alert code
     */
     void sendWarningAlert(TLSAlertType type) { sendAlert(TLSAlert(type, false)); }
 
     /**
     * Send a fatal alert
+    * Params:
+    *  type = alert code
     */
     void sendFatalAlert(TLSAlertType type) { sendAlert(TLSAlert(type, true)); }
 
@@ -546,8 +571,9 @@ protected:
     static if (BOTAN_HAS_TLS_13)
     {
         /**
-        * Install (or replace) the TLS 1.3 read/write traffic keys.
-        * Sequence numbers reset with the new TLS13CipherState.
+        * First TLS 1.3 handshake-traffic install (both directions).
+        * Later HS→app switches use tls13SetWriteTrafficKey /
+        * tls13SetReadTrafficKey so the other direction's sequence stays.
         */
         void tls13SetRecordKeys(string aead_name, string hash_name,
                                 const(ubyte)* write_secret, size_t write_len,
@@ -559,12 +585,42 @@ protected:
                 m_tls13_rl = new TLS13RecordLayer(side);
                 m_tls13_rl.disableSendingCompatMode();
             }
+            const bool first_protected = !m_tls13_cs;
             m_tls13_cs = TLS13CipherState.fromTrafficSecrets(aead_name, hash_name,
                                                              write_secret, write_len,
                                                              read_secret, read_len);
-            // RFC 8446 D.4 middlebox compat: one dummy CCS before the first
-            // protected record on this cipher state.
-            m_tls13_need_dummy_ccs = true;
+            // C++ must_expect_unprotected_alert_traffic: servers accept
+            // a plaintext Alert until the client's Finished.
+            if (side == SERVER)
+                m_tls13_cs.setAllowUnprotectedAlert(true);
+            // RFC 8446 D.4: one dummy CCS before the first protected record
+            // (after ServerHello). Later traffic-secret updates must not
+            // inject CCS — OpenSSL 3 treats post-handshake CCS as
+            // SSL_R_BAD_RECORD_TYPE.
+            if (first_protected)
+                m_tls13_need_dummy_ccs = true;
+        }
+
+        /// C++ `derive_write_traffic_key` — write AEAD/IV/seq only.
+        void tls13SetWriteTrafficKey(const(ubyte)* write_secret, size_t write_len)
+        {
+            if (!m_tls13_cs)
+                throw new InternalError("TLS 1.3 write key update before handshake keys");
+            m_tls13_cs.deriveWriteTrafficKey(write_secret, write_len);
+        }
+
+        /// C++ `derive_read_traffic_key` — read AEAD/IV/seq only.
+        void tls13SetReadTrafficKey(const(ubyte)* read_secret, size_t read_len)
+        {
+            if (!m_tls13_cs)
+                throw new InternalError("TLS 1.3 read key update before handshake keys");
+            m_tls13_cs.deriveReadTrafficKey(read_secret, read_len);
+        }
+
+        void tls13SetUnprotectedAlertExpected(bool v)
+        {
+            if (m_tls13_cs)
+                m_tls13_cs.setAllowUnprotectedAlert(v);
         }
     }
 
@@ -871,7 +927,15 @@ private:
         assert(m_pending_state || m_active_state, "Some connection state exists");
         
         TLSProtocolVersion record_version = (m_pending_state) ? (m_pending_state.Version()) : (m_active_state.Version());
-        
+        static if (BOTAN_HAS_TLS_13)
+        {
+            // RFC 8446 5.1: every record after the initial ClientHello
+            // uses legacy_record_version 0x0303. A 1.3 ServerHello with
+            // 0x0304 made OpenSSL 3 s_client fail the next AEAD record.
+            if (record_version == TLSProtocolVersion(TLSProtocolVersion.TLS_V13))
+                record_version = TLSProtocolVersion(TLSProtocolVersion.TLS_V12);
+        }
+
         .writeRecord(m_writebuf,
                      record_type,
                      input,

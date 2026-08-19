@@ -17,6 +17,17 @@ import botan.utils.types;
 import botan.utils.get_byte;
 import botan.utils.mem_ops;
 
+// LDC+AArch64 has no D inline asm CPUID; every other x86 target
+// (including LDC x86_64) uses D_InlineAsm. The old
+// `version(LDC) { aarch64 } else { asm }` skipped LDC x86_64, so
+// AES-NI / CLMUL never enabled on the HTTPS bench host.
+private enum bool botanLdcAarch64 = () {
+	version (LDC) {
+		version (AArch64) return true;
+		else return false;
+	} else return false;
+}();
+
 /**
 * A class handling runtime CPU feature detection
 */
@@ -28,8 +39,7 @@ public:
     */
     static this()
     {
-        if (max_cpuid == 0)
-            return;
+        botanProbeCpuid();
 
         version(PPC)    
             if (altivecCheckSysctl() || altivecCheckPvrEmul())
@@ -43,7 +53,7 @@ public:
 
         m_x86_processor_flags[0] = (cast(ulong)(miscfeatures) << 32) | features;
         
-        m_cache_line_size = get_byte(3, l1cache); 
+        m_cache_line_size = l1cache ? get_byte(3, l1cache) : 64;
         
         if (max_cpuid >= 7)
             m_x86_processor_flags[1] = (cast(ulong)(extreserved) << 32) | extfeatures;
@@ -59,7 +69,41 @@ public:
                     m_x86_processor_flags[0] = (1 << CPUID_SSE2_BIT) | (1 << CPUID_RDTSC_BIT);
             }
         }
-        
+
+        // Always OR druntime's leaf-1 bits on LDC x86_64. The probe
+        // used to fill features/miscfeatures then return; a too-early
+        // core.cpuid read left flags=0 and AES-NI/CLMUL never selected
+        // (HTTPS /64k stayed on bitsliced AES). OR is idempotent.
+        version (LDC)
+        {
+            version (X86_64)
+            {
+                import core.cpuid : sse2, ssse3, sse41, sse42, aes, hasPclmulqdq;
+                ulong f = m_x86_processor_flags[0] | (1UL << CPUID_RDTSC_BIT);
+                if (sse2) f |= 1UL << CPUID_SSE2_BIT;
+                if (ssse3) f |= 1UL << CPUID_SSSE3_BIT;
+                if (sse41) f |= 1UL << CPUID_SSE41_BIT;
+                if (sse42) f |= 1UL << CPUID_SSE42_BIT;
+                if (aes) f |= 1UL << CPUID_AESNI_BIT;
+                if (hasPclmulqdq) f |= 1UL << CPUID_CLMUL_BIT;
+                m_x86_processor_flags[0] = f;
+            }
+        }
+        else if (m_x86_processor_flags[0] == 0)
+        {
+            version (X86_64)
+            {
+                import core.cpuid : sse2, ssse3, sse41, sse42, aes, hasPclmulqdq;
+                ulong f = 1UL << CPUID_RDTSC_BIT;
+                if (sse2) f |= 1UL << CPUID_SSE2_BIT;
+                if (ssse3) f |= 1UL << CPUID_SSSE3_BIT;
+                if (sse41) f |= 1UL << CPUID_SSE41_BIT;
+                if (sse42) f |= 1UL << CPUID_SSE42_BIT;
+                if (aes) f |= 1UL << CPUID_AESNI_BIT;
+                if (hasPclmulqdq) f |= 1UL << CPUID_CLMUL_BIT;
+                m_x86_processor_flags[0] = f;
+            }
+        }
     }
 
 
@@ -129,6 +173,14 @@ public:
     { return x86_processor_flags_has(CPUID_CLMUL_BIT); }
 
     /**
+    * GHASH CLMUL kernel: PCLMULQDQ + pshufb (SSSE3) + psrldq (SSE2).
+    * Call sites must use this, not hasClmul() alone, or a CLMUL-only
+    * CPU would SIGILL on pshufb.
+    */
+    static bool hasGcmClmul()
+    { return hasClmul() && hasSsse3() && hasSse2(); }
+
+    /**
     * Check if the processor supports Intel SHA extension
     */
     static bool hasIntelSha()
@@ -188,6 +240,7 @@ public:
         app ~= CPUID.hasRdtsc;
         app ~= CPUID.hasBmi2;
         app ~= CPUID.hasClmul;
+        app ~= CPUID.hasGcmClmul;
         app ~= CPUID.hasAesNi;
         app ~= CPUID.hasRdrand;
         app ~= CPUID.hasRdseed;
@@ -282,9 +335,72 @@ version(LDC) version(AArch64) {
     }
 }
 
-shared static this() {
-    
+private __gshared bool g_botan_cpuid_probed;
+
+version (LDC) version (X86_64)
+{
+    import ldc.llvmasm : __asmtuple;
+    // LDC Intel-style `asm { cpuid }` used to SIGILL. Probe with llvm
+    // asm so AES-NI / CLMUL / SSSE3 bits come from CPUID. `static this`
+    // still ORs `core.cpuid` as backup.
+    private void botanProbeCpuidLdcX64()
+    {
+        auto leaf0 = __asmtuple!(uint, uint, uint, uint)(
+            "cpuid", "={eax},={ebx},={ecx},={edx},{eax},{ecx}", 0, 0);
+        max_cpuid = leaf0.v[0];
+        char[12] vendorID = void;
+        (cast(uint*) vendorID.ptr)[0] = leaf0.v[1];
+        (cast(uint*) vendorID.ptr)[1] = leaf0.v[3];
+        (cast(uint*) vendorID.ptr)[2] = leaf0.v[2];
+        is_intel = vendorID == "GenuineIntel";
+        is_amd = vendorID == "AuthenticAMD";
+
+        auto leaf8 = __asmtuple!(uint, uint, uint, uint)(
+            "cpuid", "={eax},={ebx},={ecx},={edx},{eax},{ecx}", 0x8000_0000, 0);
+        max_extended_cpuid = leaf8.v[0];
+
+        auto leaf1 = __asmtuple!(uint, uint, uint, uint)(
+            "cpuid", "={eax},={ebx},={ecx},={edx},{eax},{ecx}", 1, 0);
+        apic = leaf1.v[1];
+        miscfeatures = leaf1.v[2];
+        features = leaf1.v[3];
+
+        if (max_cpuid >= 7)
+        {
+            auto leaf7 = __asmtuple!(uint, uint, uint, uint)(
+                "cpuid", "={eax},={ebx},={ecx},={edx},{eax},{ecx}", 7, 0);
+            extfeatures = leaf7.v[1];
+            extreserved = leaf7.v[2];
+        }
+        if (max_extended_cpuid >= 0x8000_0001)
+        {
+            auto leaf81 = __asmtuple!(uint, uint, uint, uint)(
+                "cpuid", "={eax},={ebx},={ecx},={edx},{eax},{ecx}", 0x8000_0001, 0);
+            amdmiscfeatures = leaf81.v[2];
+            amdfeatures = leaf81.v[3];
+        }
+        if (max_extended_cpuid >= 0x8000_0005)
+        {
+            auto leaf85 = __asmtuple!(uint, uint, uint, uint)(
+                "cpuid", "={eax},={ebx},={ecx},={edx},{eax},{ecx}", 0x8000_0005, 0);
+            l1cache = leaf85.v[2];
+        }
+    }
+}
+
+package void botanProbeCpuid()
+{
+    if (g_botan_cpuid_probed)
+        return;
+    g_botan_cpuid_probed = true;
+
     logTrace("Loading CPUID ...");
+
+    version (LDC) version (X86_64)
+    {
+        botanProbeCpuidLdcX64();
+        return;
+    }
     string processorName;
     char[12] vendorID;
     uint unused;
@@ -292,8 +408,9 @@ shared static this() {
         uint a, b, c, d, a2;
         char * venptr = vendorID.ptr;
 
-        version(LDC) { version(AArch64) rawCpuid(unused, unused, &a, cast(uint*) venptr, cast(uint*) (venptr+2*uint.sizeof), 
-                                cast(uint*) (venptr+uint.sizeof)); 
+        static if (botanLdcAarch64) {
+            rawCpuid(unused, unused, &a, cast(uint*) venptr, cast(uint*) (venptr+2*uint.sizeof),
+                                cast(uint*) (venptr+uint.sizeof));
         } else {
             version(D_InlineAsm_X86)
             {
@@ -322,8 +439,8 @@ shared static this() {
         }
 
         
-        version(LDC) { 
-            version(AArch64) rawCpuid(0x8000_0000U, 0U, &a2, &unused, &unused, &unused);
+        static if (botanLdcAarch64) {
+            rawCpuid(0x8000_0000U, 0U, &a2, &unused, &unused, &unused);
         } else {
             asm pure nothrow {
                 mov EAX, 0x8000_0000;
@@ -341,8 +458,8 @@ shared static this() {
 
     {
         uint a, b, c, d;
-        version(LDC) {
-             version(AArch64) rawCpuid(1U, 0U, &a, &apic, &c, &d);
+        static if (botanLdcAarch64) {
+             rawCpuid(1U, 0U, &a, &apic, &c, &d);
         } else
         {
             asm pure nothrow {
@@ -366,8 +483,8 @@ shared static this() {
     {
         uint ext, reserved;
 
-        version (LDC) {
-             version(AArch64) rawCpuid(7U, 0U, &unused, &ext, &reserved, &unused);
+        static if (botanLdcAarch64) {
+             rawCpuid(7U, 0U, &unused, &ext, &reserved, &unused);
         } else
         {
             asm
@@ -410,8 +527,8 @@ shared static this() {
 
     if (max_extended_cpuid >= 0x8000_0001) {
         uint c, d;
-        version(LDC) {
-             version(AArch64) rawCpuid(0x8000_0001U, 0U, &unused, &unused, &c, &d);
+        static if (botanLdcAarch64) {
+             rawCpuid(0x8000_0001U, 0U, &unused, &unused, &c, &d);
         } else
         {
             asm pure nothrow {
@@ -427,7 +544,8 @@ shared static this() {
     }
     if (max_extended_cpuid >= 0x8000_0005) {
         uint c;
-        version(LDC) { version(AArch64) rawCpuid(0x8000_0005U, 0U, &unused, &unused, &c, &unused);
+        static if (botanLdcAarch64) {
+            rawCpuid(0x8000_0005U, 0U, &unused, &unused, &c, &unused);
         } else
         {
             asm pure nothrow {
@@ -446,8 +564,11 @@ shared static this() {
 
     // Try to detect fraudulent vendorIDs
     if (amd3dnow) is_intel = false;
+}
 
-
+shared static this()
+{
+    botanProbeCpuid();
 }
 
 

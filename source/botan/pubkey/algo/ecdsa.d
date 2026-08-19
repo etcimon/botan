@@ -135,23 +135,37 @@ public:
         m_pub = new ECPublicKey(Options(), dom_par, public_point);
     }
 
+    /**
+    * Decode an X.509 SubjectPublicKeyInfo
+    * Params:
+    *  alg_id = algorithm identifier (includes the curve OID)
+    *  key_bits = uncompressed or compressed point
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
 		m_owned = true;
         m_pub = new ECPublicKey(Options(), alg_id, key_bits);
     }
 
+    /// Wrap an existing key object (does not take Unique ownership).
     this(in PublicKey pkey) {
         m_pub = cast(ECPublicKey) pkey;
     }
 
+    /// ditto
     this(in PrivateKey pkey) {
         m_pub = cast(ECPublicKey) pkey;
     }
 
     /**
     * Recover a public key from an ECDSA signature and message (SEC 1).
-    * `v` is the recovery id in 0..3.
+    * Params:
+    *  group = curve domain
+    *  msg = signed message (or its hash, depending on EMSA)
+    *  msg_len = length of msg
+    *  r = signature r
+    *  s = signature s
+    *  v = recovery id in 0..3
     */
     this()(const auto ref ECGroup group, const(ubyte)* msg, size_t msg_len,
            const auto ref BigInt r, const auto ref BigInt s, ubyte v)
@@ -171,6 +185,12 @@ public:
     /**
     * Return the recovery id `v` in 0..3 that reconstructs this key
     * from (`msg`, `r`, `s`).
+    * Params:
+    *  msg = signed message
+    *  msg_len = length of msg
+    *  r = signature r
+    *  s = signature s
+    * Returns: recovery id 0..3
     */
     ubyte recoveryParam(const(ubyte)* msg, size_t msg_len,
                         const ref BigInt r, const ref BigInt s) const
@@ -273,8 +293,6 @@ public:
 
     override SecureVector!ubyte sign(const(ubyte)* msg, size_t msg_len, RandomNumberGenerator rng)
     {
-        rng.addEntropy(msg, msg_len);
-        
         BigInt m = BigInt(msg, msg_len);
         
         BigInt r = BigInt(0), s = BigInt(0);

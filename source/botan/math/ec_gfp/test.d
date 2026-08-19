@@ -202,6 +202,18 @@ size_t testPointMult ()
     
     mixin( CHECK(` Q_U.getAffineX() == BigInt("466448783855397898016055842232266600516272889280") `) );
     mixin( CHECK(` Q_U.getAffineY() == BigInt("1110706324081757720403272427311003102474457754220") `) );
+
+    PointGFp W_U = p_G.mulWindow4(&d_U);
+    mixin( CHECK(` W_U.getAffineX() == Q_U.getAffineX() `) );
+    mixin( CHECK(` W_U.getAffineY() == Q_U.getAffineY() `) );
+    auto one = BigInt(1);
+    auto two = BigInt(2);
+    auto zero = BigInt(0);
+    mixin( CHECK(` p_G.mulWindow4(&one) == p_G `) );
+    mixin( CHECK(` p_G.mulWindow4(&zero).isZero() `) );
+    PointGFp t2 = p_G * &two;
+    PointGFp w2 = p_G.mulWindow4(&two);
+    mixin( CHECK(` w2.getAffineX() == t2.getAffineX() `) );
     return fails;
 }
 
@@ -889,6 +901,61 @@ size_t randomizedTest()
     return fails;
 }
 
+size_t testP256SolinasRedc()
+{
+    size_t fails = 0;
+
+    BigInt p = BigInt("0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF");
+    BigInt a = BigInt("0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC");
+    BigInt b = BigInt("0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B");
+    auto curve = CurveGFp(&p, &a, &b);
+    SecureVector!word ws;
+
+    {
+        BigInt x = p.clone; x += 5;
+        BigInt y = p.clone; y += 7;
+        BigInt z;
+        curve.mul(&z, &x, &y, ws);
+        mixin( CHECK_MESSAGE( `z == BigInt(35)`, "P-256 Solinas (p+5)*(p+7) != 35" ) );
+    }
+
+    {
+        BigInt x = BigInt.powerOf2(255);
+        BigInt two = BigInt(2);
+        BigInt z;
+        curve.mul(&z, &x, &two, ws);
+        BigInt expect = BigInt.powerOf2(224);
+        expect -= BigInt.powerOf2(192);
+        expect -= BigInt.powerOf2(96);
+        expect += 1;
+        mixin( CHECK_MESSAGE( `z == expect`, "P-256 Solinas 2^256 mod p" ) );
+    }
+
+    {
+        BigInt x = BigInt("0x1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF");
+        BigInt y = BigInt("0xFEDCBA0987654321FEDCBA0987654321FEDCBA0987654321FEDCBA0987654321");
+        curve.toRep(&x, ws);
+        curve.toRep(&y, ws);
+        BigInt z;
+        curve.mul(&z, &x, &y, ws);
+        curve.fromRep(&z, ws);
+        BigInt expect = (x * y) % p;
+        mixin( CHECK_MESSAGE( `z == expect`, "P-256 Solinas mul vs BigInt % p" ) );
+    }
+
+    {
+        BigInt x = BigInt("0xAABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899");
+        curve.toRep(&x, ws);
+        BigInt z;
+        curve.sqr(&z, &x, ws);
+        curve.fromRep(&z, ws);
+        BigInt expect = (x * x) % p;
+        mixin( CHECK_MESSAGE( `z == expect`, "P-256 Solinas sqr vs BigInt % p" ) );
+    }
+
+    return fails;
+}
+
 static if (BOTAN_HAS_TESTS && !SKIP_EC_GFP_TEST) unittest
 {
     import botan.libstate.global_state;
@@ -945,6 +1012,8 @@ static if (BOTAN_HAS_TESTS && !SKIP_EC_GFP_TEST) unittest
     fails += testMultSecMass();
     logTrace("testCurveCpCtor");
     fails += testCurveCpCtor();
+    logTrace("testP256SolinasRedc");
+    fails += testP256SolinasRedc();
     logTrace("randomizedTest");
     fails += randomizedTest();
 

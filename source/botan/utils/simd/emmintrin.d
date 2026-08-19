@@ -258,6 +258,89 @@ version(GDC) {
     }
 }
 
+version (LDC)
+{
+    import ldc.gccbuiltins_x86 : __builtin_ia32_pshufb128;
+    import core.simd : long2, byte16;
+
+    // LDC 1.41 has no __builtin_ia32_psrldqi128 and llvm.x86.sse2.psrl.dq
+    // does not bind. ldc.llvmasm "psrldq" also refuses to inline (callgrind:
+    // _mm_srli_si128!(8) was 15% exclusive Ir inside GHASH). SSSE3 pshufb
+    // with a CT mask, or a long2 move for the 8-byte case, inlines.
+    private template mmPshufbSrliStr(int n)
+    {
+        enum string mmPshufbSrliStr = {
+            string s = "byte16([";
+            foreach (i; 0 .. 16)
+            {
+                if (i) s ~= ",";
+                immutable src = i + n;
+                s ~= src >= 16 ? "cast(byte)0x80" : to!string(src);
+            }
+            return s ~ "])";
+        }();
+    }
+    private template mmPshufbSlliStr(int n)
+    {
+        enum string mmPshufbSlliStr = {
+            string s = "byte16([";
+            foreach (i; 0 .. 16)
+            {
+                if (i) s ~= ",";
+                s ~= (i < n) ? "cast(byte)0x80" : to!string(i - n);
+            }
+            return s ~ "])";
+        }();
+    }
+
+    pragma(inline, true)
+    __m128i _mm_srli_si128(int imm)(__m128i a)
+    {
+        static if (imm <= 0) return a;
+        else static if (imm >= 16)
+        {
+            long2 z = 0;
+            return cast(__m128i) z;
+        }
+        else static if (imm == 8)
+        {
+            long2 r = void;
+            auto s = cast(long2) a;
+            r.array[0] = s.array[1];
+            r.array[1] = 0;
+            return cast(__m128i) r;
+        }
+        else
+        {
+            enum byte16 mask = mixin(mmPshufbSrliStr!imm);
+            return cast(__m128i) __builtin_ia32_pshufb128(cast(byte16) a, mask);
+        }
+    }
+    pragma(inline, true)
+    __m128i _mm_slli_si128(int imm)(__m128i a)
+    {
+        static if (imm <= 0) return a;
+        else static if (imm >= 16)
+        {
+            long2 z = 0;
+            return cast(__m128i) z;
+        }
+        else static if (imm == 8)
+        {
+            long2 r = void;
+            auto s = cast(long2) a;
+            r.array[0] = 0;
+            r.array[1] = s.array[0];
+            return cast(__m128i) r;
+        }
+        else
+        {
+            enum byte16 mask = mixin(mmPshufbSlliStr!imm);
+            return cast(__m128i) __builtin_ia32_pshufb128(cast(byte16) a, mask);
+        }
+    }
+}
+
 version(none) {
     import ldc.gccbuiltins_x86;
 
@@ -1021,6 +1104,9 @@ version(D_InlineAsm_X86_64) {
         return c;
     }
     
+    // LDC uses the in-register llvmasm helpers above (no spill).
+    version (LDC) {} else
+    {
     // _mm_srli_si128 ; PSRLDQ
     __m128i _mm_srli_si128(int imm)(const auto ref __m128i a) {
         const(__m128i)* _a = &a;
@@ -1049,5 +1135,6 @@ version(D_InlineAsm_X86_64) {
             movdqu [RBX], XMM1;
         }`);
         return b;
+    }
     }
 }

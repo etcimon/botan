@@ -22,6 +22,7 @@ import botan.utils.types;
 import botan.utils.mem_ops;
 import botan.utils.get_byte;
 
+/// One decrypted TLS 1.3 record (inner type, fragment, sequence).
 struct TLS13Record
 {
     RecordType type;
@@ -30,6 +31,7 @@ struct TLS13Record
     bool has_seq;
 }
 
+/// Result of `nextRecord`: either a record or a bytes-needed hint.
 struct TLS13ReadResult
 {
     bool has_record;
@@ -58,6 +60,10 @@ private bool verifyCcs(const(ubyte)* data, size_t size)
 final class TLS13RecordLayer
 {
 public:
+    /**
+    * Params:
+    *  side = CLIENT or SERVER (clients send the TLS 1.2 version in the record header until after ServerHello)
+    */
     this(ConnectionSide side)
     {
         m_side = side;
@@ -67,15 +73,29 @@ public:
         m_receiving_compat = true;
     }
 
+    /// Record headers use 0x0303 after the handshake is no longer in compatibility mode.
     void disableSendingCompatMode() { m_sending_compat = false; }
+    /// ditto for inbound parse.
     void disableReceivingCompatMode() { m_receiving_compat = false; }
 
+    /**
+    * RFC 8449 record_size_limit
+    * Params:
+    *  outgoing_limit = max inner plaintext we will send
+    *  incoming_limit = max inner plaintext we will accept
+    */
     void setRecordSizeLimits(ushort outgoing_limit, ushort incoming_limit)
     {
         m_out_limit = outgoing_limit;
         m_in_limit = incoming_limit;
     }
 
+    /**
+    * Append ciphertext from the socket
+    * Params:
+    *  data = bytes
+    *  len = length of data
+    */
     void copyData(const(ubyte)* data, size_t len)
     {
         if (m_read_off > 0)
@@ -86,6 +106,11 @@ public:
         }
         if (len)
             m_read_buf ~= data[0 .. len];
+    }
+
+    void copyData(in ubyte[] data)
+    {
+        copyData(data.ptr, data.length);
     }
 
     void copyData()(const auto ref Vector!ubyte data)
@@ -131,7 +156,8 @@ public:
         else if (frag_len > MAX_PLAINTEXT_SIZE)
             throw new TLSException(TLSAlert.RECORD_OVERFLOW, "Received a record that exceeds maximum size");
 
-        if (cs !is null && typ != APPLICATION_DATA && typ != CHANGE_CIPHER_SPEC)
+        if (cs !is null && typ != APPLICATION_DATA && typ != CHANGE_CIPHER_SPEC &&
+            !(typ == ALERT && cs.mustExpectUnprotectedAlert()))
             throw new TLSException(TLSAlert.UNEXPECTED_MESSAGE, "unprotected record received where protected traffic was expected");
 
         if (remaining < TLS_HEADER_SIZE + frag_len)
@@ -181,7 +207,17 @@ public:
         return r;
     }
 
-    Vector!ubyte prepareRecords(RecordType type, const(ubyte)* data, size_t data_len, TLS13CipherState cs = null)
+    /**
+    * Serialize one or more TLS 1.3 records. The returned slice is valid
+    * until the next prepareRecords.
+    * Params:
+    *  type = inner content type
+    *  data = plaintext
+    *  data_len = length of data
+    *  cs = AEAD state, or null for an unprotected record (CCS only)
+    * Returns: wire bytes (header || ciphertext)
+    */
+    ubyte[] prepareRecords(RecordType type, const(ubyte)* data, size_t data_len, TLS13CipherState cs = null)
     {
         const bool protect = cs !is null && type != CHANGE_CIPHER_SPEC;
         if (!protect && type == APPLICATION_DATA)
@@ -192,7 +228,9 @@ public:
             throw new InvalidArgument("TLS 1.3 deprecated CHANGE_CIPHER_SPEC");
 
         const size_t max_pt = protect ? (m_out_limit - 1) : MAX_PLAINTEXT_SIZE;
-        Vector!ubyte output;
+        const size_t nrec = (data_len == 0) ? 1 : ((data_len + max_pt - 1) / max_pt);
+        m_out_ws.length = 0;
+        m_out_ws.reserve(nrec * (TLS_HEADER_SIZE + max_pt + 32));
         size_t off = 0;
         size_t left = data_len;
         const bool at_least_one = protect && data_len == 0;
@@ -203,33 +241,34 @@ public:
             const ubyte wire_type = protect ? APPLICATION_DATA : type;
             const ushort rec_ver = m_sending_compat ? 0x0301 : 0x0303;
 
-            output.pushBack(wire_type);
-            output.pushBack(cast(ubyte)(rec_ver >> 8));
-            output.pushBack(cast(ubyte) rec_ver);
-            output.pushBack(cast(ubyte)(ct_size >> 8));
-            output.pushBack(cast(ubyte) ct_size);
+            const size_t rec_start = m_out_ws.length;
+            const size_t rec_len = TLS_HEADER_SIZE + ct_size;
+            m_out_ws.expandUninitialized(rec_start + rec_len);
+            auto rec = m_out_ws.ptr + rec_start;
+            rec[0] = wire_type;
+            rec[1] = cast(ubyte)(rec_ver >> 8);
+            rec[2] = cast(ubyte) rec_ver;
+            rec[3] = cast(ubyte)(ct_size >> 8);
+            rec[4] = cast(ubyte) ct_size;
 
             if (protect)
             {
-                SecureVector!ubyte inner;
                 if (pt_size)
-                    inner ~= data[off .. off + pt_size];
-                inner.pushBack(type);
-                const size_t hdr_off = output.length - TLS_HEADER_SIZE;
-                cs.encryptRecordFragment(output.ptr + hdr_off, TLS_HEADER_SIZE, inner);
-                output ~= inner[];
+                    copyMem(rec + TLS_HEADER_SIZE, data + off, pt_size);
+                rec[TLS_HEADER_SIZE + pt_size] = type;
+                cs.encryptRecordFragment(rec, TLS_HEADER_SIZE, rec + TLS_HEADER_SIZE, pt_size + 1);
             }
             else if (pt_size)
-                output ~= data[off .. off + pt_size];
+                copyMem(rec + TLS_HEADER_SIZE, data + off, pt_size);
 
             off += pt_size;
             left -= pt_size;
         } while (left > 0);
 
-        return output.move();
+        return m_out_ws[];
     }
 
-    Vector!ubyte prepareRecords()(RecordType type, const auto ref Vector!ubyte data, TLS13CipherState cs = null)
+    ubyte[] prepareRecords()(RecordType type, const auto ref Vector!ubyte data, TLS13CipherState cs = null)
     {
         return prepareRecords(type, data.ptr, data.length, cs);
     }
@@ -237,6 +276,7 @@ public:
 private:
     ConnectionSide m_side;
     Vector!ubyte m_read_buf;
+    Vector!ubyte m_out_ws;
     size_t m_read_off;
     ushort m_out_limit;
     ushort m_in_limit;
@@ -360,6 +400,35 @@ static if (BOTAN_HAS_TESTS && !SKIP_TLS_TEST) unittest
         }
         if (memutilsGrowth(rec_snap, "tls13 record aead wrap"))
             ++fails;
+
+        {
+            ubyte[32] ws = 9;
+            ubyte[32] rs = 10;
+            Unique!TLS13CipherState cs = TLS13CipherState.fromTrafficSecrets(
+                "AES-128/GCM", "SHA-256", ws.ptr, ws.length, rs.ptr, rs.length);
+            Unique!TLS13RecordLayer rl = new TLS13RecordLayer(SERVER);
+            rl.disableReceivingCompatMode();
+            ubyte[7] alert_wire = [ALERT, 0x03, 0x03, 0x00, 0x02, 0x01, 0x00];
+            rl.copyData(alert_wire.ptr, alert_wire.length);
+            bool threw;
+            try
+            {
+                rl.nextRecord(*cs);
+            }
+            catch (TLSException)
+            {
+                threw = true;
+            }
+            if (!threw)
+                ++fails;
+            Unique!TLS13RecordLayer rl2 = new TLS13RecordLayer(SERVER);
+            rl2.disableReceivingCompatMode();
+            cs.setAllowUnprotectedAlert(true);
+            rl2.copyData(alert_wire.ptr, alert_wire.length);
+            auto got_al = rl2.nextRecord(*cs);
+            if (!got_al.has_record || got_al.record.type != ALERT || got_al.record.fragment.length != 2)
+                ++fails;
+        }
     }
 
     if (fails)

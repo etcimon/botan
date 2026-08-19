@@ -33,6 +33,26 @@ version (GDC)
         return cast(__m128i) __builtin_ia32_sha256msg2(cast(int4) a, cast(int4) b);
     }
 }
+else version (LDC)
+{
+    import ldc.gccbuiltins_x86;
+    import ldc.llvmasm : __asm;
+    // SHA256RNDS2 has an implicit XMM0 message+K operand. LDC's
+    // gccbuiltin did not keep K in XMM0 (TLS 1.3 HS MAC failed). Pin
+    // it. MSG1/MSG2 have no implicit XMM0.
+    pragma(inline, true) __m128i _mm_sha256rnds2_epu32()(auto ref __m128i a, auto ref __m128i b, auto ref __m128i k)
+    {
+        return __asm!__m128i("sha256rnds2 $2, $0", "=x,0,x,{xmm0}", a, b, k);
+    }
+    pragma(inline, true) __m128i _mm_sha256msg1_epu32()(auto ref __m128i a, auto ref __m128i b)
+    {
+        return cast(__m128i) __builtin_ia32_sha256msg1(cast(int4) a, cast(int4) b);
+    }
+    pragma(inline, true) __m128i _mm_sha256msg2_epu32()(auto ref __m128i a, auto ref __m128i b)
+    {
+        return cast(__m128i) __builtin_ia32_sha256msg2(cast(int4) a, cast(int4) b);
+    }
+}
 else version (D_InlineAsm_X86_64)
 {
     __m128i _mm_sha256rnds2_epu32(__m128i a, __m128i b, __m128i k)

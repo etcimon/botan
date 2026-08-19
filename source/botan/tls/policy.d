@@ -38,6 +38,7 @@ public import botan.tls.extensions;
 class TLSPolicy
 {
 public:
+    /// ClientHello / ServerHello extensions this policy will send.
 	Vector!HandshakeExtensionType enabledExtensions() const {
 		auto ret = Vector!HandshakeExtensionType([TLSEXT_SAFE_RENEGOTIATION,
 				TLSEXT_SERVER_NAME_INDICATION,
@@ -150,14 +151,18 @@ public:
     */
     Vector!string allowedSignatureMethods() const
     {
-        return Vector!string([
+        Vector!string sigs = Vector!string([
             "ECDSA",
             "ECDHE_ECDSA",
+            "Ed25519",
 			"RSA",
             "ECDHE_RSA",
 			//"ECDH",
             //"DH",
         ]);
+        static if (is(typeof(BOTAN_HAS_ED448)) && BOTAN_HAS_ED448)
+            sigs.pushBack("Ed448");
+        return sigs.move;
     }
 
     /**

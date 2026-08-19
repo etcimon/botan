@@ -46,8 +46,21 @@ public:
     enum size_t defaultReseedInterval = 1024;
     enum size_t defaultPollBits = 256;
 
+    /// Empty stateful RNG (no underlying; reseed_interval 0).
     this() { m_reseed_interval = 0; m_mutex = new Mutex; }
 
+    /// Event-loop TLS servers are single-threaded; drop the per-call
+    /// lock (callgrind: ~8% Ir in pthread_mutex on HMAC_RNG reseeds).
+    final void unlockForSingleThread()
+    {
+        m_mutex = null;
+    }
+
+    /**
+    * Params:
+    *  underlying = RNG used for reseed
+    *  reseed_interval = requests between reseeds
+    */
     this(RandomNumberGenerator underlying, size_t reseed_interval = defaultReseedInterval)
     {
         m_underlying = underlying;
@@ -58,11 +71,7 @@ public:
     /// Consume seed and mark initialized regardless of length.
     final void initializeWith(const(ubyte)* input, size_t length)
     {
-        synchronized (m_mutex)
-        {
-            doClear();
-            doAddEntropy(input, length);
-        }
+        locked({ doClear(); doAddEntropy(input, length); });
     }
 
     final void initializeWith(const(ubyte)[] input)
@@ -72,22 +81,27 @@ public:
 
     final void forceReseed()
     {
-        synchronized (m_mutex) m_reseed_counter = 0;
+        locked({ m_reseed_counter = 0; });
     }
 
     override bool isSeeded() const
     {
-        synchronized (m_mutex) return m_reseed_counter > 0;
+        if (m_mutex)
+            synchronized (m_mutex) return m_reseed_counter > 0;
+        return m_reseed_counter > 0;
     }
 
     override void clear()
     {
-        synchronized (m_mutex) doClear();
+        locked({ doClear(); });
     }
 
     override void randomize(ubyte* output, size_t length)
     {
-        synchronized (m_mutex) fillBytes(output, length, null, 0);
+        if (auto mx = m_mutex)
+            synchronized (mx) fillBytes(output, length, null, 0);
+        else
+            fillBytes(output, length, null, 0);
     }
 
     override SecureVector!ubyte randomVec(size_t bytes) { return super.randomVec(bytes); }
@@ -96,23 +110,22 @@ public:
     final void randomizeWithInput(ubyte* output, size_t out_len,
                                   const(ubyte)* input, size_t in_len)
     {
-        synchronized (m_mutex) fillBytes(output, out_len, input, in_len);
+        locked({ fillBytes(output, out_len, input, in_len); });
     }
 
     override void addEntropy(const(ubyte)* input, size_t length)
     {
-        synchronized (m_mutex) doAddEntropy(input, length);
+        locked({ doAddEntropy(input, length); });
     }
 
     override void reseed(size_t poll_bits)
     {
-        synchronized (m_mutex)
-        {
+        locked({
             if (m_underlying)
                 doReseedFromRng(m_underlying, poll_bits);
             else
                 doReseedFromSources(poll_bits);
-        }
+        });
     }
 
     abstract size_t securityLevel() const;
@@ -226,6 +239,14 @@ private:
         globalState().pollAvailableSources(accum);
         if (bits_collected >= securityLevel())
             resetCounter();
+    }
+
+    void locked(scope void delegate() dg)
+    {
+        if (auto mx = m_mutex)
+            synchronized (mx) dg();
+        else
+            dg();
     }
 
     Mutex m_mutex;

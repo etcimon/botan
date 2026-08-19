@@ -406,14 +406,13 @@ public:
                 if (state.Version() == TLSProtocolVersion(TLSProtocolVersion.TLS_V13))
                 {
                     Unique!TLS13CertificateVerify cv = new TLS13CertificateVerify(contents);
-                    if (cv.scheme() != TLS13_RSA_PSS_RSAE_SHA256)
-                        throw new TLSException(TLSAlert.ILLEGAL_PARAMETER, "TLS 1.3 CertificateVerify scheme not supported");
                     if (!state.serverCerts() || state.serverCerts().empty)
                         throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "CertificateVerify without certificate");
                     Unique!PublicKey leaf = state.serverCerts().certChain()[0].subjectPublicKey();
                     const string prf = state.ciphersuite().prfAlgo();
                     const(ubyte)[] hs = state.hash().getContents()[];
                     if (!tls13VerifyCertificateVerify(*leaf, SERVER, prf, hs.ptr, hs.length,
+                                                      cv.scheme(),
                                                       cv.signature().ptr, cv.signature().length))
                         throw new TLSException(TLSAlert.DECRYPT_ERROR, "TLS 1.3 CertificateVerify failed");
                     state.hash().update(state.handshakeIo().format(contents, type));
@@ -517,13 +516,16 @@ public:
                                                hs2.ptr, hs2.length);
                     state.tls13SetAppTraffic(app.client_application_traffic.move(),
                                              app.server_application_traffic.move());
+                    // C++ advance_with_server_finished (client): read = s ap
+                    // so 0.5-RTT / NST decrypts; Finished still uses c hs write.
+                    tls13SetReadTrafficKey(state.tls13ServerApp().ptr,
+                                           state.tls13ServerApp().length);
                     auto cvd = tls13FinishedMac(prf, state.tls13ClientHs().ptr, state.tls13ClientHs().length,
                                                 hs2.ptr, hs2.length);
                     state.clientFinished(new Finished(state.handshakeIo(), state.hash(), cvd.move()));
-                    tls13SetRecordKeys(tls13AeadName(state.ciphersuite()), prf,
-                                       state.tls13ClientApp().ptr, state.tls13ClientApp().length,
-                                       state.tls13ServerApp().ptr, state.tls13ServerApp().length,
-                                       CLIENT);
+                    // C++ advance_with_client_finished (client): write = c ap.
+                    tls13SetWriteTrafficKey(state.tls13ClientApp().ptr,
+                                            state.tls13ClientApp().length);
                     auto session_info = new TLSSession(state.serverHello().sessionId().clone,
                                                        state.tls13ServerHs().clone,
                                                        SecureVector!ubyte(),

@@ -31,17 +31,31 @@ interface CertificateStore
 {
 public:
     /**
-    * Subject DN and (optionally) key identifier
+    * Find a certificate by subject DN and optional subject key identifier
+    * Params:
+    *  subject_dn = subject name
+    *  key_id = SKID, or empty to match DN only
+    * Returns: the certificate, or an empty handle
     */
     X509Certificate findCertRef(in X509DN subject_dn, const ref Vector!ubyte key_id) const;
 
+    /// ditto
     final X509Certificate findCert()(in X509DN subject_dn, const auto ref Vector!ubyte key_id) const {
         return findCertRef(subject_dn, key_id);
     }
 
+    /**
+    * Params:
+    *  subject = certificate whose issuer CRL is wanted
+    * Returns: CRL, or empty if this store has none
+    */
     X509CRL findCrlFor(in X509Certificate subject) const;
 
-
+    /**
+    * Params:
+    *  cert = certificate to look up
+    * Returns: true if this store contains cert
+    */
     final bool certificateKnown(in X509Certificate cert) const
     {
         if (!*cert) return false;
@@ -50,7 +64,7 @@ public:
         return cert_ != X509Certificate.init;
     }
 
-    // remove this (used by TLSServer)
+    /// Subject DNs of every certificate in this store (used by TLSServer).
     Vector!X509DN allSubjects() const;
 }
 

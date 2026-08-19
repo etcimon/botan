@@ -285,6 +285,22 @@ PKSigner chooseSigFormat(in PrivateKey key,
     Appender!string padding;
     
     const string algo_name = key.algoName;
+
+    if (algo_name == "Ed25519")
+    {
+        sig_algo.oid = OIDS.lookup("Ed25519");
+        sig_algo.parameters = key.algorithmIdentifier().parameters;
+        return PKSigner(key, "Raw", IEEE_1363);
+    }
+    static if (is(typeof(BOTAN_HAS_ED448)) && BOTAN_HAS_ED448)
+    {
+        if (algo_name == "Ed448")
+        {
+            sig_algo.oid = OIDS.lookup("Ed448");
+            sig_algo.parameters = key.algorithmIdentifier().parameters;
+            return PKSigner(key, "Raw", IEEE_1363);
+        }
+    }
     
     const HashFunction proto_hash = retrieveHash(hash_fn);
     if (!proto_hash)

@@ -15,8 +15,8 @@ static if (BOTAN_HAS_TLS):
 package:
 
 import botan.algo_base.symkey;
-import botan.tls.handshake_state;
-import botan.tls.messages;
+import botan.kdf.kdf;
+import botan.utils.types;
 
 /**
 * TLS TLSSession Keys
@@ -40,7 +40,7 @@ public:
     /**
     * TLSSessionKeys Constructor
     */
-    this()(in HandshakeState state, auto ref SecureVector!ubyte pre_master_secret, bool resuming)
+    this(HS)(in HS state, auto ref SecureVector!ubyte pre_master_secret, bool resuming)
     {
         const size_t cipher_keylen = state.ciphersuite().cipherKeylen();
         const size_t mac_keylen = state.ciphersuite().macKeylen();

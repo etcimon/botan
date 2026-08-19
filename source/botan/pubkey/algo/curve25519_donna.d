@@ -25,6 +25,8 @@
  * This is, almost, a clean room reimplementation from the curve25519 paper. It
  * uses many of the tricks described therein. Only the crecip function is taken
  * from the sample implementation.
+ *
+ * (C) 2014-2026 Etienne Cimon (D port; LDC x86_64 fmul / fsquareTimes)
  */
 module botan.pubkey.algo.curve25519_donna;
 
@@ -34,6 +36,8 @@ import botan.utils.donna128;
 import botan.utils.mul128;
 import botan.utils.loadstor;
 import botan.utils.mem_ops;
+version (LDC)
+	import ldc.intrinsics : llvm_uadd_with_overflow;
 
 package
 int curve25519Donna(ubyte* mypublic, const ubyte* secret, const ubyte* basepoint) {
@@ -62,6 +66,57 @@ private:
 
 alias uint128_t = donna128;
 alias limb = ulong;
+
+version (LDC)
+{
+	// WSL LDC 1.41 miscompiles fmul_ldc/fsquareTimes_ldc: OpenSSL
+	// cannot decrypt TLS 1.3 EE (HS keys diverge). Portable donna
+	// matches RFC 7748 KATs. Re-enable after an LDC 1.41 vs 1.42 A/B.
+	version (X86_64)
+		enum DonnaLdcX64 = false;
+	else
+		enum DonnaLdcX64 = false;
+}
+else
+	enum DonnaLdcX64 = false;
+
+static if (DonnaLdcX64)
+{
+	pragma(inline, true)
+	void mulq(ulong a, ulong b, ref ulong lo, ref ulong hi)
+	{
+		asm pure nothrow @nogc {
+			"mulq %3"
+			: "=a"(lo), "=d"(hi)
+			: "a"(a), "r"(b)
+			: "cc";
+		}
+	}
+
+	pragma(inline, true)
+	void add128(ref ulong lo, ref ulong hi, ulong xlo, ulong xhi)
+	{
+		auto r = llvm_uadd_with_overflow(lo, xlo);
+		lo = r.result;
+		hi += xhi + (r.overflow ? 1UL : 0);
+	}
+
+	pragma(inline, true)
+	void maddq(ref ulong lo, ref ulong hi, ulong a, ulong b)
+	{
+		ulong mlo, mhi;
+		mulq(a, b, mlo, mhi);
+		add128(lo, hi, mlo, mhi);
+	}
+
+	pragma(inline, true)
+	ulong shr51(ulong lo, ulong hi)
+	{
+		return (lo >> 51) | (hi << 13);
+	}
+
+	enum limb MASK51 = 0x7ffffffffffff;
+}
 
 /* Sum two numbers: output += in */
 void fsum(limb* output, const limb* input)
@@ -122,6 +177,11 @@ void fscalarProduct(limb* output, const limb* input, const limb scalar) {
  */
 void fmul(limb* output, const limb* input2, const limb* input) 
 {
+	static if (DonnaLdcX64) {
+		fmul_ldc(output, input2, input);
+		return;
+	}
+
 	uint128_t[5] t = void;
 	limb r0,r1,r2,r3,r4,s0,s1,s2,s3,s4,c;
 	
@@ -169,8 +229,63 @@ void fmul(limb* output, const limb* input2, const limb* input)
 	output[4] = r4;
 }
 
+static if (DonnaLdcX64)
+{
+	void fmul_ldc(limb* output, const limb* input2, const limb* input)
+	{
+		limb r0 = input[0];
+		limb r1 = input[1];
+		limb r2 = input[2];
+		limb r3 = input[3];
+		limb r4 = input[4];
+		const limb s0 = input2[0];
+		const limb s1 = input2[1];
+		const limb s2 = input2[2];
+		const limb s3 = input2[3];
+		const limb s4 = input2[4];
+
+		ulong t0l, t0h, t1l, t1h, t2l, t2h, t3l, t3h, t4l, t4h;
+
+		mulq(r0, s0, t0l, t0h);
+		mulq(r0, s1, t1l, t1h); maddq(t1l, t1h, r1, s0);
+		mulq(r0, s2, t2l, t2h); maddq(t2l, t2h, r2, s0); maddq(t2l, t2h, r1, s1);
+		mulq(r0, s3, t3l, t3h); maddq(t3l, t3h, r3, s0); maddq(t3l, t3h, r1, s2); maddq(t3l, t3h, r2, s1);
+		mulq(r0, s4, t4l, t4h); maddq(t4l, t4h, r4, s0); maddq(t4l, t4h, r3, s1); maddq(t4l, t4h, r1, s3); maddq(t4l, t4h, r2, s2);
+
+		r4 *= 19;
+		r1 *= 19;
+		r2 *= 19;
+		r3 *= 19;
+
+		maddq(t0l, t0h, r4, s1); maddq(t0l, t0h, r1, s4); maddq(t0l, t0h, r2, s3); maddq(t0l, t0h, r3, s2);
+		maddq(t1l, t1h, r4, s2); maddq(t1l, t1h, r2, s4); maddq(t1l, t1h, r3, s3);
+		maddq(t2l, t2h, r4, s3); maddq(t2l, t2h, r3, s4);
+		maddq(t3l, t3h, r4, s4);
+
+		r0 = t0l & MASK51; limb c = shr51(t0l, t0h);
+		add128(t1l, t1h, c, 0); r1 = t1l & MASK51; c = shr51(t1l, t1h);
+		add128(t2l, t2h, c, 0); r2 = t2l & MASK51; c = shr51(t2l, t2h);
+		add128(t3l, t3h, c, 0); r3 = t3l & MASK51; c = shr51(t3l, t3h);
+		add128(t4l, t4h, c, 0); r4 = t4l & MASK51; c = shr51(t4l, t4h);
+		r0 += c * 19; c = r0 >> 51; r0 &= MASK51;
+		r1 += c;      c = r1 >> 51; r1 &= MASK51;
+		r2 += c;
+
+		output[0] = r0;
+		output[1] = r1;
+		output[2] = r2;
+		output[3] = r3;
+		output[4] = r4;
+	}
+}
+
 void fsquareTimes(limb* output, const limb* input, limb count) 
 {
+	static if (DonnaLdcX64) {
+		fsquareTimes_ldc(output, input, count);
+		return;
+	}
+
 	uint128_t[5] t;
 	limb r0,r1,r2,r3,r4,c;
 	limb d0,d1,d2,d4,d419;
@@ -209,6 +324,49 @@ void fsquareTimes(limb* output, const limb* input, limb count)
 	output[2] = r2;
 	output[3] = r3;
 	output[4] = r4;
+}
+
+static if (DonnaLdcX64)
+{
+	void fsquareTimes_ldc(limb* output, const limb* input, limb count)
+	{
+		limb r0 = input[0];
+		limb r1 = input[1];
+		limb r2 = input[2];
+		limb r3 = input[3];
+		limb r4 = input[4];
+
+		do {
+			const limb d0 = r0 * 2;
+			const limb d1 = r1 * 2;
+			const limb d2 = r2 * 2 * 19;
+			const limb d419 = r4 * 19;
+			const limb d4 = d419 * 2;
+
+			ulong t0l, t0h, t1l, t1h, t2l, t2h, t3l, t3h, t4l, t4h;
+
+			mulq(r0, r0, t0l, t0h); maddq(t0l, t0h, d4, r1); maddq(t0l, t0h, d2, r3);
+			mulq(d0, r1, t1l, t1h); maddq(t1l, t1h, d4, r2); maddq(t1l, t1h, r3, r3 * 19);
+			mulq(d0, r2, t2l, t2h); maddq(t2l, t2h, r1, r1); maddq(t2l, t2h, d4, r3);
+			mulq(d0, r3, t3l, t3h); maddq(t3l, t3h, d1, r2); maddq(t3l, t3h, r4, d419);
+			mulq(d0, r4, t4l, t4h); maddq(t4l, t4h, d1, r3); maddq(t4l, t4h, r2, r2);
+
+			r0 = t0l & MASK51; limb c = shr51(t0l, t0h);
+			add128(t1l, t1h, c, 0); r1 = t1l & MASK51; c = shr51(t1l, t1h);
+			add128(t2l, t2h, c, 0); r2 = t2l & MASK51; c = shr51(t2l, t2h);
+			add128(t3l, t3h, c, 0); r3 = t3l & MASK51; c = shr51(t3l, t3h);
+			add128(t4l, t4h, c, 0); r4 = t4l & MASK51; c = shr51(t4l, t4h);
+			r0 += c * 19; c = r0 >> 51; r0 &= MASK51;
+			r1 += c;      c = r1 >> 51; r1 &= MASK51;
+			r2 += c;
+		} while (--count);
+
+		output[0] = r0;
+		output[1] = r1;
+		output[2] = r2;
+		output[3] = r3;
+		output[4] = r4;
+	}
 }
 
 /* Load a little-endian 64-bit number    */

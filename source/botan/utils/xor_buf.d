@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 1999-2008 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -20,7 +20,33 @@ pure {
     *  input = the read-only input buffer
     *  length = the length of the buffers
     */
+    void xorBuf(ubyte* output, const(ubyte)* input, size_t length)
+    {
+        while (length >= 32)
+        {
+            *cast(ulong*) output ^= *cast(const ulong*) input;
+            *cast(ulong*)(output + 8) ^= *cast(const ulong*)(input + 8);
+            *cast(ulong*)(output + 16) ^= *cast(const ulong*)(input + 16);
+            *cast(ulong*)(output + 24) ^= *cast(const ulong*)(input + 24);
+            output += 32; input += 32; length -= 32;
+        }
+        while (length >= 16)
+        {
+            *cast(ulong*) output ^= *cast(const ulong*) input;
+            *cast(ulong*)(output + 8) ^= *cast(const ulong*)(input + 8);
+            output += 16; input += 16; length -= 16;
+        }
+        while (length >= 8)
+        {
+            *cast(ulong*) output ^= *cast(const ulong*) input;
+            output += 8; input += 8; length -= 8;
+        }
+        foreach (i; 0 .. length)
+            output[i] ^= input[i];
+    }
+
     void xorBuf(T)(T* output, const(T)* input, size_t length)
+        if (!is(T == ubyte))
     {
         while (length >= 8)
         {
@@ -40,10 +66,36 @@ pure {
     *  input2 = the second output buffer
     *  length = the length of the three buffers
     */
+    void xorBuf(ubyte* output, const(ubyte)* input, const(ubyte)* input2, size_t length)
+    {
+        while (length >= 32)
+        {
+            *cast(ulong*) output = (*cast(const ulong*) input) ^ (*cast(const ulong*) input2);
+            *cast(ulong*)(output + 8) = (*cast(const ulong*)(input + 8)) ^ (*cast(const ulong*)(input2 + 8));
+            *cast(ulong*)(output + 16) = (*cast(const ulong*)(input + 16)) ^ (*cast(const ulong*)(input2 + 16));
+            *cast(ulong*)(output + 24) = (*cast(const ulong*)(input + 24)) ^ (*cast(const ulong*)(input2 + 24));
+            output += 32; input += 32; input2 += 32; length -= 32;
+        }
+        while (length >= 16)
+        {
+            *cast(ulong*) output = (*cast(const ulong*) input) ^ (*cast(const ulong*) input2);
+            *cast(ulong*)(output + 8) = (*cast(const ulong*)(input + 8)) ^ (*cast(const ulong*)(input2 + 8));
+            output += 16; input += 16; input2 += 16; length -= 16;
+        }
+        while (length >= 8)
+        {
+            *cast(ulong*) output = (*cast(const ulong*) input) ^ (*cast(const ulong*) input2);
+            output += 8; input += 8; input2 += 8; length -= 8;
+        }
+        foreach (i; 0 .. length)
+            output[i] = input[i] ^ input2[i];
+    }
+
     void xorBuf(T)(T* output,
                    const(T)* input,
                    const(T)* input2,
                    size_t length)
+        if (!is(T == ubyte))
     {
         while (length >= 8)
         {

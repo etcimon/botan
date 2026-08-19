@@ -62,13 +62,16 @@ public:
         if (ws.length < p_words + 1)
             ws.resize(p_words + 1);
         
-        //FIXME: take into account bound if > 0
-        while(true)
+        // Subtract P from (p_words+1) limbs so a residual high word (Solinas
+        // carry, P-521 fold) is reduced. Bound is a hint only; loop until x < p.
+        while (true)
         {
-            if (bigint_sub3(ws.ptr, x.ptr, p_words, prime, p_words)) // borrow?
+            if (bigint_sub3(ws.ptr, x.ptr, p_words + 1, prime, p_words))
                 break;
             
             x.swapReg(ws);
+            if (ws.length < p_words + 1)
+                ws.resize(p_words + 1);
         }
     }
 
@@ -339,26 +342,46 @@ struct CurveGFp
     */
     ref const(BigInt) getBRep() const return { return m_repr.getBRep(); }
 
+    /**
+    * Convert `x` into the curve representation (Montgomery or NIST).
+    * Params:
+    *  x = integer to convert in place
+    *  ws = workspace
+    */
     void toRep()(BigInt* x, SecureVector!word ws) const
     { 
         m_repr.toCurveRep(x, ws); 
     }
 
+    /// ditto
     void toRep()(BigInt* x, ref SecureVector!word ws) const
     { 
         m_repr.toCurveRep(x, ws); 
     }
-    
+
+    /**
+    * Convert `x` out of the curve representation.
+    * Params:
+    *  x = integer to convert in place
+    *  ws = workspace
+    */
     void fromRep(BigInt* x, SecureVector!word ws) const 
     { 
         m_repr.fromCurveRep(x, ws);
     }
 
+    /// ditto
     void fromRep(BigInt* x, ref SecureVector!word ws) const 
     { 
         m_repr.fromCurveRep(x, ws);
     }
-    
+
+    /**
+    * Params:
+    *  x = integer in curve representation
+    *  ws = workspace
+    * Returns: a copy of `x` converted out of the curve representation
+    */
     BigInt fromRep()(const(BigInt)* x, ref SecureVector!word ws) const
     { 
         BigInt xt = x.clone;
@@ -410,24 +433,24 @@ struct CurveGFp
 
     // TODO: fromRep taking && ref
 
-    void mul()(BigInt* z, const(BigInt)* x, const(BigInt*) y, SecureVector!word ws) const
+    void mul()(BigInt* z, const(BigInt)* x, const(BigInt*) y, ref SecureVector!word ws) const
     {
         m_repr.curveMul(z, x, y, ws);
     }
 
-    BigInt mul()(const(BigInt)* x, const(BigInt*) y, SecureVector!word ws) const
+    BigInt mul()(const(BigInt)* x, const(BigInt*) y, ref SecureVector!word ws) const
     {
         BigInt z;
         m_repr.curveMul(z, x, y, ws);
         return z.move;
     }
 
-    void sqr()(BigInt* z, const(BigInt)* x, SecureVector!word ws) const
+    void sqr()(BigInt* z, const(BigInt)* x, ref SecureVector!word ws) const
     {
         m_repr.curveSqr(z, x, ws);
     }
 
-    BigInt sqr()(const(BigInt)* x, SecureVector!word ws) const
+    BigInt sqr()(const(BigInt)* x, ref SecureVector!word ws) const
     {
         BigInt z;
         m_repr.curveSqr(z, x, ws);
@@ -456,8 +479,8 @@ struct CurveGFp
 
     static CurveGFpRepr chooseRepr()(BigInt* p, BigInt* a, BigInt* b)
     {
-        if (p == CurveGFpP521.prime)
-            return cast(CurveGFpRepr) new CurveGFpP521(a, b);
+        if (CurveGFpP256.matchesPrime(p))
+            return cast(CurveGFpRepr) new CurveGFpP256(a, b);
         return cast(CurveGFpRepr) new CurveGFpMontgomery(p, a, b);
     }
 

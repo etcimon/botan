@@ -28,15 +28,21 @@ final class CTRBE : StreamCipher, SymmetricAlgorithm
 public:
     override void cipher(const(ubyte)* input, ubyte* output, size_t length)
     {
-        while (length >= m_pad.length - m_pad_pos)
+        // Raw pad pointer: Vector.opIndex was 9.75% exclusive Ir on /64k
+        // (bounds check on every increment_counter / xorBuf offset).
+        auto pad = m_pad.ptr;
+        const size_t pad_len = m_pad.length;
+        while (length >= pad_len - m_pad_pos)
         {
-            xorBuf(output, input, &m_pad[m_pad_pos], m_pad.length - m_pad_pos);
-            length -= (m_pad.length - m_pad_pos);
-            input += (m_pad.length - m_pad_pos);
-            output += (m_pad.length - m_pad_pos);
+            const size_t n = pad_len - m_pad_pos;
+            xorBuf(output, input, pad + m_pad_pos, n);
+            length -= n;
+            input += n;
+            output += n;
             increment_counter();
+            pad = m_pad.ptr;
         }
-        xorBuf(output, input, &m_pad[m_pad_pos], length);
+        xorBuf(output, input, pad + m_pad_pos, length);
         m_pad_pos += length;
     }
 
@@ -54,16 +60,15 @@ public:
         zeroise(m_counter);
         copyMem(m_counter.ptr, m_iv.ptr, bs);
 
-        // Set m_counter blocks to IV, IV + 1, ... IV + 255
-        foreach (size_t i; 1 .. 256)
+        // Set m_counter blocks to IV, IV + 1, ... IV + (pad_blocks-1)
+        auto ctr = m_counter.ptr;
+        foreach (size_t i; 1 .. m_pad_blocks)
         {
-            copyMem(&m_counter[i*bs], &m_counter[(i-1)*bs], bs);
-            foreach (size_t j; 0 .. m_ctr_size)
-                if (++(m_counter[i*bs + (bs - 1 - j)]))
-                    break;
+            copyMem(ctr + i * bs, ctr + (i - 1) * bs, bs);
+            addToCounter(ctr + i * bs, 1);
         }
 
-        m_cipher.encryptN(m_counter.ptr, m_pad.ptr, 256);
+        m_cipher.encryptN(m_counter.ptr, m_pad.ptr, m_pad_blocks);
         m_pad_pos = 0;
     }
 
@@ -101,7 +106,7 @@ public:
     }
 
     override CTRBE clone() const
-    { return new CTRBE(m_cipher.clone(), m_ctr_size); }
+    { return new CTRBE(m_cipher.clone(), m_ctr_size, m_pad_blocks); }
 
     override void clear()
     {
@@ -116,8 +121,9 @@ public:
     * Params:
     *  ciph = the underlying block cipher to use
     *  ctr_size = counter width in bytes (default = block size)
+    *  pad_blocks = precomputed keystream blocks (default 256; GCM uses 32)
     */
-    this(BlockCipher ciph, size_t ctr_size = 0)
+    this(BlockCipher ciph, size_t ctr_size = 0, size_t pad_blocks = 256)
     {
         // Unique.opAssign nulls `ciph`; read sizes before taking ownership.
         const size_t bs = ciph.blockSize();
@@ -125,7 +131,10 @@ public:
         m_ctr_size = ctr_size ? ctr_size : bs;
         if (m_ctr_size < 4 || m_ctr_size > bs)
             throw new InvalidArgument("Invalid CTR-BE counter size");
-        m_counter = 256 * bs;
+        if (pad_blocks < 1 || pad_blocks > 256)
+            throw new InvalidArgument("Invalid CTR-BE pad blocks");
+        m_pad_blocks = pad_blocks;
+        m_counter = pad_blocks * bs;
         m_pad = m_counter.length;
         m_iv = SecureVector!ubyte(bs);
         m_pad_pos = 0;
@@ -140,26 +149,34 @@ protected:
         setIv(null, 0);
     }
 
+    /// Add `n` to the big-endian `m_ctr_size`-byte counter at the end of `blk`.
+    void addToCounter(ubyte* blk, size_t n)
+    {
+        size_t off = m_block_size - 1;
+        size_t x = n;
+        foreach (size_t j; 0 .. m_ctr_size)
+        {
+            x += blk[off - j];
+            blk[off - j] = cast(ubyte) x;
+            x >>= 8;
+            if (x == 0)
+                return;
+        }
+    }
+
     /*
-    * Increment the counter and update the buffer
+    * Increment each precomputed counter by pad_blocks and refill the pad.
+    * (pad_blocks == 256 used to skip the lowest byte; that is add-256 only.)
     */
     void increment_counter()
     {
-        const size_t bs = m_cipher.blockSize();
-        
-        /*
-        * Each counter value always needs to be incremented by 256,
-        * so we don't touch the lowest ubyte and instead treat it as
-        * an increment of one starting with the next ubyte.
-        */
-        foreach (size_t i; 0 .. 256)
-        {
-            foreach (size_t j; 1 .. m_ctr_size)
-                if (++(m_counter[i*bs + (bs - 1 - j)]))
-                    break;
-        }
-        
-        m_cipher.encryptN(m_counter.ptr, m_pad.ptr, 256);
+        const size_t bs = m_block_size;
+        const size_t n = m_pad_blocks;
+        auto ctr = m_counter.ptr;
+        foreach (size_t i; 0 .. n)
+            addToCounter(ctr + i * bs, n);
+
+        m_cipher.encryptN(ctr, m_pad.ptr, n);
         m_pad_pos = 0;
     }
 
@@ -168,4 +185,5 @@ protected:
     size_t m_pad_pos;
     size_t m_block_size;
     size_t m_ctr_size;
+    size_t m_pad_blocks;
 }

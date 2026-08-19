@@ -17,6 +17,8 @@ It is not a dump of C++ `asm volatile` or a new runner.
 | Module | `static if (BOTAN_HAS_AES_NI)` around `aes_ni.d`; portable `aes.d` stays `version(AES)` |
 | Engine | `AESISAEngine` / `SIMDEngine` / `AssemblerEngine` register the same **SCAN name** (`"AES-128"`) with a higher provider weight; `CPUID.hasSsse3()` etc. at **find** time (`simd_engine.d:38–44`) |
 | Intrinsics | `utils/simd/{emmintrin,tmmintrin,wmmintrin,immintrin}.d` — **`version(GDC)` builtins**, **`version(D_InlineAsm_X86_64)`** / DMD-style asm, **LDC** via `core.simd` / LLVM (`wmmintrin.d:31+`) |
+| LDC 64×64→128 | `utils/mul128.d` `BotanLdcX64Asm` GCC-style `mulq`. `donna128 * ulong` is a full `(h:l)*y` via `mul64x64_128` (release used to multiply only `l` and `assert h==0`, which `-b release` strips — TLS 1.3 X25519 SS started with 8 zero bytes). `DonnaLdcX64` `fmul`/`fsquareTimes` stay off until re-checked against OpenSSL EE. `botan-math` `word_add`/`word_sub` stay portable `pragma(inline, true)` (LDC `%b1` → LLVM `$b1` is invalid). |
+| P-256 Solinas | `ec_gfp/curve_nistp.d` `CurveGFpP256` (not a `version`; identity field rep). Botan 1.11 `redc_p256` column sums + in-place P-sub on a `word[8]` product (`comba_mul4`/`sqr4`). `chooseRepr` matches the secp256r1 prime by limbs. Replaces Montgomery `monty_redc`/`monty_cios4` on the ECDSA P-256 TLS 1.3 path. |
 | Compiler detect | `D_InlineAsm_X86` / `D_InlineAsm_X86_64` → `BOTAN_HAS_DMD_X86_*_INLINE_ASM` (`constants.d:89–94`) |
 
 Portable `CoreEngine` must keep working when every accel `version` is off

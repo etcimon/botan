@@ -6,6 +6,53 @@ All Botan C++ algorithm changes are mirrored in this library.
 
 The C++ change log is at https://botan.randombit.net/news.html
 
+v3.13.2
+-------------------
+
+ - `full` x86_64/LDC now registers `Engine_AES_ISA` (was only on `standard`).
+   AES-128/GCM TLS records were bitsliced software AES (~35% Ir on `/64k`).
+ - LDC CPUID always ORs `core.cpuid` AES-NI/CLMUL/SSSE3 bits (probe used to
+   miss them; `hasAesNi` stayed false).
+ - LDC AES-NI uses `ldc.gccbuiltins_x86` (`-mattr=+aes,+pclmul,+ssse3`) instead
+   of per-round `movdqu` Intel asm. GHASH CLMUL on LDC uses the same single
+   `asm` block as DMD (`USE_ASM`). TLS 1.3 record encrypt copies with
+   `copyMem` and a reused inner buffer.
+ - TLS 1.3 `prepareRecords` encrypts in place in a reused output buffer.
+ - `xorBuf` for `ubyte*` uses unaligned `ulong` loads (CTR + GHASH).
+ - GHASH CLMUL 64- then 128-byte aggregated stripes (`H…H^8`) on LDC.
+ - LDC GHASH keeps pre-byteswapped `H^i` and Karatsuba (3×PCLMUL) accumulates;
+   TLS 1.3 GCM encrypt stripes CTR+GHASH per 128 bytes.
+ - LDC AES-NI load/xor/store stay in XMM (`long2` / `a^b`) instead of the
+   spilled emmintrin Intel-asm helpers (~10% exclusive Ir on `/64k`).
+ - CTR-BE `pad_blocks` (default 256); GCM uses 32 and adds N to each
+   counter (skip-LSB was 256-only). GHASH byte shifts use `pslldq`/`psrldq`.
+ - LDC x86_64 CPUID uses the `cpuid` instruction (`ldc.llvmasm`); GHASH
+   CLMUL requires CLMUL+SSSE3+SSE2 (`hasGcmClmul`) so a CLMUL-only CPU
+   cannot pshufb-SIGILL. AES-NI find also requires SSE2. LDC `psrldq`/
+   `pslldq` live in `emmintrin` (LLVM asm opcode; no gccbuiltin). SHA-NI
+   wrappers pin SHA256RNDS2's implicit XMM0 (`ldc.llvmasm`); `load_be` uses
+   SSSE3 `pshufb` (C++ SIMD_4x32). SIMDEngine SHA-NI find is on when
+   `hasIntelSha()` (`curl` TLS 1.3 `/hello` 200). `-mattr=+sha`.
+ - LDC GHASH byte shifts (`gcmSlliBytes` / `gcmSrliBytes` / emmintrin
+   `_mm_slli_si128`) use a long2 move for 8 bytes and SSSE3 `pshufb` for
+   4/12: `ldc.llvmasm` `psrldq` did not inline (`_mm_srli_si128!(8)` was
+   ~15% exclusive Ir on keep-alive `/64k`). CTR-BE `cipher` / increment
+   use the pad/counter raw pointer (no `Vector.opIndex`). `xorBuf` is a
+   32-byte `ulong` unroll without `arrayOp`. TLS 1.3 skip-copy of the
+   inner plaintext is not used: a split GHASH of `pt` then the type byte
+   is not the same as one GHASH of `pt||type` when `pt_len % 16 != 0`.
+ - Public C++-ported types (TLS endpoints, PK keys, AEAD/KDF/PBKDF/MAC
+   bases, TLS 1.3 record/cipher, ML-KEM, Ed25519, Argon2 PHC) carry the
+   1.12/1.13 DDoc form (`Params:` / `Returns:`) so code-d can hover them.
+   Also ML-DSA, SLH-DSA, Ed448, X448, XMSS, HSS/LMS, SM2, ECIES, FrodoKEM,
+   Classic McEliece, ElGamal, ECGDSA, EC-KCDSA, Argon2/Scrypt ctors,
+   NR, RW, GOST-34.10, Hybrid KEM, SHAKE, ChaCha, OCSP request, BER/DER,
+   X.509 CRL isRevoked, HOTP/TOTP, SipHash, AutoSeededRNG, AlgorithmIdentifier,
+   XOF, RFC 6979, GMAC/KMAC, DLIES, BigInt toString, SPAKE2+, ModularReducer,
+   HKDF Extract/Expand, remaining hashes/modes (SHA-1, MD5, SM3, Streebog,
+   BLAKE2s, SHA-3, CFB, ECB, CBC, XTS, GCM-SIV, ChaCha20-Poly1305), NIST
+   keywrap, ZFEC, PKCS#12, Roughtime, KDFs, ChaCha_RNG. Signatures are unchanged.
+
 v3.13.1
 -------------------
 

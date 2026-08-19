@@ -30,7 +30,7 @@ public:
                                 AlgorithmFactory af) const
     {
         static if (BOTAN_HAS_AES_NI) {
-            if (CPUID.hasAesNi())
+            if (CPUID.hasAesNi() && CPUID.hasSse2())
             {
                 if (request.algoName == "AES-128")
                     return new AES128NI;

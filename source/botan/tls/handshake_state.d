@@ -20,10 +20,10 @@ import botan.tls.session_key;
 import botan.tls.ciphersuite;
 import botan.tls.exceptn;
 import botan.tls.messages;
+import botan.tls.session_msgs;
 import botan.pubkey.pk_keys;
 import botan.pubkey.pubkey;
 import botan.kdf.kdf;
-import botan.tls.messages;
 import botan.tls.record;
 
 package:

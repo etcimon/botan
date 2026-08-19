@@ -20,34 +20,66 @@ import botan.utils.simd.emmintrin;
 import botan.utils.simd.shaintrin;
 import botan.utils.types;
 
-private __m128i loadBe(__m128i v)
-{
-    const SHUF = _MM_SHUFFLE(2, 3, 0, 1);
-    v = _mm_shufflehi_epi16!SHUF(v);
-    v = _mm_shufflelo_epi16!SHUF(v);
-    return _mm_or_si128(_mm_srli_epi16!8(v), _mm_slli_epi16!8(v));
-}
-
 private __m128i loadBePtr(const(ubyte)* p)
 {
-    return loadBe(_mm_loadu_si128(cast(const(__m128i)*) p));
+    // C++ SIMD_4x32::load_be: pshufb each dword. SHA-NI CPUs have SSSE3.
+    version (LDC)
+    {
+        import ldc.gccbuiltins_x86 : __builtin_ia32_pshufb128;
+        import core.simd : byte16;
+        ulong[2] t = void;
+        t[0] = *cast(const ulong*) p;
+        t[1] = *(cast(const ulong*) p + 1);
+        immutable byte16 m = byte16([3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12]);
+        return cast(__m128i) __builtin_ia32_pshufb128(*cast(byte16*) t.ptr, m);
+    }
+    else
+    {
+        align(16) uint[4] t;
+        t[0] = loadBigEndian!uint(p, 0);
+        t[1] = loadBigEndian!uint(p, 1);
+        t[2] = loadBigEndian!uint(p, 2);
+        t[3] = loadBigEndian!uint(p, 3);
+        return _mm_loadu_si128(cast(__m128i*) t.ptr);
+    }
 }
 
 private __m128i alignr4(__m128i a, __m128i b)
 {
-    return _mm_or_si128(_mm_srli_si128!4(b), _mm_slli_si128!12(a));
+    version (LDC)
+    {
+        import ldc.llvmasm : __asm;
+        return __asm!__m128i("palignr $$4, $2, $0", "=x,0,x", a, b);
+    }
+    else
+        return _mm_or_si128(_mm_srli_si128!4(b), _mm_slli_si128!12(a));
 }
 
 private __m128i alignr8(__m128i a, __m128i b)
 {
-    return _mm_or_si128(_mm_srli_si128!8(b), _mm_slli_si128!8(a));
+    version (LDC)
+    {
+        import ldc.llvmasm : __asm;
+        return __asm!__m128i("palignr $$8, $2, $0", "=x,0,x", a, b);
+    }
+    else
+        return _mm_or_si128(_mm_srli_si128!8(b), _mm_slli_si128!8(a));
 }
 
 private __m128i blendHi64(__m128i lo_src, __m128i hi_src)
 {
-    const lo = _mm_set_epi32(0, 0, cast(int) 0xFFFFFFFF, cast(int) 0xFFFFFFFF);
-    const hi = _mm_set_epi32(cast(int) 0xFFFFFFFF, cast(int) 0xFFFFFFFF, 0, 0);
-    return _mm_or_si128(_mm_and_si128(lo_src, lo), _mm_and_si128(hi_src, hi));
+    version (LDC)
+    {
+        import ldc.llvmasm : __asm;
+        // pblendw imm 0xF0: high 64 from hi_src, low 64 from lo_src.
+        return __asm!__m128i("pblendw $$0xF0, $2, $0", "=x,0,x", lo_src, hi_src);
+    }
+    else
+    {
+        const lo = _mm_set_epi32(0, 0, cast(int) 0xFFFFFFFF, cast(int) 0xFFFFFFFF);
+        const hi = _mm_set_epi32(cast(int) 0xFFFFFFFF, cast(int) 0xFFFFFFFF, 0, 0);
+        return _mm_or_si128(_mm_and_si128(lo_src, lo), _mm_and_si128(hi_src, hi));
+    }
 }
 
 private void sha256Rnds4(ref __m128i S0, ref __m128i S1, __m128i msg, __m128i k)

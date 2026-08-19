@@ -46,6 +46,9 @@ engines ASM/SIMD unless
 **`standard` x86_64 extras (useful, not historic):** `AES_NI`, `SIMD_SSE2`,
 `AES_SSSE3`, `Engine_AES_ISA`, `Engine_SIMD`, `Entropy_Rdrand` — same idea as
 today’s `full` arch extras, minus ISA toys that only back retired ciphers.
+`full` `versions-x86_64` / `versions-x86_64-ldc` also list `Engine_AES_ISA`
+(3.13.2): AES-NI was compiled (`AES_NI`) but never registered, so GCM used
+bitsliced `AES128`.
 New ASM ports follow `asm-accel.md`: own constant, `versions-<arch>` only,
 LDC/GDC/DMD-shaped, same `dub test` vectors as the portable algo.
 

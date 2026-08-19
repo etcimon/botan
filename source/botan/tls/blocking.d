@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 2013,2015 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -21,10 +21,11 @@ import botan.tls.channel;
 import botan.tls.session_manager;
 import botan.tls.version_;
 import botan.utils.mem_ops;
-import memutils.circularbuffer;
+import memutils.unreadring;
 import memutils.utils;
 import std.algorithm;
 
+/// Fill `buf` from the socket; return the slice actually read (empty on EOF).
 alias DataReader = ubyte[] delegate(ubyte[]);
 
 /**
@@ -36,7 +37,21 @@ public:
     @disable this(this);
     @disable this();
 
-    /// Client constructor
+    /**
+    * TLS client over blocking read/write callbacks
+    * Params:
+    *  read_fn = ciphertext from the socket
+    *  write_fn = ciphertext to the socket
+    *  alert_cb = called when a TLS alert is received
+    *  hs_cb = called when a handshake completes
+    *  session_manager = stores resumable sessions
+    *  creds = client certificates (optional)
+    *  policy = connection policy
+    *  rng = random number generator
+    *  server_info = SNI hostname / service
+    *  offer_version = ClientHello version (default latestTlsVersion, TLS 1.2)
+    *  next_protocols = ALPN offer
+    */
     this(DataReader read_fn,
          DataWriter write_fn,
 		 OnAlert alert_cb,
@@ -59,7 +74,22 @@ public:
             policy, rng, server_info, offer_version, next_protocols.move);
     }
 
-    /// Server constructor
+    /**
+    * TLS server over blocking read/write callbacks
+    * Params:
+    *  read_fn = ciphertext from the socket
+    *  write_fn = ciphertext to the socket
+    *  alert_cb = called when a TLS alert is received
+    *  hs_cb = called when a handshake completes
+    *  session_manager = stores resumable sessions
+    *  creds = server certificates and keys
+    *  policy = connection policy
+    *  rng = random number generator
+    *  next_proto = ALPN selector, or null
+    *  sni_handler = optional hostname credentials switch
+    *  is_datagram = true for DTLS
+    *  io_buf_sz = preallocated I/O buffer size
+    */
     this(DataReader read_fn,
          DataWriter write_fn,
 		 OnAlert alert_cb,
@@ -101,14 +131,18 @@ public:
     * Number of bytes pending read in the plaintext buffer (bytes
     * readable without blocking)
     */
-	size_t pending() const { return m_plaintext.length; }
+	size_t pending() const { return unreadLength; }
 
 	/// Returns an array of pending data
 	const(ubyte)[] peek() {
-		return m_plaintext.length > 0 ? m_plaintext.peek : null;
+		return unreadLength > 0 ? unreadPeek() : null;
 	}
 
-    /// Reads until the destination ubyte array is full, utilizing internal buffers if necessary
+    /**
+    * Block until `dest` is filled from decrypted plaintext
+    * Params:
+    *  dest = output buffer (must be non-empty)
+    */
     void read(ubyte[] dest) 
     {
 		enforce(dest.length > 0, "Empty destination array");
@@ -126,22 +160,24 @@ public:
     }
 
     /**
-    * Blocking ( if !pending() ) read, will return at least 1 ubyte or 0 on connection close
-    *  supports replacement of internal read buffer when called until buf.length != returned buffer length
+    * Blocking read if pending() is 0. Returns at least 1 byte, or empty on close.
+    * Params:
+    *  buf = destination; a shorter return than buf.length means a short read
+    * Returns: slice of buf that was filled
     */
 	ubyte[] readBuf(ubyte[] buf)
     {
 		m_reading = true;
 		scope(exit) m_reading = false;
 
-		if (m_plaintext.length != 0) {
-			size_t len = min(m_plaintext.length, buf.length);
-			m_plaintext.read(buf[0 .. len]);
+		if (unreadLength != 0) {
+			size_t len = min(unreadLength, buf.length);
+			unreadRead(buf[0 .. len]);
 			return buf[0 .. len];
 		}
 
         // if there's nothing in the buffers, read some packets and process them
-		while (m_plaintext.empty)
+		while (unreadEmpty)
         {
 			ubyte[] slice;
 			if (m_readbuf.length > 0) {
@@ -165,12 +201,12 @@ public:
 
 		if (buf.length == 0) return null;
 
-        const size_t returned = std.algorithm.min(buf.length, m_plaintext.length);
+        const size_t returned = std.algorithm.min(buf.length, unreadLength);
 		if (returned == 0) {
 			//logDebug("Destroyed return object");
 			return null;
 		}
-		m_plaintext.read(buf[0 .. returned]);
+		unreadRead(buf[0 .. returned]);
 
         
 		//logDebug("Returning data");
@@ -197,6 +233,7 @@ public:
 
 	~this()
 	{
+		unreadDispose();
 		if (m_is_client)
 			m_impl.client.destroy(); 
 		else m_impl.server.destroy();
@@ -228,11 +265,7 @@ private:
 
     void dataCb(in ubyte[] data)
     {
-		if (m_plaintext.freeSpace < data.length) {
-			//logDebug("Growing m_plaintext from: ", m_plaintext.capacity, " to ", 8192 + m_plaintext.length + m_plaintext.freeSpace);
-			m_plaintext.capacity = std.algorithm.max(8192, data.length + data.length % 8192) + m_plaintext.capacity;
-		}
-		m_plaintext.put(data);
+		unreadPut(data);
     }
 
     void alertCb(in TLSAlert alert, in ubyte[] ub)
@@ -262,8 +295,8 @@ private:
     OnAlert m_alert_cb;
     OnHandshakeComplete m_handshake_complete;
 
-    // Buffer
-    CircularBuffer!(ubyte, 0, SecureMem) m_plaintext;
+    // Same unread-ring mixin as libasync leftover; SecureMem zeroises.
+    mixin UnreadRingMixin!SecureMem;
 
 	Vector!ubyte m_readbuf;
 }

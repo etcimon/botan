@@ -230,6 +230,71 @@ public:
     }
 
     /**
+     * 4-bit windowed scalar mul. Same result as `this * k`, fewer
+     * additions when the base is reused (ECDSA G×k): one 15-point
+     * table, then 256 doubles + ~32 adds instead of 256+256.
+     */
+    PointGFp mulWindow4(const BigInt* scalar) const
+    {
+        if (scalar.isZero())
+            return PointGFp(m_curve);
+
+        final class Win4
+        {
+            PointGFp*[16] t;
+        }
+        static Win4[void*] cache;
+        const key = cast(void*)&this;
+        Win4 tbl;
+        if (auto p = key in cache)
+            tbl = *p;
+        else
+        {
+            tbl = new Win4;
+            auto pre_ws = Vector!(RefCounted!BigInt)(9);
+            tbl.t[0] = new PointGFp(m_curve);
+            {
+                auto p1 = this.clone();
+                tbl.t[1] = new PointGFp(&p1);
+            }
+            foreach (i; 2 .. 16)
+            {
+                auto pi = tbl.t[i - 1].clone();
+                pi.add(*tbl.t[1], pre_ws);
+                tbl.t[i] = new PointGFp(&pi);
+            }
+            cache[key] = tbl;
+        }
+
+        BigInt kabs;
+        const BigInt* k = scalar.isNegative() ? &(kabs = scalar.abs()) : scalar;
+
+        auto ws = Vector!(RefCounted!BigInt)(9);
+
+        PointGFp R = PointGFp(m_curve);
+        size_t w = (k.bits() + 3) / 4;
+        while (w)
+        {
+            --w;
+            R.mult2(ws);
+            R.mult2(ws);
+            R.mult2(ws);
+            R.mult2(ws);
+            const size_t base = w * 4;
+            ubyte nib = 0;
+            if (k.getBit(base)) nib |= 1;
+            if (k.getBit(base + 1)) nib |= 2;
+            if (k.getBit(base + 2)) nib |= 4;
+            if (k.getBit(base + 3)) nib |= 8;
+            if (nib)
+                R.add(*tbl.t[nib], ws);
+        }
+        if (scalar.isNegative())
+            R.negate();
+        return R.move();
+    }
+
+    /**
     * Multiexponentiation
     * Params:
     *  p1 = a point
@@ -297,7 +362,7 @@ public:
             throw new IllegalTransformation("Cannot convert zero point to affine");
                 
         BigInt z2 = curveSqr(cast(BigInt*)&m_coord_z);
-        m_curve.fromRep(&z2, m_ws_const.move());
+        m_curve.fromRep(&z2, m_ws_mut);
         auto p = m_curve.getP().clone;
         z2 = inverseMod(&z2, &p);
         
@@ -316,7 +381,7 @@ public:
         auto sqr_1 = curveSqr(&m_coord_z);
         BigInt z3 = curveMult(&m_coord_z, &sqr_1);
         z3 = inverseMod(&z3, &m_curve.getP());
-        m_curve.toRep(&z3, m_ws_const.move());
+        m_curve.toRep(&z3, m_ws_mut);
         return curveMult(&z3, &m_coord_y);
     }
 
@@ -345,7 +410,7 @@ public:
         }
 
         auto y2 = cast(BigInt)curveSqr(&m_coord_y);
-        m_curve.fromRep(&y2, m_ws_const.move());
+        m_curve.fromRep(&y2, m_ws_mut);
         auto x3_0 = curveSqr(&m_coord_x);
         BigInt x3 = curveMult(&m_coord_x, &x3_0);        
         BigInt ax = curveMult(&m_coord_x, &m_curve.getARep());        
@@ -354,7 +419,7 @@ public:
         if (m_coord_z == z2) // Is z equal to 1 (in Montgomery form)?
         {
             auto y2_0 = x3 + ax + m_curve.getBRep();
-            m_curve.fromRep(&y2_0, m_ws_const.move());
+            m_curve.fromRep(&y2_0, m_ws_mut);
             if (y2 != y2_0) {
                 return false;
             }
@@ -366,7 +431,7 @@ public:
         auto z3_sqr = curveSqr(&z3);
         BigInt b_z6 = curveMult(&m_curve.getBRep(), &z3_sqr);
         auto y2_1 = x3 + ax_z4 + b_z6;
-        m_curve.fromRep(&y2_1, m_ws_const.move());
+        m_curve.fromRep(&y2_1, m_ws_mut);
         if (y2 != y2_1) {
             return false;
         }
@@ -434,7 +499,7 @@ private:
     BigInt curveMult()(const(BigInt)* x, const(BigInt*) y) const
     {
         BigInt z = BigInt(0);
-        m_curve.mul(&z, x, y, m_ws_const.move());
+        m_curve.mul(&z, x, y, m_ws_mut);
         return z.move();
     }
     
@@ -447,7 +512,9 @@ private:
     */
     void curveMult()(BigInt* z, const(BigInt)* x, const(BigInt*) y) const
     {
-        m_curve.mul(z, x, y, m_ws_const.move());
+        // Scratch only. Cloning m_ws on every field mul was a SecureMem
+        // reserve/dtor stack in callgrind (PointGFp.add / mult2).
+        m_curve.mul(z, x, y, m_ws_mut);
     }
 
     /**
@@ -458,7 +525,7 @@ private:
     BigInt curveSqr()(const(BigInt)* x) const
     {
         BigInt z;
-        m_curve.sqr(&z, x, m_ws_const.move());
+        m_curve.sqr(&z, x, m_ws_mut);
         return z.move();
     }
 
@@ -471,7 +538,7 @@ private:
     void curveSqr(T, U)(T* z, U* x) const
         if (!isPointer!T && !isPointer!U)
     {
-        m_curve.sqr(z, x, m_ws_const.move());
+        m_curve.sqr(z, x, m_ws_mut);
     }
 
     /**
@@ -513,13 +580,15 @@ private:
         auto mult_1 = curveMult(&m_coord_z, lhs_z2);
         curveMult(S2, &rhs.m_coord_y, &mult_1);
         
-        *H = U2.clone;
+        // Workspace slots are live across adds; load into H/r instead of
+        // Vector.clone (callgrind: SecureMem reserve/clone sat under add/mult2).
+        H.load(U2);
         *H -= *U1;
 
         if (H.isNegative())
             *H += *p;
         
-        *r = S2.clone;
+        r.load(S2);
         *r -= *S1;
         if (r.isNegative())
             *r += *p;
@@ -596,8 +665,7 @@ private:
         
         auto sqr_1 = cast(BigInt) curveSqr(&m_coord_z);
         curveSqr(z4, &sqr_1);
-        auto a_rep = m_curve.getARep().clone;
-        curveMult(a_z4, &a_rep, z4);
+        curveMult(a_z4, &m_curve.getARep(), z4);
         
         *M = curveSqr(&m_coord_x);
         *M *= 3;
@@ -629,9 +697,9 @@ private:
         if (*z >= *p)
             *z -= *p;
         
-        m_coord_x = (*x).clone;
-        m_coord_y = (*y).clone;
-        m_coord_z = (*z).clone;
+        m_coord_x.swap(x);
+        m_coord_y.swap(y);
+        m_coord_z.swap(z);
         
     }
 public:
@@ -703,7 +771,10 @@ public:
     BigInt m_coord_x, m_coord_y, m_coord_z;
     SecureVector!word m_ws; // workspace for Montgomery
     @property ref SecureVector!word m_ws_ref() return { return m_ws; }
-    @property SecureVector!word m_ws_const() const { return m_ws.clone; }
+    @property ref SecureVector!word m_ws_mut() const
+    {
+        return (cast(PointGFp*)&this).m_ws;
+    }
     alias mutable = SecureVector!word*;
 }
 

@@ -17,7 +17,7 @@ package:
 import botan.tls.magic;
 import botan.tls.version_;
 import botan.utils.loadstor;
-import botan.tls.messages;
+import botan.utils.get_byte;
 import botan.tls.record;
 import botan.tls.seq_numbers;
 import botan.utils.exceptn;
@@ -26,6 +26,16 @@ import botan.utils.types;
 import memutils.hashmap;
 import std.typecons : Tuple;
 import std.datetime;
+
+/**
+* TLS Handshake Message Base Class
+*/
+interface HandshakeMessage
+{
+public:
+    abstract HandshakeType type() const;
+    abstract Vector!ubyte serialize() const;
+}
 
 struct NextRecord
 {

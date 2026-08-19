@@ -10,7 +10,7 @@
 module botan.utils.simd.wmmintrin;
 /*
 * LDC, GDC, DMD Intrinsics for SSSE 3
-* (C) 2014-. Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * Distributed under the terms of the MIT License.
 */
@@ -60,6 +60,39 @@ version(GDC) {
     }
 }
 
+else version (LDC) {
+    import ldc.gccbuiltins_x86;
+    import core.simd : long2;
+    pragma(inline, true):
+
+    // LLVM builtins keep AESENC/PCLMUL in XMM regs. The DMD Intel-asm
+    // path below spills every round (movdqu + aesenc + movdqu) and is
+    // the only definition when D_InlineAsm_X86_64 is set — including
+    // on LDC, which also defines that version.
+    __m128i _mm_aesenc_si128()(auto ref __m128i a, const auto ref __m128i b) {
+        return cast(__m128i) __builtin_ia32_aesenc128(cast(long2) a, cast(long2) b);
+    }
+    __m128i _mm_aesenclast_si128()(auto ref __m128i a, const auto ref __m128i b) {
+        return cast(__m128i) __builtin_ia32_aesenclast128(cast(long2) a, cast(long2) b);
+    }
+    __m128i _mm_aesdec_si128()(auto ref __m128i a, const auto ref __m128i b) {
+        return cast(__m128i) __builtin_ia32_aesdec128(cast(long2) a, cast(long2) b);
+    }
+    __m128i _mm_aesdeclast_si128()(auto ref __m128i a, const auto ref __m128i b) {
+        return cast(__m128i) __builtin_ia32_aesdeclast128(cast(long2) a, cast(long2) b);
+    }
+    __m128i _mm_aesimc_si128(__m128i a) {
+        return cast(__m128i) __builtin_ia32_aesimc128(cast(long2) a);
+    }
+    __m128i _mm_aeskeygenassist_si128(int b)(__m128i a) {
+        // LDC's builtin takes `byte`; RCON 0x80 is the same 8-bit pattern as -128.
+        return cast(__m128i) __builtin_ia32_aeskeygenassist128(cast(long2) a, cast(byte) b);
+    }
+    __m128i _mm_clmulepi64_si128(string imm)(auto ref __m128i a, auto ref __m128i b) {
+        return mixin(`cast(__m128i) __builtin_ia32_pclmulqdq128(cast(long2) a, cast(long2) b, cast(byte)(` ~ imm ~ `))`);
+    }
+}
+
 version(none) {
     // _mm_aesenc_si128
     __m128i _mm_aesenc_si128()(auto ref __m128i a, const auto ref __m128i b) {
@@ -92,6 +125,7 @@ version(none) {
 }
 
 version(D_InlineAsm_X86_64) {
+version (LDC) {} else {
     __m128i _mm_aesenc_si128()(auto ref __m128i a, const auto ref __m128i b) {
         __m128i* _a = &a;
         const(__m128i)* _b = &b;
@@ -202,4 +236,5 @@ version(D_InlineAsm_X86_64) {
         
         return c;
     }
+}
 }

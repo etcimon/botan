@@ -26,11 +26,19 @@ import memutils.dictionarylist;
 import memutils.hashmap;
 import botan.utils.types;
 import std.datetime;
-static if (BOTAN_HAS_TLS_13) import botan.tls.tls13.handshake;
+static if (BOTAN_HAS_TLS_13) {
+    import botan.tls.tls13.handshake;
+    import botan.tls.tls13.cipher_state;
+}
 
+/// ALPN: pick one protocol from the client's offer, or empty to skip.
 alias NextProtocolHandler = string delegate(in Vector!string);
+/// Optional SNI switch: return credentials/policy for the requested hostname.
 alias SNIHandler = SNIContextSwitchInfo delegate(string);
 
+/**
+* Per-SNI credentials and policy (optional TLSServer hook)
+*/
 struct SNIContextSwitchInfo
 {
 	TLSSessionManager session_manager;
@@ -49,7 +57,21 @@ final class TLSServer : TLSChannel
 public:
 
     /**
-    * TLSServer initialization
+    * Set up a new TLS server session
+    *
+    * Params:
+    *  output_fn = ciphertext for the outbound socket
+    *  data_cb = plaintext delivered to the application
+    *  alert_cb = called when a TLS alert is received
+    *  handshake_cb = called when a handshake completes
+    *  session_manager = stores resumable sessions
+    *  creds = server certificates and keys
+    *  policy = connection policy
+    *  rng = random number generator
+    *  next_proto = ALPN selector, or null
+    *  sni_handler = optional hostname credentials switch
+    *  is_datagram = true for DTLS
+    *  io_buf_sz = preallocated read/write buffer size
     */
     this(DataWriter output_fn,
          OnClearData data_cb,
@@ -71,6 +93,7 @@ public:
 		m_sni_handler = sni_handler;
     }
 
+    /// Opaque pointer from SNIContextSwitchInfo, if an SNI handler set one.
 	void* getUserData() { return m_user_data; }
 
 protected:
@@ -233,7 +256,7 @@ protected:
                     Vector!ubyte share_buf;
                     static if (BOTAN_HAS_CURVE25519)
                     {
-                        auto agr = tls13AgreeFromClientShare(state.clientHello().tls13KeyShare(), rng());
+                        auto agr = tls13AgreeFromClientShare(state.clientHello().tls13KeyShare(), rng(), m_policy);
                         group = agr.group;
                         share_buf = agr.server_public.move();
                         share = share_buf[];
@@ -262,6 +285,13 @@ protected:
                         state.tls13SetHsTraffic(hs_prf, sec.handshake_secret.move(),
                                                 sec.client_handshake_traffic.move(),
                                                 sec.server_handshake_traffic.move());
+                        {
+                            auto ch = state.clientHello();
+                            tls13KeyLog("CLIENT_HANDSHAKE_TRAFFIC_SECRET", ch.random().ptr, ch.random().length,
+                                        state.tls13ClientHs().ptr, state.tls13ClientHs().length);
+                            tls13KeyLog("SERVER_HANDSHAKE_TRAFFIC_SECRET", ch.random().ptr, ch.random().length,
+                                        state.tls13ServerHs().ptr, state.tls13ServerHs().length);
+                        }
                         tls13SetRecordKeys(tls13AeadName(state.ciphersuite()), hs_prf,
                                            state.tls13ServerHs().ptr, state.tls13ServerHs().length,
                                            state.tls13ClientHs().ptr, state.tls13ClientHs().length,
@@ -292,13 +322,19 @@ protected:
                             state.clientHello(), m_application_protocol);
                     }
                     const string sni = state.clientHello().sniHostname();
-                    auto cert_chains = getServerCerts(sni, m_creds);
-                    auto rsa_certs = cert_chains.get("RSA", Array!X509Certificate(0));
-                    if (rsa_certs.length == 0)
-                        throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "No server certificate for TLS 1.3");
+                    // One certChainSingleType of the first matching type —
+                    // getServerCerts probed ECDSA+Ed25519+RSA+DSA every HS.
                     Vector!X509Certificate chain;
-                    foreach (c; rsa_certs[])
-                        chain.pushBack(c);
+                    foreach (t; ["ECDSA", "Ed25519", "RSA"])
+                    {
+                        auto picked = m_creds.certChainSingleType(t, "tls-server", sni);
+                        if (picked.empty)
+                            continue;
+                        chain = picked.move();
+                        break;
+                    }
+                    if (chain.empty)
+                        throw new TLSException(TLSAlert.HANDSHAKE_FAILURE, "No server certificate for TLS 1.3");
                     state.serverCerts(new Certificate(chain));
                     {
                         Vector!ubyte staple;
@@ -316,9 +352,10 @@ protected:
                     {
                         const string cv_prf = state.ciphersuite().prfAlgo();
                         const(ubyte)[] cv_msg = state.hash().getContents()[];
-                        auto sig = tls13SignCertificateVerify(priv, SERVER, cv_prf, cv_msg.ptr, cv_msg.length, rng());
+                        ushort cv_scheme;
+                        auto sig = tls13SignCertificateVerify(priv, SERVER, cv_prf, cv_msg.ptr, cv_msg.length, rng(), cv_scheme);
                         Unique!TLS13CertificateVerify cv = new TLS13CertificateVerify(
-                            state.handshakeIo(), state.hash(), TLS13_RSA_PSS_RSAE_SHA256, sig.move());
+                            state.handshakeIo(), state.hash(), cv_scheme, sig.move());
                     }
                     if (state.tls13HaveHsTraffic())
                     {
@@ -333,10 +370,17 @@ protected:
                                                    app_msg.ptr, app_msg.length);
                         state.tls13SetAppTraffic(app.client_application_traffic.move(),
                                                  app.server_application_traffic.move());
-                        tls13SetRecordKeys(tls13AeadName(state.ciphersuite()), fin_prf,
-                                           state.tls13ServerApp().ptr, state.tls13ServerApp().length,
-                                           state.tls13ClientHs().ptr, state.tls13ClientHs().length,
-                                           SERVER);
+                        {
+                            auto ch = state.clientHello();
+                            tls13KeyLog("CLIENT_TRAFFIC_SECRET_0", ch.random().ptr, ch.random().length,
+                                        state.tls13ClientApp().ptr, state.tls13ClientApp().length);
+                            tls13KeyLog("SERVER_TRAFFIC_SECRET_0", ch.random().ptr, ch.random().length,
+                                        state.tls13ServerApp().ptr, state.tls13ServerApp().length);
+                        }
+                        // C++ advance_with_server_finished: write = s ap,
+                        // read stays c hs so the client's Finished decrypts.
+                        tls13SetWriteTrafficKey(state.tls13ServerApp().ptr,
+                                                state.tls13ServerApp().length);
                     }
                     state.setExpectedNext(FINISHED);
                     return;
@@ -630,11 +674,11 @@ protected:
                     saveSession(session_info);
                     if (state.tls13HaveAppTraffic())
                     {
-                        const string prf_app = state.ciphersuite().prfAlgo();
-                        tls13SetRecordKeys(tls13AeadName(state.ciphersuite()), prf_app,
-                                           state.tls13ServerApp().ptr, state.tls13ServerApp().length,
-                                           state.tls13ClientApp().ptr, state.tls13ClientApp().length,
-                                           SERVER);
+                        // C++ advance_with_client_finished: read = c ap,
+                        // write stays s ap (seq not reset).
+                        tls13SetReadTrafficKey(state.tls13ClientApp().ptr,
+                                               state.tls13ClientApp().length);
+                        tls13SetUnprotectedAlertExpected(false);
                     }
                     activateSession();
                     return;
@@ -901,7 +945,7 @@ ubyte chooseCompression(in TLSPolicy policy, const ref Vector!ubyte c_comp)
 HashMapRef!(string, Array!X509Certificate) 
     getServerCerts(in string hostname, TLSCredentialsManager creds)
 {
-    string[] cert_types = [ "RSA", "DSA", "ECDSA", null ];
+    string[] cert_types = [ "ECDSA", "Ed25519", "RSA", "DSA", null ];
     
     HashMapRef!(string, Array!X509Certificate) cert_chains;
     

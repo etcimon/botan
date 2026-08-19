@@ -22,6 +22,7 @@ import botan.stream.ctr;
 import botan.utils.xor_buf;
 import botan.utils.loadstor;
 import botan.utils.mem_ops;
+import core.stdc.string : memset;
 
 import botan.utils.simd.immintrin;
 import botan.utils.simd.wmmintrin;
@@ -56,26 +57,25 @@ public:
     {
         if (!validNonceLength(nonce_len))
             throw new InvalidIVLength(name, nonce_len);
-        
-        SecureVector!ubyte y0 = SecureVector!ubyte(BS);
-        
+
+        if (m_y0.length != BS) m_y0.resize(BS);
+        if (m_enc_y0.length != BS) m_enc_y0.resize(BS);
+
         if (nonce_len == 12)
         {
-            copyMem(y0.ptr, nonce, nonce_len);
-            y0[15] = 1;
+            copyMem(m_y0.ptr, nonce, nonce_len);
+            memset(m_y0.ptr + nonce_len, 0, BS - nonce_len);
+            m_y0[15] = 1;
         }
         else
         {
-            y0 = m_ghash.nonceHash(nonce, nonce_len);
+            m_y0 = m_ghash.nonceHash(nonce, nonce_len);
         }
-        
-        m_ctr.setIv(y0.ptr, y0.length);
-        
-        SecureVector!ubyte m_enc_y0 = SecureVector!ubyte(BS);
+
+        m_ctr.setIv(m_y0.ptr, m_y0.length);
+        memset(m_enc_y0.ptr, 0, BS);
         m_ctr.encipher(m_enc_y0);
-        
         m_ghash.start(m_enc_y0.ptr, m_enc_y0.length);
-        
         return SecureVector!ubyte();
     }
 
@@ -138,7 +138,9 @@ protected:
         
         m_ghash = new GHASH;
 
-        m_ctr = new CTRBE(cipher, 4); // C++ GCM uses a 32-bit CTR
+        // 32-bit CTR (C++); 32-block pad (512 B) matches the 128-byte CTR+GHASH
+        // stripe. pad=256 skip-LSB increment is only valid for 256-block pads.
+        m_ctr = new CTRBE(cipher, 4, 32);
         
         if (m_tag_size != 8 && (m_tag_size < 12 || m_tag_size > 16))
             throw new InvalidArgument(name ~ ": Bad tag size " ~ to!string(m_tag_size));
@@ -151,6 +153,8 @@ protected:
 
     Unique!StreamCipher m_ctr;
     Unique!GHASH m_ghash;
+    SecureVector!ubyte m_y0;
+    SecureVector!ubyte m_enc_y0;
 }
 
 /**
@@ -188,8 +192,83 @@ public:
     {
         import std.algorithm : max;
         update(buffer, offset);
-        auto mac = m_ghash.finished();
-        buffer ~= mac.ptr[0 .. tagSize()];
+        auto mac = m_ghash.finishTag();
+        buffer ~= mac[0 .. tagSize()];
+    }
+
+    /**
+    * Encrypt `len` bytes in place and write the tag at `tag_out`.
+    * Params:
+    *  buf = plaintext (overwritten with ciphertext)
+    *  len = length of buf
+    *  tag_out = tagSize() bytes for the authentication tag
+    */
+    void processRaw(ubyte* buf, size_t len, ubyte* tag_out)
+    {
+        processRaw(buf, buf, len, tag_out);
+    }
+
+    /**
+    * CTR from `input` into `output` (may alias), then GHASH `output`.
+    * Params:
+    *  input = plaintext
+    *  output = ciphertext (may alias input)
+    *  len = length
+    *  tag_out = tagSize() bytes for the authentication tag
+    */
+    void processRaw(const(ubyte)* input, ubyte* output, size_t len, ubyte* tag_out)
+    {
+        stripeCtrGhash(input, output, len);
+        auto mac = m_ghash.finishTag();
+        copyMem(tag_out, mac.ptr, tagSize());
+    }
+
+    /// CTR+GHASH `len` bytes, append `extra` as a 1-byte inner type, write tag.
+    void processRaw(const(ubyte)* input, ubyte* output, size_t len, ubyte extra, ubyte* tag_out)
+    {
+        stripeCtrGhash(input, output, len);
+        output[len] = extra;
+        stripeCtrGhash(output + len, output + len, 1);
+        auto mac = m_ghash.finishTag();
+        copyMem(tag_out, mac.ptr, tagSize());
+    }
+
+    private void stripeCtrGhash(const(ubyte)* input, ubyte* output, size_t len)
+    {
+        // Stripe CTR and GHASH so each 128-byte chunk stays in L1.
+        // Pull Unique/interface thunks once (callgrind Unique.fallthrough ~1%).
+        GHASH gh = *m_ghash;
+        if (auto ctr = cast(CTRBE)(*m_ctr))
+        {
+            while (len >= 128)
+            {
+                ctr.cipher(input, output, 128);
+                gh.update(output, 128);
+                input += 128;
+                output += 128;
+                len -= 128;
+            }
+            if (len)
+            {
+                ctr.cipher(input, output, len);
+                gh.update(output, len);
+            }
+            return;
+        }
+        StreamCipher ctr = *m_ctr;
+        while (len >= 128)
+        {
+            ctr.cipher(input, output, 128);
+            gh.update(output, 128);
+            input += 128;
+            output += 128;
+            len -= 128;
+        }
+        if (len)
+        {
+            ctr.cipher(input, output, len);
+            gh.update(output, len);
+        }
     }
 
     // Interface fallthrough
@@ -255,10 +334,10 @@ public:
             m_ctr.cipher(buf, buf, remaining);
         }
         
-        auto mac = m_ghash.finished();
-        
+        auto mac = m_ghash.finishTag();
+
         const(ubyte)* included_tag = &buffer[remaining];
-        
+
         if (!sameMem(mac.ptr, included_tag, tagSize()))
             throw new IntegrityFailure("GCM tag check failed");
         
@@ -302,8 +381,11 @@ public:
 
     void start(const(ubyte)* nonce, size_t len)
     {
-        m_nonce[] = nonce[0 .. len];
-        m_ghash = m_H_ad.clone;
+        if (m_nonce.length != len) m_nonce.resize(len);
+        copyMem(m_nonce.ptr, nonce, len);
+        if (m_ghash.length != m_H_ad.length) m_ghash.resize(m_H_ad.length);
+        if (m_H_ad.length)
+            copyMem(m_ghash.ptr, m_H_ad.ptr, m_H_ad.length);
     }
 
     /*
@@ -318,12 +400,18 @@ public:
         ghashUpdate(m_ghash, input, length);
     }
 
-    SecureVector!ubyte finished()
+    const(ubyte)[] finishTag()
     {
         addFinalBlock(m_ghash, m_ad_len, m_text_len);
         m_ghash ^= m_nonce;
         m_text_len = 0;
-        return m_ghash.move;
+        return m_ghash[];
+    }
+
+    SecureVector!ubyte finished()
+    {
+        auto tag = finishTag();
+        return SecureVector!ubyte(tag);
     }
 
     KeyLengthSpecification keySpec() const { return KeyLengthSpecification(16); }
@@ -334,6 +422,18 @@ public:
         zeroise(m_H_ad);
         m_ghash.clear();
         m_text_len = m_ad_len = 0;
+        static if (BOTAN_HAS_GCM_CLMUL)
+        {
+            m_H2[] = 0;
+            m_H3[] = 0;
+            m_H4[] = 0;
+            m_H5[] = 0;
+            m_H6[] = 0;
+            m_H7[] = 0;
+            m_H8[] = 0;
+            version (LDC)
+                m_Hb = m_Hb.init;
+        }
     }
 
     @property string name() const { return "GHASH"; }
@@ -344,6 +444,43 @@ public:
         m_H_ad.resize(16);
         m_ad_len = 0;
         m_text_len = 0;
+        static if (BOTAN_HAS_GCM_CLMUL)
+        {
+            m_clmul = CPUID.hasGcmClmul();
+            if (m_clmul)
+            {
+                m_H2 = *cast(ubyte[16]*) m_H.ptr;
+                gcmMultiplyClmul(m_H2, *cast(ubyte[16]*) m_H.ptr);
+                m_H3 = m_H2;
+                gcmMultiplyClmul(m_H3, *cast(ubyte[16]*) m_H.ptr);
+                m_H4 = m_H2;
+                gcmMultiplyClmul(m_H4, m_H2);
+                m_H5 = m_H4;
+                gcmMultiplyClmul(m_H5, *cast(ubyte[16]*) m_H.ptr);
+                m_H6 = m_H4;
+                gcmMultiplyClmul(m_H6, m_H2);
+                m_H7 = m_H4;
+                gcmMultiplyClmul(m_H7, m_H3);
+                m_H8 = m_H4;
+                gcmMultiplyClmul(m_H8, m_H4);
+                version (LDC)
+                {
+                    void storeHb(size_t i, in ubyte[16] src)
+                    {
+                        auto v = gcmBswap(gcmLoadu(src.ptr));
+                        m_Hb[i][] = (cast(ubyte*) &v)[0 .. 16];
+                    }
+                    storeHb(0, *cast(ubyte[16]*) m_H.ptr);
+                    storeHb(1, m_H2);
+                    storeHb(2, m_H3);
+                    storeHb(3, m_H4);
+                    storeHb(4, m_H5);
+                    storeHb(5, m_H6);
+                    storeHb(6, m_H7);
+                    storeHb(7, m_H8);
+                }
+            }
+        }
     }
 
 private:
@@ -351,8 +488,9 @@ private:
     {
         import std.algorithm : max;
         static if (BOTAN_HAS_GCM_CLMUL) {
-            if (CPUID.hasClmul()) {
-                return gcmMultiplyClmul(*cast(ubyte[16]*) x.ptr, *cast(ubyte[16]*) m_H.ptr);
+            if (CPUID.hasGcmClmul()) {
+                gcmMultiplyClmul(*cast(ubyte[16]*) x.ptr, *cast(ubyte[16]*) m_H.ptr);
+                return;
             }
         }
         
@@ -386,19 +524,66 @@ private:
 
     void ghashUpdate(ref SecureVector!ubyte ghash, const(ubyte)* input, size_t length)
     {
-        __gshared immutable size_t BS = 16;
-        
-        /*
-        This assumes if less than block size input then we're just on the
-        final block and should pad with zeros
-        */
+        enum size_t BS = 16;
+        static if (BOTAN_HAS_GCM_CLMUL)
+        {
+            if (m_clmul)
+            {
+                auto yp = ghash.ptr;
+                const h = *cast(ubyte[16]*) m_H.ptr;
+                version (LDC)
+                {
+                    while (length >= 128)
+                    {
+                        gcmMultiplyClmul8(yp, input, m_Hb[0], m_Hb[1], m_Hb[2], m_Hb[3],
+                                          m_Hb[4], m_Hb[5], m_Hb[6], m_Hb[7]);
+                        input += 128;
+                        length -= 128;
+                    }
+                    while (length >= 64)
+                    {
+                        gcmMultiplyClmul4(yp, input, m_Hb[0], m_Hb[1], m_Hb[2], m_Hb[3]);
+                        input += 64;
+                        length -= 64;
+                    }
+                }
+                else
+                {
+                    while (length >= 128)
+                    {
+                        gcmMultiplyClmul8(yp, input, h, m_H2, m_H3, m_H4,
+                                          m_H5, m_H6, m_H7, m_H8);
+                        input += 128;
+                        length -= 128;
+                    }
+                    while (length >= 64)
+                    {
+                        gcmMultiplyClmul4(yp, input, h, m_H2, m_H3, m_H4);
+                        input += 64;
+                        length -= 64;
+                    }
+                }
+                while (length >= BS)
+                {
+                    *cast(ulong*) yp ^= *cast(const ulong*) input;
+                    *cast(ulong*)(yp + 8) ^= *cast(const ulong*)(input + 8);
+                    gcmMultiplyClmul(*cast(ubyte[16]*) yp, h);
+                    input += BS;
+                    length -= BS;
+                }
+                if (length)
+                {
+                    xorBuf(yp, input, length);
+                    gcmMultiplyClmul(*cast(ubyte[16]*) yp, h);
+                }
+                return;
+            }
+        }
         while (length)
         {
             const size_t to_proc = min(length, BS);
-            
             xorBuf(ghash.ptr, input, to_proc);
             gcmMultiply(ghash);
-            
             input += to_proc;
             length -= to_proc;
         }
@@ -417,6 +602,13 @@ private:
     SecureVector!ubyte m_nonce;
     SecureVector!ubyte m_ghash;
     size_t m_ad_len = 0, m_text_len = 0;
+    static if (BOTAN_HAS_GCM_CLMUL)
+    {
+        bool m_clmul;
+        ubyte[16] m_H2, m_H3, m_H4, m_H5, m_H6, m_H7, m_H8;
+        version (LDC)
+            ubyte[16][8] m_Hb;
+    }
 }
 
 
@@ -425,11 +617,10 @@ static if (BOTAN_HAS_GCM_CLMUL)
     void gcmMultiplyClmul(ref ubyte[16] x, in ubyte[16] H) 
 {
     __gshared immutable(__m128i) BSWAP_MASK = _mm_set1_epi8!([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])();
-	version(D_InlineAsm_X86_64) {
-		version(DMD) {
-			enum USE_ASM = true;
-		} else enum USE_ASM = false;
-	} else enum USE_ASM = false;
+	version (D_InlineAsm_X86_64)
+		enum USE_ASM = true;
+	else
+		enum USE_ASM = false;
 
     static if (USE_ASM) {
         __m128i* a = cast(__m128i*) x.ptr;
@@ -572,5 +763,206 @@ static if (BOTAN_HAS_GCM_CLMUL)
         T3 = _mm_shuffle_epi8(T3, BSWAP_MASK);
         
         _mm_storeu_si128(cast(__m128i*) x.ptr, T3);
+    }
+}
+
+static if (BOTAN_HAS_GCM_CLMUL) version (LDC)
+{
+    import ldc.gccbuiltins_x86;
+    import core.simd : byte16, long2, int4;
+
+    pragma(inline, true) byte16 gcmLoadu(const(ubyte)* p)
+    {
+        auto q = cast(const long*) p;
+        long2 v = void;
+        v.array[0] = q[0];
+        v.array[1] = q[1];
+        return cast(byte16) v;
+    }
+    pragma(inline, true) byte16 gcmBswap(byte16 v)
+    {
+        immutable byte16 m = byte16([15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
+        return __builtin_ia32_pshufb128(v, m);
+    }
+    // Byte shifts: long2 move for 8, SSSE3 pshufb otherwise. ldc.llvmasm
+    // psrldq/pslldq does not inline (callgrind _mm_srli_si128!(8) ~15% Ir).
+    private template gcmPshufbSrliStr(int n)
+    {
+        enum string gcmPshufbSrliStr = {
+            string s = "byte16([";
+            foreach (i; 0 .. 16)
+            {
+                if (i) s ~= ",";
+                immutable src = i + n;
+                s ~= src >= 16 ? "cast(byte)0x80" : to!string(src);
+            }
+            return s ~ "])";
+        }();
+    }
+    private template gcmPshufbSlliStr(int n)
+    {
+        enum string gcmPshufbSlliStr = {
+            string s = "byte16([";
+            foreach (i; 0 .. 16)
+            {
+                if (i) s ~= ",";
+                s ~= (i < n) ? "cast(byte)0x80" : to!string(i - n);
+            }
+            return s ~ "])";
+        }();
+    }
+    pragma(inline, true) byte16 gcmSlliBytes(int n)(byte16 v)
+    {
+        static if (n == 0) return v;
+        else static if (n >= 16) { long2 z = 0; return cast(byte16) z; }
+        else static if (n == 8)
+        {
+            long2 r = void;
+            auto s = cast(long2) v;
+            r.array[0] = 0;
+            r.array[1] = s.array[0];
+            return cast(byte16) r;
+        }
+        else
+        {
+            enum byte16 mask = mixin(gcmPshufbSlliStr!n);
+            return __builtin_ia32_pshufb128(v, mask);
+        }
+    }
+    pragma(inline, true) byte16 gcmSrliBytes(int n)(byte16 v)
+    {
+        static if (n == 0) return v;
+        else static if (n >= 16) { long2 z = 0; return cast(byte16) z; }
+        else static if (n == 8)
+        {
+            long2 r = void;
+            auto s = cast(long2) v;
+            r.array[0] = s.array[1];
+            r.array[1] = 0;
+            return cast(byte16) r;
+        }
+        else
+        {
+            enum byte16 mask = mixin(gcmPshufbSrliStr!n);
+            return __builtin_ia32_pshufb128(v, mask);
+        }
+    }
+    pragma(inline, true) byte16 gcmSlli32(int n)(byte16 v)
+    {
+        return cast(byte16) __builtin_ia32_pslldi128(cast(int4) v, n);
+    }
+    pragma(inline, true) byte16 gcmSrli32(int n)(byte16 v)
+    {
+        return cast(byte16) __builtin_ia32_psrldi128(cast(int4) v, n);
+    }
+    pragma(inline, true) void gcmAccClmul(ref byte16 t0, ref byte16 t1, ref byte16 t2, ref byte16 t3, byte16 a, byte16 b)
+    {
+        auto aa = cast(long2) a;
+        auto bb = cast(long2) b;
+        auto lo = cast(byte16) __builtin_ia32_pclmulqdq128(aa, bb, 0);
+        auto hi = cast(byte16) __builtin_ia32_pclmulqdq128(aa, bb, 17);
+        t0 = t0 ^ lo;
+        t3 = t3 ^ hi;
+        auto mid = cast(byte16) __builtin_ia32_pclmulqdq128(
+            cast(long2)(a ^ gcmSrliBytes!8(a)),
+            cast(long2)(b ^ gcmSrliBytes!8(b)), 0);
+        t1 = t1 ^ mid ^ lo ^ hi;
+    }
+    pragma(inline, true) void gcmReduceStore(ubyte* y, byte16 t0, byte16 t1, byte16 t2, byte16 t3)
+    {
+        t1 = t1 ^ t2;
+        t2 = gcmSlliBytes!8(t1);
+        t1 = gcmSrliBytes!8(t1);
+        t0 = t0 ^ t2;
+        t3 = t3 ^ t1;
+
+        auto t4 = gcmSrli32!31(t0);
+        t0 = gcmSlli32!1(t0);
+        auto t5 = gcmSrli32!31(t3);
+        t3 = gcmSlli32!1(t3);
+        t2 = gcmSrliBytes!12(t4);
+        t5 = gcmSlliBytes!4(t5);
+        t4 = gcmSlliBytes!4(t4);
+        t0 = t0 | t4;
+        t3 = t3 | t5;
+        t3 = t3 | t2;
+        t4 = gcmSlli32!31(t0);
+        t5 = gcmSlli32!30(t0);
+        t2 = gcmSlli32!25(t0);
+        t4 = t4 ^ t5;
+        t4 = t4 ^ t2;
+        t5 = gcmSrliBytes!4(t4);
+        t3 = t3 ^ t5;
+        t4 = gcmSlliBytes!12(t4);
+        t0 = t0 ^ t4;
+        t3 = t3 ^ t0;
+        t4 = gcmSrli32!1(t0);
+        t1 = gcmSrli32!2(t0);
+        t2 = gcmSrli32!7(t0);
+        t3 = t3 ^ t1 ^ t2 ^ t4;
+        t3 = gcmBswap(t3);
+        auto d = cast(long*) y;
+        auto s = cast(long2) t3;
+        d[0] = s.array[0];
+        d[1] = s.array[1];
+    }
+}
+
+/// Y := (Y xor X0)*H^4 xor X1*H^3 xor X2*H^2 xor X3*H  (64-byte GHASH step).
+static if (BOTAN_HAS_GCM_CLMUL)
+void gcmMultiplyClmul4(ubyte* y, const(ubyte)* x,
+                       in ubyte[16] H, in ubyte[16] H2,
+                       in ubyte[16] H3, in ubyte[16] H4)
+{
+    version (LDC)
+    {
+        byte16 t0, t1, t2, t3;
+        gcmAccClmul(t0, t1, t2, t3, gcmBswap(gcmLoadu(y) ^ gcmLoadu(x)), gcmLoadu(H4.ptr));
+        gcmAccClmul(t0, t1, t2, t3, gcmBswap(gcmLoadu(x + 16)), gcmLoadu(H3.ptr));
+        gcmAccClmul(t0, t1, t2, t3, gcmBswap(gcmLoadu(x + 32)), gcmLoadu(H2.ptr));
+        gcmAccClmul(t0, t1, t2, t3, gcmBswap(gcmLoadu(x + 48)), gcmLoadu(H.ptr));
+        gcmReduceStore(y, t0, t1, t2, t3);
+    }
+    else
+    {
+        *cast(ulong*) y ^= *cast(const ulong*) x;
+        *cast(ulong*)(y + 8) ^= *cast(const ulong*)(x + 8);
+        gcmMultiplyClmul(*cast(ubyte[16]*) y, H4);
+        ubyte[16] t = void;
+        t[] = x[16 .. 32];
+        gcmMultiplyClmul(t, H3);
+        xorBuf(y, t.ptr, 16);
+        t[] = x[32 .. 48];
+        gcmMultiplyClmul(t, H2);
+        xorBuf(y, t.ptr, 16);
+        t[] = x[48 .. 64];
+        gcmMultiplyClmul(t, H);
+        xorBuf(y, t.ptr, 16);
+    }
+}
+
+/// Y := (Y xor X0)*H^8 xor X1*H^7 xor … xor X7*H  (128-byte GHASH step).
+static if (BOTAN_HAS_GCM_CLMUL)
+void gcmMultiplyClmul8(ubyte* y, const(ubyte)* x,
+                       in ubyte[16] H, in ubyte[16] H2, in ubyte[16] H3, in ubyte[16] H4,
+                       in ubyte[16] H5, in ubyte[16] H6, in ubyte[16] H7, in ubyte[16] H8)
+{
+    version (LDC)
+    {
+        byte16 t0, t1, t2, t3;
+        gcmAccClmul(t0, t1, t2, t3, gcmBswap(gcmLoadu(y) ^ gcmLoadu(x)), gcmLoadu(H8.ptr));
+        gcmAccClmul(t0, t1, t2, t3, gcmBswap(gcmLoadu(x + 16)), gcmLoadu(H7.ptr));
+        gcmAccClmul(t0, t1, t2, t3, gcmBswap(gcmLoadu(x + 32)), gcmLoadu(H6.ptr));
+        gcmAccClmul(t0, t1, t2, t3, gcmBswap(gcmLoadu(x + 48)), gcmLoadu(H5.ptr));
+        gcmAccClmul(t0, t1, t2, t3, gcmBswap(gcmLoadu(x + 64)), gcmLoadu(H4.ptr));
+        gcmAccClmul(t0, t1, t2, t3, gcmBswap(gcmLoadu(x + 80)), gcmLoadu(H3.ptr));
+        gcmAccClmul(t0, t1, t2, t3, gcmBswap(gcmLoadu(x + 96)), gcmLoadu(H2.ptr));
+        gcmAccClmul(t0, t1, t2, t3, gcmBswap(gcmLoadu(x + 112)), gcmLoadu(H.ptr));
+        gcmReduceStore(y, t0, t1, t2, t3);
+    }
+    else
+    {
+        gcmMultiplyClmul4(y, x, H, H2, H3, H4);
+        gcmMultiplyClmul4(y, x + 64, H, H2, H3, H4);
     }
 }
