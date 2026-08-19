@@ -25,6 +25,10 @@ import std.algorithm : min;
 class TransformationFilter : KeyedFilter, Filterable
 {
 public:
+    /**
+    * Params:
+    *  transform = cipher or AEAD to wrap
+    */
     this(Transformation transform)
     {
         m_main_block_mod = chooseUpdateSize(transform.updateGranularity());

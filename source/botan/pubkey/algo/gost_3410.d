@@ -89,7 +89,10 @@ public:
     }
 
     /**
-    * Construct from X.509 algorithm id and subject public key bits
+    * Decode X.509 SubjectPublicKeyInfo (CryptoPro little-endian point)
+    * Params:
+    *  alg_id = algorithm identifier (includes the curve OID)
+    *  key_bits = OCTET STRING of (x || y) little-endian
     */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
@@ -121,8 +124,10 @@ public:
         assert(public_point.onTheCurve(), "Loaded GOST 34.10 public key is on the curve");
     }
 
+    /// Wrap an existing key object (does not take Unique ownership).
     this(PublicKey pkey) { m_pub = cast(ECPublicKey) pkey; }
 
+    /// ditto
     this(PrivateKey pkey) { m_pub = cast(ECPublicKey) pkey; }
 
     mixin Embed!(m_pub, m_owned);
@@ -140,6 +145,12 @@ public:
     alias Options = GOST3410Options;
     __gshared immutable algoName = Options.algoName;
 
+    /**
+    * Decode PKCS #8
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = encoded scalar
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
 		m_owned = true;
@@ -159,6 +170,7 @@ public:
         m_priv = new ECPrivateKey(Options(), rng, domain, x);
     }
 
+    /// Wrap an existing key object (does not take Unique ownership).
     this(PrivateKey pkey) { m_priv = cast(ECPrivateKey) pkey; }
 
     mixin Embed!(m_priv, m_owned);

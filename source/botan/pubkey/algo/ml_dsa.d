@@ -39,8 +39,12 @@ enum size_t MLDSA_TR = 64;
 enum size_t MLDSA_MU = 64;
 enum uint MLDSA_SIGN_BOUND = 814;
 
+/// FIPS 204 parameter set (44 / 65 / 87).
 enum MLDSAMode : ubyte { Dsa44 = 0, Dsa65 = 1, Dsa87 = 2 }
 
+/**
+* ML-DSA / Dilithium parameter block (k, l, eta, SCAN name).
+*/
 struct MLDSAParams
 {
     MLDSAMode mode;
@@ -59,6 +63,13 @@ struct MLDSAParams
     bool dilithium_aes;
 }
 
+/**
+* Params:
+*  mode = 44, 65, or 87
+*  dilithium_r3 = true for Round-3 Dilithium (not FIPS 204)
+*  dilithium_aes = true for the AES-based 90s variant
+* Returns: filled parameter block
+*/
 MLDSAParams mldsaParams(MLDSAMode mode, bool dilithium_r3 = false, bool dilithium_aes = false)
 {
     MLDSAParams p;
@@ -1240,24 +1251,42 @@ MLDSASecret mldsaDecodeExpandedSk(const(ubyte)* inp, size_t len, MLDSAParams p)
     return sk;
 }
 
+/**
+* ML-DSA (FIPS 204) / Dilithium public key
+*/
 final class MLDSAPublicKey : PublicKey
 {
 public:
+    /**
+    * Decode an encoded public key
+    * Params:
+    *  p = parameter block
+    *  bits = rho || t1
+    *  len = encoded length
+    */
     this(MLDSAParams p, const(ubyte)* bits, size_t len)
     {
         m_pub = decodePk(bits, len, p);
     }
 
+    /// ditto
     this(MLDSAMode mode, const(ubyte)* bits, size_t len)
     {
         this(mldsaParams(mode), bits, len);
     }
 
+    /**
+    * Params:
+    *  name = SCAN name ("ML-DSA-4x4", …)
+    *  bits = encoded public key
+    *  len = length of bits
+    */
     this(in string name, const(ubyte)* bits, size_t len)
     {
         this(mldsaParamsFromName(name), bits, len);
     }
 
+    /// Copy from an expanded public key.
     this(const ref MLDSAPublic pub)
     {
         m_pub.params = pub.params;
@@ -1268,6 +1297,12 @@ public:
             m_pub.t1[i] = pub.t1[i];
     }
 
+    /**
+    * Decode X.509 SubjectPublicKeyInfo
+    * Params:
+    *  alg_id = algorithm identifier (OID selects the set)
+    *  key_bits = encoded public key
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
         this(mldsaParamsFromName(OIDS.lookup(alg_id.oid)), key_bits.ptr, key_bits.length);
@@ -1284,46 +1319,78 @@ public:
         return AlgorithmIdentifier(OIDS.lookup(m_pub.params.name), AlgorithmIdentifier.USE_NULL_PARAM);
     }
     override Vector!ubyte x509SubjectPublicKey() const { return mldsaEncodePublic(m_pub); }
+    /// Expanded public key.
     ref const(MLDSAPublic) raw() const { return m_pub; }
+    /// Parameter set of this key.
     MLDSAMode mode() const { return m_pub.params.mode; }
 
 private:
     MLDSAPublic m_pub;
 }
 
+/**
+* ML-DSA (FIPS 204) / Dilithium private key
+*/
 final class MLDSAPrivateKey : PrivateKey, PublicKey
 {
 public:
+    /**
+    * Generate a random key
+    * Params:
+    *  p = parameter block
+    *  rng = random number generator
+    */
     this(MLDSAParams p, RandomNumberGenerator rng)
     {
         m_sk = mldsaKeygen(p, rng);
     }
 
+    /// ditto
     this(MLDSAMode mode, RandomNumberGenerator rng)
     {
         this(mldsaParams(mode), rng);
     }
 
+    /**
+    * Params:
+    *  name = SCAN name ("ML-DSA-4x4", …)
+    *  rng = random number generator
+    */
     this(in string name, RandomNumberGenerator rng)
     {
         this(mldsaParamsFromName(name), rng);
     }
 
+    /**
+    * KeyGen from a 32-byte seed
+    * Params:
+    *  p = parameter block
+    *  xi = 32-byte seed
+    */
     this(MLDSAParams p, const(ubyte)* xi)
     {
         m_sk = mldsaKeygenFromSeed(p, xi);
     }
 
+    /// ditto
     this(MLDSAMode mode, const(ubyte)* xi)
     {
         this(mldsaParams(mode), xi);
     }
 
+    /// ditto
     this(in string name, const(ubyte)* xi)
     {
         this(mldsaParamsFromName(name), xi);
     }
 
+    /**
+    * Decode an encoded private key (32-byte seed, or expanded Dilithium R3)
+    * Params:
+    *  p = parameter block
+    *  bits = seed or expanded encoding
+    *  len = length of bits
+    */
     this(MLDSAParams p, const(ubyte)* bits, size_t len)
     {
         if (len == 32)
@@ -1334,11 +1401,18 @@ public:
             throw new DecodingError(p.name ~ ": unexpected private key length");
     }
 
+    /// ditto
     this(MLDSAMode mode, const(ubyte)* bits, size_t len)
     {
         this(mldsaParams(mode), bits, len);
     }
 
+    /**
+    * Decode PKCS #8 (seed form, or expanded Dilithium R3)
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = BER OCTET STRING of the seed
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits, RandomNumberGenerator)
     {
         import botan.asn1.ber_dec;
@@ -1373,8 +1447,11 @@ public:
         v[0 .. 32] = m_sk.xi[];
         return v.move();
     }
+    /// Expanded secret key.
     ref const(MLDSASecret) raw() const { return m_sk; }
+    /// Matching public key.
     MLDSAPublicKey publicKey() const { return new MLDSAPublicKey(m_sk.pub); }
+    /// Parameter set of this key.
     MLDSAMode mode() const { return m_sk.params.mode; }
 
 private:

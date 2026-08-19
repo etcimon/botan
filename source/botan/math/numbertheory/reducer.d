@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 1999-2010 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -24,10 +24,16 @@ import std.traits : isPointer;
 struct ModularReducer
 {
 public:
+    /**
+    * Returns: the modulus used for reduction
+    */
     ref const(BigInt) getModulus() const return { return m_modulus; }
 
-    /*
-    * Barrett Reduction
+    /**
+    * Barrett reduction of `x` modulo the stored modulus.
+    * Params:
+    *  x = value to reduce (moved from)
+    * Returns: x reduced into [0, p)
     */
     BigInt reduce(BigInt x) const
     {
@@ -108,9 +114,14 @@ public:
     BigInt cube()(const(BigInt)* x) const
     { return multiply(x, this.square(x)); }
 
+    /**
+    * Returns: true iff a modulus was supplied
+    */
     bool initialized() const { return (m_mod_words != 0); }
-    /*
-    * ModularReducer Constructor
+
+    /**
+    * Params:
+    *  mod = positive modulus p
     */
     this(const ref BigInt mod)
     {

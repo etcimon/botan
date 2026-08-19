@@ -26,8 +26,12 @@ import botan.utils.mem_ops;
 class DLIESEncryptor : PKEncryptor
 {
 public:
-    /*
-    * DLIESEncryptor Constructor
+    /**
+    * Params:
+    *  key = our DH/ECDH private key
+    *  kdf_obj = KDF used to derive the MAC key
+    *  mac_obj = MAC
+    *  mac_keylen = MAC key length (default 20)
     */
     this(in PKKeyAgreementKey key, KDF kdf_obj, MessageAuthenticationCode mac_obj, size_t mac_keylen = 20)
     { 
@@ -38,8 +42,9 @@ public:
         m_my_key = key.publicValue();
     }
 
-    /*
-    * Set the other parties public key
+    /**
+    * Params:
+    *  ok = peer public value
     */
     void setOtherKey()(const auto ref Vector!ubyte ok)
     {
@@ -106,8 +111,12 @@ private:
 class DLIESDecryptor : PKDecryptor
 {
 public:
-    /*
-    * DLIESDecryptor Constructor
+    /**
+    * Params:
+    *  key = our DH/ECDH private key
+    *  kdf_obj = KDF used to derive the MAC key
+    *  mac_obj = MAC
+    *  mac_key_len = MAC key length (default 20)
     */
     this(in PKKeyAgreementKey key, KDF kdf_obj, MessageAuthenticationCode mac_obj, size_t mac_key_len = 20)
     {

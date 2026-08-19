@@ -1258,9 +1258,19 @@ private AlgorithmIdentifier cmceAlgId(in string name)
     return AlgorithmIdentifier(OIDS.lookup(name), empty);
 }
 
+/**
+* Classic McEliece public key
+*/
 final class ClassicMcEliecePublicKey : PublicKey
 {
 public:
+    /**
+    * Decode an encoded public key
+    * Params:
+    *  name = SCAN name ("ClassicMcEliece-348864", …)
+    *  bits = packed public matrix T
+    *  len = must equal cmcePkBytes
+    */
     this(in string name, const(ubyte)* bits, size_t len)
     {
         m_pub.params = cmceParams(name);
@@ -1269,12 +1279,19 @@ public:
         m_pub.mat = bits[0 .. len].dup;
     }
 
+    /// Copy from an expanded public key.
     this(const ref CmcePublic pub)
     {
         m_pub.params = cmceParams(pub.params.name);
         m_pub.mat = pub.mat.dup;
     }
 
+    /**
+    * Decode X.509 SubjectPublicKeyInfo
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = encoded public key
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
         this(OIDS.lookup(alg_id.oid), key_bits.ptr, key_bits.length);
@@ -1293,21 +1310,38 @@ public:
         cmceEncodePk(m_pub, v.ptr);
         return v.move();
     }
+    /// Expanded public key (packed matrix T).
     ref const(CmcePublic) raw() const { return m_pub; }
 
 private:
     CmcePublic m_pub;
 }
 
+/**
+* Classic McEliece private key
+*/
 final class ClassicMcEliecePrivateKey : PrivateKey, PublicKey
 {
 public:
+    /**
+    * Generate a random key
+    * Params:
+    *  name = SCAN name ("ClassicMcEliece-348864", …)
+    *  rng = random number generator
+    */
     this(in string name, RandomNumberGenerator rng)
     {
         auto p = cmceParams(name);
         cmceKeygen(m_sk, p, rng);
     }
 
+    /**
+    * Decode an encoded private key
+    * Params:
+    *  name = SCAN name
+    *  bits = encoded secret
+    *  len = length of bits
+    */
     this(in string name, const(ubyte)* bits, size_t len)
     {
         auto p = cmceParams(name);
@@ -1315,6 +1349,14 @@ public:
             throw new DecodingError("Classic McEliece: unexpected or invalid private key");
     }
 
+    /**
+    * KeyGen from a 32-byte seed
+    * Params:
+    *  name = SCAN name
+    *  seed = 32-byte seed
+    *  seedlen = must be 32
+    *  from_seed = must be true
+    */
     this(in string name, const(ubyte)* seed, size_t seedlen, bool from_seed)
     {
         auto p = cmceParams(name);
@@ -1323,6 +1365,12 @@ public:
         cmceKeygenFromSeed(m_sk, p, seed);
     }
 
+    /**
+    * Decode PKCS #8
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = encoded private key
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits, RandomNumberGenerator)
     {
         this(OIDS.lookup(alg_id.oid), key_bits.ptr, key_bits.length);

@@ -37,12 +37,17 @@ public:
         DTLS_V12            = 0xFEFD
     }
 
-    /// Offer stays 1.2 even when `version(TLS_13)` is compiled (T13a).
+    /**
+    * Highest version offered by default. Stays TLS 1.2 even when
+    * `version(TLS_13)` is compiled (`version(TLS)` does not imply TLS 1.3).
+    * Returns: TLS_V12
+    */
     static TLSProtocolVersion latestTlsVersion()
     {
         return TLSProtocolVersion(TLS_V12);
     }
 
+    /// Highest DTLS version offered by default (DTLS 1.2).
     static TLSProtocolVersion latestDtlsVersion()
     {
         return TLSProtocolVersion(DTLS_V12);

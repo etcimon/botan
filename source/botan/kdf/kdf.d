@@ -38,6 +38,7 @@ class KDF
 public:
     ~this() {}
 
+    /// Human-readable algorithm name, e.g. "HKDF(SHA-256)".
     abstract @property string name() const;
 
     /**
@@ -128,6 +129,15 @@ public:
     /**
     * Derive a key with an explicit label (SP 800-108 / 56A / 56C).
     * Existing KDFs ignore `label`.
+    * Params:
+    *  key_len = desired output length
+    *  secret = IKM
+    *  secret_len = length of secret
+    *  salt = salt / nonce
+    *  salt_len = length of salt
+    *  label = context / label (ignored by IEEE / TLS PRFs)
+    *  label_len = length of label
+    * Returns: derived key
     */
     SecureVector!ubyte deriveKey(size_t key_len,
                                  const(ubyte)* secret,

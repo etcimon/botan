@@ -174,12 +174,21 @@ private:
 class PSSR_Raw : PSSR
 {
 public:
+    /**
+    * Params:
+    *  hash = the hash object (for length only; input is already a digest)
+    */
     this(HashFunction hash)
     {
         m_hash_len = hash.outputLength;
         super(hash);
     }
 
+    /**
+    * Params:
+    *  hash = the hash object (for length only; input is already a digest)
+    *  salt_size = the size of the salt to use in bytes
+    */
     this(HashFunction hash, size_t salt_size)
     {
         m_hash_len = hash.outputLength;

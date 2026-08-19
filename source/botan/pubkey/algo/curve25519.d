@@ -34,20 +34,30 @@ struct Curve25519PublicKey
 public:
 	enum algoName = "Curve25519";
 
-	/// Create a Curve25519 Public Key.
+	/**
+	* Decode X.509 SubjectPublicKeyInfo
+	* Params:
+	*  alg_id = algorithm identifier
+	*  key_bits = 32-byte public key (RFC 7748 u-coordinate)
+	*/
 	this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits) 
 	{
 		m_owned = true;
 		m_pub = new Curve25519PublicKeyImpl(alg_id, key_bits);
 	}
 
-	/// Create a Curve25519 Public Key.
+	/**
+	* Params:
+	*  pub = 32-byte public key
+	*/
 	this(const ref Vector!ubyte pub) { m_owned = true; m_pub = new Curve25519PublicKeyImpl(pub); }
 
-	/// Create a Curve25519 Public Key.
+	/// ditto
 	this(const ref SecureVector!ubyte pub) { m_owned = true; m_pub = new Curve25519PublicKeyImpl(pub); }
 
+	/// Wrap an existing key object (does not take Unique ownership).
 	this(PrivateKey pkey) { m_pub = cast(Curve25519PublicKeyImpl) pkey; }
+	/// ditto
 	this(PublicKey pkey) { m_pub = cast(Curve25519PublicKeyImpl) pkey; }
 	
 	mixin Embed!(m_pub, m_owned);
@@ -63,20 +73,31 @@ struct Curve25519PrivateKey
 {
 public:	
 	enum algoName = "Curve25519";
-	/// Create a new Curve 25519 private key
+	/**
+	* Generate a random key
+	* Params:
+	*  rng = random number generator
+	*/
 	this(RandomNumberGenerator rng) 
 	{
 		m_owned = true;
 		m_priv = new Curve25519PrivateKeyImpl(rng);
 	}
 
-	/// Load an existing Curve 25519 private key
+	/**
+	* Decode PKCS #8
+	* Params:
+	*  alg_id = algorithm identifier
+	*  key_bits = 32-byte scalar
+	*  rng = used for the load-time self-test
+	*/
 	this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits, RandomNumberGenerator rng) 
 	{
 		m_owned = true;
 		m_priv = new Curve25519PrivateKeyImpl(alg_id, key_bits, rng);
 	}
-	
+
+	/// Wrap an existing key object (does not take Unique ownership).
 	this(PrivateKey pkey) { m_priv = cast(Curve25519PrivateKeyImpl) pkey; }
 	
 	mixin Embed!(m_priv, m_owned);

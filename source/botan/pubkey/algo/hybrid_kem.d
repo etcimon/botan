@@ -50,15 +50,28 @@ private AlgorithmIdentifier hybridAlgId()
     return AlgorithmIdentifier(OIDS.lookup(HYBRID_NAME), empty);
 }
 
+/**
+* Hybrid KEM public key: ML-KEM-768 concatenated with X25519
+*/
 final class HybridPublicKey : PublicKey
 {
 public:
+    /**
+    * Params:
+    *  ml = ML-KEM-768 public key
+    *  x = 32-byte X25519 public key
+    */
     this(MLKEMPublicKey ml, Vector!ubyte x)
     {
         m_mlkem = ml;
         m_x25519 = x.move();
     }
 
+    /**
+    * Decode X.509 SubjectPublicKeyInfo
+    * Params:
+    *  key_bits = ML-KEM-768 pk || X25519 pk
+    */
     this(in AlgorithmIdentifier, const ref SecureVector!ubyte key_bits)
     {
         const size_t mlen = mlkem768Pk();
@@ -84,6 +97,13 @@ public:
         return v.move();
     }
 
+    /**
+    * Encapsulate to this public key
+    * Params:
+    *  rng = random number generator
+    *  ss = 32-byte shared secret out
+    *  ct = ciphertext out (mlkem ct || X25519 eph public)
+    */
     void encaps(RandomNumberGenerator rng, ubyte* ss, ubyte* ct)
     {
         auto ss1 = new ubyte[32];
@@ -100,9 +120,17 @@ private:
     Vector!ubyte m_x25519;
 }
 
+/**
+* Hybrid KEM private key: ML-KEM-768 concatenated with X25519
+*/
 final class HybridPrivateKey : PrivateKey, PublicKey
 {
 public:
+    /**
+    * Generate a random hybrid key
+    * Params:
+    *  rng = random number generator
+    */
     this(RandomNumberGenerator rng)
     {
         m_mlkem = new MLKEMPrivateKey(MLKEMMode.Kem768, rng);

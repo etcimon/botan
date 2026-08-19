@@ -58,6 +58,10 @@ public:
     override @property string name() const { return "KDF2(" ~ m_hash.name ~ ")"; }
     override KDF clone() const { return new KDF2(m_hash.clone()); }
 
+    /**
+    * Params:
+    *  h = hash used for IEEE 1363 KDF2
+    */
     this(HashFunction h) { m_hash = h; }
 private:
     Unique!HashFunction m_hash;

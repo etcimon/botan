@@ -29,6 +29,7 @@ public:
     */
     PBKDF clone() const;
 
+    /// Human-readable algorithm name, e.g. "PBKDF2(SHA-256)".
     @property string name() const;
 
     /**

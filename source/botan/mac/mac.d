@@ -57,6 +57,11 @@ public:
 */
 interface MacStart
 {
+    /**
+    * Params:
+    *  nonce = IV (GMAC) or customization string (KMAC)
+    *  nonce_len = length of nonce
+    */
     void start(const(ubyte)* nonce, size_t nonce_len);
 }
 

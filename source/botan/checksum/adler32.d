@@ -28,6 +28,7 @@ public:
 
     override void clear() { m_S1 = 1; m_S2 = 0; }
 
+    /// Empty checksum (IV for Adler-32).
     this() { clear(); }
     ~this() { clear(); }
 protected:

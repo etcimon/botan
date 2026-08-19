@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 2011-2012 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -39,6 +39,20 @@ class TLSSession
 public:
     /**
     * New session (sets session start time)
+    * Params:
+    *  session_identifier = session id
+    *  master_secret = TLS master secret
+    *  orig_hs_hash = handshake transcript hash (TLS 1.3 / EMS)
+    *  _version = negotiated protocol version
+    *  ciphersuite = suite id
+    *  compression_method = compression id (always 0 in TLS 1.3)
+    *  side = CLIENT or SERVER
+    *  fragment_size = max fragment
+    *  extended_master_secret = RFC 7627 flag
+    *  certs = peer certificate chain
+    *  ticket = NewSessionTicket blob, if any
+    *  server_info = SNI / service
+    *  srp_identifier = SRP user, or empty
     */
     this(Vector!ubyte session_identifier,
          SecureVector!ubyte master_secret,
@@ -72,6 +86,9 @@ public:
 
     /**
     * Load a session from DER representation (created by DER_encode)
+    * Params:
+    *  ber = DER bytes
+    *  ber_len = length of ber
     */
     this(const(ubyte)* ber, size_t ber_len)
     {

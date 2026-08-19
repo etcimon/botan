@@ -87,6 +87,11 @@ public:
 
     override bool authenticated() const { return true; }
 protected:
+    /**
+    * Params:
+    *  cipher = the underlying block cipher
+    *  feedback_bits = CFB feedback size in bits (0 = block size)
+    */
     this(BlockCipher cipher, size_t feedback_bits)
     { 
         m_cipher = cipher;
@@ -122,6 +127,11 @@ protected:
 final class CFBEncryption : CFBMode, Transformation
 {
 public:
+    /**
+    * Params:
+    *  cipher = the underlying block cipher
+    *  feedback_bits = CFB feedback size in bits (0 = block size)
+    */
     this(BlockCipher cipher, size_t feedback_bits)
     {
         super(cipher, feedback_bits);
@@ -178,6 +188,11 @@ public:
 final class CFBDecryption : CFBMode, Transformation
 {
 public:
+    /**
+    * Params:
+    *  cipher = the underlying block cipher
+    *  feedback_bits = CFB feedback size in bits (0 = block size)
+    */
     this(BlockCipher cipher, size_t feedback_bits) 
     {
         super(cipher, feedback_bits);

@@ -264,11 +264,13 @@ public:
             throw new InvalidOID(oid_str);
     }
 
+    /// Copy constructor.
     this(const ref OID other)
     {
         m_id = other.m_id.clone;
     }
 
+    /// ditto
     this(const OIDImpl other)
     {
         m_id = other.m_id.clone;

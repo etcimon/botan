@@ -81,6 +81,11 @@ public:
 
     final override bool authenticated() const { return true; }
 protected:
+    /**
+    * Params:
+    *  cipher = the underlying block cipher
+    *  padding = padding method (PKCS7, NoPadding, …)
+    */
     this(BlockCipher cipher, BlockCipherModePaddingMethod padding) 
     {
         m_cipher = cipher;
@@ -119,6 +124,11 @@ private:
 class CBCEncryption : CBCMode, Transformation
 {
 public:
+    /**
+    * Params:
+    *  cipher = the underlying block cipher
+    *  padding = padding method (PKCS7, NoPadding, …)
+    */
     this(BlockCipher cipher, BlockCipherModePaddingMethod padding)
     {
         super(cipher, padding);
@@ -196,6 +206,10 @@ public:
 final class CTSEncryption : CBCEncryption
 {
 public:
+    /**
+    * Params:
+    *  cipher = the underlying block cipher
+    */
     this(BlockCipher cipher)
     {
         super(cipher, null);
@@ -277,6 +291,11 @@ public:
 class CBCDecryption : CBCMode, Transformation
 {
 public:
+    /**
+    * Params:
+    *  cipher = the underlying block cipher
+    *  padding = padding method (PKCS7, NoPadding, …)
+    */
     this(BlockCipher cipher, BlockCipherModePaddingMethod padding)  
     {
         super(cipher, padding);
@@ -360,6 +379,10 @@ private:
 final class CTSDecryption : CBCDecryption, Transformation
 {
 public:
+    /**
+    * Params:
+    *  cipher = the underlying block cipher
+    */
     this(BlockCipher cipher)
     {
         super(cipher, null);

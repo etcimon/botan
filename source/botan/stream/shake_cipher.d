@@ -31,6 +31,11 @@ import std.algorithm : min;
 final class SHAKE_Cipher : StreamCipher, SymmetricAlgorithm
 {
 public:
+    /**
+    * Params:
+    *  xof = SHAKE XOF to wrap
+    *  nm = SCAN name ("SHAKE-128" or "SHAKE-256")
+    */
     this(XOF xof, string nm)
     {
         m_xof = xof;

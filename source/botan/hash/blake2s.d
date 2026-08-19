@@ -37,6 +37,10 @@ immutable uint[8] blake2s_IV = [
 final class Blake2s : HashFunction
 {
 public:
+    /**
+    * Params:
+    *  output_bits = digest length in bits (8..256, multiple of 8)
+    */
     this(size_t output_bits = 256)
     {
         if (output_bits == 0 || output_bits > 256 || output_bits % 8 != 0)

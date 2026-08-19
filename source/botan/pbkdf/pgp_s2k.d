@@ -32,6 +32,10 @@ import std.algorithm : min, max;
 final class OpenPGP_S2K : PBKDF
 {
 public:
+    /**
+    * Params:
+    *  hash = hash used for OpenPGP S2K
+    */
     this(HashFunction hash) { m_hash = hash; }
 
     override @property string name() const { return "OpenPGP-S2K(" ~ m_hash.name ~ ")"; }

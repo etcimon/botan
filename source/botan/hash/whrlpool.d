@@ -40,6 +40,7 @@ public:
         zeroise(m_digest);
     }
 
+    /// Empty digest (IV for Whirlpool).
     this() 
     { 
         super(64, true, true, 32);

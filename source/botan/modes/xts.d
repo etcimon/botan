@@ -80,6 +80,10 @@ public:
 
     override bool authenticated() const { return true; }
 protected:
+    /**
+    * Params:
+    *  cipher = a 64- or 128-bit block cipher
+    */
     this(BlockCipher cipher) 
     {
         m_cipher = cipher;
@@ -129,6 +133,10 @@ private:
 final class XTSEncryption : XTSMode, Transformation
 {
 public:
+    /**
+    * Params:
+    *  cipher = a 64- or 128-bit block cipher
+    */
     this(BlockCipher cipher) 
     {
         super(cipher);
@@ -231,6 +239,10 @@ public:
 final class XTSDecryption : XTSMode, Transformation
 {
 public:
+    /**
+    * Params:
+    *  cipher = a 64- or 128-bit block cipher
+    */
     this(BlockCipher cipher)
     {
         super(cipher);

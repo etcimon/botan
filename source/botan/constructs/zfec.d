@@ -227,6 +227,11 @@ alias ZfecOutput = void delegate(size_t share, const(ubyte)* data, size_t len);
 final class ZFEC
 {
 public:
+    /**
+    * Params:
+    *  K = number of shares needed to recover (1..255)
+    *  N = total shares produced (K..255)
+    */
     this(size_t K, size_t N)
     {
         if (K == 0 || N == 0 || K >= 256 || N >= 256 || K > N)

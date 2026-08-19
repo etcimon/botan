@@ -165,6 +165,13 @@ private BigInt randomScalar(SPAKE2pSystemParameters params, RandomNumberGenerato
 final class SPAKE2pSystemParameters
 {
 public:
+    /**
+    * Params:
+    *  group = elliptic-curve group
+    *  m = SPAKE2+ M generator
+    *  n = SPAKE2+ N generator
+    *  hash_fn = hash name (fixes HKDF/HMAC)
+    */
     this()(const auto ref ECGroup group, const auto ref PointGFp m, const auto ref PointGFp n, string hash_fn)
     {
         m_group = group.clone;
@@ -173,27 +180,44 @@ public:
         m_hash_fn = hash_fn.idup;
     }
 
+    /// RFC 9383 P-256 / SHA-256.
     static SPAKE2pSystemParameters rfc9383P256Sha256()
     { return fromNamed("secp256r1", SPAKE2P_P256_M, SPAKE2P_P256_N, "SHA-256"); }
 
+    /// RFC 9383 P-256 / SHA-512.
     static SPAKE2pSystemParameters rfc9383P256Sha512()
     { return fromNamed("secp256r1", SPAKE2P_P256_M, SPAKE2P_P256_N, "SHA-512"); }
 
+    /// RFC 9383 P-384 / SHA-256.
     static SPAKE2pSystemParameters rfc9383P384Sha256()
     { return fromNamed("secp384r1", SPAKE2P_P384_M, SPAKE2P_P384_N, "SHA-256"); }
 
+    /// RFC 9383 P-384 / SHA-512.
     static SPAKE2pSystemParameters rfc9383P384Sha512()
     { return fromNamed("secp384r1", SPAKE2P_P384_M, SPAKE2P_P384_N, "SHA-512"); }
 
+    /// RFC 9383 P-521 / SHA-512.
     static SPAKE2pSystemParameters rfc9383P521Sha512()
     { return fromNamed("secp521r1", SPAKE2P_P521_M, SPAKE2P_P521_N, "SHA-512"); }
 
-    /// Custom M/N (C++ `SystemParameters::custom`); used by `spake2p_custom.vec`.
+    /**
+    * Custom M/N (C++ `SystemParameters::custom`); used by `spake2p_custom.vec`.
+    * Params:
+    *  group_name = named curve
+    *  m_hex = uncompressed M point
+    *  n_hex = uncompressed N point
+    *  hash_fn = hash name
+    */
     static SPAKE2pSystemParameters custom(string group_name, string m_hex, string n_hex, string hash_fn)
     {
         return fromNamed(group_name, m_hex, n_hex, hash_fn);
     }
 
+    /**
+    * Params:
+    *  group_name = secp256r1, secp384r1, or secp521r1
+    *  hash_fn = SHA-256 or SHA-512 (P-521 is SHA-512 only)
+    */
     static SPAKE2pSystemParameters fromRfc9383(string group_name, string hash_fn)
     {
         if (group_name == "secp256r1" && hash_fn == "SHA-256")
@@ -245,6 +269,12 @@ private:
 final class SPAKE2pRegistrationRecord
 {
 public:
+    /**
+    * Params:
+    *  params = SPAKE2+ system parameters
+    *  rec = serialized (w0 || L)
+    *  rec_len = length in bytes
+    */
     static SPAKE2pRegistrationRecord deserialize(SPAKE2pSystemParameters params, const(ubyte)* rec, size_t rec_len)
     {
         const size_t scalar_len = params.group().getOrder().bytes();
@@ -258,11 +288,17 @@ public:
         return new SPAKE2pRegistrationRecord(w0, l);
     }
 
+    /// ditto
     static SPAKE2pRegistrationRecord deserialize()(SPAKE2pSystemParameters params, const auto ref Vector!ubyte rec)
     {
         return deserialize(params, rec.ptr, rec.length);
     }
 
+    /**
+    * Params:
+    *  params = SPAKE2+ system parameters
+    * Returns: serialized (w0 || L)
+    */
     SecureVector!ubyte serialize(SPAKE2pSystemParameters params) const
     {
         auto rec = BigInt.encode1363(m_w0, params.group().getOrder().bytes());
@@ -291,11 +327,22 @@ package:
 final class SPAKE2pProverSecret
 {
 public:
+    /**
+    * Params:
+    *  w0 = prehashed w0 scalar
+    *  w1 = prehashed w1 scalar
+    */
     static SPAKE2pProverSecret fromPrehashed()(const auto ref BigInt w0, const auto ref BigInt w1)
     {
         return new SPAKE2pProverSecret(w0, w1);
     }
 
+    /**
+    * Params:
+    *  params = SPAKE2+ system parameters
+    *  sec = serialized (w0 || w1)
+    *  sec_len = length in bytes
+    */
     static SPAKE2pProverSecret deserialize(SPAKE2pSystemParameters params, const(ubyte)* sec, size_t sec_len)
     {
         const size_t scalar_len = params.group().getOrder().bytes();
@@ -308,6 +355,11 @@ public:
         return new SPAKE2pProverSecret(w0, w1);
     }
 
+    /**
+    * Params:
+    *  params = SPAKE2+ system parameters
+    * Returns: serialized (w0 || w1)
+    */
     SecureVector!ubyte serialize(SPAKE2pSystemParameters params) const
     {
         auto rec = BigInt.encode1363(m_w0, params.group().getOrder().bytes());
@@ -316,6 +368,11 @@ public:
         return rec.move();
     }
 
+    /**
+    * Params:
+    *  params = SPAKE2+ system parameters
+    * Returns: verifier record (w0, L = w1·G)
+    */
     SPAKE2pRegistrationRecord registrationRecord(SPAKE2pSystemParameters params) const
     {
         auto l = params.group().getBasePoint() * &m_w1;
@@ -344,6 +401,17 @@ private:
 final class SPAKE2pProverContext
 {
 public:
+    /**
+    * Params:
+    *  params = SPAKE2+ system parameters
+    *  secret = prover (w0, w1)
+    *  prover_id = prover identity
+    *  prover_id_len = length of prover_id
+    *  verifier_id = verifier identity
+    *  verifier_id_len = length of verifier_id
+    *  context = optional transcript context
+    *  context_len = length of context
+    */
     this(SPAKE2pSystemParameters params, SPAKE2pProverSecret secret,
          const(ubyte)* prover_id, size_t prover_id_len,
          const(ubyte)* verifier_id, size_t verifier_id_len,
@@ -358,6 +426,7 @@ public:
         m_state = State.Initial;
     }
 
+    /// ditto
     this()(SPAKE2pSystemParameters params, SPAKE2pProverSecret secret,
            const auto ref Vector!ubyte prover_id,
            const auto ref Vector!ubyte verifier_id,
@@ -367,6 +436,11 @@ public:
              verifier_id.ptr, verifier_id.length, context.ptr, context.length);
     }
 
+    /**
+    * Params:
+    *  rng = RNG for the prover scalar
+    * Returns: prover share
+    */
     Vector!ubyte generateMessage(RandomNumberGenerator rng)
     {
         if (m_state != State.Initial)
@@ -384,6 +458,12 @@ public:
         return m_our_share.clone;
     }
 
+    /**
+    * Params:
+    *  peer = verifier share || confirmation
+    *  peer_len = length of peer
+    * Returns: prover confirmation
+    */
     Vector!ubyte processMessage(const(ubyte)* peer, size_t peer_len, RandomNumberGenerator)
     {
         if (m_state != State.ShareGenerated)
@@ -434,11 +514,15 @@ public:
         return keys.confirm_p.move();
     }
 
+    /// ditto
     Vector!ubyte processMessage()(const auto ref Vector!ubyte peer, RandomNumberGenerator rng)
     {
         return processMessage(peer.ptr, peer.length, rng);
     }
 
+    /**
+    * Returns: shared secret after successful confirmation
+    */
     ref const(SecureVector!ubyte) sharedSecret() const return
     {
         if (m_state != State.Complete)
@@ -446,6 +530,7 @@ public:
         return m_shared;
     }
 
+    /// Returns: the system parameters used by this context
     SPAKE2pSystemParameters parameters() { return m_params; }
 
 private:
@@ -468,6 +553,17 @@ private:
 final class SPAKE2pVerifierContext
 {
 public:
+    /**
+    * Params:
+    *  params = SPAKE2+ system parameters
+    *  record = verifier registration record
+    *  prover_id = prover identity
+    *  prover_id_len = length of prover_id
+    *  verifier_id = verifier identity
+    *  verifier_id_len = length of verifier_id
+    *  context = optional transcript context
+    *  context_len = length of context
+    */
     this(SPAKE2pSystemParameters params, SPAKE2pRegistrationRecord record,
          const(ubyte)* prover_id, size_t prover_id_len,
          const(ubyte)* verifier_id, size_t verifier_id_len,
@@ -482,6 +578,7 @@ public:
         m_state = State.Initial;
     }
 
+    /// ditto
     this()(SPAKE2pSystemParameters params, SPAKE2pRegistrationRecord record,
            const auto ref Vector!ubyte prover_id,
            const auto ref Vector!ubyte verifier_id,
@@ -491,6 +588,13 @@ public:
              verifier_id.ptr, verifier_id.length, context.ptr, context.length);
     }
 
+    /**
+    * Params:
+    *  peer = prover share
+    *  peer_len = length of peer
+    *  rng = RNG for the verifier scalar
+    * Returns: verifier share || confirmation
+    */
     Vector!ubyte processMessage(const(ubyte)* peer, size_t peer_len, RandomNumberGenerator rng)
     {
         if (m_state != State.Initial)
@@ -535,11 +639,17 @@ public:
         return outbuf.move();
     }
 
+    /// ditto
     Vector!ubyte processMessage()(const auto ref Vector!ubyte peer, RandomNumberGenerator rng)
     {
         return processMessage(peer.ptr, peer.length, rng);
     }
 
+    /**
+    * Params:
+    *  confirmation = prover confirmation
+    *  confirmation_len = length of confirmation
+    */
     void verifyConfirmation(const(ubyte)* confirmation, size_t confirmation_len)
     {
         if (m_state != State.Responded)
@@ -556,11 +666,13 @@ public:
         m_state = State.Complete;
     }
 
+    /// ditto
     void verifyConfirmation()(const auto ref Vector!ubyte confirmation)
     {
         verifyConfirmation(confirmation.ptr, confirmation.length);
     }
 
+    /// Complete without checking the prover confirmation (KATs only).
     void skipConfirmation()
     {
         if (m_state != State.Responded)
@@ -569,6 +681,9 @@ public:
         m_state = State.Complete;
     }
 
+    /**
+    * Returns: shared secret after successful confirmation
+    */
     ref const(SecureVector!ubyte) sharedSecret() const return
     {
         if (m_state != State.Complete)
@@ -576,6 +691,7 @@ public:
         return m_shared;
     }
 
+    /// Returns: the system parameters used by this context
     SPAKE2pSystemParameters parameters() { return m_params; }
 
 private:

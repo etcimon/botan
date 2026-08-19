@@ -25,6 +25,7 @@ import botan.utils.types;
 final class AsconXOF128 : XOF
 {
 public:
+    /// Empty XOF (IV for Ascon-XOF128).
     this()
     {
         m_p = AsconP(12, 12, 64, INIT);

@@ -52,25 +52,41 @@ struct SM2Options
     }
 }
 
+/**
+* SM2 public key (GB/T 32918)
+*/
 struct SM2PublicKey
 {
 public:
     alias Options = SM2Options;
     __gshared immutable string algoName = Options.algoName;
 
+    /**
+    * Params:
+    *  dom_par = curve domain
+    *  public_point = public point
+    */
     this(in ECGroup dom_par, in PointGFp public_point)
     {
         m_owned = true;
         m_pub = new ECPublicKey(Options(), dom_par, public_point);
     }
 
+    /**
+    * Decode X.509 SubjectPublicKeyInfo
+    * Params:
+    *  alg_id = algorithm identifier (includes the curve OID)
+    *  key_bits = encoded point
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
         m_owned = true;
         m_pub = new ECPublicKey(Options(), alg_id, key_bits);
     }
 
+    /// Wrap an existing key object (does not take Unique ownership).
     this(in PublicKey pkey) { m_pub = cast(ECPublicKey) pkey; }
+    /// ditto
     this(in PrivateKey pkey) { m_pub = cast(ECPublicKey) pkey; }
 
     mixin Embed!(m_pub, m_owned);
@@ -78,12 +94,21 @@ public:
     ECPublicKey m_pub;
 }
 
+/**
+* SM2 private key (GB/T 32918). Private scalar must be in 1 .. n-2.
+*/
 struct SM2PrivateKey
 {
 public:
     alias Options = SM2Options;
     __gshared immutable string algoName = Options.algoName;
 
+    /**
+    * Decode PKCS #8
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = encoded scalar
+    */
     this(const ref AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
         m_owned = true;
@@ -92,6 +117,12 @@ public:
             throw new DecodingError("SM2 private key cannot equal n-1");
     }
 
+    /**
+    * Generate a random key (retries if x == n-1)
+    * Params:
+    *  rng = random number generator
+    *  domain = curve domain
+    */
     this()(RandomNumberGenerator rng, const auto ref ECGroup domain)
     {
         m_owned = true;
@@ -104,6 +135,12 @@ public:
         }
     }
 
+    /**
+    * Params:
+    *  rng = random number generator
+    *  domain = curve domain
+    *  x = private scalar (must be < n-1)
+    */
     this()(RandomNumberGenerator rng, const auto ref ECGroup domain, const auto ref BigInt x)
     {
         m_owned = true;

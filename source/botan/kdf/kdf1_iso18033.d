@@ -29,6 +29,10 @@ import std.algorithm : min;
 final class KDF1_18033 : KDF
 {
 public:
+    /**
+    * Params:
+    *  hash = hash used for ISO 18033-2 KDF1
+    */
     this(HashFunction hash) { m_hash = hash; }
 
     override @property string name() const { return "KDF1-18033(" ~ m_hash.name ~ ")"; }

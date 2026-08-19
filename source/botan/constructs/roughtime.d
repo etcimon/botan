@@ -39,6 +39,10 @@ final class RoughtimeError : DecodingError
 /// 64-byte Roughtime nonce (C++ `Roughtime::Nonce`).
 struct RoughtimeNonce
 {
+    /**
+    * Params:
+    *  nonce = 64-byte nonce
+    */
     this(const(ubyte)[] nonce)
     {
         if (nonce.length != 64)
@@ -46,11 +50,16 @@ struct RoughtimeNonce
         m_nonce[] = nonce[0 .. 64];
     }
 
+    /**
+    * Params:
+    *  rng = RNG used to fill a random nonce
+    */
     this(RandomNumberGenerator rng)
     {
         rng.randomize(m_nonce.ptr, 64);
     }
 
+    /// ditto
     this(in ubyte[64] nonce)
     {
         m_nonce = nonce;
@@ -317,6 +326,12 @@ RoughtimeNonce nonceFromBlind(const(ubyte)[] previous_response, const ref Rought
 /// One response in a Roughtime chain (C++ `Roughtime::Link`).
 struct RoughtimeLink
 {
+    /**
+    * Params:
+    *  response = server response bytes
+    *  public_key = server public key
+    *  nonce_or_blind = nonce or blind used for this hop
+    */
     this(const(ubyte)[] response, const(ubyte)[] public_key, const ref RoughtimeNonce nonce_or_blind)
     {
         m_response = response.dup;
@@ -338,6 +353,10 @@ private:
 /// C++ `Roughtime::Chain`.
 struct RoughtimeChain
 {
+    /**
+    * Params:
+    *  str = chain text (one link per line)
+    */
     this(string str)
     {
         enum err4 = "Line does not have 4 space separated fields";
@@ -456,6 +475,12 @@ private:
 /// C++ `Roughtime::Server_Information`.
 struct RoughtimeServerInformation
 {
+    /**
+    * Params:
+    *  name = server name
+    *  public_key = server public key
+    *  addresses = server URLs
+    */
     this(string name, const(ubyte)[] public_key, string[] addresses)
     {
         m_name = name.idup;

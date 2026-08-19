@@ -127,6 +127,10 @@ public:
     }
 
 protected:
+    /**
+    * Params:
+    *  cipher = a 128-bit block cipher (typically AES-128 or AES-256)
+    */
     this(BlockCipher cipher)
     {
         if (cipher.blockSize() != BS)
@@ -219,6 +223,10 @@ private:
 final class GCMSIVEncryption : GCMSIVMode, Transformation
 {
 public:
+    /**
+    * Params:
+    *  cipher = a 128-bit block cipher (typically AES-128 or AES-256)
+    */
     this(BlockCipher cipher) { super(cipher); }
 
     override void finish(ref SecureVector!ubyte buffer, size_t offset = 0)
@@ -263,6 +271,10 @@ public:
 final class GCMSIVDecryption : GCMSIVMode, Transformation
 {
 public:
+    /**
+    * Params:
+    *  cipher = a 128-bit block cipher (typically AES-128 or AES-256)
+    */
     this(BlockCipher cipher) { super(cipher); }
 
     override void finish(ref SecureVector!ubyte buffer, size_t offset = 0)

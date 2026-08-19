@@ -21,6 +21,10 @@ import botan.modes.aead.aead;
 final class AEADFilter : TransformationFilter, Filterable
 {
 public:
+    /**
+    * Params:
+    *  aead = AEAD mode to wrap
+    */
     this(AEADMode aead)
     {
         super(aead);

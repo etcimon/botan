@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 1999-2009 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -27,6 +27,7 @@ public:
     /**
     * Create a seeded and active RNG object for general application use
     * Added in 1.8.0
+    * Returns: HMAC_RNG seeded from the global factory
     */
     static RandomNumberGenerator makeRng()
     {
@@ -36,6 +37,9 @@ public:
     /**
     * Create a seeded and active RNG object for general application use
     * Added in 1.11.5
+    * Params:
+    *  af = algorithm factory used to allocate HMAC
+    * Returns: HMAC_RNG
     */
     static RandomNumberGenerator makeRng(AlgorithmFactory af)
     {

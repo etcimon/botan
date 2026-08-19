@@ -59,6 +59,12 @@ public:
     alias Options = RSAOptions;
     __gshared immutable string algoName = Options.algoName;
 
+    /**
+    * Decode an X.509 SubjectPublicKeyInfo
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = BER of the RSAPublicKey
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits) 
     {
 		m_owned = true;
@@ -67,8 +73,9 @@ public:
 
     /**
     * Create a RSAPublicKey
-    * @arg n the modulus
-    * @arg e the exponent
+    * Params:
+    *  n = the modulus
+    *  e = the public exponent
     */
     this(BigInt n, BigInt e)
     {
@@ -76,7 +83,9 @@ public:
         m_pub = new IFSchemePublicKey(Options(), n.move(), e.move());
     }
 
+    /// Wrap an existing key object (does not take Unique ownership).
     this(PrivateKey pkey) { m_pub = cast(IFSchemePublicKey) pkey; }
+    /// ditto
     this(PublicKey pkey) { m_pub = cast(IFSchemePublicKey) pkey; }
 
     mixin Embed!(m_pub, m_owned);
@@ -94,6 +103,13 @@ public:
     alias Options = RSAOptions;
     __gshared immutable string algoName = Options.algoName;
 
+    /**
+    * Decode a PKCS #8 RSA private key
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = BER of the RSAPrivateKey
+    *  rng = used for the load-time self-test
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits, RandomNumberGenerator rng) 
     {
 		m_owned = true;

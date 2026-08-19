@@ -883,9 +883,19 @@ bool slhdsaHashVerify(const ref SLHDSAPublic pk, in string ph,
     return slhdsaVerifyPrefixed(pk, mprime.ptr, mprime.length, null, 0, sig, siglen);
 }
 
+/**
+* SLH-DSA (FIPS 205) public key
+*/
 final class SLHDSAPublicKey : PublicKey
 {
 public:
+    /**
+    * Decode an encoded public key
+    * Params:
+    *  name = SCAN name ("SLH-DSA-SHA2-128s", …)
+    *  bits = PK.seed || PK.root
+    *  len = must equal params.pk_bytes
+    */
     this(in string name, const(ubyte)* bits, size_t len)
     {
         m_pub.params = slhdsaParams(name);
@@ -895,6 +905,7 @@ public:
         m_pub.root = bits[m_pub.params.n .. 2 * m_pub.params.n].dup;
     }
 
+    /// Copy from an expanded public key.
     this(const ref SLHDSAPublic pub)
     {
         m_pub.params = pub.params;
@@ -902,6 +913,12 @@ public:
         m_pub.root = pub.root.dup;
     }
 
+    /**
+    * Decode X.509 SubjectPublicKeyInfo
+    * Params:
+    *  alg_id = algorithm identifier (OID selects the set)
+    *  key_bits = encoded public key
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
         this(OIDS.lookup(alg_id.oid), key_bits.ptr, key_bits.length);
@@ -923,21 +940,38 @@ public:
         slhdsaEncodePk(m_pub, v.ptr);
         return v.move();
     }
+    /// Expanded public key (PK.seed, PK.root).
     ref const(SLHDSAPublic) raw() const { return m_pub; }
 
 private:
     SLHDSAPublic m_pub;
 }
 
+/**
+* SLH-DSA (FIPS 205) private key
+*/
 final class SLHDSAPrivateKey : PrivateKey, PublicKey
 {
 public:
+    /**
+    * Generate a random key
+    * Params:
+    *  name = SCAN name ("SLH-DSA-SHA2-128s", …)
+    *  rng = random number generator
+    */
     this(in string name, RandomNumberGenerator rng)
     {
         auto p = slhdsaParams(name);
         slhdsaKeygen(m_sk, p, rng);
     }
 
+    /**
+    * Decode an encoded private key (expanded or 3n-byte seed)
+    * Params:
+    *  name = SCAN name
+    *  bits = SK.seed || SK.prf || PK.seed || PK.root, or three n-byte seeds
+    *  len = length of bits
+    */
     this(in string name, const(ubyte)* bits, size_t len)
     {
         auto p = slhdsaParams(name);
@@ -956,6 +990,12 @@ public:
             throw new DecodingError("SLH-DSA: unexpected private key length");
     }
 
+    /**
+    * Decode PKCS #8
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = encoded private key
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits, RandomNumberGenerator)
     {
         this(OIDS.lookup(alg_id.oid), key_bits.ptr, key_bits.length);
@@ -984,7 +1024,9 @@ public:
         slhdsaEncodeSk(m_sk, v.ptr);
         return v.move();
     }
+    /// Expanded secret key.
     ref const(SLHDSASecret) raw() const { return m_sk; }
+    /// Matching public key.
     SLHDSAPublicKey publicKey() const { return new SLHDSAPublicKey(m_sk.pub); }
 
 private:

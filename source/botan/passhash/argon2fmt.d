@@ -42,7 +42,17 @@ private string argon2ModeLetter(ubyte y)
 
 /**
 * Generate an Argon2 PHC string (`$argon2id$v=19$m=...,t=...,p=...$salt$hash`).
-* `y`: 0 = Argon2d, 1 = Argon2i, 2 = Argon2id.
+* Params:
+*  password = passphrase
+*  password_len = length of password
+*  rng = used to draw the salt
+*  p = parallelism
+*  M = memory in KiB
+*  t = iterations
+*  y = 0 Argon2d, 1 Argon2i, 2 Argon2id
+*  salt_len = salt length (default 16)
+*  output_len = hash length (default 32)
+* Returns: PHC encoded string
 */
 string generateArgon2Pwhash(const(char)* password, size_t password_len,
                             RandomNumberGenerator rng,

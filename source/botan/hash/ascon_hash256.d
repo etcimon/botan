@@ -23,6 +23,7 @@ import botan.utils.types;
 final class AsconHash256 : HashFunction
 {
 public:
+    /// Empty digest (IV for Ascon-Hash256).
     this()
     {
         m_p = AsconP(12, 12, 64, INIT);

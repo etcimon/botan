@@ -28,6 +28,10 @@ import std.conv : to;
 */
 final class KMAC128 : KMAC
 {
+    /**
+    * Params:
+    *  output_bits = MAC length in bits (default 256)
+    */
     this(size_t output_bits = 256) { super(1344, output_bits); }
     override @property string name() const { return "KMAC-128(" ~ to!string(outputLength * 8) ~ ")"; }
     override MessageAuthenticationCode clone() const { return new KMAC128(outputLength * 8); }
@@ -38,6 +42,10 @@ final class KMAC128 : KMAC
 */
 final class KMAC256 : KMAC
 {
+    /**
+    * Params:
+    *  output_bits = MAC length in bits (default 512)
+    */
     this(size_t output_bits = 512) { super(1088, output_bits); }
     override @property string name() const { return "KMAC-256(" ~ to!string(outputLength * 8) ~ ")"; }
     override MessageAuthenticationCode clone() const { return new KMAC256(outputLength * 8); }

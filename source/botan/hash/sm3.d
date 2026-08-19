@@ -26,6 +26,7 @@ import botan.utils.types;
 final class SM3 : MDxHashFunction, HashFunction
 {
 public:
+    /// Empty digest (IV for SM3).
     this()
     {
         super(64, true, true);

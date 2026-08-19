@@ -3,7 +3,7 @@
 * 
 * Copyright:
 * (C) 1999-2007 Jack Lloyd
-* (C) 2014-2015 Etienne Cimon
+* (C) 2014-2026 Etienne Cimon
 *
 * License:
 * Botan is released under the Simplified BSD License (see LICENSE.md)
@@ -46,6 +46,7 @@ public:
         m_digest[4] = 0xC3D2E1F0;
     }
 
+    /// Empty digest (IV for SHA-1).
     this()
     {
         super(64, true, true);

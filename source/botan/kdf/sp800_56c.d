@@ -24,6 +24,11 @@ import botan.utils.types;
 */
 final class SP800_56C_TwoStep : KDF
 {
+    /**
+    * Params:
+    *  mac = HMAC used for extract
+    *  exp = SP 800-108 expander
+    */
     this(MessageAuthenticationCode mac, KDF exp)
     {
         m_prf = mac;

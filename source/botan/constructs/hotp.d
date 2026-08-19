@@ -35,6 +35,13 @@ private uint hotpTruncate(uint code, size_t digits)
 final class HOTP
 {
 public:
+    /**
+    * Params:
+    *  key = HMAC key
+    *  key_len = length of key
+    *  hash_algo = "SHA-1", "SHA-256", or "SHA-512"
+    *  digits = 6, 7, or 8
+    */
     this(const(ubyte)* key, size_t key_len, string hash_algo = "SHA-1", size_t digits = 6)
     {
         if (digits != 6 && digits != 7 && digits != 8)
@@ -58,6 +65,11 @@ public:
         this(key.ptr, key.length, hash_algo, digits);
     }
 
+    /**
+    * Params:
+    *  counter = moving factor
+    * Returns: digits-long OTP
+    */
     uint generateHotp(ulong counter)
     {
         ubyte[8] be;
@@ -94,6 +106,14 @@ private:
 final class TOTP
 {
 public:
+    /**
+    * Params:
+    *  key = HMAC key
+    *  key_len = length of key
+    *  hash_algo = "SHA-1", "SHA-256", or "SHA-512"
+    *  digits = 6, 7, or 8
+    *  time_step = seconds per step (default 30)
+    */
     this(const(ubyte)* key, size_t key_len, string hash_algo = "SHA-1",
          size_t digits = 6, size_t time_step = 30)
     {
@@ -109,11 +129,23 @@ public:
         this(key.ptr, key.length, hash_algo, digits, time_step);
     }
 
+    /**
+    * Params:
+    *  unix_time = seconds since Unix epoch
+    * Returns: digits-long OTP
+    */
     uint generateTotp(ulong unix_time)
     {
         return m_hotp.generateHotp(unix_time / m_time_step);
     }
 
+    /**
+    * Params:
+    *  otp = candidate code
+    *  unix_time = seconds since Unix epoch
+    *  clock_drift_accepted = extra steps to search backward
+    * Returns: true if otp matches this or a previous step
+    */
     bool verifyTotp(uint otp, ulong unix_time, size_t clock_drift_accepted = 0)
     {
         if (clock_drift_accepted > 10000)

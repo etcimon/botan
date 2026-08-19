@@ -46,6 +46,7 @@ public:
         m_digest[4] = 0xC3D2E1F0;
     }
 
+    /// Empty digest (IV for HAS-160).
     this()
     {
         super(64, false, true);

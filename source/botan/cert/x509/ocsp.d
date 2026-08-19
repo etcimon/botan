@@ -36,11 +36,19 @@ import botan.utils.mem_ops;
 
 alias OCSPResponse = RefCounted!OCSPResponseImpl;
 
+/**
+* OCSP request for one certificate (RFC 6960)
+*/
 struct OCSPRequest
 {
 public:
     @disable this();
 
+    /**
+    * Params:
+    *  issuer_cert = issuer of subject_cert
+    *  subject_cert = certificate to query
+    */
     this(X509Certificate issuer_cert,
          X509Certificate subject_cert) 
         
@@ -51,6 +59,7 @@ public:
         m_subject = subject_cert;
     }
 
+    /// DER of the OCSPRequest.
     Vector!ubyte BER_encode() const
     {
         CertID certid = CertID(m_issuer, m_subject);
@@ -69,13 +78,16 @@ public:
                 .endCons().getContentsUnlocked();
     }
 
+    /// Base64 of BER_encode (for HTTP GET).
     string base64Encode() const
     {
         return .base64Encode(BER_encode());
     }
 
+    /// Issuer certificate this request was built from.
     const(X509Certificate) issuer() const { return m_issuer; }
 
+    /// Subject certificate being queried.
     const(X509Certificate) subject() const { return m_subject; }
 private:
     X509Certificate m_issuer, m_subject;

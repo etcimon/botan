@@ -46,6 +46,10 @@ public:
     override @property string name() const { return "KDF1(" ~ m_hash.name ~ ")"; }
     override KDF clone() const { return new KDF1(m_hash.clone()); }
 
+    /**
+    * Params:
+    *  h = hash used for IEEE 1363 KDF1
+    */
     this(HashFunction h) 
     {
         m_hash = h;

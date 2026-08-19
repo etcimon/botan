@@ -27,6 +27,11 @@ import std.conv : to;
 final class SipHash : MessageAuthenticationCode, BufferedComputation, SymmetricAlgorithm
 {
 public:
+    /**
+    * Params:
+    *  c = compression rounds (default 2)
+    *  d = finalization rounds (default 4)
+    */
     this(size_t c = 2, size_t d = 4)
     {
         if (c == 0 || c > 64 || d == 0 || d > 64)

@@ -38,7 +38,13 @@ enum size_t ARGON2_SYNC_POINTS = 4;
 final class Argon2 : PBKDF
 {
 public:
-    /// family: 0 = Argon2d, 1 = Argon2i, 2 = Argon2id
+    /**
+    * Params:
+    *  family = 0 Argon2d, 1 Argon2i, 2 Argon2id
+    *  M = memory in KiB (must be >= 8*p)
+    *  t = time cost (iterations)
+    *  p = parallelism
+    */
     this(ubyte family, size_t M, size_t t, size_t p)
     {
         if (family > 2)

@@ -78,8 +78,9 @@ public:
 
     override @property string name() const { return "X942_PRF(" ~ m_key_wrap_oid ~ ")"; }
     override KDF clone() const { return new X942PRF(m_key_wrap_oid); }
-    /*
-    * X9.42 Constructor
+    /**
+    * Params:
+    *  oid = key-wrap algorithm OID or name
     */
     this(in string oid)
     {

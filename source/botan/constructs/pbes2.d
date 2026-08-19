@@ -34,10 +34,12 @@ import botan.libstate.libstate;
 
 /**
 * Encrypt with PBES2 from PKCS #5 v2.0
-*  key_bits = the passphrase to use for encryption
+* Params:
+*  key_bits = plaintext to encrypt
+*  passphrase = PKCS #5 password
 *  msec = how many milliseconds to run PBKDF2
-*  cipher = specifies the block cipher to use to encrypt
-*  digest = specifies the PRF to use with PBKDF2 (eg "HMAC(SHA-1)")
+*  cipher = block cipher mode to use (e.g. "AES-256/CBC")
+*  digest = PRF digest name used with PBKDF2 (e.g. "SHA-1")
 *  rng = a random number generator
 */
 Pair!(AlgorithmIdentifier, Array!ubyte)
@@ -103,6 +105,13 @@ Pair!(AlgorithmIdentifier, Array!ubyte)
 /**
 * Encrypt with PBES2 using an explicit PBKDF2 iteration count
 * (C++ `pbes2_encrypt_iter`).
+* Params:
+*  key_bits = plaintext to encrypt
+*  passphrase = PKCS #5 password
+*  iterations = PBKDF2 iteration count
+*  cipher = block cipher mode to use (e.g. "AES-256/CBC")
+*  digest = PRF digest name used with PBKDF2
+*  rng = a random number generator
 */
 Pair!(AlgorithmIdentifier, Array!ubyte)
 	pbes2EncryptIter()(const auto ref SecureVector!ubyte key_bits,
@@ -198,8 +207,9 @@ Vector!ubyte encodePbes2Params(const string cipher,
 
 /**
 * Decrypt a PKCS #5 v2.0 encrypted stream
-*  key_bits = the input
-*  passphrase = the passphrase to use for decryption
+* Params:
+*  key_bits = ciphertext
+*  passphrase = PKCS #5 password
 *  params = the PBES2 parameters
 */
 SecureVector!ubyte

@@ -384,9 +384,18 @@ private AlgorithmIdentifier xmssAlgId()
     return AlgorithmIdentifier(OIDS.lookup("XMSS"), empty);
 }
 
+/**
+* XMSS public key (RFC 8391)
+*/
 final class XMSSPublicKey : PublicKey
 {
 public:
+    /**
+    * Decode an encoded public key (OID || root || SEED)
+    * Params:
+    *  bits = encoded public key
+    *  len = length of bits
+    */
     this(const(ubyte)* bits, size_t len)
     {
         if (len < 4)
@@ -399,11 +408,17 @@ public:
         m_pub.seed = bits[4 + m_pub.params.n .. 4 + 2 * m_pub.params.n].dup;
     }
 
+    /**
+    * Decode X.509 SubjectPublicKeyInfo
+    * Params:
+    *  key_bits = encoded public key
+    */
     this(in AlgorithmIdentifier, const ref SecureVector!ubyte key_bits)
     {
         this(key_bits.ptr, key_bits.length);
     }
 
+    /// Copy from an expanded public key.
     this(const ref XMSSPublic pub)
     {
         m_pub.params = pub.params;
@@ -426,6 +441,7 @@ public:
         v[4 + m_pub.params.n .. 4 + 2 * m_pub.params.n] = m_pub.seed[];
         return v.move();
     }
+    /// Expanded public key (root, SEED).
     ref const(XMSSPublic) raw() const { return m_pub; }
 
 private:
@@ -618,15 +634,30 @@ void xmssSign(ref XMSSSecret sk, const(ubyte)* msg, size_t msglen, ubyte* sig)
     }
 }
 
+/**
+* XMSS private key (RFC 8391)
+*/
 final class XMSSPrivateKey : PrivateKey, PublicKey
 {
 public:
+    /**
+    * Generate a random key
+    * Params:
+    *  name = parameter set ("XMSS-SHA2_10_256", …)
+    *  rng = random number generator
+    */
     this(in string name, RandomNumberGenerator rng)
     {
         auto p = xmssParamsFromName(name);
         xmssKeygen(m_sk, p, rng);
     }
 
+    /**
+    * Decode an encoded private key
+    * Params:
+    *  bits = OID || public || unused || PRF || SK_SEED
+    *  len = length of bits
+    */
     this(const(ubyte)* bits, size_t len)
     {
         if (len < 4)
@@ -649,11 +680,17 @@ public:
             m_sk.wots_method = XMSS_WOTS_BOTAN2X;
     }
 
+    /**
+    * Decode PKCS #8
+    * Params:
+    *  key_bits = encoded private key
+    */
     this(in AlgorithmIdentifier, const ref SecureVector!ubyte key_bits, RandomNumberGenerator)
     {
         this(key_bits.ptr, key_bits.length);
     }
 
+    /// Copy from an expanded secret key.
     this(const ref XMSSSecret sk)
     {
         m_sk.pub.params = sk.pub.params;

@@ -38,6 +38,12 @@ public:
     alias Options = DHOptions;
     __gshared immutable string algoName = Options.algoName;
 
+    /**
+    * Decode X.509 SubjectPublicKeyInfo
+    * Params:
+    *  alg_id = algorithm identifier (includes the DL group)
+    *  key_bits = public y
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
 		m_owned = true;
@@ -57,7 +63,9 @@ public:
         m_pub = new DLSchemePublicKey(Options(), grp.move, y1.move);
     }
 
+    /// Wrap an existing key object (does not take Unique ownership).
     this(PublicKey pkey) { m_pub = cast(DLSchemePublicKey) pkey; }
+    /// ditto
     this(PrivateKey pkey) { m_pub = cast(DLSchemePublicKey) pkey; }
 
     mixin Embed!(m_pub, m_owned);

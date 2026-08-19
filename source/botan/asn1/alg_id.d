@@ -64,8 +64,10 @@ public:
 
     this() { m_oid = OID(); }
 
-    /*
-    * Create an AlgorithmIdentifier
+    /**
+    * Params:
+    *  alg_id = algorithm OID
+    *  option = USE_NULL_PARAM to encode a DER NULL
     */
     this(OID alg_id, EncodingOption option) {
         __gshared immutable ubyte[2] DER_NULL = [ 0x05, 0x00 ];
@@ -76,8 +78,10 @@ public:
             m_parameters ~= DER_NULL.ptr[0 .. 2];
     }
 
-    /*
-    * Create an AlgorithmIdentifier
+    /**
+    * Params:
+    *  alg_id = algorithm name or dotted OID
+    *  option = USE_NULL_PARAM to encode a DER NULL
     */
     this(string alg_id, EncodingOption option) {
         __gshared immutable ubyte[2] DER_NULL = [ 0x05, 0x00 ];
@@ -88,8 +92,10 @@ public:
             m_parameters ~= DER_NULL.ptr[0 .. 2];
     }
     
-    /*
-    * Create an AlgorithmIdentifier
+    /**
+    * Params:
+    *  alg_id = algorithm OID
+    *  param = encoded parameters
     */
     this(OID alg_id, ref Vector!ubyte param)
     {
@@ -97,8 +103,10 @@ public:
         m_parameters = Vector!ubyte(param[]);
     }
 
-    /*
-    * Create an AlgorithmIdentifier
+    /**
+    * Params:
+    *  alg_id = algorithm name or dotted OID
+    *  param = encoded parameters
     */
     this(in string alg_id, ref Vector!ubyte param) {
         m_oid = OIDS.lookup(alg_id);

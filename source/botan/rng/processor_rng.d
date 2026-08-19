@@ -28,6 +28,7 @@ enum size_t HWRNG_RETRIES = 10;
 final class ProcessorRNG : RandomNumberGenerator
 {
 public:
+    /// Throws if the CPU RNG instruction is unavailable.
     this()
     {
         if (!available())

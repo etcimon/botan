@@ -36,8 +36,10 @@ alias X509DN = RefCounted!X509DNImpl;
 final class X509DNImpl : ASN1Object
 {
 public:
-    /*
-    * DER encode a DistinguishedName
+    /**
+    * DER-encode this DN as a SEQUENCE of RDNs
+    * Params:
+    *  der = encoder
     */
     override void encodeInto(ref DEREncoder der) const
     {

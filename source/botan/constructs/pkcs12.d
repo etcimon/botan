@@ -490,6 +490,7 @@ private void parseAuthenticatedSafe(const(ubyte)* data, size_t data_len, in stri
 final class PKCS12
 {
 public:
+    /// Empty bundle (populate via the parse constructor).
     this() {}
 
     ~this()
@@ -499,6 +500,12 @@ public:
         m_keys.length = 0;
     }
 
+    /**
+    * Params:
+    *  data = BER-encoded PFX
+    *  data_len = length of data
+    *  password = PKCS#12 password
+    */
     this(const(ubyte)* data, size_t data_len, in string password)
     {
         if (data_len == 0)
@@ -659,6 +666,7 @@ public:
             throw new DecodingError("PKCS#12: trailing data after PFX");
     }
 
+    /// ditto
     this(const(ubyte)[] data, in string password)
     {
         this(data.ptr, data.length, password);

@@ -33,6 +33,12 @@ public:
     alias Options = ECDHOptions;
     __gshared immutable string algoName = Options.algoName;
 
+    /**
+    * Decode X.509 SubjectPublicKeyInfo
+    * Params:
+    *  alg_id = algorithm identifier (includes the curve OID)
+    *  key_bits = encoded point
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits) 
     { 
 		m_owned = true;
@@ -52,7 +58,9 @@ public:
         m_pub = new ECPublicKey(Options(), dom_par, public_point);
     }
 
+    /// Wrap an existing key object (does not take Unique ownership).
     this(PrivateKey pkey) { m_pub = cast(ECPublicKey) pkey; }
+    /// ditto
     this(PublicKey pkey) { m_pub = cast(ECPublicKey) pkey; }
 
     mixin Embed!(m_pub, m_owned);
@@ -70,6 +78,12 @@ public:
     alias Options = ECDHOptions;
     __gshared immutable string algoName = Options.algoName;
 
+    /**
+    * Decode PKCS #8
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = encoded scalar
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits) 
     {
 		m_owned = true;
@@ -89,8 +103,10 @@ public:
         m_priv = new ECPrivateKey(Options(), rng, domain, x);
     }
 
+    /// Generate a random private key on `domain`.
     this(RandomNumberGenerator rng, const ref ECGroup domain) { auto bi = BigInt(0); this(rng, domain, bi.move()); }
 
+    /// Wrap an existing key object (does not take Unique ownership).
     this(PrivateKey pkey) { m_priv = cast(ECPrivateKey) pkey; }
 
     mixin Embed!(m_priv, m_owned);

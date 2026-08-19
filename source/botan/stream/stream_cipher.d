@@ -44,12 +44,15 @@ public:
     final void cipher1(ref ubyte[] buf)
     { cipher(buf.ptr, buf.ptr, buf.length); }
 
+    /// In-place cipher of `inoutput`.
     final void encipher(Alloc)(ref Vector!( ubyte, Alloc ) inoutput)
     { cipher(inoutput.ptr, inoutput.ptr, inoutput.length); }
 
+    /// ditto
     final void encrypt(Alloc)(ref Vector!( ubyte, Alloc ) inoutput)
     { cipher(inoutput.ptr, inoutput.ptr, inoutput.length); }
 
+    /// ditto
     final void decrypt(Alloc)(ref Vector!( ubyte, Alloc ) inoutput)
     { cipher(inoutput.ptr, inoutput.ptr, inoutput.length); }
 

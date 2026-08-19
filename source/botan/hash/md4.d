@@ -45,6 +45,7 @@ public:
         m_digest[3] = 0x10325476;
     }
 
+    /// Empty digest (IV for MD4).
     this()
     {  
         super(64, false, true);

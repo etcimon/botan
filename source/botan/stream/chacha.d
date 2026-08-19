@@ -32,6 +32,10 @@ static if (BOTAN_HAS_CHACHA_AVX2)
 final class ChaCha : StreamCipher, SymmetricAlgorithm
 {
 public:
+    /**
+    * Params:
+    *  rounds = 8, 12, or 20 (ChaCha20)
+    */
 	this(size_t rounds) {
 		m_rounds = rounds;
 		if (m_rounds != 8 && m_rounds != 12 && m_rounds != 20)

@@ -29,6 +29,7 @@ public:
 
     override void clear() { m_crc = 0xFFFFFFFF; }
 
+    /// Empty checksum (IV for CRC-32).
     this() { clear(); }
     ~this() { clear(); }
 

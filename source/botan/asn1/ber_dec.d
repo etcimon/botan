@@ -24,8 +24,8 @@ public:
 struct BERDecoder
 {
 public:
-    /*
-    * Return the BER encoding of the next object
+    /**
+    * Returns: the next BER object in the stream
     */
     BERObject getNextObject()
     {

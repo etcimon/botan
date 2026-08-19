@@ -86,6 +86,7 @@ public:
     }
 
 protected:
+    /// Empty Ascon-AEAD128 sponge.
     this()
     {
         m_p = AsconP(12, 8, 128, ZEROS);

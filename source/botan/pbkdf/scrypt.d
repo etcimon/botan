@@ -41,6 +41,12 @@ enum size_t SCRYPT_MAX_MEMORY = (size_t.sizeof == 4)
 final class Scrypt : PBKDF
 {
 public:
+    /**
+    * Params:
+    *  N = CPU/memory cost (power of two)
+    *  r = block size
+    *  p = parallelism
+    */
     this(size_t N, size_t r, size_t p)
     {
         if (N < 2 || (N & (N - 1)) != 0 || N > SCRYPT_MAX_N)

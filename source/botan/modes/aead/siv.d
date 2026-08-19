@@ -119,6 +119,10 @@ public:
     override size_t defaultNonceLength() const { return super.defaultNonceLength(); }
 
 protected:
+    /**
+    * Params:
+    *  cipher = a 128-bit block cipher
+    */
     this(BlockCipher cipher) 
     {
         m_name = cipher.name ~ "/SIV";

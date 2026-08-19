@@ -85,6 +85,7 @@ public:
 	}
 
 protected:
+	/// Empty AEAD (ChaCha + Poly1305 from the algorithm factory).
 	this() {
 		AlgorithmFactory af = globalState().algorithmFactory();
 		m_chacha = af.makeStreamCipher("ChaCha");
@@ -112,6 +113,7 @@ protected:
 final class ChaCha20Poly1305Encryption : ChaCha20Poly1305Mode, Transformation
 {
 public:
+	/// Empty ChaCha20-Poly1305 encryptor.
 	this() { super(); }
 	override size_t outputLength(size_t input_length) const { return input_length + tagSize(); }
 	
@@ -166,6 +168,7 @@ final class ChaCha20Poly1305Decryption : ChaCha20Poly1305Mode, Transformation
 {
 public:
 
+	/// Empty ChaCha20-Poly1305 decryptor.
 	this() { super(); }
 	override size_t outputLength(size_t input_length) const { 
 		assert(input_length > tagSize(), "Sufficient input");

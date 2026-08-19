@@ -44,6 +44,7 @@ public:
         m_digest[3] = 0x10325476;
     }
 
+    /// Empty digest (IV for RIPEMD-128).
     this() 
     { 
         super(64, false, true);

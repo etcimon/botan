@@ -693,9 +693,19 @@ private AlgorithmIdentifier frodoAlgId(in string name)
     return AlgorithmIdentifier(OIDS.lookup(name), empty);
 }
 
+/**
+* FrodoKEM public key
+*/
 final class FrodoPublicKey : PublicKey
 {
 public:
+    /**
+    * Decode an encoded public key
+    * Params:
+    *  name = SCAN name ("FrodoKEM-640-SHAKE", …)
+    *  bits = seedA || packed B
+    *  len = must equal frodoPkBytes
+    */
     this(in string name, const(ubyte)* bits, size_t len)
     {
         m_pub.params = frodoParams(name);
@@ -707,6 +717,7 @@ public:
         frodoHashPk(m_pub);
     }
 
+    /// Copy from an expanded public key.
     this(const ref FrodoPublic pub)
     {
         m_pub.params = pub.params;
@@ -717,6 +728,12 @@ public:
         m_pub.pkh = pub.pkh.dup;
     }
 
+    /**
+    * Decode X.509 SubjectPublicKeyInfo
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = encoded public key
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
         this(OIDS.lookup(alg_id.oid), key_bits.ptr, key_bits.length);
@@ -735,21 +752,38 @@ public:
         frodoEncodePk(m_pub, v.ptr);
         return v.move();
     }
+    /// Expanded public key.
     ref const(FrodoPublic) raw() const { return m_pub; }
 
 private:
     FrodoPublic m_pub;
 }
 
+/**
+* FrodoKEM private key
+*/
 final class FrodoPrivateKey : PrivateKey, PublicKey
 {
 public:
+    /**
+    * Generate a random key
+    * Params:
+    *  name = SCAN name ("FrodoKEM-640-SHAKE", …)
+    *  rng = random number generator
+    */
     this(in string name, RandomNumberGenerator rng)
     {
         auto p = frodoParams(name);
         frodoKeygen(m_sk, p, rng);
     }
 
+    /**
+    * Decode an encoded private key
+    * Params:
+    *  name = SCAN name
+    *  bits = s || pk || S^T || pkh
+    *  len = must equal frodoSkBytes
+    */
     this(in string name, const(ubyte)* bits, size_t len)
     {
         auto p = frodoParams(name);
@@ -768,6 +802,12 @@ public:
             throw new DecodingError("FrodoKEM embedded public key hash did not match recomputed value");
     }
 
+    /**
+    * Decode PKCS #8
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = encoded private key
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits, RandomNumberGenerator)
     {
         this(OIDS.lookup(alg_id.oid), key_bits.ptr, key_bits.length);

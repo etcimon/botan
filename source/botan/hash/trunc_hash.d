@@ -25,6 +25,11 @@ import std.conv : to;
 final class TruncatedHash : HashFunction
 {
 public:
+    /**
+    * Params:
+    *  hash = hash to wrap
+    *  bits = output length in bits (must be less than hash.outputLength*8)
+    */
     this(HashFunction hash, size_t bits)
     {
         if (!hash)

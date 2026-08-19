@@ -47,6 +47,7 @@ public:
         m_digest[7] = 0x47B5481DBEFA4FA4;
     }
 
+    /// Empty digest (IV for SHA-384).
     this()
     {  
         super(128, true, true, 16);
@@ -103,6 +104,7 @@ public:
         m_digest[7] = 0x5BE0CD19137E2179;
     }
 
+    /// Empty digest (IV for SHA-512).
     this() 
     { 
         super(128, true, true, 16);
@@ -155,6 +157,7 @@ public:
         m_digest[7] = 0x0EB72DDC81C52CA2;
     }
 
+    /// Empty digest (IV for SHA-512/256).
     this()
     {
         super(128, true, true, 16);

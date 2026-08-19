@@ -19,11 +19,13 @@ import botan.rng.hmac_drbg;
 import botan.utils.types;
 
 /**
+* Deterministic ECDSA/DSA nonce (RFC 6979)
 * Params:
 *  x = the secret (EC)DSA key
 *  q = the group order
 *  h = the message hash already reduced mod q
 *  hash = the hash function used to generate h
+* Returns: k in 1 .. q-1
 */
 BigInt generateRfc6979Nonce(const ref BigInt x, const ref BigInt q, const ref BigInt h, in string hash)
 {

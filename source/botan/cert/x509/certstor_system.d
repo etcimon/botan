@@ -31,6 +31,7 @@ import botan.utils.types;
 final class CertificateStoreSystem : CertificateStore
 {
 public:
+    /// Load OS trust anchors (throws if none found).
     this()
     {
         version (Windows)

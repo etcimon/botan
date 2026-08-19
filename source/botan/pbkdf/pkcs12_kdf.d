@@ -31,6 +31,11 @@ import std.conv : to;
 final class PKCS12_KDF : PBKDF
 {
 public:
+    /**
+    * Params:
+    *  hash = hash used for RFC 7292 KDF
+    *  id = purpose: 1=key, 2=IV, 3=MAC
+    */
     this(HashFunction hash, ubyte id)
     {
         if (id < 1 || id > 3)

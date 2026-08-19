@@ -16,6 +16,9 @@ static if (BOTAN_HAS_AUTO_SEEDING_RNG):
 public import botan.rng.rng;
 import botan.utils.types;
 
+/**
+* HMAC_RNG seeded from the global factory. Preferred application RNG.
+*/
 final class AutoSeededRNG : RandomNumberGenerator
 {
 public:
@@ -35,6 +38,7 @@ public:
 
 	override SecureVector!ubyte randomVec(size_t bytes) { return super.randomVec(bytes); }
 
+    /// Seeded HMAC_RNG from LibraryState.
     this()
     {
         m_rng = RandomNumberGenerator.makeRng();

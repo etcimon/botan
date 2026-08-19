@@ -50,6 +50,7 @@ public:
     }
 
 
+    /// Empty digest (IV for SHA-224).
     this()
     { 
         super(64, true, true);
@@ -110,6 +111,7 @@ public:
         m_digest[7] = 0x5BE0CD19;
     }
 
+    /// Empty digest (IV for SHA-256).
     this()
     { 
         super(64, true, true);

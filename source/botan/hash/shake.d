@@ -21,6 +21,9 @@ import std.conv : to;
 enum SHAKE_128_BITRATE = 1600 - 256;
 enum SHAKE_256_BITRATE = 1600 - 512;
 
+/**
+* SHAKE-128 XOF used as a hash (FIPS 202). Output length is set at construction.
+*/
 final class SHAKE128 : HashFunction
 {
 public:
@@ -77,6 +80,9 @@ protected:
     size_t m_S_pos;
 }
 
+/**
+* SHAKE-256 XOF used as a hash (FIPS 202). Output length is set at construction.
+*/
 final class SHAKE256 : HashFunction
 {
 public:

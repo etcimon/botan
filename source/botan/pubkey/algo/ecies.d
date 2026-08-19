@@ -35,6 +35,9 @@ enum : ubyte {
     ECIES_HYBRID       = PointGFp.HYBRID
 }
 
+/**
+* ECIES system parameters (group, KDF, DEM cipher, MAC, point format).
+*/
 final class ECIESSystemParams
 {
     ECGroup group;
@@ -51,6 +54,20 @@ final class ECIESSystemParams
     // 0 => dem_key_len + mac_key_len (ECIES-DEM). ISO 18033-2 KEM KATs set this.
     size_t kdf_out_len = 0;
 
+    /**
+    * Params:
+    *  g = EC domain
+    *  kdf_spec = KDF SCAN name
+    *  dem_spec = DEM cipher SCAN name
+    *  dem_len = DEM key length
+    *  mac_spec = MAC SCAN name
+    *  mac_len = MAC key length
+    *  format = point encoding (uncompressed / compressed / hybrid)
+    *  single_hash = ISO 18033-2 single-hash mode
+    *  cofactor = BSI TR-03111 cofactor mode
+    *  old_cofactor = ISO 18033 old-cofactor (scale the peer point)
+    *  check = check mode (mutually exclusive with the cofactor flags)
+    */
     this()(const auto ref ECGroup g, string kdf_spec, string dem_spec, size_t dem_len,
            string mac_spec, size_t mac_len, ubyte format = ECIES_UNCOMPRESSED,
            bool single_hash = false, bool cofactor = false,
@@ -71,6 +88,7 @@ final class ECIESSystemParams
         check_mode = check;
     }
 
+    /// KDF output length (DEM key + MAC key, unless kdf_out_len is set).
     size_t secretLength() const { return kdf_out_len ? kdf_out_len : dem_key_len + mac_key_len; }
 }
 
@@ -146,9 +164,17 @@ SecureVector!ubyte eciesDeriveSecret(const ECIESSystemParams params,
     return kdf.deriveKey(params.secretLength(), kdf_in.ptr, kdf_in.length);
 }
 
+/**
+* ECIES encryptor (ISO 18033-2 / IEEE 1363a)
+*/
 class ECIESEncryptor : PKEncryptor
 {
 public:
+    /**
+    * Params:
+    *  eph = ephemeral ECDH key (its public point is prepended to the ciphertext)
+    *  params = system parameters
+    */
     this(in ECDHPrivateKey eph, ECIESSystemParams params)
     {
         m_params = params;
@@ -156,18 +182,31 @@ public:
         m_eph_public = unlock(EC2OSP(eph.publicPoint(), params.point_format));
     }
 
+    /**
+    * Params:
+    *  pt = peer public point
+    */
     void setOtherKey(const ref PointGFp pt)
     {
         m_other = unlock(EC2OSP(pt, m_params.point_format));
         m_other_set = true;
     }
 
+    /**
+    * Params:
+    *  iv = DEM IV; required fresh for each message
+    */
     void setInitializationVector(const(ubyte)[] iv)
     {
         m_iv = Vector!ubyte(iv);
         m_iv_set = true;
     }
 
+    /**
+    * Optional MAC label (ISO 18033-2)
+    * Params:
+    *  label = associated data for the MAC
+    */
     void setLabel(string label)
     {
         m_label = Vector!ubyte(cast(const(ubyte)[]) label);
@@ -219,9 +258,17 @@ private:
     bool m_iv_set;
 }
 
+/**
+* ECIES decryptor
+*/
 class ECIESDecryptor : PKDecryptor
 {
 public:
+    /**
+    * Params:
+    *  key = static ECDH private key
+    *  params = system parameters (must match the encryptor)
+    */
     this(in ECDHPrivateKey key, ECIESSystemParams params)
     {
         m_params = params;

@@ -27,6 +27,10 @@ import botan.utils.mem_ops;
 final class Blake2bMAC : MessageAuthenticationCode, BufferedComputation, SymmetricAlgorithm
 {
 public:
+    /**
+    * Params:
+    *  output_bits = MAC length in bits (8..512, multiple of 8)
+    */
     this(size_t output_bits = 512)
     {
         m_blake = new Blake2b(output_bits);

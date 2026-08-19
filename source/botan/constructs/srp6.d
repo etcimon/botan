@@ -22,10 +22,16 @@ import botan.libstate.global_state;
 import botan.math.numbertheory.numthry;
 import botan.utils.types;
 
+/// Ephemeral SRP-6a key pair (private scalar + public group element).
 struct SRP6KeyPair {
     BigInt privkey;
     SymmetricKey pubkey;
 
+    /**
+    * Params:
+    *  priv = private scalar (moved)
+    *  pub = public value as a SymmetricKey
+    */
     this(BigInt* priv, SymmetricKey pub) {
         privkey = priv.move();
         pubkey = pub;

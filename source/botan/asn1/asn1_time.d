@@ -32,8 +32,10 @@ final class X509TimeImpl : ASN1Object
 {
 public:
 
-    /*
-    * DER encode a X509Time
+    /**
+    * DER-encode as UTCTime or GeneralizedTime
+    * Params:
+    *  der = encoder
     */
     override void encodeInto(ref DEREncoder der) const
     {

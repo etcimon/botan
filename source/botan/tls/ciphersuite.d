@@ -510,6 +510,7 @@ public:
     */
     ref const(string) macAlgo() const return { return m_mac_algo; }
 
+    /// PRF hash (TLS 1.2+); falls back to the MAC hash if unset.
     ref const(string) prfAlgo() const return
     {
         return (m_prf_algo != "") ? m_prf_algo : m_mac_algo;
@@ -520,10 +521,13 @@ public:
     */
     size_t cipherKeylen() const { return m_cipher_keylen; }
 
+    /// Explicit nonce bytes carried in the handshake (GCM salt, …).
     size_t nonceBytesFromHandshake() const { return m_nonce_bytes_from_handshake; }
 
+    /// Explicit nonce bytes carried per record (TLS 1.2 GCM).
     size_t nonceBytesFromRecord() const { return m_nonce_bytes_from_record; }
 
+    /// MAC or AEAD key length in bytes.
     size_t macKeylen() const { return m_mac_keylen; }
 
     /**

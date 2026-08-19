@@ -30,14 +30,15 @@ import botan.utils.types;
 struct DEREncoder
 {
 public:
+    /// DER bytes as an unlocked Vector.
     Vector!ubyte getContentsUnlocked()
     {
         //logTrace("DEREncoder.getContentsUnlocked");
         return unlock(getContents()); 
     }
 
-    /*
-    * Return the encoded m_contents
+    /**
+    * Returns: the encoded contents
     */
     SecureVector!ubyte getContents()
     {

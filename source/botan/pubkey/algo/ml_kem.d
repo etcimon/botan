@@ -33,8 +33,12 @@ enum short MLKEM_Q = 3329;
 enum size_t MLKEM_SYMBYTES = 32;
 enum size_t MLKEM_SSBYTES = 32;
 
+/// FIPS 203 parameter set (512 / 768 / 1024).
 enum MLKEMMode : ubyte { Kem512 = 0, Kem768 = 1, Kem1024 = 2 }
 
+/**
+* ML-KEM / Kyber parameter block (k, eta1, du, dv, SCAN name).
+*/
 struct MLKEMParams
 {
     MLKEMMode mode;
@@ -48,6 +52,13 @@ struct MLKEMParams
     bool kyber_90s;
 }
 
+/**
+* Params:
+*  mode = 512, 768, or 1024
+*  kyber_r3 = true for Round-3 Kyber (not FIPS 203)
+*  kyber_90s = true for the AES-based 90s variant
+* Returns: filled parameter block
+*/
 MLKEMParams mlkemParams(MLKEMMode mode, bool kyber_r3 = false, bool kyber_90s = false)
 {
     MLKEMParams p;
@@ -71,6 +82,11 @@ MLKEMParams mlkemParams(MLKEMMode mode, bool kyber_r3 = false, bool kyber_90s = 
     }
 }
 
+/**
+* Params:
+*  name = "ML-KEM-768", "Kyber-512-r3", …
+* Returns: parameter block
+*/
 MLKEMParams mlkemParamsFromName(in string name)
 {
     if (name == "ML-KEM-512") return mlkemParams(MLKEMMode.Kem512);
@@ -652,6 +668,7 @@ private void getNoise(const ref MLKEMParams p, ref short[256] r, const(ubyte)* s
     samplePolyCBD(r, buf.ptr, eta);
 }
 
+/// Encoded public key in expanded form (t, rho, H(pk)).
 struct MLKEMPublic
 {
     MLKEMParams params;
@@ -660,6 +677,7 @@ struct MLKEMPublic
     ubyte[32] h;
 }
 
+/// Secret key plus the matching public key.
 struct MLKEMSecret
 {
     MLKEMParams params;
@@ -1002,15 +1020,31 @@ ubyte[16] mlkemSha256_16(const(ubyte)* p, size_t n)
     return outp;
 }
 
+/**
+* ML-KEM (FIPS 203) / Kyber public key
+*/
 final class MLKEMPublicKey : PublicKey
 {
 public:
+    /**
+    * Decode an encoded public key
+    * Params:
+    *  mode = parameter set
+    *  bits = t || rho
+    *  len = must be mlkemPkBytes(mode)
+    */
     this(MLKEMMode mode, const(ubyte)* bits, size_t len)
     {
         auto p = mlkemParams(mode);
         this(p, bits, len);
     }
 
+    /**
+    * Params:
+    *  p = parameter block
+    *  bits = t || rho
+    *  len = must equal mlkemPkBytes(p)
+    */
     this(const ref MLKEMParams p, const(ubyte)* bits, size_t len)
     {
         if (len != mlkemPkBytes(p))
@@ -1018,12 +1052,19 @@ public:
         m_pub = decodePk(bits, p);
     }
 
+    /**
+    * Params:
+    *  name = SCAN name ("ML-KEM-768", …)
+    *  bits = encoded public key
+    *  len = length of bits
+    */
     this(in string name, const(ubyte)* bits, size_t len)
     {
         auto p = mlkemParamsFromName(name);
         this(p, bits, len);
     }
 
+    /// Copy from an expanded public key.
     this(const ref MLKEMPublic pub)
     {
         m_pub.params = pub.params;
@@ -1034,6 +1075,12 @@ public:
         m_pub.h = pub.h;
     }
 
+    /**
+    * Decode X.509 SubjectPublicKeyInfo
+    * Params:
+    *  alg_id = algorithm identifier (OID selects the set)
+    *  key_bits = encoded public key
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
         this(OIDS.lookup(alg_id.oid), key_bits.ptr, key_bits.length);
@@ -1053,22 +1100,38 @@ public:
     {
         return mlkemEncodePublic(m_pub);
     }
+    /// Expanded public key (polynomials, rho, H(pk)).
     ref const(MLKEMPublic) raw() const { return m_pub; }
+    /// Parameter set of this key.
     MLKEMMode mode() const { return m_pub.params.mode; }
 
 private:
     MLKEMPublic m_pub;
 }
 
+/**
+* ML-KEM (FIPS 203) / Kyber private key
+*/
 final class MLKEMPrivateKey : PrivateKey, PublicKey
 {
 public:
+    /**
+    * Generate a random key
+    * Params:
+    *  mode = parameter set
+    *  rng = random number generator
+    */
     this(MLKEMMode mode, RandomNumberGenerator rng)
     {
         m_sk = mlkemKeygen(mode, rng);
         m_has_seed = true;
     }
 
+    /**
+    * Params:
+    *  name = SCAN name ("ML-KEM-768", …)
+    *  rng = random number generator
+    */
     this(in string name, RandomNumberGenerator rng)
     {
         auto p = mlkemParamsFromName(name);
@@ -1076,18 +1139,27 @@ public:
         m_has_seed = true;
     }
 
+    /**
+    * KeyGen from FIPS 203 seeds (d, z), each 32 bytes
+    * Params:
+    *  mode = parameter set
+    *  d = seed d
+    *  z = implicit-rejection seed z
+    */
     this(MLKEMMode mode, const(ubyte)* d, const(ubyte)* z)
     {
         m_sk = mlkemKeygenFromSeeds(mode, d, z);
         m_has_seed = true;
     }
 
+    /// ditto
     this(const ref MLKEMParams p, const(ubyte)* d, const(ubyte)* z)
     {
         m_sk = mlkemKeygenFromSeeds(p, d, z);
         m_has_seed = true;
     }
 
+    /// ditto
     this(in string name, const(ubyte)* d, const(ubyte)* z)
     {
         auto p = mlkemParamsFromName(name);
@@ -1095,18 +1167,32 @@ public:
         m_has_seed = true;
     }
 
+    /**
+    * Decode an encoded private key
+    * Params:
+    *  mode = parameter set
+    *  bits = seed (64 bytes) or expanded encoding
+    *  len = length of bits
+    */
     this(MLKEMMode mode, const(ubyte)* bits, size_t len)
     {
         auto p = mlkemParams(mode);
         loadEncoded(p, bits, len);
     }
 
+    /// ditto
     this(in string name, const(ubyte)* bits, size_t len)
     {
         auto p = mlkemParamsFromName(name);
         loadEncoded(p, bits, len);
     }
 
+    /**
+    * Decode PKCS #8 (seed form, 64 bytes)
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = BER OCTET STRING of d || z
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits, RandomNumberGenerator)
     {
         import botan.asn1.ber_dec;

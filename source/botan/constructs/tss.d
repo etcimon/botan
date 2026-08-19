@@ -215,11 +215,21 @@ public:
         m_contents = SecureArray!ubyte(hexDecodeLocked(hex_input)[]);
     }
 
+    /**
+    * Params:
+    *  input = serialized RTSS share
+    *  length = length of input
+    */
     this(const(ubyte)* input, size_t length)
     {
         load(input, length);
     }
 
+    /**
+    * Params:
+    *  input = serialized RTSS share
+    *  length = length of input
+    */
     void load(const(ubyte)* input, size_t length)
     {
         m_contents = SecureArray!ubyte(input[0 .. length]);

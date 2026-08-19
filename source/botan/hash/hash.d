@@ -25,8 +25,10 @@ public:
     HashFunction clone() const;
     final @disable HashFunction dup() const;
 
+    /// Clear the digest state (object looks newly allocated).
     void clear();
 
+    /// Human-readable algorithm name, e.g. "SHA-256".
     @property string name() const;
 
     /**

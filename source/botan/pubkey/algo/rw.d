@@ -70,19 +70,32 @@ public:
     alias Options = RWOptions;
     __gshared immutable string algoName = Options.algoName;
 
+    /**
+    * Decode X.509 SubjectPublicKeyInfo
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = BER of the RW public key
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
 		m_owned = true;
         m_pub = new IFSchemePublicKey(Options(), alg_id, key_bits);
     }
 
+    /**
+    * Params:
+    *  mod = modulus n
+    *  exponent = public exponent e
+    */
     this(BigInt mod, BigInt exponent)
     {
 		m_owned = true;
         m_pub = new IFSchemePublicKey(Options(), mod.move(), exponent.move());
     }
 
+    /// Wrap an existing key object (does not take Unique ownership).
     this(PrivateKey pkey) { m_pub = cast(IFSchemePublicKey) pkey; }
+    /// ditto
     this(PublicKey pkey) { m_pub = cast(IFSchemePublicKey) pkey; }
 
     mixin Embed!(m_pub, m_owned);
@@ -100,6 +113,13 @@ public:
     alias Options = RWOptions;
     __gshared immutable string algoName = Options.algoName;
 
+    /**
+    * Decode PKCS #8
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = BER of the RW private key
+    *  rng = used for the load-time self-test
+    */
     this(in AlgorithmIdentifier alg_id,
          const ref SecureVector!ubyte key_bits,
          RandomNumberGenerator rng) 
@@ -108,6 +128,15 @@ public:
         m_priv = new IFSchemePrivateKey(Options(), rng, alg_id, key_bits);
     }
 
+    /**
+    * Params:
+    *  rng = random number generator
+    *  p = first prime
+    *  q = second prime
+    *  e = public exponent
+    *  d = private exponent, or 0 to compute
+    *  n = modulus, or 0 to compute p*q
+    */
     this(RandomNumberGenerator rng,
          BigInt p, BigInt q,
          BigInt e, BigInt d = BigInt(0),
@@ -117,8 +146,12 @@ public:
         m_priv = new IFSchemePrivateKey(Options(), rng, p.move(), q.move(), e.move(), d.move(), n.move());
     }
 
-    /*
-    * Create a Rabin-Williams private key
+    /**
+    * Generate a new private key
+    * Params:
+    *  rng = random number generator
+    *  bits = modulus size
+    *  exp = public exponent (even, default 2)
     */
     this(RandomNumberGenerator rng, size_t bits, size_t exp = 2)
     {

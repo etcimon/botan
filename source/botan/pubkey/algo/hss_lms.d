@@ -688,9 +688,18 @@ private AlgorithmIdentifier hssAlgId()
     return AlgorithmIdentifier(OIDS.lookup("HSS-LMS"), empty);
 }
 
+/**
+* HSS/LMS public key (RFC 8554)
+*/
 final class HSSLMSPublicKey : PublicKey
 {
 public:
+    /**
+    * Decode an encoded public key
+    * Params:
+    *  bits = L || LMS public key
+    *  len = length of bits
+    */
     this(const(ubyte)* bits, size_t len)
     {
         if (len < 4 + 24)
@@ -698,6 +707,11 @@ public:
         m_bits = bits[0 .. len].dup;
     }
 
+    /**
+    * Decode X.509 SubjectPublicKeyInfo
+    * Params:
+    *  key_bits = encoded public key
+    */
     this(in AlgorithmIdentifier, const ref SecureVector!ubyte key_bits)
     {
         this(key_bits.ptr, key_bits.length);
@@ -727,21 +741,36 @@ public:
         v[] = m_bits[];
         return v.move();
     }
+    /// Encoded public key bytes.
     const(ubyte)[] raw() const { return m_bits; }
 
 private:
     ubyte[] m_bits;
 }
 
+/**
+* HSS/LMS private key (RFC 8554)
+*/
 final class HSSLMSPrivateKey : PrivateKey, PublicKey
 {
 public:
+    /**
+    * Decode an encoded private key
+    * Params:
+    *  bits = encoded HSS private key
+    *  len = length of bits
+    */
     this(const(ubyte)* bits, size_t len)
     {
         hssParsePrivate(m_sk, bits, len);
     }
 
-    /// C++ `HSS_LMS_PrivateKey(rng, "SHA-256,HW(5,8)")` — one LMS layer.
+    /**
+    * Generate a one-layer LMS key. C++ `HSS_LMS_PrivateKey(rng, "SHA-256,HW(5,8)")`.
+    * Params:
+    *  params = currently "SHA-256,HW(5,8)"
+    *  rng = random number generator
+    */
     this(in string params, RandomNumberGenerator rng)
     {
         // "SHA-256,HW(h,w)" → LMS height h, Winternitz w.

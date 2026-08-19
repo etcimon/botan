@@ -34,8 +34,11 @@ static if (BOTAN_HAS_AES_CTR_XOF) import botan.xof.aes_ctr_xof;
 class XOF
 {
 public:
+    /// SCAN name, e.g. "SHAKE-128".
     abstract @property string name() const;
+    /// Rate in bytes.
     abstract @property size_t blockSize() const;
+    /// False after the first squeeze (`output`).
     abstract bool acceptsInput() const;
     abstract XOF copyState() const;
     abstract XOF newObject() const;

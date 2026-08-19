@@ -88,6 +88,10 @@ public:
 /// One-step KDF with a hash. SCAN: "SP800-56A(SHA-256)". Salt must be empty.
 final class SP800_56A_Hash : KDF
 {
+    /**
+    * Params:
+    *  hash = hash used for one-step KDF
+    */
     this(HashFunction hash) { m_hash = hash; }
 
     override @property string name() const { return "SP800-56A(" ~ m_hash.name ~ ")"; }
@@ -117,6 +121,10 @@ private:
 /// One-step KDF with HMAC. SCAN: "SP800-56A(HMAC(SHA-256))"
 final class SP800_56A_HMAC : KDF
 {
+    /**
+    * Params:
+    *  mac = HMAC used for one-step KDF
+    */
     this(MessageAuthenticationCode mac)
     {
         if (mac.name.length < 5 || mac.name[0 .. 5] != "HMAC(")

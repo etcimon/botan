@@ -28,6 +28,10 @@ import botan.utils.mem_ops;
 final class GMAC : MessageAuthenticationCode, BufferedComputation, SymmetricAlgorithm, MacStart
 {
 public:
+    /**
+    * Params:
+    *  cipher = 128-bit block cipher (typically AES-128)
+    */
     this(BlockCipher cipher)
     {
         if (cipher.blockSize() != BS)

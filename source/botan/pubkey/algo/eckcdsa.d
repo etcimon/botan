@@ -47,25 +47,41 @@ struct ECKCDSAOptions
     }
 }
 
+/**
+* EC-KCDSA public key (ISO 14888-3)
+*/
 struct ECKCDSAPublicKey
 {
 public:
     alias Options = ECKCDSAOptions;
     __gshared immutable string algoName = Options.algoName;
 
+    /**
+    * Params:
+    *  dom_par = curve domain
+    *  public_point = public point
+    */
     this(in ECGroup dom_par, in PointGFp public_point)
     {
         m_owned = true;
         m_pub = new ECPublicKey(Options(), dom_par, public_point);
     }
 
+    /**
+    * Decode X.509 SubjectPublicKeyInfo
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = encoded point
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
         m_owned = true;
         m_pub = new ECPublicKey(Options(), alg_id, key_bits);
     }
 
+    /// Wrap an existing key object (does not take Unique ownership).
     this(in PublicKey pkey) { m_pub = cast(ECPublicKey) pkey; }
+    /// ditto
     this(in PrivateKey pkey) { m_pub = cast(ECPublicKey) pkey; }
 
     mixin Embed!(m_pub, m_owned);
@@ -73,18 +89,33 @@ public:
     ECPublicKey m_pub;
 }
 
+/**
+* EC-KCDSA private key (ISO 14888-3)
+*/
 struct ECKCDSAPrivateKey
 {
 public:
     alias Options = ECKCDSAOptions;
     __gshared immutable string algoName = Options.algoName;
 
+    /**
+    * Decode PKCS #8
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = encoded scalar
+    */
     this(const ref AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
         m_owned = true;
         m_priv = new ECPrivateKey(Options(), alg_id, key_bits, true);
     }
 
+    /**
+    * Generate a random key
+    * Params:
+    *  rng = random number generator
+    *  domain = curve domain
+    */
     this()(RandomNumberGenerator rng, const auto ref ECGroup domain)
     {
         m_owned = true;
@@ -92,6 +123,12 @@ public:
         m_priv = new ECPrivateKey(Options(), rng, domain, zero, true);
     }
 
+    /**
+    * Params:
+    *  rng = random number generator
+    *  domain = curve domain
+    *  x = private scalar
+    */
     this()(RandomNumberGenerator rng, const auto ref ECGroup domain, const auto ref BigInt x)
     {
         m_owned = true;

@@ -67,6 +67,12 @@ public:
 /// NIST SP 800-108 §5.1 Counter mode. SCAN: "SP800-108-Counter(HMAC(SHA-256))"
 final class SP800_108_Counter : KDF
 {
+    /**
+    * Params:
+    *  mac = PRF (typically HMAC)
+    *  r = counter width in bits (8, 16, 24, or 32)
+    *  L = length field width in bits (8, 16, 24, or 32)
+    */
     this(MessageAuthenticationCode mac, size_t r = 32, size_t L = 32)
     {
         validateBitLengths(r, L);
@@ -131,6 +137,12 @@ private:
 /// NIST SP 800-108 §5.2 Feedback mode. SCAN: "SP800-108-Feedback(HMAC(SHA-256))"
 final class SP800_108_Feedback : KDF
 {
+    /**
+    * Params:
+    *  mac = PRF (typically HMAC)
+    *  r = counter width in bits (8, 16, 24, or 32)
+    *  L = length field width in bits (8, 16, 24, or 32)
+    */
     this(MessageAuthenticationCode mac, size_t r = 32, size_t L = 32)
     {
         validateBitLengths(r, L);
@@ -204,6 +216,12 @@ private:
 /// NIST SP 800-108 §5.3 Double-Pipeline mode. SCAN: "SP800-108-Pipeline(HMAC(SHA-256))"
 final class SP800_108_Pipeline : KDF
 {
+    /**
+    * Params:
+    *  mac = PRF (typically HMAC)
+    *  r = counter width in bits (8, 16, 24, or 32)
+    *  L = length field width in bits (8, 16, 24, or 32)
+    */
     this(MessageAuthenticationCode mac, size_t r = 32, size_t L = 32)
     {
         validateBitLengths(r, L);

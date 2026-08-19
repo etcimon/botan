@@ -30,6 +30,10 @@ import std.algorithm : min;
 final class HKDF_Extract : KDF
 {
 public:
+    /**
+    * Params:
+    *  prf = HMAC used as the extractor
+    */
     this(MessageAuthenticationCode prf)
     {
         m_prf = prf;
@@ -83,6 +87,10 @@ private:
 final class HKDF_Expand : KDF
 {
 public:
+    /**
+    * Params:
+    *  prf = HMAC used as the expander
+    */
     this(MessageAuthenticationCode prf)
     {
         m_prf = prf;

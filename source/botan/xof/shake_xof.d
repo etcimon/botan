@@ -28,6 +28,10 @@ import memutils.vector;
 abstract class SHAKE_XOF : XOF
 {
 protected:
+    /**
+    * Params:
+    *  capacity = sponge capacity in bits (256 for SHAKE-128, 512 for SHAKE-256)
+    */
     this(size_t capacity)
     {
         if (capacity != 256 && capacity != 512)
@@ -87,6 +91,7 @@ protected:
 /// SHAKE-128 (FIPS 202 §6.2). SCAN: "SHAKE-128".
 final class SHAKE_128_XOF : SHAKE_XOF
 {
+    /// Empty XOF (capacity 256).
     this() { super(256); }
     override @property string name() const { return "SHAKE-128"; }
     override XOF copyState() const
@@ -101,6 +106,7 @@ final class SHAKE_128_XOF : SHAKE_XOF
 /// SHAKE-256 (FIPS 202 §6.2). SCAN: "SHAKE-256".
 final class SHAKE_256_XOF : SHAKE_XOF
 {
+    /// Empty XOF (capacity 512).
     this() { super(512); }
     override @property string name() const { return "SHAKE-256"; }
     override XOF copyState() const

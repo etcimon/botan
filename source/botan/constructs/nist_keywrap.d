@@ -82,7 +82,14 @@ private SecureVector!ubyte rawNistKeyUnwrap(const(ubyte)* input, size_t input_le
     return R;
 }
 
-/// RFC 3394 / NIST SP 800-38F KW. `input_len` must be a positive multiple of 8.
+/**
+* RFC 3394 / NIST SP 800-38F KW. `input_len` must be a positive multiple of 8.
+* Params:
+*  input = key to wrap
+*  input_len = length in bytes
+*  bc = 128-bit block cipher keyed as the KEK
+* Returns: wrapped key
+*/
 Vector!ubyte nistKeyWrap(const(ubyte)* input, size_t input_len, const BlockCipher bc)
 {
     if (bc.blockSize() != 16)
@@ -102,7 +109,14 @@ Vector!ubyte nistKeyWrap(const(ubyte)* input, size_t input_len, const BlockCiphe
     return rawNistKeyWrap(input, input_len, bc, ICV);
 }
 
-/// RFC 3394 / NIST SP 800-38F unwrap. Throws `IntegrityFailure` on ICV mismatch.
+/**
+* RFC 3394 / NIST SP 800-38F unwrap. Throws `IntegrityFailure` on ICV mismatch.
+* Params:
+*  input = wrapped key
+*  input_len = length in bytes
+*  bc = 128-bit block cipher keyed as the KEK
+* Returns: unwrapped key
+*/
 SecureVector!ubyte nistKeyUnwrap(const(ubyte)* input, size_t input_len, const BlockCipher bc)
 {
     if (bc.blockSize() != 16)
@@ -130,7 +144,14 @@ SecureVector!ubyte nistKeyUnwrap(const(ubyte)* input, size_t input_len, const Bl
     return R;
 }
 
-/// RFC 5649 / NIST SP 800-38F KWP. Input must be non-empty.
+/**
+* RFC 5649 / NIST SP 800-38F KWP. Input must be non-empty.
+* Params:
+*  input = key to wrap
+*  input_len = length in bytes
+*  bc = 128-bit block cipher keyed as the KEK
+* Returns: wrapped key with padding
+*/
 Vector!ubyte nistKeyWrapPadded(const(ubyte)* input, size_t input_len, const BlockCipher bc)
 {
     if (bc.blockSize() != 16)
@@ -150,7 +171,14 @@ Vector!ubyte nistKeyWrapPadded(const(ubyte)* input, size_t input_len, const Bloc
     return rawNistKeyWrap(input, input_len, bc, icv);
 }
 
-/// RFC 5649 / NIST SP 800-38F KWP unwrap. Throws `IntegrityFailure` on bad padding/ICV.
+/**
+* RFC 5649 / NIST SP 800-38F KWP unwrap. Throws `IntegrityFailure` on bad padding/ICV.
+* Params:
+*  input = wrapped key
+*  input_len = length in bytes
+*  bc = 128-bit block cipher keyed as the KEK
+* Returns: unwrapped key
+*/
 SecureVector!ubyte nistKeyUnwrapPadded(const(ubyte)* input, size_t input_len, const BlockCipher bc)
 {
     if (bc.blockSize() != 16)

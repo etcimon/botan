@@ -39,6 +39,7 @@ public:
         m_position = 0;
     }
 
+    /// Empty digest (IV for MD2).
     this() 
     { 
         m_X = SecureVector!ubyte(48);

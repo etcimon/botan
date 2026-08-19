@@ -41,9 +41,7 @@ public:
         m_position = 0;
     }
 
-    /**
-    * GOST 34.11 Constructor
-    */
+    /// Empty digest (IV for GOST R 34.11-94).
     this() 
     {
         m_cipher = new GOST_28147_89(scoped!GOST_28147_89_Params("R3411_CryptoPro").Scoped_payload);

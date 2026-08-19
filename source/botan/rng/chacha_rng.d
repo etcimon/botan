@@ -31,6 +31,7 @@ import botan.utils.types;
 final class ChaChaRNG : StatefulRNG
 {
 public:
+    /// Empty ChaCha_RNG (unseeded until addEntropy/reseed).
     this()
     {
         super();
@@ -38,6 +39,11 @@ public:
         clearState();
     }
 
+    /**
+    * Params:
+    *  seed = initial entropy
+    *  seed_len = length of seed
+    */
     this(const(ubyte)* seed, size_t seed_len)
     {
         super();
@@ -46,11 +52,17 @@ public:
         addEntropy(seed, seed_len);
     }
 
+    /// ditto
     this(const(ubyte)[] seed)
     {
         this(seed.ptr, seed.length);
     }
 
+    /**
+    * Params:
+    *  underlying = RNG used for reseed
+    *  reseed_interval = requests between reseeds
+    */
     this(RandomNumberGenerator underlying, size_t reseed_interval = StatefulRNG.defaultReseedInterval)
     {
         super(underlying, reseed_interval);

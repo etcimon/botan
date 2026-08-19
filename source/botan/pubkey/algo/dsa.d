@@ -56,14 +56,22 @@ public:
     __gshared immutable string algoName = Options.algoName;
 
 
+    /**
+    * Decode X.509 SubjectPublicKeyInfo
+    * Params:
+    *  alg_id = algorithm identifier (includes the DL group)
+    *  key_bits = public y
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits) 
     {
 		m_owned = true;
         m_pub = new DLSchemePublicKey(Options(), alg_id, key_bits);
     }
 
-    /*
-    * DSAPublicKey Constructor
+    /**
+    * Params:
+    *  grp = DL group
+    *  y1 = public value y = g^x mod p
     */
     this(DLGroup grp, BigInt y1)
     {
@@ -71,7 +79,9 @@ public:
         m_pub = new DLSchemePublicKey(Options(), grp.move, y1.move);
     }
 
+    /// Wrap an existing key object (does not take Unique ownership).
     this(PublicKey pkey) { m_pub = cast(DLSchemePublicKey) pkey; }
+    /// ditto
     this(PrivateKey pkey) { m_pub = cast(DLSchemePublicKey) pkey; }
 
     mixin Embed!(m_pub, m_owned);
@@ -89,8 +99,12 @@ public:
     alias Options = DSAOptions;
     __gshared immutable string algoName = Options.algoName;
     
-    /*
-    * Create a DSA private key
+    /**
+    * Generate or load a DSA private key
+    * Params:
+    *  rng = random number generator
+    *  dl_group = DL group
+    *  x_arg = private x; if zero, a new random x is generated
     */
     this(RandomNumberGenerator rng, DLGroup dl_group, BigInt x_arg = 0)
     {
@@ -111,6 +125,13 @@ public:
             m_priv.loadCheck(rng);
     }
 
+    /**
+    * Decode PKCS #8
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = encoded x
+    *  rng = used for the load-time self-test
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits, RandomNumberGenerator rng)
     {
 		m_owned = true;
@@ -118,6 +139,7 @@ public:
         m_priv.loadCheck(rng);
     }
 
+    /// Wrap an existing key object (does not take Unique ownership).
     this(PrivateKey pkey) { m_priv = cast(DLSchemePrivateKey) pkey; }
 
     mixin Embed!(m_priv, m_owned);

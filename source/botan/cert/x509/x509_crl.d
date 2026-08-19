@@ -47,6 +47,9 @@ public:
 
     /**
     * Check if this particular certificate is listed in the CRL
+    * Params:
+    *  cert = certificate to look up
+    * Returns: true if cert is revoked by this CRL
     */
     bool isRevoked(in X509Certificate cert) const
     {

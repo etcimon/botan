@@ -28,6 +28,10 @@ import std.conv : to;
 final class Streebog : HashFunction
 {
 public:
+    /**
+    * Params:
+    *  output_bits = 256 or 512
+    */
     this(size_t output_bits = 512)
     {
         if (output_bits != 256 && output_bits != 512)

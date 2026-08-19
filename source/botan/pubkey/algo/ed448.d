@@ -32,24 +32,39 @@ import botan.pubkey.algo.curve448_scalar;
 
 enum size_t ED448_LEN = 57;
 
+/**
+* Ed448 public key (RFC 8032 / RFC 8410)
+*/
 struct Ed448PublicKey
 {
 public:
     enum algoName = "Ed448";
 
+    /**
+    * Decode X.509 SubjectPublicKeyInfo
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = 57-byte public key
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits)
     {
         m_owned = true;
         m_pub = new Ed448PublicKeyImpl(alg_id, key_bits);
     }
 
+    /**
+    * Params:
+    *  pub = 57-byte public key
+    */
     this(const ref Vector!ubyte pub)
     {
         m_owned = true;
         m_pub = new Ed448PublicKeyImpl(pub);
     }
 
+    /// Wrap an existing key object (does not take Unique ownership).
     this(PrivateKey pkey) { m_pub = cast(Ed448PublicKeyImpl) pkey; }
+    /// ditto
     this(PublicKey pkey) { m_pub = cast(Ed448PublicKeyImpl) pkey; }
 
     mixin Embed!(m_pub, m_owned);
@@ -57,29 +72,49 @@ public:
     Ed448PublicKeyImpl m_pub;
 }
 
+/**
+* Ed448 private key (RFC 8032 / RFC 8410)
+*/
 struct Ed448PrivateKey
 {
 public:
     enum algoName = "Ed448";
 
+    /**
+    * Generate a random key
+    * Params:
+    *  rng = random number generator
+    */
     this(RandomNumberGenerator rng)
     {
         m_owned = true;
         m_priv = new Ed448PrivateKeyImpl(rng);
     }
 
+    /**
+    * Params:
+    *  seed = 57-byte seed (RFC 8032 secret)
+    */
     this(const ref SecureVector!ubyte seed)
     {
         m_owned = true;
         m_priv = new Ed448PrivateKeyImpl(seed);
     }
 
+    /**
+    * Decode PKCS #8
+    * Params:
+    *  alg_id = algorithm identifier
+    *  key_bits = 57-byte seed
+    *  rng = used for the load-time self-test
+    */
     this(in AlgorithmIdentifier alg_id, const ref SecureVector!ubyte key_bits, RandomNumberGenerator rng)
     {
         m_owned = true;
         m_priv = new Ed448PrivateKeyImpl(alg_id, key_bits, rng);
     }
 
+    /// Wrap an existing key object (does not take Unique ownership).
     this(PrivateKey pkey) { m_priv = cast(Ed448PrivateKeyImpl) pkey; }
 
     mixin Embed!(m_priv, m_owned);

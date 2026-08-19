@@ -190,6 +190,12 @@ private bool iso9796Verification(const(ubyte)* repr, size_t repr_len,
 final class ISO9796_DS2 : EMSA
 {
 public:
+    /**
+    * Params:
+    *  hash = hash used for ISO-9796-2 DS2
+    *  implicit = true for implicit trailer (imp), false for explicit (exp)
+    *  salt_len = salt length in bytes
+    */
     this(HashFunction hash, bool implicit, size_t salt_len)
     {
         m_hash = hash;
@@ -236,6 +242,11 @@ private:
 final class ISO9796_DS3 : EMSA
 {
 public:
+    /**
+    * Params:
+    *  hash = hash used for ISO-9796-2 DS3
+    *  implicit = true for implicit trailer (imp), false for explicit (exp)
+    */
     this(HashFunction hash, bool implicit = false)
     {
         m_hash = hash;

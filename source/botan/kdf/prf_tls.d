@@ -51,9 +51,7 @@ public:
     override @property string name() const { return "TLS-PRF"; }
     override KDF clone() const { return new TLSPRF; }
 
-    /*
-    * TLS PRF Constructor and Destructor
-    */
+    /// Empty TLS 1.0/1.1 PRF (HMAC-MD5 XOR HMAC-SHA-1).
     this()
     {
         m_hmac_md5 = new HMAC(new MD5);
@@ -85,8 +83,9 @@ public:
     override @property string name() const { return "TLSv12-PRF(" ~ m_hmac.name ~ ")"; }
     override KDF clone() const { return new TLS12PRF(m_hmac.clone()); }
 
-    /*
-    * TLS v1.2 PRF Constructor and Destructor
+    /**
+    * Params:
+    *  mac = HMAC used as the TLS 1.2 PRF (typically HMAC(SHA-256) or HMAC(SHA-384))
     */
     this(MessageAuthenticationCode mac)
     {

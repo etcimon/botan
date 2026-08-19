@@ -293,20 +293,24 @@ protected:
 
 final class SHA3_224 : SHA3
 {
+    /// Empty digest (IV for SHA3-224).
     this() { super(224); }
 }
 
 final class SHA3_256 : SHA3
 {
+    /// Empty digest (IV for SHA3-256).
     this() { super(256); }
 }
 
 final class SHA3_384 : SHA3
 {
+    /// Empty digest (IV for SHA3-384).
     this() { super(384); }
 }
 
 final class SHA3_512 : SHA3
 {
+    /// Empty digest (IV for SHA3-512).
     this() { super(512); }
 }

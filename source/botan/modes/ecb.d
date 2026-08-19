@@ -68,6 +68,11 @@ public:
 
     override bool authenticated() const { return true; }
 protected:
+    /**
+    * Params:
+    *  cipher = the underlying block cipher
+    *  padding = padding method (PKCS7, NoPadding, …)
+    */
     this(BlockCipher cipher, BlockCipherModePaddingMethod padding)
     {
         m_cipher = cipher;
@@ -96,6 +101,11 @@ protected:
 final class ECBEncryption : ECBMode, Transformation
 {
 public:
+    /**
+    * Params:
+    *  cipher = the underlying block cipher
+    *  padding = padding method (PKCS7, NoPadding, …)
+    */
     this(BlockCipher cipher, BlockCipherModePaddingMethod padding) 
     {
         super(cipher, padding);
@@ -160,6 +170,11 @@ public:
 final class ECBDecryption : ECBMode, Transformation
 {
 public:
+    /**
+    * Params:
+    *  cipher = the underlying block cipher
+    *  padding = padding method (PKCS7, NoPadding, …)
+    */
     this(BlockCipher cipher, BlockCipherModePaddingMethod padding)
     {
         super(cipher, padding);
